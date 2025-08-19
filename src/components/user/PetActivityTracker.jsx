@@ -1,9 +1,15 @@
 import React, { useState } from 'react';
-import { FaRunning, FaBone, FaPlay, FaChartLine, FaChevronLeft, FaChevronRight, FaPaw } from 'react-icons/fa';
+import { FaRunning, FaBone, FaPlay, FaChartLine, FaChevronLeft, FaChevronRight, FaPaw, FaPlus, FaTimes, FaWater, FaBed, FaCheck, FaHeart, FaSmile } from 'react-icons/fa';
 
 const PetActivityTracker = () => {
   const [selectedPet, setSelectedPet] = useState('Max');
   const [currentPetIndex, setCurrentPetIndex] = useState(0);
+  const [showPopup, setShowPopup] = useState(false);
+  const [activityType, setActivityType] = useState('exercise');
+  const [activityValue, setActivityValue] = useState('');
+  const [activityNote, setActivityNote] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
   
   const pets = [
     { 
@@ -62,6 +68,8 @@ const PetActivityTracker = () => {
       case 'exercise': return FaRunning;
       case 'food': return FaBone;
       case 'play': return FaPlay;
+      case 'water': return FaWater;
+      case 'sleep': return FaBed;
       default: return FaRunning;
     }
   };
@@ -75,6 +83,54 @@ const PetActivityTracker = () => {
       case 'play': return 'text-green-600 bg-green-100';
       default: return 'text-gray-600 bg-gray-100';
     }
+  };
+  
+  const getActivityUnit = (type) => {
+    switch (type) {
+      case 'exercise': return 'min';
+      case 'food': return 'meals';
+      case 'water': return 'cups';
+      case 'sleep': return 'hours';
+      case 'play': return 'min';
+      default: return '';
+    }
+  };
+  
+  const handleSubmitActivity = (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    // Simulate API call
+    setTimeout(() => {
+      // Update the activity data (in a real app, this would be an API call)
+      const currentPetName = pets[currentPetIndex].name;
+      const currentActivity = activities[currentPetName].today[activityType];
+      
+      if (currentActivity) {
+        currentActivity.value = Math.min(
+          parseInt(currentActivity.value) + parseInt(activityValue || 0),
+          currentActivity.goal * 1.5 // Allow exceeding goal by up to 50%
+        );
+      } else {
+        // If this is a new activity type not in the original data
+        activities[currentPetName].today[activityType] = {
+          value: parseInt(activityValue || 0),
+          goal: parseInt(activityValue || 0) * 1.2, // Set goal slightly higher
+          unit: getActivityUnit(activityType)
+        };
+      }
+      
+      setIsSubmitting(false);
+      setShowPopup(false);
+      
+      // Show success message
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
+      
+      // Reset form
+      setActivityValue('');
+      setActivityNote('');
+    }, 800);
   };
 
   const getProgressColor = (percentage) => {
@@ -106,6 +162,141 @@ const PetActivityTracker = () => {
 
   return (
     <div className="relative bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 p-3 border border-gray-100">
+      {/* Success Toast */}
+      {showSuccess && (
+        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-full z-50 animate-bounce">
+          <div className="bg-green-500 text-white px-4 py-2 rounded-t-lg rounded-b-lg shadow-lg flex items-center gap-2">
+            <FaCheck className="text-white" />
+            <span>Activity logged successfully!</span>
+          </div>
+        </div>
+      )}
+      
+      {/* Activity Log Popup */}
+      {showPopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white rounded-3xl shadow-xl max-w-md w-full p-6 relative animate-scaleIn">
+            {/* Close button */}
+            <button 
+              onClick={() => setShowPopup(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <FaTimes className="text-xl" />
+            </button>
+            
+            {/* Popup header */}
+            <div className="text-center mb-6">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-indigo-100 mb-4">
+                <FaPaw className="text-indigo-600 text-2xl" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-800">Log {pets[currentPetIndex].name}'s Activity</h3>
+              <p className="text-gray-500 text-sm mt-1">Keep track of your pet's daily activities</p>
+            </div>
+            
+            {/* Activity form */}
+            <form onSubmit={handleSubmitActivity}>
+              {/* Activity type selector */}
+              <div className="mb-5">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Activity Type</label>
+                <div className="grid grid-cols-5 gap-2">
+                  {['exercise', 'food', 'water', 'play', 'sleep'].map((type) => {
+                    const IconComponent = getActivityIcon(type);
+                    return (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => setActivityType(type)}
+                        className={`flex flex-col items-center justify-center p-3 border rounded-xl transition-all ${
+                          activityType === type 
+                            ? 'bg-indigo-50 border-indigo-500 text-indigo-700' 
+                            : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        <IconComponent className={`h-5 w-5 ${activityType === type ? 'text-indigo-500' : 'text-gray-400'}`} />
+                        <span className="mt-1 text-xs font-medium capitalize">{type}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              
+              {/* Amount input */}
+              <div className="mb-5">
+                <label htmlFor="activityValue" className="block text-sm font-medium text-gray-700 mb-2">
+                  Amount ({getActivityUnit(activityType)})
+                </label>
+                <input
+                  type="number"
+                  id="activityValue"
+                  value={activityValue}
+                  onChange={(e) => setActivityValue(e.target.value)}
+                  min="1"
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder={`Enter ${activityType} amount`}
+                />
+              </div>
+              
+              {/* Notes input */}
+              <div className="mb-6">
+                <label htmlFor="activityNote" className="block text-sm font-medium text-gray-700 mb-2">
+                  Notes (optional)
+                </label>
+                <textarea
+                  id="activityNote"
+                  value={activityNote}
+                  onChange={(e) => setActivityNote(e.target.value)}
+                  rows="2"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder="Add any notes about this activity"
+                ></textarea>
+              </div>
+              
+              {/* Submit button */}
+              <button
+                type="submit"
+                disabled={isSubmitting || !activityValue}
+                className="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-xl shadow-md text-white bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-all"
+              >
+                {isSubmitting ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Logging...
+                  </>
+                ) : (
+                  <>
+                    <FaCheck />
+                    Log Activity
+                  </>
+                )}
+              </button>
+              
+              {/* Pet illustration */}
+              <div className="mt-6 text-center">
+                <div className="inline-block">
+                  <div className="relative">
+                    <div className="w-12 h-12 rounded-full overflow-hidden mx-auto border-2 border-indigo-100">
+                      <img 
+                        src={pets[currentPetIndex].image} 
+                        alt={pets[currentPetIndex].name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="absolute -bottom-1 -right-1 bg-pink-500 rounded-full p-1">
+                      <FaHeart className="text-white text-xs" />
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">Keeping {pets[currentPetIndex].name} happy & healthy!</p>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      
       {/* Compact Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
@@ -116,8 +307,17 @@ const PetActivityTracker = () => {
             <h2 className="text-md font-bold text-gray-800">Activity Tracker</h2>
           </div>
         </div>
-        <div className="bg-green-100 text-green-700 text-xs font-semibold px-2 py-1 rounded-full flex-shrink-0">
-          Live
+        <div className="flex items-center gap-2">
+          <div className="bg-green-100 text-green-700 text-xs font-semibold px-2 py-1 rounded-full flex-shrink-0">
+            Live
+          </div>
+          <button 
+            onClick={() => setShowPopup(true)}
+            className="bg-indigo-500 hover:bg-indigo-600 text-white p-1.5 rounded-lg shadow-sm transition-colors flex-shrink-0"
+            aria-label="Log activity"
+          >
+            <FaPlus className="text-xs" />
+          </button>
         </div>
       </div>
 
