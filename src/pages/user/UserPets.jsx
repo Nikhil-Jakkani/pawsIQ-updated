@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FaPaw, FaPlus, FaSearch, FaFilter, FaEdit, FaTrash, FaHeart, FaCalendarAlt, FaUser, FaClipboardList } from 'react-icons/fa';
+import { FaPaw, FaPlus, FaSearch, FaFilter, FaEdit, FaTrash, FaHeart, FaCalendarAlt, FaUser, FaClipboardList, FaFileMedical } from 'react-icons/fa';
 import UserLayout from '../../components/layout/UserLayout';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabaseClient';
@@ -265,23 +265,27 @@ const UserPets = () => {
                       <p className="text-gray-500 text-sm">{pet.age}</p>
                     </div>
                     <div className="flex gap-2">
-                      <button 
+                      <button
                         onClick={() => navigate(`/user/pets/edit/${pet.id}`)}
-                        className="p-2 text-gray-500 hover:text-pink-600 transition-colors"
-                        title="Edit Pet"
+                        className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors"
                       >
-                        <FaEdit />
+                        <FaEdit className="inline mr-1" /> Edit
                       </button>
-                      <button 
-                        onClick={() => handleDeletePet(pet.id)}
-                        className="p-2 text-gray-500 hover:text-red-600 transition-colors"
-                        title="Remove Pet"
+                      <button
+                        onClick={() => navigate(`/user/pets/${pet.id}/health-records`)}
+                        className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
                       >
-                        <FaTrash />
+                        <FaFileMedical className="inline mr-1" /> Health Records
+                      </button>
+                      <button
+                        onClick={() => handleDeletePet(pet.id)}
+                        className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+                      >
+                        <FaTrash className="inline mr-1" /> Delete
                       </button>
                     </div>
                   </div>
-                  
+
                   <div className="mt-4 space-y-2">
                     <div className="flex items-center gap-2">
                       <FaHeart className={pet.healthStatus === 'Healthy' ? 'text-green-500' : 'text-yellow-500'} />

@@ -7,6 +7,27 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model PIQ_Health_Records {
+  health_record_id BigInt    @id @default(autoincrement())
+  pet_id          BigInt
+  record_type     String    @db.VarChar(50)
+  title           String    @db.VarChar(255)
+  description     String?   @db.Text
+  record_date     DateTime  @db.Date
+  next_due_date   DateTime? @db.Date
+  file_path       String    @db.VarChar(512)
+  file_name       String    @db.VarChar(255)
+  file_type       String    @db.VarChar(100)
+  file_size       Int
+  created_at      DateTime  @default(now()) @db.Timestamptz(6)
+  last_updated_dtm DateTime? @default(now()) @db.Timestamp(6)
+  PIQ_Pets        PIQ_Pets  @relation(fields: [pet_id], references: [pet_id], onDelete: Cascade)
+
+  @@index([pet_id], name: "idx_health_records_pet_id")
+  @@index([record_type], name: "idx_health_records_record_type")
+  @@index([record_date], name: "idx_health_records_record_date")
+}
+
 model PIQ_Pets {
   pet_id           BigInt             @id @default(autoincrement())
   user_id          BigInt?
@@ -23,6 +44,7 @@ model PIQ_Pets {
   PIQ_Pets_Photo   PIQ_Pets_Photo[]
   PIQ_pets_profile PIQ_pets_profile[]
   PIQ_Appointments PIQ_Appointments[]
+  PIQ_Health_Records PIQ_Health_Records[]
 }
 
 model PIQ_Pets_Photo {

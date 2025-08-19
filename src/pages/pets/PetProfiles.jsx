@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useParams } from 'react-router-dom';
 import { 
   FaArrowLeft,
   FaSearch,
@@ -35,6 +35,7 @@ import {
 
 } from 'react-icons/fa';
 import DashboardLayout from '../../components/layout/DashboardLayout';
+import HealthRecords from '../../components/health/HealthRecords';
 
 
 const PetProfiles = () => {
@@ -45,6 +46,143 @@ const PetProfiles = () => {
   const [sortDirection, setSortDirection] = useState('asc');
   const [showPetModal, setShowPetModal] = useState(false);
   const [currentPet, setCurrentPet] = useState(null);
+  const [activeTab, setActiveTab] = useState('details');
+  const { petId } = useParams();
+  
+  // Set active tab based on URL or default to 'details'
+  useEffect(() => {
+    const tabFromUrl = window.location.hash.replace('#', '');
+    if (tabFromUrl === 'health-records' || tabFromUrl === 'details') {
+      setActiveTab(tabFromUrl);
+    } else if (window.location.pathname.includes('health-records')) {
+      setActiveTab('health-records');
+    }
+  }, [window.location.pathname]);
+
+  // Tab navigation
+  const renderTabContent = () => {
+    if (!petId) {
+      return (
+        <div className="bg-white shadow overflow-hidden sm:rounded-lg p-6">
+          <p className="text-gray-500">Select a pet to view details</p>
+        </div>
+      );
+    }
+
+    switch (activeTab) {
+      case 'health-records':
+        return (
+          <div className="mt-6">
+            <div className="bg-white shadow rounded-lg p-6">
+              <HealthRecords />
+            </div>
+          </div>
+        );
+      case 'details':
+      default:
+        // Find the current pet from the sample data or fetch from API
+        const pet = petsData.find(p => p.id === parseInt(petId));
+        
+        if (!pet) {
+          return (
+            <div className="bg-white shadow overflow-hidden sm:rounded-lg p-6">
+              <p className="text-gray-500">Pet not found</p>
+            </div>
+          );
+        }
+        
+        return (
+          <div className="mt-6">
+            <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+              <div className="px-4 py-5 sm:px-6">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">{pet.name}'s Profile</h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      {pet.breed} • {pet.age}
+                    </p>
+                  </div>
+                  <div className="flex space-x-3">
+                    <button className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700">
+                      <FaEdit className="inline mr-1" /> Edit
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div className="border-t border-gray-200 px-4 py-5 sm:p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="text-lg font-medium text-gray-900 mb-4">Basic Information</h4>
+                    <dl className="space-y-4">
+                      <div className="sm:grid sm:grid-cols-3 sm:gap-4">
+                        <dt className="text-sm font-medium text-gray-500">Species</dt>
+                        <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                          {pet.species === 'Dog' ? <FaDog className="inline mr-2" /> : <FaCat className="inline mr-2" />}
+                          {pet.species}
+                        </dd>
+                      </div>
+                      <div className="sm:grid sm:grid-cols-3 sm:gap-4">
+                        <dt className="text-sm font-medium text-gray-500">Breed</dt>
+                        <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{pet.breed}</dd>
+                      </div>
+                      <div className="sm:grid sm:grid-cols-3 sm:gap-4">
+                        <dt className="text-sm font-medium text-gray-500">Age</dt>
+                        <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{pet.age}</dd>
+                      </div>
+                      <div className="sm:grid sm:grid-cols-3 sm:gap-4">
+                        <dt className="text-sm font-medium text-gray-500">Gender</dt>
+                        <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                          {pet.gender === 'Male' ? 
+                            <FaMars className="inline mr-1 text-blue-500" /> : 
+                            <FaVenus className="inline mr-1 text-pink-500" />
+                          }
+                          {pet.gender}
+                        </dd>
+                      </div>
+                      <div className="sm:grid sm:grid-cols-3 sm:gap-4">
+                        <dt className="text-sm font-medium text-gray-500">Weight</dt>
+                        <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{pet.weight} kg</dd>
+                      </div>
+                    </dl>
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-medium text-gray-900 mb-4">Health Information</h4>
+                    <dl className="space-y-4">
+                      <div className="sm:grid sm:grid-cols-3 sm:gap-4">
+                        <dt className="text-sm font-medium text-gray-500">Last Checkup</dt>
+                        <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                          {pet.lastCheckup || 'No recent checkup'}
+                        </dd>
+                      </div>
+                      <div className="sm:grid sm:grid-cols-3 sm:gap-4">
+                        <dt className="text-sm font-medium text-gray-500">Vaccination Status</dt>
+                        <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                          {pet.vaccinationStatus === 'Up to date' ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              <FaCheck className="mr-1" /> Up to date
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                              <FaExclamationTriangle className="mr-1" /> Due for update
+                            </span>
+                          )}
+                        </dd>
+                      </div>
+                      <div className="sm:grid sm:grid-cols-3 sm:gap-4">
+                        <dt className="text-sm font-medium text-gray-500">Medical Notes</dt>
+                        <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                          {pet.medicalNotes || 'No medical notes available'}
+                        </dd>
+                      </div>
+                    </dl>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+    }
+  };
 
   // Sample data for pet profiles
   const petsData = [

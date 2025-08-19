@@ -181,6 +181,7 @@ function App() {
           <Route path="/user/pets/add" element={<UserProtectedRoute><UserAddPet /></UserProtectedRoute>} />
           <Route path="/user/pets/profiles" element={<UserProtectedRoute><UserPets /></UserProtectedRoute>} />
           <Route path="/user/pets/health" element={<UserProtectedRoute><UserPets /></UserProtectedRoute>} />
+          <Route path="/user/pets/:petId/health-records" element={<UserProtectedRoute><PetProfiles /></UserProtectedRoute>} />
           
           {/* AI Pet Care */}
           <Route path="/user/ai-pet-care" element={<UserProtectedRoute><AIPetCare /></UserProtectedRoute>} />
