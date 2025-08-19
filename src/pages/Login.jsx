@@ -11,7 +11,7 @@ const Login = () => {
   const [userType, setUserType] = useState('user'); // 'user', 'provider', or 'admin'
   const [isLoading, setIsLoading] = useState(false);
   const [localError, setLocalError] = useState('');
-  const { login, providerLogin, adminLogin, error: authError, currentUser } = useAuth();
+  const { login, error: authError, currentUser } = useAuth();
   const navigate = useNavigate();
   
   // Hide loading screen when Login component mounts
@@ -64,13 +64,8 @@ const Login = () => {
     try {
       let response;
       
-      if (userType === 'user') {
-        response = await login(email, password);
-      } else if (userType === 'provider') {
-        response = await providerLogin(email, password);
-      } else if (userType === 'admin') {
-        response = await adminLogin(email, password);
-      }
+      // Use the login function for all user types
+      response = await login(email, password);
       
       if (response && response.success) {
         if (userType === 'user') {

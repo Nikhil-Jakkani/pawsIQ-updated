@@ -124,31 +124,32 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
 
     try {
-      // First try API authentication
-      const response = await fetch(`${API_URL}/admin/auth/login`, {
+      // First try API authentication for regular users
+      const response = await fetch(`${API_URL}/user/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Important for cookies/sessions
         body: JSON.stringify({ email, password }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        const { user, token } = data;
+        const { user, tokens } = data;
         
-        // Combine user data and token for storage, and normalize tokens shape
-        const userData = { 
-          ...user, 
-          token,
-          tokens: user?.tokens || { access: { token } },
+        // Combine user data and tokens for storage, ensure role is present for routing
+        const userData = {
+          ...user,
+          role: user?.role || 'user',
+          tokens,
         };
 
         setCurrentUser(userData);
         localStorage.setItem('pawsiq_user', JSON.stringify(userData));
         setLoading(false);
-        return { success: true, userType: user.role };
+        return { success: true, userType: userData.role };
       }
     } catch (apiError) {
       // API failed, fallback to mock authentication

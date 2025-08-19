@@ -8,7 +8,7 @@ const logoImage = "/1.svg";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { adminLogin, currentUser, error: authError } = useAuth();
+  const { login: adminLogin, currentUser, error: authError } = useAuth();
   
   // Form state
   const [formData, setFormData] = useState({
