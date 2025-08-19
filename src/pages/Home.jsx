@@ -411,11 +411,11 @@ const Home = () => {
               </div>
               <div className="relative px-4 py-16 sm:px-6 sm:py-24 lg:py-32 lg:px-8">
                 <h1 className="text-center text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl">
-                  <span className="block text-white animate-fadeInUp">Reimagining Pet Wellness with Technology</span>
+                  <span className="block text-white animate-fadeInUp">Reimagining Pet Wellness with AI Technology</span>
                   {/* <span className="block text-indigo-200 animate-fadeInUp animation-delay-300">care for your pets</span> */}
                 </h1>
-                <p className="mt-6 max-w-lg mx-auto text-center text-xl text-indigo-200 sm:max-w-3xl animate-fadeInUp animation-delay-500 md:text-left">
-                  Empowering pet parents with intelligent tools to ensure their companions live longer, healthier, and happier lives.
+                <p className="mt-6 max-w-lg mx-auto text-center text-xl text-indigo-200 sm:max-w-3xl animate-fadeInUp animation-delay-500">
+                  Empowering pet parents with intelligent AI tools to ensure their companions live longer, healthier, and happier lives.
                 </p>
                 
                 {/* Interactive pet selector */}
@@ -572,9 +572,9 @@ const Home = () => {
                     <span className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-indigo-600 text-white [transform:translateZ(30px)]">
                       <FaRegLifeRing className="text-xl" />
                     </span>
-                    <h3 className="text-lg font-semibold text-gray-900">AI Symptom Checker</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">AI Symptom </h3>
                   </div>
-                  <p className="mt-4 text-gray-600">Describe symptoms and get instant triage guidance and next-step recommendations.</p>
+                  <p className="mt-4 text-gray-600">Report symptoms for instant triage and next-step advice.</p>
                 </div>
               </div>
 
