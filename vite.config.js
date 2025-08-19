@@ -108,6 +108,13 @@ export default defineConfig({
     hmr: {
       overlay: true, // Show errors as overlay
     },
+    proxy: {
+      '/api/v1': {
+        target: 'http://localhost:4000',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
   resolve: {
     alias: {
