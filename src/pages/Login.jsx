@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaLock, FaEnvelope } from 'react-icons/fa';
+import { FaLock, FaEnvelope, FaPaw, FaUserMd, FaShieldAlt } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
 // Simplified logo SVG for better performance
 const logoImage = "/1.svg";
 
 const Login = () => {
-  const [email, setEmail] = useState('admin@pawsiq.com');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [userType, setUserType] = useState('user'); // 'user', 'provider', or 'admin'
   const [isLoading, setIsLoading] = useState(false);
   const [localError, setLocalError] = useState('');
-  const { login, error: authError, currentUser } = useAuth();
+  const { login, providerLogin, adminLogin, error: authError, currentUser } = useAuth();
   const navigate = useNavigate();
   
   // Hide loading screen when Login component mounts
@@ -24,7 +25,13 @@ const Login = () => {
   // Check if already logged in
   useEffect(() => {
     if (currentUser) {
-      navigate('/dashboard');
+      if (currentUser.role === 'user') {
+        navigate('/user/dashboard');
+      } else if (currentUser.role === 'provider') {
+        navigate('/provider/dashboard');
+      } else if (currentUser.role === 'admin') {
+        navigate('/dashboard');
+      }
     }
   }, [currentUser, navigate]);
   
@@ -35,15 +42,44 @@ const Login = () => {
     }
   }, [authError]);
 
+  // Set default email/password based on user type
+  useEffect(() => {
+    if (userType === 'user') {
+      setEmail('user@pawsiq.com');
+      setPassword('user123');
+    } else if (userType === 'provider') {
+      setEmail('provider@pawsiq.com');
+      setPassword('provider123');
+    } else if (userType === 'admin') {
+      setEmail('admin@pawsiq.com');
+      setPassword('admin123');
+    }
+  }, [userType]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setLocalError('');
     
     try {
-      const response = await login(email, password);
+      let response;
+      
+      if (userType === 'user') {
+        response = await login(email, password);
+      } else if (userType === 'provider') {
+        response = await providerLogin(email, password);
+      } else if (userType === 'admin') {
+        response = await adminLogin(email, password);
+      }
+      
       if (response && response.success) {
-        navigate('/dashboard');
+        if (userType === 'user') {
+          navigate('/user/dashboard');
+        } else if (userType === 'provider') {
+          navigate('/provider/dashboard');
+        } else if (userType === 'admin') {
+          navigate('/dashboard');
+        }
       } else {
         setLocalError('Invalid email or password. Please try again.');
         setIsLoading(false);
@@ -64,14 +100,57 @@ const Login = () => {
             <img src={logoImage} alt="PawsIQ Logo" className="w-20 h-20 object-contain" />
           </div>
 
-          <h2 className="text-3xl font-extrabold">PawsIQ Admin</h2>
+          <h2 className="text-3xl font-extrabold">PawsIQ</h2>
           <p className="text-indigo-200 text-sm mt-2">Your Pet Care Platform</p>
         </div>
 
         {/* Login Form */}
         <div className="mt-8">
           <h2 className="text-2xl font-bold text-gray-800 text-center mb-2">Welcome Back!</h2>
-          <p className="text-center text-gray-500 mb-6">Sign in to manage your pet care platform</p>
+          <p className="text-center text-gray-500 mb-6">Sign in to access your pet care platform</p>
+
+          {/* User Type Selector */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">I am a:</label>
+            <div className="grid grid-cols-3 gap-3">
+              <button
+                type="button"
+                onClick={() => setUserType('user')}
+                className={`flex flex-col items-center justify-center p-3 border rounded-xl transition-all ${
+                  userType === 'user' 
+                    ? 'bg-indigo-50 border-indigo-500 text-indigo-700' 
+                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <FaPaw className={`h-6 w-6 ${userType === 'user' ? 'text-indigo-500' : 'text-gray-400'}`} />
+                <span className="mt-1 text-xs font-medium">Pet Owner</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setUserType('provider')}
+                className={`flex flex-col items-center justify-center p-3 border rounded-xl transition-all ${
+                  userType === 'provider' 
+                    ? 'bg-indigo-50 border-indigo-500 text-indigo-700' 
+                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <FaUserMd className={`h-6 w-6 ${userType === 'provider' ? 'text-indigo-500' : 'text-gray-400'}`} />
+                <span className="mt-1 text-xs font-medium">Provider</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setUserType('admin')}
+                className={`flex flex-col items-center justify-center p-3 border rounded-xl transition-all ${
+                  userType === 'admin' 
+                    ? 'bg-indigo-50 border-indigo-500 text-indigo-700' 
+                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <FaShieldAlt className={`h-6 w-6 ${userType === 'admin' ? 'text-indigo-500' : 'text-gray-400'}`} />
+                <span className="mt-1 text-xs font-medium">Admin</span>
+              </button>
+            </div>
+          </div>
 
           {localError && (
             <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg mb-6 flex items-start">
@@ -102,7 +181,7 @@ const Login = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 border border-indigo-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm"
-                  placeholder="admin@pawsiq.com"
+                  placeholder={userType === 'user' ? "user@pawsiq.com" : userType === 'provider' ? "provider@pawsiq.com" : "admin@pawsiq.com"}
                 />
               </div>
             </div>
