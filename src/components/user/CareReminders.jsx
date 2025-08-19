@@ -98,9 +98,9 @@ const CareReminders = ({ pets }) => {
           subtitle: 'days left',
           petName: pet.name,
           icon: FaBath,
-          color: 'from-purple-500 to-purple-600',
-          bgColor: 'bg-purple-50',
-          textColor: 'text-purple-600',
+          color: 'from-blue-500 to-[#145ae6]',
+          bgColor: 'bg-blue-50',
+          textColor: 'text-blue-600',
           priority: daysToFlea <= 2 ? 'high' : 'normal'
         });
       }

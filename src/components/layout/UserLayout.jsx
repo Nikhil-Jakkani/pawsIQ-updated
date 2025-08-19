@@ -94,7 +94,7 @@ const UserLayout = ({ children }) => {
               <input
                 type="text"
                 placeholder="Search..."
-                className="pl-10 pr-4 py-2 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-300 w-full"
+                className="pl-10 pr-4 py-2 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-300 w-full"
               />
               <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             </div>
@@ -105,7 +105,7 @@ const UserLayout = ({ children }) => {
             <div className="hidden lg:flex items-center gap-4 mr-2">
               {/* Date */}
               <div className="flex items-center gap-1 text-gray-600">
-                <FaCalendarAlt className="text-pink-500 text-sm" />
+                <FaCalendarAlt className="text-[#145ae6] text-sm" />
                 <div className="text-xs font-medium">
                   {currentTime.toLocaleDateString('en-US', { 
                     weekday: 'short', 
@@ -117,7 +117,7 @@ const UserLayout = ({ children }) => {
 
               {/* Time */}
               <div className="flex items-center gap-1 text-gray-600">
-                <FaClock className="text-pink-500 text-sm" />
+                <FaClock className="text-[#145ae6] text-sm" />
                 <div className="text-xs font-medium">
                   {currentTime.toLocaleTimeString('en-US', { 
                     hour: '2-digit', 
@@ -135,21 +135,21 @@ const UserLayout = ({ children }) => {
               </div>
             </div>
 
-            <button className="relative p-2 text-gray-500 hover:text-pink-600 transition-colors">
+            <button className="relative p-2 text-gray-500 hover:text-[#145ae6] transition-colors">
               <FaShoppingCart size={20} />
-              <span className="absolute -top-1 -right-1 bg-pink-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 bg-[#145ae6] text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
                 2
               </span>
             </button>
-            <button className="relative p-2 text-gray-500 hover:text-pink-600 transition-colors">
+            <button className="relative p-2 text-gray-500 hover:text-[#145ae6] transition-colors">
               <FaBell size={20} />
-              <span className="absolute -top-1 -right-1 bg-pink-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 bg-[#145ae6] text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
                 3
               </span>
             </button>
             <div className="flex items-center gap-2 max-w-[40vw] sm:max-w-none">
-              <div className="w-8 h-8 bg-pink-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <FaUser className="text-pink-600" />
+              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <FaUser className="text-[#145ae6]" />
               </div>
               <span className="text-sm font-medium text-gray-700 truncate">
                 {currentUser?.name || 'Pet Owner'}

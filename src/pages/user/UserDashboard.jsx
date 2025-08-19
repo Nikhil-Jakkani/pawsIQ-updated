@@ -21,7 +21,6 @@ import UserLayout from '../../components/layout/UserLayout';
 const UserDashboard = () => {
   const navigate = useNavigate();
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [showAIOptions, setShowAIOptions] = useState(false);
   const [showAIPopup, setShowAIPopup] = useState(false);
   const [activeService, setActiveService] = useState('suggestions');
   const [showAllTips, setShowAllTips] = useState(false);
@@ -60,7 +59,7 @@ const UserDashboard = () => {
           petName: pet.name,
           petType: pet.type,
           icon: FaRunning,
-          color: 'pink',
+          color: 'blue',
           title: `${pet.name}'s Daily Exercise Plan`,
           tip: `${pet.breed}s like ${pet.name} (${pet.age}) need ${exerciseTime} minutes of exercise daily. ${currentSeason === 'summer' ? 'Exercise during cooler morning/evening hours to prevent overheating.' : currentSeason === 'winter' ? 'Indoor activities and shorter outdoor walks are recommended.' : 'Perfect weather for outdoor activities!'}`,
           aiGenerated: true
@@ -71,7 +70,7 @@ const UserDashboard = () => {
           petName: pet.name,
           petType: pet.type,
           icon: FaCat,
-          color: 'purple',
+          color: 'blue',
           title: `${pet.name}'s Mental Stimulation`,
           tip: `${pet.breed} cats like ${pet.name} are ${petAge < 3 ? 'young and energetic' : petAge > 7 ? 'mature and need gentle activities' : 'in their prime'}. Provide 15-20 minutes of interactive play ${currentHour < 12 ? 'this morning' : currentHour < 18 ? 'this afternoon' : 'this evening'} with feather toys or laser pointers.`,
           aiGenerated: true
@@ -99,7 +98,7 @@ const UserDashboard = () => {
         petName: pet.name,
         petType: pet.type,
         icon: FaCut,
-        color: 'pink',
+        color: 'blue',
         title: `${pet.name}'s Grooming Schedule`,
         tip: `${pet.breed}s require ${groomingFreq} brushing. ${pet.type === 'dog' ? 'Check ears weekly and trim nails monthly.' : 'Daily brushing prevents matting and reduces shedding.'} ${currentSeason === 'spring' ? 'Shedding season - brush more frequently!' : currentSeason === 'summer' ? 'Consider a summer trim for comfort.' : 'Regular grooming maintains healthy coat.'}`,
         aiGenerated: true
@@ -126,7 +125,7 @@ const UserDashboard = () => {
           petName: pet.name,
           petType: pet.type,
           icon: FaBrain,
-          color: 'purple',
+          color: 'blue',
           title: `${pet.name}'s Training Focus`,
           tip: `${petAge < 2 ? 'Young dogs benefit from basic obedience training and socialization.' : petAge < 5 ? 'Perfect age for advanced training and new tricks.' : 'Maintain mental stimulation with puzzle games.'} ${pet.breed === 'Golden Retriever' ? 'Retrievers excel at fetch and water activities.' : pet.breed === 'Labrador' ? 'Labs love learning new commands and tasks.' : 'Consistent positive reinforcement works best.'}`,
           aiGenerated: true
@@ -153,7 +152,7 @@ const UserDashboard = () => {
         petName: 'All Pets',
         petType: 'general',
         icon: FaHeart,
-        color: 'pink',
+        color: 'blue',
         title: 'Multi-Pet Household Harmony',
         tip: `Managing ${pets.length} pets requires individual attention and resources. Ensure separate feeding areas, provide multiple water sources, and create individual safe spaces. ${pets.some(p => p.type === 'dog') && pets.some(p => p.type === 'cat') ? 'Dogs and cats can coexist peacefully with proper introduction and supervision.' : 'Similar pets may compete for attention - rotate one-on-one time.'}`,
         aiGenerated: true
@@ -164,7 +163,7 @@ const UserDashboard = () => {
         petName: 'All Pets',
         petType: 'general',
         icon: FaClock,
-        color: 'purple',
+        color: 'blue',
         title: 'Daily Routine Management',
         tip: `With multiple pets, establish consistent daily routines. ${currentHour < 8 ? 'Morning feeding time approaching!' : currentHour < 12 ? 'Mid-morning activity time.' : currentHour < 18 ? 'Afternoon play session recommended.' : 'Evening wind-down time.'} Stagger activities to give each pet individual attention and prevent overwhelming.`,
         aiGenerated: true
@@ -226,13 +225,13 @@ const UserDashboard = () => {
     <UserLayout>
       <div className="space-y-8">
         {/* Modern Header with Dynamic Greeting */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50 rounded-3xl p-8 border border-pink-100 shadow-lg hover:shadow-xl transition-all duration-500">
-          <div className="absolute inset-0 bg-gradient-to-r from-pink-100/20 via-purple-100/20 to-indigo-100/20"></div>
+        <div className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-50 rounded-3xl p-8 border border-blue-100 shadow-lg hover:shadow-xl transition-all duration-500">
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-100/20 via-blue-200/20 to-indigo-100/20"></div>
           <div className="relative z-10">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-4">
                 <div className="relative">
-                  <div className="bg-gradient-to-br from-pink-500 to-purple-600 p-4 rounded-2xl shadow-lg transform hover:scale-110 transition-transform duration-300">
+                  <div className="bg-gradient-to-br from-blue-500 to-[#145ae6] p-4 rounded-2xl shadow-lg transform hover:scale-110 transition-transform duration-300">
                     <FaPaw className="text-white text-3xl" />
                   </div>
                   <div className="absolute -top-1 -right-1 bg-yellow-400 rounded-full p-1 animate-bounce">
@@ -240,7 +239,7 @@ const UserDashboard = () => {
                   </div>
                 </div>
                 <div>
-                  <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent mb-2">
+                  <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-[#145ae6] to-indigo-600 bg-clip-text text-transparent mb-2">
                     {getGreeting()}
                   </h1>
                   <p className="text-gray-600 text-lg">Your furry friends are excited to see you!</p>
@@ -285,14 +284,14 @@ const UserDashboard = () => {
                 </div>
 
                 {/* Pet Toys Ad */}
-                <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-100 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group">
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group">
                   <div className="flex items-center gap-3">
-                    <div className="bg-gradient-to-br from-purple-500 to-pink-600 p-2 rounded-lg group-hover:scale-110 transition-transform duration-200">
+                    <div className="bg-gradient-to-br from-blue-500 to-[#145ae6] p-2 rounded-lg group-hover:scale-110 transition-transform duration-200">
                       <FaStar className="text-white text-lg" />
                     </div>
                     <div>
-                      <div className="text-sm font-bold text-purple-800">New Toys</div>
-                      <div className="text-xs text-purple-600">Free Shipping</div>
+                      <div className="text-sm font-bold text-blue-800">New Toys</div>
+                      <div className="text-xs text-blue-600">Free Shipping</div>
                     </div>
                   </div>
                 </div>
@@ -302,7 +301,7 @@ const UserDashboard = () => {
         </div>
 
         {/* Compact Quick Actions Overview */}
-        <div className="bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50 rounded-2xl p-4 border border-pink-100 shadow-md hover:shadow-lg transition-all duration-300">
+        <div className="bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-50 rounded-2xl p-4 border border-blue-100 shadow-md hover:shadow-lg transition-all duration-300">
           
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             <button 
@@ -317,10 +316,10 @@ const UserDashboard = () => {
             
             <button 
               onClick={() => navigate('/user/appointments/new')}
-              className="group bg-white rounded-xl p-3 text-center border border-purple-100 hover:shadow-md transition-all duration-300 hover:scale-105 hover:border-purple-200"
+              className="group bg-white rounded-xl p-3 text-center border border-blue-100 hover:shadow-md transition-all duration-300 hover:scale-105 hover:border-blue-200"
             >
-              <div className="bg-gradient-to-br from-purple-100 to-purple-200 w-10 h-10 mx-auto rounded-xl flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-200">
-                <FaCalendarCheck className="text-purple-600 text-lg" />
+              <div className="bg-gradient-to-br from-blue-100 to-blue-200 w-10 h-10 mx-auto rounded-xl flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-200">
+                <FaCalendarCheck className="text-[#145ae6] text-lg" />
               </div>
               <h3 className="font-bold text-gray-800 text-sm">Book Service</h3>
             </button>
@@ -421,13 +420,13 @@ const UserDashboard = () => {
             <UpcomingSchedule />
 
             {/* Care Reminders */}
-            <div className="bg-white rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 border border-purple-50">
+            <div className="bg-white rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 border border-blue-50">
               <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-3">
-                <div className="bg-gradient-to-br from-purple-500 to-pink-600 p-2 rounded-xl">
+                <div className="bg-gradient-to-br from-blue-500 to-[#145ae6] p-2 rounded-xl">
                   <FaBell className="text-white text-lg" />
                 </div>
                 Care Reminders
-                <div className="ml-auto bg-purple-100 text-purple-700 text-xs font-semibold px-3 py-1 rounded-full">
+                <div className="ml-auto bg-blue-100 text-blue-700 text-xs font-semibold px-3 py-1 rounded-full">
                   Upcoming
                 </div>
               </h2>
@@ -477,6 +476,12 @@ const UserDashboard = () => {
                 {getAIPetCareTips().slice(0, showAllTips ? undefined : 3).map((tip) => {
                   const IconComponent = tip.icon;
                   const colorClasses = {
+                    blue: {
+                      bg: 'from-blue-100 to-blue-200',
+                      text: 'text-blue-600',
+                      border: 'hover:border-blue-200',
+                      gradient: 'from-blue-400 to-[#145ae6]'
+                    },
                     pink: {
                       bg: 'from-pink-100 to-pink-200',
                       text: 'text-pink-600',
