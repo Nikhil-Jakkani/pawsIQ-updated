@@ -31,5 +31,5 @@ export const errorHandler = (err: ApiError, req: Request, res: Response, next: N
     console.error(err);
   }
 
-  res.status(statusCode).send(response);
+  res.status(statusCode).json(response);
 };

@@ -1,58 +1,75 @@
-import React from 'react';
-import { FaCalendarAlt, FaClock, FaMapMarkerAlt, FaBell, FaCheck, FaTimes } from 'react-icons/fa';
+import React, { useEffect, useMemo, useState } from 'react';
+import { FaCalendarAlt, FaBell } from 'react-icons/fa';
 import { PetIcon } from '../layout/PetIcons';
+import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
-const UpcomingSchedule = () => {
-  const scheduleItems = [
-    {
-      id: 1,
-      type: 'appointment',
-      title: 'Vet Checkup',
-      petName: 'Max',
-      petType: 'dog',
-      time: '10:00 AM',
-      date: 'Today',
-      location: 'Happy Paws Clinic',
-      status: 'confirmed',
-      urgent: false
-    },
-    {
-      id: 2,
-      type: 'reminder',
-      title: 'Medication Time',
-      petName: 'Luna',
-      petType: 'cat',
-      time: '2:00 PM',
-      date: 'Today',
-      medication: 'Antibiotics',
-      status: 'pending',
-      urgent: true
-    },
-    {
-      id: 3,
-      type: 'appointment',
-      title: 'Grooming Session',
-      petName: 'Max',
-      petType: 'dog',
-      time: '3:30 PM',
-      date: 'Tomorrow',
-      location: 'Fluffy Tails Spa',
-      status: 'confirmed',
-      urgent: false
-    },
-    {
-      id: 4,
-      type: 'reminder',
-      title: 'Feeding Time',
-      petName: 'Luna',
-      petType: 'cat',
-      time: '6:00 PM',
-      date: 'Today',
-      food: 'Special Diet',
-      status: 'pending',
-      urgent: false
-    }
-  ];
+const UpcomingSchedule = ({ pets = [] }) => {
+  const { currentUser } = useAuth();
+  const accessToken = currentUser?.tokens?.access?.token;
+  const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
+  const navigate = useNavigate();
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [items, setItems] = useState([]);
+
+  const isSameDay = (a, b) =>
+    a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  const isWithinHours = (dt, hours) => {
+    const now = new Date();
+    const diffHours = (dt.getTime() - now.getTime()) / (1000 * 60 * 60);
+    return diffHours >= 0 && diffHours <= hours;
+  };
+
+  useEffect(() => {
+    if (!accessToken) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoading(true);
+        setError('');
+        const res = await fetch(`${API_URL}/appointments?page=1&limit=50`, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data?.message || 'Failed to load appointments');
+        const now = new Date();
+        const mapped = (data?.items || []).map((a) => {
+          const dt = new Date(a.appointment_date);
+          const petIdNum = Number(a.pet_id);
+          const pet = pets.find((p) => Number(p.id) === petIdNum);
+          return {
+            id: a.appointment_id ?? `${petIdNum}-${dt.toISOString()}`,
+            type: 'appointment',
+            title: a.appointment_type || 'Appointment',
+            petName: pet?.name || 'Pet',
+            petType: (pet?.type || 'dog').toLowerCase(),
+            time: isNaN(dt.getTime()) ? '' : dt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
+            date: isSameDay(dt, now) ? 'Today' : 'Other',
+            location: a.appointment_comments || '',
+            status:
+              (a.appointment_status || 'Scheduled').toLowerCase() === 'scheduled'
+                ? 'confirmed'
+                : (a.appointment_status || 'Scheduled').toLowerCase(),
+            urgent: isSameDay(dt, now) && isWithinHours(dt, 2),
+            isToday: isSameDay(dt, now),
+          };
+        });
+        if (!cancelled) setItems(mapped);
+      } catch (e) {
+        if (!cancelled) {
+          setError(e.message || 'Failed to load appointments');
+          setItems([]);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [accessToken, API_URL, pets]);
 
   const getItemIcon = (type) => {
     return type === 'appointment' ? FaCalendarAlt : FaBell;
@@ -65,7 +82,7 @@ const UpcomingSchedule = () => {
   };
 
   // Filter only today's items
-  const todayItems = scheduleItems.filter(item => item.date === 'Today');
+  const todayItems = useMemo(() => items.filter((item) => item.isToday), [items]);
 
   return (
     <div className="bg-white rounded-xl shadow-sm p-4 border border-blue-100">
@@ -78,6 +95,16 @@ const UpcomingSchedule = () => {
           {todayItems.length} items
         </span>
       </div>
+
+      {error && (
+        <div className="mb-3 text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg p-2">
+          {error}
+        </div>
+      )}
+
+      {loading && (
+        <div className="text-xs text-gray-500 mb-2">Loading appointments…</div>
+      )}
 
       <div className="space-y-2">
         {todayItems.map((item) => {
@@ -129,8 +156,11 @@ const UpcomingSchedule = () => {
         })}
       </div>
 
+      {!loading && todayItems.length === 0 && !error && (
+        <div className="text-xs text-gray-500 text-center mt-2">No items for today.</div>
+      )}
       <div className="mt-4 text-center">
-        <button className="text-xs font-medium text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors">
+        <button onClick={() => navigate('/user/appointments')} className="text-xs font-medium text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors">
           View All
         </button>
       </div>

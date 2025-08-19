@@ -1,122 +1,93 @@
 import React from 'react';
 import { FaCut, FaSyringe, FaStethoscope, FaBone, FaBath, FaCalendarCheck } from 'react-icons/fa';
 
+import { useEffect, useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
+
 const CareReminders = ({ pets }) => {
-  const generateCareReminders = () => {
-    const reminders = [];
-    const today = new Date();
-    
-    pets.forEach(pet => {
-      const petAge = parseInt(pet.age);
-      const lastCheckup = new Date(pet.lastCheckup);
-      const daysSinceCheckup = Math.floor((today - lastCheckup) / (1000 * 60 * 60 * 24));
-      
-      // Grooming reminders
-      const groomingFreq = pet.type === 'dog' ? 14 : 7; // days
-      reminders.push({
-        id: `grooming-${pet.id}`,
-        title: 'Grooming',
-        value: `${Math.ceil(groomingFreq - (daysSinceCheckup % groomingFreq))}`,
-        subtitle: 'days left',
-        petName: pet.name,
-        icon: FaCut,
-        color: 'from-pink-500 to-pink-600',
-        bgColor: 'bg-pink-50',
-        textColor: 'text-pink-600',
-        priority: daysSinceCheckup % groomingFreq > groomingFreq - 3 ? 'high' : 'normal'
-      });
+  const { currentUser } = useAuth();
+  const accessToken = currentUser?.tokens?.access?.token;
+  const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
 
-      // Vaccination reminders (yearly)
-      const vaccineDate = new Date(lastCheckup);
-      vaccineDate.setFullYear(vaccineDate.getFullYear() + 1);
-      const daysToVaccine = Math.ceil((vaccineDate - today) / (1000 * 60 * 60 * 24));
-      
-      if (daysToVaccine <= 90 && daysToVaccine > 0) {
-        reminders.push({
-          id: `vaccine-${pet.id}`,
-          title: 'Vaccination',
-          value: `${daysToVaccine}`,
-          subtitle: 'days left',
-          petName: pet.name,
-          icon: FaSyringe,
-          color: 'from-blue-500 to-blue-600',
-          bgColor: 'bg-blue-50',
-          textColor: 'text-blue-600',
-          priority: daysToVaccine <= 30 ? 'high' : 'normal'
-        });
-      }
+  const [reminders, setReminders] = useState([]);
 
-      // Health checkup reminders
-      const nextCheckup = petAge > 7 ? 180 : 365; // Senior pets need more frequent checkups
-      const daysToCheckup = nextCheckup - daysSinceCheckup;
-      
-      if (daysToCheckup <= 60 && daysToCheckup > 0) {
-        reminders.push({
-          id: `checkup-${pet.id}`,
-          title: 'Health Checkup',
-          value: `${daysToCheckup}`,
-          subtitle: 'days left',
-          petName: pet.name,
-          icon: FaStethoscope,
-          color: 'from-green-500 to-green-600',
-          bgColor: 'bg-green-50',
-          textColor: 'text-green-600',
-          priority: daysToCheckup <= 14 ? 'high' : 'normal'
-        });
-      }
-
-      // Dental care reminders (every 6 months for dogs, yearly for cats)
-      const dentalFreq = pet.type === 'dog' ? 180 : 365;
-      const daysToDental = dentalFreq - (daysSinceCheckup % dentalFreq);
-      
-      if (daysToDental <= 30) {
-        reminders.push({
-          id: `dental-${pet.id}`,
-          title: 'Dental Care',
-          value: `${daysToDental}`,
-          subtitle: 'days left',
-          petName: pet.name,
-          icon: FaBone,
-          color: 'from-yellow-500 to-yellow-600',
-          bgColor: 'bg-yellow-50',
-          textColor: 'text-yellow-600',
-          priority: daysToDental <= 7 ? 'high' : 'normal'
-        });
-      }
-
-      // Flea/Tick prevention (monthly)
-      const fleaDate = new Date(today);
-      fleaDate.setDate(1); // First of current month
-      fleaDate.setMonth(fleaDate.getMonth() + 1); // Next month
-      const daysToFlea = Math.ceil((fleaDate - today) / (1000 * 60 * 60 * 24));
-      
-      if (daysToFlea <= 7) {
-        reminders.push({
-          id: `flea-${pet.id}`,
-          title: 'Flea Prevention',
-          value: `${daysToFlea}`,
-          subtitle: 'days left',
-          petName: pet.name,
-          icon: FaBath,
-          color: 'from-blue-500 to-[#145ae6]',
-          bgColor: 'bg-blue-50',
-          textColor: 'text-blue-600',
-          priority: daysToFlea <= 2 ? 'high' : 'normal'
-        });
-      }
-    });
-
-    // Sort by priority and limit to 6 items
-    return reminders
-      .sort((a, b) => {
-        if (a.priority === 'high' && b.priority !== 'high') return -1;
-        if (b.priority === 'high' && a.priority !== 'high') return 1;
-        return parseInt(a.value) - parseInt(b.value);
-      })
-      .slice(0, 6);
+  const getTypeMeta = (type) => {
+    const t = (type || '').toLowerCase();
+    switch (t) {
+      case 'grooming':
+        return { icon: FaCut, color: 'from-pink-500 to-pink-600', bgColor: 'bg-pink-50', textColor: 'text-pink-600' };
+      case 'vaccination':
+        return { icon: FaSyringe, color: 'from-blue-500 to-blue-600', bgColor: 'bg-blue-50', textColor: 'text-blue-600' };
+      case 'checkup':
+      case 'health_checkup':
+      case 'health':
+        return { icon: FaStethoscope, color: 'from-green-500 to-green-600', bgColor: 'bg-green-50', textColor: 'text-green-600' };
+      case 'dental':
+      case 'dental_care':
+        return { icon: FaBone, color: 'from-yellow-500 to-yellow-600', bgColor: 'bg-yellow-50', textColor: 'text-yellow-600' };
+      case 'flea':
+      case 'flea_prevention':
+        return { icon: FaBath, color: 'from-blue-500 to-[#145ae6]', bgColor: 'bg-blue-50', textColor: 'text-blue-600' };
+      case 'appointment':
+        return { icon: FaCalendarCheck, color: 'from-purple-500 to-purple-600', bgColor: 'bg-purple-50', textColor: 'text-purple-600' };
+      default:
+        return { icon: FaCalendarCheck, color: 'from-blue-500 to-[#145ae6]', bgColor: 'bg-blue-50', textColor: 'text-blue-600' };
+    }
   };
 
-  const reminders = generateCareReminders();
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        if (!accessToken) {
+          if (!cancelled) setReminders([]);
+          return;
+        }
+        const res = await fetch(`${API_URL}/reminders`, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data?.message || 'Failed to load reminders');
+
+        const list = Array.isArray(data) ? data : (data?.items || []);
+        const mapped = list
+          .map((r) => {
+            const petIdNum = Number(r.pet_id);
+            const pet = (pets || []).find((p) => Number(p.id) === petIdNum);
+            const dueInDays = typeof r.due_in_days === 'number'
+              ? r.due_in_days
+              : (r.due_date ? Math.ceil((new Date(r.due_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null);
+            const type = r.reminder_type || r.source || 'care';
+            const meta = getTypeMeta(type);
+            return {
+              id: r.id ?? r.reminder_id ?? `${petIdNum}-${r.title}-${r.due_date || ''}`,
+              title: r.title || 'Care Reminder',
+              value: dueInDays != null ? String(dueInDays) : '',
+              subtitle: dueInDays != null ? 'days left' : (r.due_date ? new Date(r.due_date).toLocaleDateString() : ''),
+              petName: pet?.name || 'Pet',
+              icon: meta.icon,
+              color: meta.color,
+              bgColor: meta.bgColor,
+              textColor: meta.textColor,
+              priority: ((r.priority || 'normal').toLowerCase() === 'high' || (typeof dueInDays === 'number' && dueInDays <= 3)) ? 'high' : 'normal',
+            };
+          })
+          .sort((a, b) => {
+            if (a.priority === 'high' && b.priority !== 'high') return -1;
+            if (b.priority === 'high' && a.priority !== 'high') return 1;
+            const av = parseInt(a.value || '9999', 10);
+            const bv = parseInt(b.value || '9999', 10);
+            return av - bv;
+          })
+          .slice(0, 6);
+
+        if (!cancelled) setReminders(mapped);
+      } catch (e) {
+        if (!cancelled) setReminders([]);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [accessToken, API_URL, pets]);
 
   if (reminders.length === 0) {
     return (

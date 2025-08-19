@@ -9,19 +9,19 @@ datasource db {
 
 model PIQ_Health_Records {
   health_record_id BigInt    @id @default(autoincrement())
-  pet_id          BigInt
-  record_type     String    @db.VarChar(50)
-  title           String    @db.VarChar(255)
-  description     String?   @db.Text
-  record_date     DateTime  @db.Date
-  next_due_date   DateTime? @db.Date
-  file_path       String    @db.VarChar(512)
-  file_name       String    @db.VarChar(255)
-  file_type       String    @db.VarChar(100)
-  file_size       Int
-  created_at      DateTime  @default(now()) @db.Timestamptz(6)
+  pet_id           BigInt
+  record_type      String    @db.VarChar(50)
+  title            String    @db.VarChar(255)
+  description      String?   @db.Text
+  record_date      DateTime  @db.Date
+  next_due_date    DateTime? @db.Date
+  file_path        String    @db.VarChar(512)
+  file_name        String    @db.VarChar(255)
+  file_type        String    @db.VarChar(100)
+  file_size        Int
+  created_at       DateTime  @default(now()) @db.Timestamptz(6)
   last_updated_dtm DateTime? @default(now()) @db.Timestamp(6)
-  PIQ_Pets        PIQ_Pets  @relation(fields: [pet_id], references: [pet_id], onDelete: Cascade)
+  PIQ_Pets         PIQ_Pets  @relation(fields: [pet_id], references: [pet_id], onDelete: Cascade)
 
   @@index([pet_id], name: "idx_health_records_pet_id")
   @@index([record_type], name: "idx_health_records_record_type")
@@ -29,22 +29,24 @@ model PIQ_Health_Records {
 }
 
 model PIQ_Pets {
-  pet_id           BigInt             @id @default(autoincrement())
-  user_id          BigInt?
-  pet_type         String?            @db.VarChar
-  pet_name         String?            @db.VarChar
-  pet_breed        String?            @db.VarChar
-  pet_gender       String?            @db.VarChar
-  pet_birth_dtm    DateTime?          @db.Date
-  pet_blood_grp    String?            @db.VarChar
-  pet_status       String?            @db.VarChar
-  created_at       DateTime           @default(now()) @db.Timestamptz(6)
-  last_updated_dtm DateTime?          @default(now()) @db.Timestamp(6)
-  PIQ_User         PIQ_User?          @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
-  PIQ_Pets_Photo   PIQ_Pets_Photo[]
-  PIQ_pets_profile PIQ_pets_profile[]
-  PIQ_Appointments PIQ_Appointments[]
+  pet_id             BigInt               @id @default(autoincrement())
+  user_id            BigInt?
+  pet_type           String?              @db.VarChar
+  pet_name           String?              @db.VarChar
+  pet_breed          String?              @db.VarChar
+  pet_gender         String?              @db.VarChar
+  pet_birth_dtm      DateTime?            @db.Date
+  pet_blood_grp      String?              @db.VarChar
+  pet_status         String?              @db.VarChar
+  created_at         DateTime             @default(now()) @db.Timestamptz(6)
+  last_updated_dtm   DateTime?            @default(now()) @db.Timestamp(6)
+  pet_image          String?
+  PIQ_Appointments   PIQ_Appointments[]
+  PIQ_User           PIQ_User?            @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+  PIQ_Pets_Photo     PIQ_Pets_Photo[]
+  PIQ_pets_profile   PIQ_pets_profile[]
   PIQ_Health_Records PIQ_Health_Records[]
+  PIQ_Reminders      PIQ_Reminders[]
 }
 
 model PIQ_Pets_Photo {
@@ -56,7 +58,7 @@ model PIQ_Pets_Photo {
   photo_url        String?   @db.VarChar
   created_at       DateTime  @default(now()) @db.Timestamptz(6)
   last_updated_dtm DateTime? @default(now()) @db.Timestamp(6)
-  PIQ_Pets         PIQ_Pets? @relation(fields: [pet_id], references: [pet_id], onDelete: NoAction, onUpdate: NoAction)
+  PIQ_Pets         PIQ_Pets? @relation(fields: [pet_id], references: [pet_id], onDelete: Cascade, onUpdate: NoAction)
 }
 
 model PIQ_Service_Master {
@@ -96,17 +98,18 @@ model PIQ_Service_Provider {
 }
 
 model PIQ_User {
-  user_id                  BigInt     @id @default(autoincrement())
-  user_full_name           String     @db.VarChar
-  user_email_id            String     @db.VarChar
+  user_id                  BigInt          @id @default(autoincrement())
+  user_full_name           String          @db.VarChar
+  user_email_id            String          @unique @db.VarChar
   user_password            String
-  user_phone_number        String     @db.VarChar
-  user_second_phone_number String?    @db.VarChar
-  user_status              String     @default("") @db.VarChar
-  last_updated_dtm         DateTime   @default(now()) @db.Timestamp(6)
-  created_at               DateTime   @default(now()) @db.Timestamptz(6)
-  paid_user                Boolean?   @default(false)
+  user_phone_number        String          @db.VarChar
+  user_second_phone_number String?         @db.VarChar
+  user_status              String          @default("") @db.VarChar
+  last_updated_dtm         DateTime        @default(now()) @db.Timestamp(6)
+  created_at               DateTime        @default(now()) @db.Timestamptz(6)
+  paid_user                Boolean?        @default(false)
   PIQ_Pets                 PIQ_Pets[]
+  PIQ_Reminders            PIQ_Reminders[]
 }
 
 model PIQ_pets_profile {
@@ -117,10 +120,10 @@ model PIQ_pets_profile {
   pet_weight_unit    String?   @db.VarChar
   pet_height         Int?      @db.SmallInt
   pet_height_unit    String?   @db.VarChar
-  Is_pet_over_weight Boolean
+  Is_pet_over_weight Boolean?
   created_at         DateTime  @default(now()) @db.Timestamptz(6)
   last_updated_dtm   DateTime? @default(now()) @db.Timestamp(6)
-  PIQ_Pets           PIQ_Pets  @relation(fields: [pet_id], references: [pet_id], onDelete: NoAction, onUpdate: NoAction)
+  PIQ_Pets           PIQ_Pets  @relation(fields: [pet_id], references: [pet_id], onDelete: Cascade, onUpdate: NoAction)
 }
 
 model admins {
@@ -260,14 +263,33 @@ model PIQ_Vaccine_Master {
 }
 
 model PIQ_Appointments {
-  appointment_id       Int       @id @default(autoincrement())
+  appointment_id       Int      @id @default(autoincrement())
   pet_id               BigInt
-  appointment_type     String    @db.VarChar(50)
-  appointment_date     DateTime  @db.Timestamptz(6)
-  appointment_status   String    @db.VarChar(50)
-  appointment_comments String?   @db.Text
-  create_dtm           DateTime  @default(now()) @db.Timestamptz(6)
-  last_updated_dtm     DateTime? @db.Timestamp(6)
+  appointment_type     String   @db.VarChar(50)
+  appointment_date     DateTime @db.Timestamptz(6)
+  appointment_status   String   @db.VarChar(50)
+  appointment_comments String?
+  create_dtm           DateTime @default(now()) @db.Timestamptz(6)
+  last_updated_dtm     DateTime @updatedAt @db.Timestamptz(6)
+  PIQ_Pets             PIQ_Pets @relation(fields: [pet_id], references: [pet_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_pet")
 
-  PIQ_Pets             PIQ_Pets  @relation(fields: [pet_id], references: [pet_id], onDelete: Cascade, onUpdate: NoAction)
+  @@index([pet_id])
+}
+
+model PIQ_Reminders {
+  reminder_id      Int       @id @default(autoincrement())
+  user_id          BigInt
+  pet_id           BigInt
+  title            String    @db.VarChar(100)
+  reminder_type    String    @db.VarChar(50)
+  due_date         DateTime? @db.Timestamptz(6)
+  priority         String    @default("normal") @db.VarChar(10)
+  notes            String?   @db.VarChar(512)
+  created_at       DateTime  @default(now()) @db.Timestamptz(6)
+  last_updated_dtm DateTime  @updatedAt @db.Timestamptz(6)
+  PIQ_Pets         PIQ_Pets  @relation(fields: [pet_id], references: [pet_id], onDelete: Cascade, onUpdate: NoAction)
+  PIQ_User         PIQ_User  @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id])
+  @@index([pet_id])
 }

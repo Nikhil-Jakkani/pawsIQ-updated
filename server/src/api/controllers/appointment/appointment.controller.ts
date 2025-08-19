@@ -7,35 +7,35 @@ import { appointmentService } from '../../services/appointment/appointment.servi
 const create = catchAsync(async (req: any, res: Response) => {
   const userId = BigInt(req.user.user_id); // set by global auth middleware
   const appt = await appointmentService.createAppointment(userId, req.body);
-  res.status(httpStatus.CREATED).send(appt);
+  res.status(httpStatus.CREATED).json(appt);
 });
 
 const listMine = catchAsync(async (req: any, res: Response) => {
   const userId = BigInt(req.user.user_id);
   const { page, limit } = req.query;
   const data = await appointmentService.getUserAppointments(userId, { page: Number(page), limit: Number(limit) });
-  res.status(httpStatus.OK).send(data);
+  res.status(httpStatus.OK).json(data);
 });
 
 const getMine = catchAsync(async (req: any, res: Response) => {
   const userId = BigInt(req.user.user_id);
   const id = Number(req.params.id);
   const appt = await appointmentService.getUserAppointmentById(userId, id);
-  res.status(httpStatus.OK).send(appt);
+  res.status(httpStatus.OK).json(appt);
 });
 
 const updateMine = catchAsync(async (req: any, res: Response) => {
   const userId = BigInt(req.user.user_id);
   const id = Number(req.params.id);
   const appt = await appointmentService.updateUserAppointment(userId, id, req.body);
-  res.status(httpStatus.OK).send(appt);
+  res.status(httpStatus.OK).json(appt);
 });
 
 const removeMine = catchAsync(async (req: any, res: Response) => {
   const userId = BigInt(req.user.user_id);
   const id = Number(req.params.id);
   const result = await appointmentService.deleteUserAppointment(userId, id);
-  res.status(httpStatus.OK).send(result);
+  res.status(httpStatus.OK).json(result);
 });
 
 export const appointmentController = {

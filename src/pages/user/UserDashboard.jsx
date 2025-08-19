@@ -454,7 +454,7 @@ const UserDashboard = () => {
           {/* Middle Column - Schedule and Reminders */}
           <div className="lg:col-span-1 space-y-4">
             {/* Today's Schedule */}
-            <UpcomingSchedule />
+            <UpcomingSchedule pets={pets} />
 
             {/* Care Reminders */}
             <div className="bg-white rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 border border-blue-50">
