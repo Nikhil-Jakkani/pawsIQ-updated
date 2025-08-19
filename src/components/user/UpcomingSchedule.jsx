@@ -68,13 +68,13 @@ const UpcomingSchedule = () => {
   const todayItems = scheduleItems.filter(item => item.date === 'Today');
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-4 border border-pink-100">
+    <div className="bg-white rounded-xl shadow-sm p-4 border border-blue-100">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-          <FaCalendarAlt className="text-pink-600" />
+          <FaCalendarAlt className="text-[#145ae6]" />
           Today's Schedule
         </h2>
-        <span className="text-xs bg-pink-100 text-pink-800 px-2 py-1 rounded-full font-medium">
+        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">
           {todayItems.length} items
         </span>
       </div>
@@ -91,11 +91,11 @@ const UpcomingSchedule = () => {
               <div className="flex items-center gap-3">
                 <div className={`rounded-full p-1.5 ${
                   item.urgent ? 'bg-red-100' : 
-                  item.petType === 'cat' ? 'bg-purple-100' : 'bg-pink-100'
+                  item.petType === 'cat' ? 'bg-blue-100' : 'bg-blue-100'
                 }`}>
                   <IconComponent className={`text-xs ${
                     item.urgent ? 'text-red-600' :
-                    item.petType === 'cat' ? 'text-purple-600' : 'text-pink-600'
+                    'text-[#145ae6]'
                   }`} />
                 </div>
 
@@ -113,9 +113,7 @@ const UpcomingSchedule = () => {
                   </div>
 
                   <div className="flex items-center gap-2 mt-1">
-                    <PetIcon type={item.petType} className={`text-xs ${
-                      item.petType === 'cat' ? 'text-purple-600' : 'text-pink-600'
-                    }`} />
+                    <PetIcon type={item.petType} className={`text-xs text-[#145ae6]`} />
                     <span className="text-xs text-gray-600">{item.petName}</span>
                     {item.location && (
                       <>
@@ -132,7 +130,7 @@ const UpcomingSchedule = () => {
       </div>
 
       <div className="mt-4 text-center">
-        <button className="text-xs font-medium text-pink-600 hover:text-pink-700 bg-pink-50 hover:bg-pink-100 px-3 py-1.5 rounded-lg transition-colors">
+        <button className="text-xs font-medium text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors">
           View All
         </button>
       </div>

@@ -89,8 +89,8 @@ const UserPayments = () => {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
-              <div className="bg-pink-100 p-2 rounded-lg">
-                <FaCreditCard className="text-pink-600 text-2xl" />
+              <div className="bg-blue-100 p-2 rounded-lg">
+                <FaCreditCard className="text-[#145ae6] text-2xl" />
               </div>
               Payment Management
             </h1>

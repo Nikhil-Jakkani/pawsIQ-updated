@@ -277,55 +277,7 @@ const Home = () => {
   
   return (
     <>
-      {/* Coming Soon Button */}
-      <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50">
-        <div 
-          className="group relative bg-gradient-to-r from-indigo-600 to-indigo-700 rounded-full px-6 py-3 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 cursor-pointer animate-pulse hover:animate-none"
-          onClick={() => alert('🐾 PawsIQ is coming soon! Get ready for the ultimate pet care experience! 🐾')}
-          onMouseEnter={() => setIsHovering(true)}
-          onMouseLeave={() => setIsHovering(false)}
-        >
-          {/* Animated paw prints on hover */}
-          <div className={`absolute inset-0 overflow-hidden rounded-full transition-opacity duration-300 ${isHovering ? 'opacity-100' : 'opacity-0'}`}>
-            <div className="absolute top-1 left-2 text-white text-opacity-30 text-xs animate-bounce">
-              <FaPaw />
-            </div>
-            <div className="absolute bottom-1 right-2 text-white text-opacity-30 text-xs animate-bounce" style={{animationDelay: '0.5s'}}>
-              <FaPaw />
-            </div>
-          </div>
-          
-          {/* Main content */}
-          <div className="flex items-center space-x-3 relative z-30">
-            <div className="text-white text-lg animate-bounce">
-              <FaDog />
-            </div>
-            <span className="text-white font-bold text-base whitespace-nowrap">
-              🐾 Coming Soon
-            </span>
-            <div className="text-white text-lg animate-bounce" style={{animationDelay: '0.3s'}}>
-              <FaCat />
-            </div>
-          </div>
-         
-          {/* Hover tooltip */}
-          <div className={`absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 transition-all duration-300 ${
-            isHovering ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
-          }`}>
-            <div className="bg-gray-800 text-white text-xs rounded-lg px-3 py-2 shadow-lg whitespace-nowrap">
-              Click for more info! 🐾
-              <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-l-transparent border-r-4 border-r-transparent border-t-4 border-t-gray-800"></div>
-            </div>
-          </div>
-          
-          {/* Floating heart on hover */}
-          <div className={`absolute -top-2 -right-2 text-pink-300 text-xs transition-all duration-300 ${
-            isHovering ? 'opacity-100 animate-ping' : 'opacity-0'
-          }`}>
-            <FaRegHeart />
-          </div>
-        </div>
-      </div>
+      
 
       <div className="bg-white relative overflow-y-auto scrollbar-pet h-full w-full">
       
@@ -421,31 +373,13 @@ const Home = () => {
             
             <div className="hidden md:flex items-center justify-end md:flex-1 lg:w-0 space-x-4">
               <Link 
-                to="/user/login" 
-                className="whitespace-nowrap text-base font-medium text-gray-500 hover:text-gray-900 transition-colors duration-300 flex items-center gap-2"
-                onMouseEnter={() => setIsHovering(true)}
-                onMouseLeave={() => setIsHovering(false)}
-              >
-                <FaPaw className="text-pink-500" />
-                Pet Owner Login
-              </Link>
-              <Link 
-                to="/provider/login" 
-                className="whitespace-nowrap text-base font-medium text-gray-500 hover:text-gray-900 transition-colors duration-300 flex items-center gap-2"
-                onMouseEnter={() => setIsHovering(true)}
-                onMouseLeave={() => setIsHovering(false)}
-              >
-                <FaUserMd className="text-blue-500" />
-                Provider Login
-              </Link>
-              <Link 
                 to="/login" 
                 className="whitespace-nowrap text-base font-medium text-gray-500 hover:text-gray-900 transition-colors duration-300 flex items-center gap-2"
                 onMouseEnter={() => setIsHovering(true)}
                 onMouseLeave={() => setIsHovering(false)}
               >
-                <FaShieldAlt className="text-green-500" />
-                Admin Login
+                <FaPaw className="text-indigo-500" />
+                Login
               </Link>
             </div>
           </div>
@@ -598,57 +532,18 @@ const Home = () => {
                 </div>
                 
                 {/* Action buttons */}
-                <div className="mt-6 flex flex-col sm:flex-row justify-center items-center space-y-3 sm:space-y-0 sm:space-x-4 animate-fadeInUp animation-delay-1000">
+                <div className="mt-6 flex justify-center items-center animate-fadeInUp animation-delay-1000">
                   <Link
-                    to="/user/login"
-                    className="inline-flex items-center px-6 py-3 border border-transparent text-sm font-medium rounded-md text-white bg-pink-600 hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-all duration-300 transform hover:scale-105 shadow-lg"
+                    to="/login"
+                    className="inline-flex items-center px-6 py-3 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300 transform hover:scale-105 shadow-lg"
                     onMouseEnter={() => setIsHovering(true)}
                     onMouseLeave={() => setIsHovering(false)}
                   >
                     <FaPaw className="mr-2" />
-                    Pet Owner Dashboard
-                  </Link>
-                  <Link
-                    to="/provider/login"
-                    className="inline-flex items-center px-6 py-3 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-300 transform hover:scale-105 shadow-lg"
-                    onMouseEnter={() => setIsHovering(true)}
-                    onMouseLeave={() => setIsHovering(false)}
-                  >
-                    <FaUserMd className="mr-2" />
-                    Provider Portal
-                  </Link>
-                  <Link
-                    to="/login"
-                    className="inline-flex items-center px-6 py-3 border border-transparent text-sm font-medium rounded-md text-indigo-700 bg-white hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300 transform hover:scale-105 shadow-lg"
-                    onMouseEnter={() => setIsHovering(true)}
-                    onMouseLeave={() => setIsHovering(false)}
-                  >
-                    <FaShieldAlt className="mr-2" />
-                    Admin Access
+                    Login to PawsIQ
                   </Link>
                 </div>
                 
-                {/* Quick Demo Access */}
-                <div className="mt-4 text-center animate-fadeInUp animation-delay-1200">
-                  <p className="text-indigo-200 text-sm mb-2">🚀 Try the demo with these credentials:</p>
-                  <div className="flex flex-wrap justify-center gap-4 text-xs">
-                    <div className="bg-white bg-opacity-20 rounded-lg px-3 py-2">
-                      <span className="text-pink-200 font-semibold">Pet Owner:</span>
-                      <br />
-                      <span className="text-white">user@pawsiq.com / user123</span>
-                    </div>
-                    <div className="bg-white bg-opacity-20 rounded-lg px-3 py-2">
-                      <span className="text-blue-200 font-semibold">Provider:</span>
-                      <br />
-                      <span className="text-white">vet@pawsiq.com / provider123</span>
-                    </div>
-                    <div className="bg-white bg-opacity-20 rounded-lg px-3 py-2">
-                      <span className="text-green-200 font-semibold">Admin:</span>
-                      <br />
-                      <span className="text-white">admin@pawsiq.com / admin123</span>
-                    </div>
-                  </div>
-                </div>
                 
                 {/* Contact info */}
                 <div className="mt-4 text-center text-indigo-200 text-sm animate-fadeInUp animation-delay-1100">
@@ -826,7 +721,7 @@ const Home = () => {
                   <div className="absolute inset-0 bg-white p-6 flex flex-col items-center justify-center rounded-2xl [transform:rotateY(180deg)] [backface-visibility:hidden]">
                     <FaDog className="text-5xl text-indigo-600 animate-float" />
                     <p className="mt-4 text-gray-600 text-center">Book checkups, grooming and training for your dog with trusted pros.</p>
-                    <Link to="/user/login" className="mt-5 inline-flex items-center px-4 py-2 rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 transition-colors">Explore</Link>
+                    <Link to="/login" className="mt-5 inline-flex items-center px-4 py-2 rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 transition-colors">Explore</Link>
                   </div>
                 </div>
               </div>
@@ -849,7 +744,7 @@ const Home = () => {
                   <div className="absolute inset-0 bg-white p-6 flex flex-col items-center justify-center rounded-2xl [transform:rotateY(180deg)] [backface-visibility:hidden]">
                     <FaCat className="text-5xl text-indigo-600 animate-float" />
                     <p className="mt-4 text-gray-600 text-center">Find calm, cat-friendly services that your feline will love.</p>
-                    <Link to="/user/login" className="mt-5 inline-flex items-center px-4 py-2 rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 transition-colors">Explore</Link>
+                    <Link to="/login" className="mt-5 inline-flex items-center px-4 py-2 rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 transition-colors">Explore</Link>
                   </div>
                 </div>
               </div>
@@ -872,7 +767,7 @@ const Home = () => {
                   <div className="absolute inset-0 bg-white p-6 flex flex-col items-center justify-center rounded-2xl [transform:rotateY(180deg)] [backface-visibility:hidden]">
                     <FaKiwiBird className="text-5xl text-indigo-600 animate-float" />
                     <p className="mt-4 text-gray-600 text-center">Access experienced avian vets and tailored care services.</p>
-                    <Link to="/user/login" className="mt-5 inline-flex items-center px-4 py-2 rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 transition-colors">Explore</Link>
+                    <Link to="/login" className="mt-5 inline-flex items-center px-4 py-2 rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 transition-colors">Explore</Link>
                   </div>
                 </div>
               </div>

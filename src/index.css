@@ -104,6 +104,11 @@
     background-size: 200% 200%;
     animation: gradientX 4s ease-in-out infinite;
   }
+  
+  /* Scale in animation for popups */
+  .animate-scaleIn {
+    animation: scaleIn 0.3s ease-out forwards;
+  }
 
   /* Custom scrollbar */
   .scrollbar-pet::-webkit-scrollbar {
@@ -385,5 +390,16 @@
   100% {
     transform: translateY(0);
     opacity: 0.8;
+  }
+}
+
+@keyframes scaleIn {
+  0% {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
   }
 }

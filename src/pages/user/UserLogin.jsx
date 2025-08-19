@@ -50,11 +50,11 @@ const UserLogin = () => {
   };
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center p-4">
+    <div className="min-h-screen w-full bg-gradient-to-br from-blue-500 to-[#145ae6] flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl overflow-hidden max-w-md w-full">
         <div className="p-8">
           <div className="flex justify-center mb-6">
-            <div className="bg-pink-100 p-3 rounded-full">
+            <div className="bg-blue-100 p-3 rounded-full">
               <img src={logoImage} alt="PawsIQ Logo" className="w-12 h-12" />
             </div>
           </div>
@@ -82,7 +82,7 @@ const UserLogin = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                  className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Enter your email"
                   required
                 />
@@ -94,7 +94,7 @@ const UserLogin = () => {
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                   Password
                 </label>
-                <a href="#" className="text-xs text-pink-600 hover:text-pink-700">
+                <a href="#" className="text-xs text-blue-600 hover:text-blue-700">
                   Forgot Password?
                 </a>
               </div>
@@ -107,7 +107,7 @@ const UserLogin = () => {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                  className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Enter your password"
                   required
                 />
@@ -117,7 +117,7 @@ const UserLogin = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className={`w-full py-3 px-4 bg-gradient-to-r from-pink-500 to-pink-600 text-white font-medium rounded-xl shadow-sm hover:from-pink-600 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 flex items-center justify-center gap-2 ${
+              className={`w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-[#145ae6] text-white font-medium rounded-xl shadow-sm hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center justify-center gap-2 ${
                 isLoading ? 'opacity-70 cursor-not-allowed' : ''
               }`}
             >
@@ -178,7 +178,7 @@ const UserLogin = () => {
           <div className="flex flex-col sm:flex-row gap-2">
             <a 
               href="#" 
-              className="text-sm font-medium text-pink-600 hover:text-pink-700 flex items-center gap-1"
+              className="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1"
             >
               <FaPaw size={12} />
               Create a Pet Owner Account

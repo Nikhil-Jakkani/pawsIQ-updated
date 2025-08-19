@@ -194,7 +194,7 @@ const UserSidebar = ({ isOpen, toggleSidebar }) => {
       <div className="lg:hidden fixed top-4 left-4 z-30">
         <button 
           onClick={toggleSidebar}
-          className="p-2 rounded-full bg-pink-600 text-white shadow-lg"
+          className="p-2 rounded-full bg-[#145ae6] text-white shadow-lg"
         >
           {isOpen ? <FaTimes /> : <FaBars />}
         </button>
@@ -210,13 +210,13 @@ const UserSidebar = ({ isOpen, toggleSidebar }) => {
       
       {/* Sidebar */}
       <div 
-        className={`fixed top-0 left-0 h-full bg-gradient-to-b from-pink-600 to-purple-600 text-white z-20 transition-transform duration-300 ease-in-out shadow-xl
+        className={`fixed top-0 left-0 h-full bg-gradient-to-b from-blue-600 to-[#145ae6] text-white z-20 transition-transform duration-300 ease-in-out shadow-xl
           ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
           ${minimized ? 'w-20 lg:w-20' : 'w-72'} max-w-full`}
       >
         <div className="flex flex-col h-full">
           {/* Logo and Title */}
-          <div className={`p-4 border-b border-pink-500 flex items-center ${minimized ? 'justify-center' : 'gap-3'}`}>
+          <div className={`p-4 border-b border-blue-500 flex items-center ${minimized ? 'justify-center' : 'gap-3'}`}>
             <div className="bg-white p-2 rounded-full">
               <img src={logoImage} alt="PawsIQ Logo" className="w-8 h-8 object-contain" />
             </div>
@@ -232,13 +232,13 @@ const UserSidebar = ({ isOpen, toggleSidebar }) => {
           {/* Minimize toggle button */}
           <button 
             onClick={toggleMinimized}
-            className="absolute top-4 right-0 transform translate-x-1/2 bg-pink-500 text-white p-1 rounded-full shadow-lg hover:bg-pink-700 transition-colors"
+            className="absolute top-4 right-0 transform translate-x-1/2 bg-blue-500 text-white p-1 rounded-full shadow-lg hover:bg-blue-700 transition-colors"
           >
             {minimized ? <FaAngleRight size={16} /> : <FaAngleLeft size={16} />}
           </button>
           
           {/* Navigation Links - with scrollbar */}
-          <nav className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-pink-400 scrollbar-track-pink-700">
+          <nav className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-blue-400 scrollbar-track-blue-700">
             <ul className="space-y-1 py-2">
               {menuCategories.map((category) => (
                 <li key={category.id} className={minimized ? "px-1" : "px-2"}>
@@ -300,7 +300,7 @@ const UserSidebar = ({ isOpen, toggleSidebar }) => {
                   
                   {/* Subcategory items - only show when not minimized */}
                   {!minimized && category.items.length > 0 && expandedCategory === category.id && (
-                    <ul className="mt-1 ml-6 space-y-1 border-l border-pink-400 pl-2">
+                    <ul className="mt-1 ml-6 space-y-1 border-l border-blue-400 pl-2">
                       {category.items.map((item) => (
                         <li key={item.path}>
                           <Link
@@ -323,7 +323,7 @@ const UserSidebar = ({ isOpen, toggleSidebar }) => {
           </nav>
           
           {/* User Profile & Logout */}
-          <div className="border-t border-pink-500 text-white">
+          <div className="border-t border-blue-500 text-white">
             {minimized ? (
               <div className="p-4 flex flex-col items-center justify-center">
                 <div className="bg-white bg-opacity-20 p-2 rounded-full mb-2">
@@ -334,7 +334,7 @@ const UserSidebar = ({ isOpen, toggleSidebar }) => {
                     logout();
                     window.location.href = '/';
                   }}
-                  className="text-xs text-white hover:text-pink-200 transition-colors mt-2"
+                  className="text-xs text-white hover:text-blue-200 transition-colors mt-2"
                   title="Logout"
                 >
                   <FaSignOutAlt size={16} />
