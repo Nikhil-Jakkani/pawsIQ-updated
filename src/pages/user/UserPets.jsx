@@ -169,8 +169,8 @@ const UserPets = () => {
         <div className="flex justify-between items-center">
           <div>
             <div className="flex items-center gap-3">
-              <div className="bg-pink-100 p-2 rounded-lg">
-                <FaPaw className="text-pink-600 text-2xl" />
+              <div className="bg-blue-100 p-2 rounded-lg">
+                <FaPaw className="text-[#145ae6] text-2xl" />
               </div>
               <h1 className="text-2xl font-bold text-gray-800">My Pets</h1>
             </div>
@@ -178,7 +178,7 @@ const UserPets = () => {
           </div>
           <button
             onClick={() => navigate('/user/pets/add')}
-            className="bg-pink-600 hover:bg-pink-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+            className="bg-[#145ae6] hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
           >
             <FaPlus />
             Add New Pet
@@ -195,7 +195,7 @@ const UserPets = () => {
                 placeholder="Search pets by name or breed..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#145ae6] focus:border-[#145ae6]"
               />
             </div>
             <div className="flex items-center gap-2">
@@ -203,7 +203,7 @@ const UserPets = () => {
               <select
                 value={filterType}
                 onChange={(e) => setFilterType(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#145ae6] focus:border-[#145ae6]"
               >
                 <option value="all">All Pets</option>
                 <option value="dog">Dogs</option>
@@ -248,7 +248,7 @@ const UserPets = () => {
                     />
                     <label
                       htmlFor={`pet-upload-${pet.id}`}
-                      className="cursor-pointer bg-white/90 hover:bg-white text-pink-700 text-xs font-medium px-2 py-1 rounded shadow"
+                      className="cursor-pointer bg-white/90 hover:bg-white text-[#145ae6] text-xs font-medium px-2 py-1 rounded shadow"
                     >
                       Change Photo
                     </label>
@@ -267,7 +267,7 @@ const UserPets = () => {
                     <div className="flex gap-2">
                       <button 
                         onClick={() => navigate(`/user/pets/edit/${pet.id}`)}
-                        className="p-2 text-gray-500 hover:text-pink-600 transition-colors"
+                        className="p-2 text-gray-500 hover:text-[#145ae6] transition-colors"
                         title="Edit Pet"
                       >
                         <FaEdit />
@@ -296,7 +296,7 @@ const UserPets = () => {
                   <div className="mt-4 flex gap-2">
                     <button 
                       onClick={() => navigate(`/user/pets/health/${pet.id}`)}
-                      className="flex-1 bg-pink-100 hover:bg-pink-200 text-pink-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                      className="flex-1 bg-blue-100 hover:bg-blue-200 text-[#145ae6] px-3 py-2 rounded-lg text-sm font-medium transition-colors"
                     >
                       Health Records
                     </button>
@@ -313,8 +313,8 @@ const UserPets = () => {
           </div>
         ) : (
           <div className="bg-white rounded-lg p-8 text-center border border-gray-200">
-            <div className="bg-pink-100 w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4">
-              <FaPaw className="text-pink-600 text-2xl" />
+            <div className="bg-blue-100 w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4">
+              <FaPaw className="text-[#145ae6] text-2xl" />
             </div>
             <h3 className="text-xl font-semibold text-gray-800 mb-2">No pets found</h3>
             <p className="text-gray-600 mb-6">
@@ -324,7 +324,7 @@ const UserPets = () => {
             </p>
             <button 
               onClick={() => navigate('/user/pets/add')}
-              className="bg-pink-600 hover:bg-pink-700 text-white px-4 py-2 rounded-lg inline-flex items-center gap-2 transition-colors"
+              className="bg-[#145ae6] hover:bg-blue-700 text-white px-4 py-2 rounded-lg inline-flex items-center gap-2 transition-colors"
             >
               <FaPlus />
               Add New Pet
