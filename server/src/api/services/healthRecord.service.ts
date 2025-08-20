@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import httpStatus from 'http-status';
 import { ApiError } from '../utils/ApiError.js';
 import { db } from '../../config/db.js';
@@ -37,7 +37,7 @@ interface HealthRecord {
 }
 
 const createHealthRecord = async (petId: number, recordData: RecordData, fileData: FileData): Promise<HealthRecord> => {
-  return prisma.$transaction(async (tx) => {
+  return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     // Verify pet exists and belongs to user
     const pet = await tx.pIQ_Pets.findUnique({
       where: { pet_id: petId },
@@ -148,7 +148,7 @@ const getHealthRecordById = async (recordId: number, userId: number): Promise<He
 };
 
 const deleteHealthRecord = async (recordId: number, userId: number): Promise<{ success: boolean }> => {
-  return prisma.$transaction(async (tx) => {
+  return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     // Get record with pet info using raw query
     const [record] = await tx.$queryRaw<Array<{
       health_record_id: bigint;
