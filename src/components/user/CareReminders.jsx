@@ -1,10 +1,10 @@
 import React from 'react';
-import { FaCut, FaSyringe, FaStethoscope, FaBone, FaBath, FaCalendarCheck, FaPlus, FaTrash } from 'react-icons/fa';
+import { FaCut, FaSyringe, FaStethoscope, FaBone, FaBath, FaCalendarCheck, FaTrash } from 'react-icons/fa';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useImperativeHandle } from 'react';
 import { useAuth } from '../../context/AuthContext';
 
-const CareReminders = ({ pets }) => {
+const CareReminders = React.forwardRef(({ pets }, ref) => {
   const { currentUser } = useAuth();
   const accessToken = currentUser?.tokens?.access?.token;
   const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
@@ -14,6 +14,7 @@ const CareReminders = ({ pets }) => {
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [form, setForm] = useState({
+    reminder_id: null,
     pet_id: '',
     title: '',
     reminder_type: 'grooming',
@@ -22,7 +23,20 @@ const CareReminders = ({ pets }) => {
     notes: '',
   });
 
-  const resetForm = () => setForm({ pet_id: '', title: '', reminder_type: 'grooming', due_date: '', priority: 'normal', notes: '' });
+  const resetForm = () => setForm({
+    reminder_id: null,
+    pet_id: '',
+    title: '',
+    reminder_type: 'grooming',
+    due_date: '',
+    priority: 'normal',
+    notes: '',
+  });
+
+  // Expose an imperative handle to open the Add/Edit modal from parent
+  useImperativeHandle(ref, () => ({
+    openAddModal: () => setIsOpen(true),
+  }));
 
   const getTypeMeta = (type) => {
     const t = (type || '').toLowerCase();
@@ -49,10 +63,10 @@ const CareReminders = ({ pets }) => {
   };
 
   const handleDeleteReminder = async (id) => {
-    if (!id || !accessToken) return;
+    if (id == null || id === '' || !accessToken) return;
     if (!window.confirm('Delete this reminder?')) return;
     try {
-      setDeletingId(id);
+      setDeletingId(String(id));
       const res = await fetch(`${API_URL}/reminders/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${accessToken}` },
@@ -76,38 +90,41 @@ const CareReminders = ({ pets }) => {
 
     const list = Array.isArray(data) ? data : (data?.items || []);
     const mapped = list
+      .filter(r => (r.source === 'custom' || r.reminder_type === 'custom')) // Only custom reminders
       .map((r) => {
         const petIdNum = Number(r.pet_id);
-        const pet = (pets || []).find((p) => Number(p.id) === petIdNum);
-        const dueInDays = typeof r.due_in_days === 'number'
-          ? r.due_in_days
+        const pet = (pets || []).find((p) => Number(p.id) === petIdNum) || {};
+        const dueInDays = r?.due_in_days != null
+          ? Number(r.due_in_days)
           : (r.due_date ? Math.ceil((new Date(r.due_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null);
-        const type = r.reminder_type || r.source || 'care';
+        const type = r.reminder_type || r.source || 'custom';
         const meta = getTypeMeta(type);
-        const src = r.source || (r.reminder_type === 'custom' ? 'custom' : null);
-        let delId = null;
-        if (src === 'custom') {
-          if (typeof r.id === 'string' && r.id.startsWith('custom-')) {
-            const parts = r.id.split('-');
-            delId = parts.length > 1 ? parseInt(parts[1], 10) : null;
-          } else if (r.reminder_id != null) {
-            delId = Number(r.reminder_id);
-          }
-        }
+        const idStr = r.id || r.reminder_id || `custom-${r.pet_id || 'na'}-${r.title || 'untitled'}-${r.due_date || 'na'}`;
+        const delId = (r.source === 'custom')
+          ? String((idStr && String(idStr).startsWith('custom-')) ? String(idStr).slice(7) : (r.reminder_id || ''))
+          : '';
+        
         return {
-          id: r.id ?? r.reminder_id ?? `${petIdNum}-${r.title}-${r.due_date || ''}`,
-          title: r.title || 'Care Reminder',
+          id: idStr,
+          title: r.title || 'Reminder',
           value: dueInDays != null ? String(dueInDays) : '',
-          subtitle: dueInDays != null ? 'days left' : (r.due_date ? new Date(r.due_date).toLocaleDateString() : ''),
-          petName: pet?.name || 'Pet',
+          subtitle: r.subtitle || (dueInDays != null ? 'days left' : (r.due_date ? new Date(r.due_date).toLocaleDateString() : '')),
+          pet: {  // Store the full pet object
+            id: pet.id,
+            name: pet.name || 'Pet',
+            image: pet.image,
+            imagePath: pet.imagePath,
+          },
           icon: meta.icon,
           color: meta.color,
           bgColor: meta.bgColor,
           textColor: meta.textColor,
-          priority: ((r.priority || 'normal').toLowerCase() === 'high' || (typeof dueInDays === 'number' && dueInDays <= 3)) ? 'high' : 'normal',
-          source: src,
+          priority: (r.priority || 'normal').toLowerCase() === 'high' ? 'high' : 'normal',
+          source: 'custom',
           canDelete: !!delId,
           deleteId: delId,
+          // Include all original reminder data for editing
+          originalData: r
         };
       })
       .sort((a, b) => {
@@ -116,8 +133,7 @@ const CareReminders = ({ pets }) => {
         const av = parseInt(a.value || '9999', 10);
         const bv = parseInt(b.value || '9999', 10);
         return av - bv;
-      })
-      .slice(0, 6);
+      });
 
     setReminders(mapped);
   }, [accessToken, API_URL, pets]);
@@ -151,30 +167,36 @@ const CareReminders = ({ pets }) => {
         priority: form.priority,
         notes: form.notes || undefined,
       };
-      const res = await fetch(`${API_URL}/reminders`, {
-        method: 'POST',
+      
+      const url = form.reminder_id 
+        ? `${API_URL}/reminders/${form.reminder_id}`
+        : `${API_URL}/reminders`;
+        
+      const res = await fetch(url, {
+        method: form.reminder_id ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify(payload),
       });
+      
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data?.message || 'Failed to create reminder');
+      if (!res.ok) throw new Error(data?.message || `Failed to ${form.reminder_id ? 'update' : 'create'} reminder`);
+      
       setIsOpen(false);
       resetForm();
       await loadReminders();
-    } catch (_err) {
-      // Optionally show toast
+    } catch (err) {
+      console.error('Error saving reminder:', err);
+      // Optionally show toast with err.message
     } finally {
       setSaving(false);
     }
   };
 
-  // Note: We always render the Upcoming Care header so the '+' button is visible even with no reminders
-
   return (
-    <div className="space-y-4">
+    <div className="relative space-y-4">
       {/* Priority Reminders */}
       {reminders.filter(r => r.priority === 'high').length > 0 && (
         <div className="bg-gradient-to-r from-red-50 to-pink-50 rounded-xl p-4 border border-red-200">
@@ -188,48 +210,77 @@ const CareReminders = ({ pets }) => {
               return (
                 <div 
                   key={reminder.id}
-                  className="bg-white/90 backdrop-blur-sm rounded-lg p-4 border border-red-100 hover:shadow-md transition-all duration-200 group"
+                  className="bg-white/90 backdrop-blur-sm rounded-xl p-4 border border-red-100 hover:shadow-md transition-all duration-200 group"
                 >
-                  <div className="flex items-start gap-3">
-                    <div className={`${reminder.bgColor} rounded-lg p-2.5 group-hover:scale-105 transition-transform duration-200 flex-shrink-0`}>
-                      <IconComponent className={`text-base ${reminder.textColor}`} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-baseline gap-2">
-                          <span className={`text-lg font-bold bg-gradient-to-r ${reminder.color} bg-clip-text text-transparent`}>
-                            {reminder.value}
+                  <div className="flex items-start gap-4">
+                    {/* Pet Photo */}
+                    <div className="w-16 h-16 rounded-xl bg-gray-100 overflow-hidden flex-shrink-0">
+                      {reminder.pet?.image ? (
+                        <img 
+                          src={reminder.pet.image} 
+                          alt={reminder.pet.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextElementSibling.style.display = 'flex';
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300">
+                          <span className="text-2xl text-gray-500">
+                            {reminder.pet?.name?.charAt(0) || 'P'}
                           </span>
-                          <span className="text-xs text-gray-500">{reminder.subtitle}</span>
                         </div>
+                      )}
+                    </div>
+                    
+                    {/* Reminder Details */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h4 className="font-semibold text-gray-900">{reminder.title}</h4>
+                          <p className="text-sm text-gray-600">
+                            <span className="font-medium">{reminder.value}</span> {reminder.subtitle}
+                          </p>
+                        </div>
+                        {reminder.canDelete && (
+                          <button
+                            onClick={() => handleDeleteReminder(reminder.deleteId)}
+                            disabled={deletingId === reminder.deleteId}
+                            className="text-gray-400 hover:text-red-500 transition-colors p-1 -mr-1.5"
+                            title="Delete reminder"
+                          >
+                            <FaTrash className="text-sm" />
+                          </button>
+                        )}
+                      </div>
+                      
+                      {/* Action Buttons */}
+                      <div className="mt-3 flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          {reminder.canDelete && (
-                            <button
-                              onClick={() => handleDeleteReminder(reminder.deleteId)}
-                              disabled={deletingId === reminder.deleteId}
-                              className="p-1.5 rounded-md text-red-600 hover:bg-red-50 disabled:opacity-60"
-                              title="Delete reminder"
-                            >
-                              <FaTrash className="text-xs" />
-                            </button>
-                          )}
-                          <div className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-medium flex-shrink-0">
-                            Urgent
+                          <div className={`${reminder.bgColor} rounded-lg p-1.5`}>
+                            <IconComponent className={`text-sm ${reminder.textColor}`} />
                           </div>
+                          <span className="text-xs text-gray-500">{reminder.pet?.name}</span>
                         </div>
-                      </div>
-                      <div className="text-sm font-semibold text-gray-800 mb-2">
-                        {reminder.title}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 rounded-full overflow-hidden border border-gray-200 flex-shrink-0">
-                          <img 
-                            src={`https://images.unsplash.com/photo-${reminder.petName === 'Max' ? '1552053831-71594a27632d' : '1592194996308-7b43878e84a6'}?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=60`} 
-                            alt={reminder.petName}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <span className="text-xs text-gray-600 font-medium">{reminder.petName}</span>
+                        <button 
+                          onClick={() => {
+                            // Set form with existing reminder data for editing
+                            setForm({
+                              reminder_id: reminder.deleteId,
+                              pet_id: reminder.pet?.id || '',
+                              title: reminder.title,
+                              reminder_type: reminder.originalData?.reminder_type || 'custom',
+                              due_date: reminder.originalData?.due_date?.split('T')[0] || '',
+                              priority: reminder.priority,
+                              notes: reminder.originalData?.notes || ''
+                            });
+                            setIsOpen(true);
+                          }}
+                          className="text-xs font-medium text-indigo-600 hover:text-indigo-800 hover:underline"
+                        >
+                          Edit
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -247,13 +298,6 @@ const CareReminders = ({ pets }) => {
             <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
             <h3 className="text-sm font-semibold text-gray-700">Upcoming Care</h3>
           </div>
-          <button
-            onClick={() => setIsOpen(true)}
-            className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
-            title="Add reminder"
-          >
-            <FaPlus className="text-sm" />
-          </button>
         </div>
         {reminders.filter(r => r.priority !== 'high').length > 0 ? (
           <div className="space-y-3">
@@ -262,48 +306,78 @@ const CareReminders = ({ pets }) => {
               return (
                 <div 
                   key={reminder.id}
-                  className="bg-gradient-to-br from-white to-gray-50 rounded-lg p-4 border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all duration-300 group"
+                  className="bg-white/90 backdrop-blur-sm rounded-xl p-4 border border-gray-100 hover:shadow-md transition-all duration-200 group"
                 >
-                  <div className="flex items-start gap-3 mb-3">
-                    <div className={`${reminder.bgColor} rounded-lg p-2.5 group-hover:scale-105 transition-transform duration-200 shadow-sm flex-shrink-0`}>
-                      <IconComponent className={`text-base ${reminder.textColor}`} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-baseline gap-2 mb-1">
-                        <span className={`text-xl font-bold bg-gradient-to-r ${reminder.color} bg-clip-text text-transparent`}>
-                          {reminder.value}
-                        </span>
-                        <span className="text-xs text-gray-500">{reminder.subtitle}</span>
-                      </div>
-                      <div className="text-sm font-semibold text-gray-800">
-                        {reminder.title}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                    <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 rounded-full overflow-hidden border border-gray-200 flex-shrink-0">
+                  <div className="flex items-start gap-4">
+                    {/* Pet Photo */}
+                    <div className="w-16 h-16 rounded-xl bg-gray-100 overflow-hidden flex-shrink-0">
+                      {reminder.pet?.image ? (
                         <img 
-                          src={`https://images.unsplash.com/photo-${reminder.petName === 'Max' ? '1552053831-71594a27632d' : '1592194996308-7b43878e84a6'}?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=60`} 
-                          alt={reminder.petName}
+                          src={reminder.pet.image} 
+                          alt={reminder.pet.name}
                           className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextElementSibling.style.display = 'flex';
+                          }}
                         />
-                      </div>
-                      <span className="text-xs text-gray-600 font-medium">{reminder.petName}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {reminder.canDelete && (
-                        <button
-                          onClick={() => handleDeleteReminder(reminder.deleteId)}
-                          disabled={deletingId === reminder.deleteId}
-                          className="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-full font-medium transition-colors flex-shrink-0 disabled:opacity-60"
-                        >
-                          Delete
-                        </button>
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300">
+                          <span className="text-2xl text-gray-500">
+                            {reminder.pet?.name?.charAt(0) || 'P'}
+                          </span>
+                        </div>
                       )}
-                      <button className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-full font-medium transition-colors flex-shrink-0">
-                        Schedule
-                      </button>
+                    </div>
+                    
+                    {/* Reminder Details */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h4 className="font-semibold text-gray-900">{reminder.title}</h4>
+                          <p className="text-sm text-gray-600">
+                            <span className="font-medium">{reminder.value}</span> {reminder.subtitle}
+                          </p>
+                        </div>
+                        {reminder.canDelete && (
+                          <button
+                            onClick={() => handleDeleteReminder(reminder.deleteId)}
+                            disabled={deletingId === reminder.deleteId}
+                            className="text-gray-400 hover:text-red-500 transition-colors p-1 -mr-1.5"
+                            title="Delete reminder"
+                          >
+                            <FaTrash className="text-sm" />
+                          </button>
+                        )}
+                      </div>
+                      
+                      {/* Action Buttons */}
+                      <div className="mt-3 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className={`${reminder.bgColor} rounded-lg p-1.5`}>
+                            <IconComponent className={`text-sm ${reminder.textColor}`} />
+                          </div>
+                          <span className="text-xs text-gray-500">{reminder.pet?.name}</span>
+                        </div>
+                        <button 
+                          onClick={() => {
+                            // Set form with existing reminder data for editing
+                            setForm({
+                              reminder_id: reminder.deleteId,
+                              pet_id: reminder.pet?.id || '',
+                              title: reminder.title,
+                              reminder_type: reminder.originalData?.reminder_type || 'custom',
+                              due_date: reminder.originalData?.due_date?.split('T')[0] || '',
+                              priority: reminder.priority,
+                              notes: reminder.originalData?.notes || ''
+                            });
+                            setIsOpen(true);
+                          }}
+                          className="text-xs font-medium text-indigo-600 hover:text-indigo-800 hover:underline"
+                        >
+                          Edit
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -319,7 +393,9 @@ const CareReminders = ({ pets }) => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-white rounded-xl shadow-lg w-full max-w-md p-5">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-base font-semibold text-gray-800">Add Reminder</h3>
+              <h3 className="text-base font-semibold text-gray-800">
+  {form.reminder_id ? 'Edit Reminder' : 'Add Reminder'}
+</h3>
               <button onClick={() => setIsOpen(false)} className="text-gray-500 hover:text-gray-700">✕</button>
             </div>
             <form onSubmit={submitNewReminder} className="space-y-3">
@@ -377,10 +453,10 @@ const CareReminders = ({ pets }) => {
             </div>
           </form>
         </div>
-      </div>
-    )}
-  </div>
-);
-};
+        </div>
+      )}
+    </div>
+  );
+});
 
 export default CareReminders;
