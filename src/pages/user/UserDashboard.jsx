@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+
 import { useNavigate } from 'react-router-dom';
-import { FaCalendarCheck, FaShoppingCart, FaPaw, FaDog, FaCat, FaBone, FaRobot, FaStethoscope, FaHeart, FaStar, FaBell, FaChartLine, FaMagic, FaArrowRight, FaRunning, FaUtensils, FaCut, FaHeartbeat, FaBrain, FaThermometerHalf, FaClock, FaTint, FaPlay, FaMinus, FaWeight, FaBirthdayCake } from 'react-icons/fa';
+import { FaCalendarCheck, FaShoppingCart, FaPaw, FaDog, FaCat, FaBone, FaRobot, FaStethoscope, FaHeart, FaStar, FaBell, FaChartLine, FaMagic, FaArrowRight, FaRunning, FaUtensils, FaCut, FaHeartbeat, FaBrain, FaThermometerHalf, FaClock, FaTint, FaPlay, FaMinus, FaWeight, FaBirthdayCake, FaPlus } from 'react-icons/fa';
+
 import { PetIcon, PetIconButton } from '../../components/layout/PetIcons';
 import UserStatCard from '../../components/user/UserStatCard';
 // import UserAppointments from '../../components/user/UserAppointments';
@@ -23,6 +25,7 @@ import UserLayout from '../../components/layout/UserLayout';
  const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
 
 const UserDashboard = () => {
+
   const navigate = useNavigate();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showAIPopup, setShowAIPopup] = useState(false);
@@ -34,6 +37,7 @@ const UserDashboard = () => {
   const [pets, setPets] = useState([]);
   const [loadingPets, setLoadingPets] = useState(false);
   const [petsError, setPetsError] = useState('');
+  const careRemRef = useRef(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -457,17 +461,28 @@ const UserDashboard = () => {
             <UpcomingSchedule pets={pets} />
 
             {/* Care Reminders */}
-            <div className="bg-white rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 border border-blue-50">
+            <div className="bg-white rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 border border-blue-50 relative">
               <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-3">
                 <div className="bg-gradient-to-br from-blue-500 to-[#145ae6] p-2 rounded-xl">
                   <FaBell className="text-white text-lg" />
                 </div>
                 Care Reminders
-                <div className="ml-auto bg-blue-100 text-blue-700 text-xs font-semibold px-3 py-1 rounded-full">
-                  Upcoming
+                <div className="ml-auto flex items-center gap-2">
+                  
+                  <div className="bg-blue-100 text-blue-700 text-xs font-semibold px-3 py-1 rounded-full">
+                    Upcoming
+                  </div>
+                  <button
+                    onClick={() => careRemRef.current?.openAddModal?.()}
+                    className="bg-indigo-500 hover:bg-indigo-600 text-white p-1.5 rounded-lg shadow-sm transition-colors"
+                    aria-label="Add reminder"
+                    title="Add reminder"
+                  >
+                    <FaPlus className="text-xs" />
+                  </button>
                 </div>
               </h2>
-              <CareReminders pets={pets} />
+              <CareReminders ref={careRemRef} pets={pets} />
             </div>
 
           </div>
