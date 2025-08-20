@@ -90,7 +90,7 @@ const getUserAppointments = async (
   ]);
 
   return {
-    items: items.map((it) => serializeBigInt(it)),
+    items: items.map(serializeBigInt),
     page,
     limit,
     total,
