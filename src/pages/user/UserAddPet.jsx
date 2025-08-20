@@ -26,8 +26,10 @@ const UserAddPet = () => {
     microchipped: false,
     microchipNumber: '',
     neutered: false,
-    allergies: '',
-    medicalConditions: '',
+    allergies: [],
+    customAllergies: '',
+    medicalConditions: [],
+    customMedicalConditions: '',
     medications: '',
     dietaryNeeds: '',
     vetName: '',
@@ -54,6 +56,26 @@ const UserAddPet = () => {
       ...formData,
       [name]: type === 'checkbox' ? checked : value
     });
+  };
+
+  // Handle allergy checkbox changes
+  const handleAllergyChange = (allergy, isChecked) => {
+    setFormData(prev => ({
+      ...prev,
+      allergies: isChecked 
+        ? [...prev.allergies, allergy]
+        : prev.allergies.filter(item => item !== allergy)
+    }));
+  };
+
+  // Handle medical condition checkbox changes
+  const handleMedicalConditionChange = (condition, isChecked) => {
+    setFormData(prev => ({
+      ...prev,
+      medicalConditions: isChecked 
+        ? [...prev.medicalConditions, condition]
+        : prev.medicalConditions.filter(item => item !== condition)
+    }));
   };
   
   // Handle vaccine selection
@@ -153,6 +175,18 @@ const UserAddPet = () => {
     try {
       if (!accessToken) throw new Error('You must be logged in to add a pet.');
 
+      // Combine selected allergies with custom allergies
+      const allAllergies = [...formData.allergies];
+      if (formData.customAllergies.trim()) {
+        allAllergies.push(formData.customAllergies.trim());
+      }
+
+      // Combine selected medical conditions with custom conditions
+      const allMedicalConditions = [...formData.medicalConditions];
+      if (formData.customMedicalConditions.trim()) {
+        allMedicalConditions.push(formData.customMedicalConditions.trim());
+      }
+
       const payload = {
         name: formData.name.trim(),
         type: formData.type || undefined,
@@ -164,8 +198,8 @@ const UserAddPet = () => {
         microchipped: formData.microchipped,
         microchipNumber: formData.microchipNumber || undefined,
         neutered: formData.neutered,
-        allergies: formData.allergies || undefined,
-        medicalConditions: formData.medicalConditions || undefined,
+        allergies: allAllergies.length > 0 ? allAllergies.join(', ') : undefined,
+        medicalConditions: allMedicalConditions.length > 0 ? allMedicalConditions.join(', ') : undefined,
         medications: formData.medications || undefined,
         dietaryNeeds: formData.dietaryNeeds || undefined,
         vetName: formData.vetName || undefined,
@@ -211,6 +245,48 @@ const UserAddPet = () => {
     { value: 'puppy', label: 'Puppy/Kitten' },
     { value: 'adult', label: 'Adult' },
     { value: 'senior', label: 'Senior' }
+  ];
+
+  // Common allergies options
+  const commonAllergies = [
+    'Food allergies (chicken, beef, dairy, grains)',
+    'Environmental allergies (pollen, dust mites, mold)',
+    'Flea allergies',
+    'Contact allergies (shampoos, fabrics, cleaning products)',
+    'Seasonal allergies',
+    'Medication allergies (antibiotics, vaccines)',
+    'Insect bite allergies',
+    'Grass allergies',
+    'Tree pollen allergies',
+    'Wheat/grain allergies',
+    'Soy allergies',
+    'Egg allergies',
+    'Fish allergies',
+    'Preservative allergies'
+  ];
+
+  // Common medical conditions options
+  const commonMedicalConditions = [
+    'Arthritis',
+    'Hip dysplasia',
+    'Heart disease',
+    'Diabetes',
+    'Kidney disease',
+    'Liver disease',
+    'Epilepsy/Seizures',
+    'Skin conditions (dermatitis, eczema)',
+    'Eye conditions (cataracts, glaucoma)',
+    'Ear infections (chronic)',
+    'Dental disease',
+    'Obesity',
+    'Thyroid disorders',
+    'Cancer',
+    'Respiratory issues (asthma, bronchitis)',
+    'Digestive issues (IBD, pancreatitis)',
+    'Urinary tract issues',
+    'Behavioral issues (anxiety, aggression)',
+    'Mobility issues',
+    'Chronic pain'
   ];
   
   // Load vaccine data from JSON file
@@ -499,34 +575,78 @@ const UserAddPet = () => {
                   </label>
                 </div>
                 
+                {/* Allergies Section */}
                 <div className="md:col-span-2">
-                  <label htmlFor="allergies" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
                     Allergies
                   </label>
-                  <input
-                    type="text"
-                    id="allergies"
-                    name="allergies"
-                    value={formData.allergies}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
-                    placeholder="List any allergies"
-                  />
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <p className="text-sm text-gray-600 mb-3">Select any allergies that apply to your pet:</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                      {commonAllergies.map((allergy, index) => (
+                        <label key={index} className="flex items-start gap-2 text-sm">
+                          <input
+                            type="checkbox"
+                            checked={formData.allergies.includes(allergy)}
+                            onChange={(e) => handleAllergyChange(allergy, e.target.checked)}
+                            className="h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded mt-0.5 flex-shrink-0"
+                          />
+                          <span className="text-gray-700">{allergy}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <div className="mt-3 pt-3 border-t border-gray-200">
+                      <label htmlFor="customAllergies" className="block text-sm font-medium text-gray-700 mb-1">
+                        Other allergies (please specify):
+                      </label>
+                      <input
+                        type="text"
+                        id="customAllergies"
+                        name="customAllergies"
+                        value={formData.customAllergies}
+                        onChange={handleChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                        placeholder="Enter any other allergies not listed above"
+                      />
+                    </div>
+                  </div>
                 </div>
                 
+                {/* Medical Conditions Section */}
                 <div className="md:col-span-2">
-                  <label htmlFor="medicalConditions" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
                     Medical Conditions
                   </label>
-                  <textarea
-                    id="medicalConditions"
-                    name="medicalConditions"
-                    value={formData.medicalConditions}
-                    onChange={handleChange}
-                    rows="2"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
-                    placeholder="List any medical conditions"
-                  />
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <p className="text-sm text-gray-600 mb-3">Select any medical conditions that apply to your pet:</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                      {commonMedicalConditions.map((condition, index) => (
+                        <label key={index} className="flex items-start gap-2 text-sm">
+                          <input
+                            type="checkbox"
+                            checked={formData.medicalConditions.includes(condition)}
+                            onChange={(e) => handleMedicalConditionChange(condition, e.target.checked)}
+                            className="h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded mt-0.5 flex-shrink-0"
+                          />
+                          <span className="text-gray-700">{condition}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <div className="mt-3 pt-3 border-t border-gray-200">
+                      <label htmlFor="customMedicalConditions" className="block text-sm font-medium text-gray-700 mb-1">
+                        Other medical conditions (please specify):
+                      </label>
+                      <textarea
+                        id="customMedicalConditions"
+                        name="customMedicalConditions"
+                        value={formData.customMedicalConditions}
+                        onChange={handleChange}
+                        rows="2"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                        placeholder="Enter any other medical conditions not listed above"
+                      />
+                    </div>
+                  </div>
                 </div>
                 
                 <div className="md:col-span-2">
