@@ -36,7 +36,7 @@ import {
 } from 'react-icons/fa';
 
 // Cute pet-themed logo
-const logoImage = "/1.svg";
+const logoImage = "/7.png";
 
 const Home = () => {
   // State for UI interactions
@@ -88,11 +88,9 @@ const Home = () => {
   
   // State for back to top button visibility
   const [showBackToTop, setShowBackToTop] = useState(false);
-  
-  // State for scroll progress
+
   const [scrollProgress, setScrollProgress] = useState(0);
   
-  // State for scroll-triggered animations
   const [animatedSections, setAnimatedSections] = useState({
     features: false,
     testimonials: false,
