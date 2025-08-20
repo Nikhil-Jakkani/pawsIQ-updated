@@ -4,6 +4,16 @@ import { ApiError } from '../../utils/ApiError.js';
 
 const prisma = new PrismaClient();
 
+// Serialize any BigInt fields to string to prevent JSON serialization issues
+const serializeBigInt = <T>(data: T): T => {
+  return JSON.parse(
+    JSON.stringify(
+      data as any,
+      (_k, v) => (typeof v === 'bigint' ? v.toString() : v)
+    )
+  );
+};
+
 export type AppointmentStatus = 'Scheduled' | 'Cancelled' | 'Completed';
 export type AppointmentType = 'Checkup' | 'Vaccination' | 'Grooming' | 'Training' | 'Others';
 
@@ -58,7 +68,7 @@ const createAppointment = async (
     },
   });
 
-  return created;
+  return serializeBigInt(created);
 };
 
 const getUserAppointments = async (
@@ -79,13 +89,19 @@ const getUserAppointments = async (
     prisma.pIQ_Appointments.count({ where: { PIQ_Pets: { user_id: userId } } }),
   ]);
 
-  return { items, page, limit, total, pages: Math.ceil(total / limit) };
+  return {
+    items: items.map((it) => serializeBigInt(it)),
+    page,
+    limit,
+    total,
+    pages: Math.ceil(total / limit),
+  };
 };
 
 const getUserAppointmentById = async (userId: bigint, id: number) => {
   const appt = await prisma.pIQ_Appointments.findUnique({ where: { appointment_id: id }, include: { PIQ_Pets: true } });
   if (!appt || appt.PIQ_Pets.user_id !== userId) throw new ApiError(httpStatus.NOT_FOUND, 'Appointment not found');
-  return appt;
+  return serializeBigInt(appt);
 };
 
 const updateUserAppointment = async (
@@ -118,7 +134,7 @@ const updateUserAppointment = async (
   }
 
   const updated = await prisma.pIQ_Appointments.update({ where: { appointment_id: id }, data });
-  return updated;
+  return serializeBigInt(updated);
 };
 
 const deleteUserAppointment = async (userId: bigint, id: number) => {

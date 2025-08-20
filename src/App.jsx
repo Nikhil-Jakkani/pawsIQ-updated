@@ -91,7 +91,13 @@ const AdminProtectedRoute = ({ children }) => {
     return <Navigate to="/" replace />;
   }
   if (currentUser.role !== 'admin') {
-    return <Navigate to="/user/login" replace />;
+    // Redirect logged-in non-admins to their dashboards instead of login to avoid loops
+    const fallback = currentUser.role === 'user'
+      ? '/user/dashboard'
+      : currentUser.role === 'provider'
+      ? '/provider/dashboard'
+      : '/';
+    return <Navigate to={fallback} replace />;
   }
   return children;
 };
@@ -173,7 +179,20 @@ function App() {
           <Route path="/support/assignment" element={<AdminProtectedRoute><TicketAssignment /></AdminProtectedRoute>} />
 
           {/* User Routes */}
-          <Route path="/user/login" element={currentUser ? (currentUser.role === 'user' ? <Navigate to="/user/dashboard" /> : <Navigate to="/dashboard" />) : <UserLogin />} />
+          <Route
+            path="/user/login"
+            element={
+              currentUser
+                ? (
+                    currentUser.role === 'user'
+                      ? <Navigate to="/user/dashboard" />
+                      : currentUser.role === 'provider'
+                      ? <Navigate to="/provider/dashboard" />
+                      : <Navigate to="/dashboard" />
+                  )
+                : <UserLogin />
+            }
+          />
           <Route path="/user/dashboard" element={<UserProtectedRoute><UserDashboard /></UserProtectedRoute>} />
           
           {/* Pet Management Routes */}
@@ -181,6 +200,7 @@ function App() {
           <Route path="/user/pets/add" element={<UserProtectedRoute><UserAddPet /></UserProtectedRoute>} />
           <Route path="/user/pets/profiles" element={<UserProtectedRoute><UserPets /></UserProtectedRoute>} />
           <Route path="/user/pets/health" element={<UserProtectedRoute><UserPets /></UserProtectedRoute>} />
+          <Route path="/user/pets/:petId/health-records" element={<UserProtectedRoute><PetProfiles /></UserProtectedRoute>} />
           
           {/* AI Pet Care */}
           <Route path="/user/ai-pet-care" element={<UserProtectedRoute><AIPetCare /></UserProtectedRoute>} />

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaCalendarAlt, FaArrowLeft, FaPaw, FaMapMarkerAlt, FaClock, FaMoneyBillWave, FaCheck, FaChevronRight, FaCalendarCheck } from 'react-icons/fa';
+import { FaCalendarAlt, FaArrowLeft, FaPaw, FaMapMarkerAlt, FaClock, FaMoneyBillWave, FaCheck, FaChevronRight, FaCalendarCheck, FaSearch, FaFilter } from 'react-icons/fa';
 import UserLayout from '../../components/layout/UserLayout';
 import { useAuth } from '../../context/AuthContext';
 
@@ -31,9 +31,24 @@ const UserBookAppointment = () => {
 
   useEffect(() => {
     const fetchPets = async () => {
-      if (!accessToken) return;
-      setLoadingPets(true);
       setError('');
+      // Fallback to local mock pets if no access token
+      if (!accessToken) {
+        const localPets = Array.isArray(currentUser?.pets)
+          ? currentUser.pets.map((p) => ({
+              id: Number(p.id),
+              name: p.name || 'Pet',
+              type: (p.type || '').toLowerCase(),
+              breed: p.breed || '',
+              imagePath: '',
+              image: 'https://placehold.co/600x400?text=Pet',
+            }))
+          : [];
+        setPets(localPets);
+        return;
+      }
+
+      setLoadingPets(true);
       try {
         const res = await fetch(`${API_URL}/user/profile`, {
           headers: { Authorization: `Bearer ${accessToken}` },
@@ -48,12 +63,12 @@ const UserBookAppointment = () => {
           imagePath: p.pet_image || '',
           image: 'https://placehold.co/600x400?text=Pet',
         }));
-        // resolve signed image URLs (24h)
+        // resolve signed image URLs (6 days)
         const withUrls = await Promise.all(
           mapped.map(async (pet) => {
             if (!pet.imagePath) return pet;
             try {
-              const qs = new URLSearchParams({ bucket: 'pets-photos', path: pet.imagePath, expiresIn: String(60 * 60 * 24) }).toString();
+              const qs = new URLSearchParams({ bucket: 'pets-photos', path: pet.imagePath, expiresIn: String(60 * 60 * 24 * 6) }).toString();
               const urlRes = await fetch(`${API_URL}/media/signed-url?${qs}`, {
                 headers: { Authorization: `Bearer ${accessToken}` },
               });
@@ -66,6 +81,18 @@ const UserBookAppointment = () => {
         setPets(withUrls);
       } catch (e) {
         setError(e.message || 'Failed to load pets');
+        // Fallback to local mock pets if available
+        const localPets = Array.isArray(currentUser?.pets)
+          ? currentUser.pets.map((p) => ({
+              id: Number(p.id),
+              name: p.name || 'Pet',
+              type: (p.type || '').toLowerCase(),
+              breed: p.breed || '',
+              imagePath: '',
+              image: 'https://placehold.co/600x400?text=Pet',
+            }))
+          : [];
+        if (localPets.length) setPets(localPets);
       } finally {
         setLoadingPets(false);
       }
@@ -320,7 +347,6 @@ const UserBookAppointment = () => {
     if (!formData.petId) return null;
     return pets.find(pet => pet.id === parseInt(formData.petId));
   };
-  
   // Render step content
   const renderStepContent = () => {
     switch(currentStep) {
@@ -329,7 +355,20 @@ const UserBookAppointment = () => {
           <div className="space-y-6">
             <h2 className="text-xl font-semibold text-gray-800">Select Your Pet</h2>
             <p className="text-gray-600">Choose which pet needs an appointment</p>
-            
+            {error && (
+              <div className="bg-red-50 text-red-700 border border-red-200 rounded-lg p-3 text-sm">
+                {error}
+              </div>
+            )}
+            {loadingPets && (
+              <div className="bg-white rounded-lg p-4 border border-gray-200 text-sm text-gray-600">Loading pets...</div>
+            )}
+            {!loadingPets && pets.length === 0 && !error && (
+              <div className="bg-yellow-50 text-yellow-800 border border-yellow-200 rounded-lg p-3 text-sm">
+                No pets found. Please add a pet to continue.
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {pets.map(pet => (
                 <div 
@@ -351,7 +390,7 @@ const UserBookAppointment = () => {
                         // lazy refresh of signed URL
                         (async () => {
                           try {
-                            const qs = new URLSearchParams({ bucket: 'pets-photos', path: pet.imagePath, expiresIn: String(60 * 60 * 24) }).toString();
+                            const qs = new URLSearchParams({ bucket: 'pets-photos', path: pet.imagePath, expiresIn: String(60 * 60 * 24 * 6) }).toString();
                             const urlRes = await fetch(`${API_URL}/media/signed-url?${qs}`, {
                               headers: { Authorization: `Bearer ${accessToken}` },
                             });
