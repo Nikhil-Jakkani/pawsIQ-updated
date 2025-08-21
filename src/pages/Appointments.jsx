@@ -46,92 +46,92 @@ const Appointments = () => {
   const bookingsData = [
     {
       id: 'BK001',
-      customerName: 'Sarah Johnson',
+      customerName: 'Priya Sharma',
       petName: 'Buddy',
       service: 'Dog Walking',
-      provider: 'Mike Thompson',
+      provider: 'Rajesh Pet Care',
       date: '2024-01-15',
       time: '10:00 AM',
       duration: '30 min',
       status: 'Confirmed',
-      price: 25.00,
-      location: 'Central Park',
-      phone: '+1 (555) 123-4567',
+      price: 500.00,
+      location: 'Lodhi Gardens, New Delhi',
+      phone: '+91 98765 43210',
       notes: 'Buddy is very energetic and loves to play fetch'
     },
     {
       id: 'BK002',
-      customerName: 'John Smith',
+      customerName: 'Arjun Patel',
       petName: 'Whiskers',
       service: 'Pet Grooming',
-      provider: 'Pet Spa Plus',
+      provider: 'Mumbai Pet Spa',
       date: '2024-01-15',
       time: '2:00 PM',
       duration: '2 hours',
       status: 'In Progress',
-      price: 85.00,
-      location: '456 Pet Street',
-      phone: '+1 (555) 234-5678',
+      price: 1800.00,
+      location: 'Bandra West, Mumbai',
+      phone: '+91 87654 32109',
       notes: 'Full grooming service including nail trim'
     },
     {
       id: 'BK003',
-      customerName: 'Emily Davis',
+      customerName: 'Sneha Reddy',
       petName: 'Max',
       service: 'Veterinary Checkup',
-      provider: 'Dr. Anderson',
+      provider: 'Dr. Kavya Nair',
       date: '2024-01-14',
       time: '3:30 PM',
       duration: '45 min',
       status: 'No Show',
-      price: 120.00,
-      location: 'Healthy Pets Clinic',
-      phone: '+1 (555) 345-6789',
+      price: 2500.00,
+      location: 'Jubilee Hills, Hyderabad',
+      phone: '+91 76543 21098',
       notes: 'Annual checkup and vaccinations'
     },
     {
       id: 'BK004',
-      customerName: 'David Wilson',
+      customerName: 'Vikram Singh',
       petName: 'Luna',
       service: 'Pet Sitting',
-      provider: 'Maria Rodriguez',
+      provider: 'Meera Pet Services',
       date: '2024-01-13',
       time: '8:00 AM',
       duration: '8 hours',
       status: 'Completed',
-      price: 60.00,
-      location: 'Customer Home',
-      phone: '+1 (555) 456-7890',
+      price: 1200.00,
+      location: 'Customer Home, Gurgaon',
+      phone: '+91 65432 10987',
       notes: 'All day pet sitting while owners at work'
     },
     {
       id: 'BK005',
-      customerName: 'Lisa Anderson',
+      customerName: 'Kavita Agarwal',
       petName: 'Charlie',
       service: 'Dog Training',
-      provider: 'Training Pro',
+      provider: 'Bangalore Training Pro',
       date: '2024-01-16',
       time: '11:00 AM',
       duration: '1 hour',
       status: 'Cancelled',
-      price: 75.00,
-      location: 'Training Center',
-      phone: '+1 (555) 567-8901',
+      price: 1500.00,
+      location: 'Koramangala, Bengaluru',
+      phone: '+91 54321 09876',
       notes: 'Basic obedience training session'
     },
     {
       id: 'BK006',
-      customerName: 'Robert Martinez',
+      customerName: 'Rohit Gupta',
       petName: 'Bella',
       service: 'Pet Photography',
-      provider: 'Pawsome Photos',
+      provider: 'Pawsome Photos Delhi',
       date: '2024-01-17',
       time: '4:00 PM',
       duration: '2 hours',
       status: 'Disputed',
-      price: 150.00,
-      location: 'Photo Studio',
-      phone: '+1 (555) 678-9012',
+      price: 3000.00,
+      location: 'Connaught Place, New Delhi',
+      phone: '+91 43210 98765',
       notes: 'Professional pet photoshoot package'
     }
   ];
@@ -270,7 +270,7 @@ const Appointments = () => {
                     booking.date,
                     booking.time,
                     booking.status,
-                    `$${booking.price}`
+                    `₹${booking.price}`
                   ]);
                 });
                 
@@ -438,152 +438,160 @@ const Appointments = () => {
           </div>
         </div>
 
-        {/* Bookings Table */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left">
+        {/* Bookings Grid */}
+        <div className="space-y-4">
+          {/* Grid Header with Select All */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <input
+                  type="checkbox"
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedBookings(filteredAndSortedBookings.map(b => b.id));
+                    } else {
+                      setSelectedBookings([]);
+                    }
+                  }}
+                  className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <span className="text-sm text-gray-600">
+                  {selectedBookings.length > 0 ? `${selectedBookings.length} selected` : 'Select all bookings'}
+                </span>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <span>Sort by:</span>
+                  <button
+                    onClick={() => handleSort('date')}
+                    className={`flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-100 ${sortField === 'date' ? 'text-indigo-600 bg-indigo-50' : ''}`}
+                  >
+                    Date {getSortIcon('date')}
+                  </button>
+                  <button
+                    onClick={() => handleSort('customer')}
+                    className={`flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-100 ${sortField === 'customer' ? 'text-indigo-600 bg-indigo-50' : ''}`}
+                  >
+                    Customer {getSortIcon('customer')}
+                  </button>
+                  <button
+                    onClick={() => handleSort('price')}
+                    className={`flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-100 ${sortField === 'price' ? 'text-indigo-600 bg-indigo-50' : ''}`}
+                  >
+                    Price {getSortIcon('price')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bookings Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredAndSortedBookings.map((booking) => (
+              <div key={booking.id} className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 overflow-hidden">
+                {/* Card Header */}
+                <div className="p-4 border-b border-gray-100">
+                  <div className="flex items-center justify-between mb-2">
                     <input
                       type="checkbox"
+                      checked={selectedBookings.includes(booking.id)}
                       onChange={(e) => {
                         if (e.target.checked) {
-                          setSelectedBookings(filteredAndSortedBookings.map(b => b.id));
+                          setSelectedBookings([...selectedBookings, booking.id]);
                         } else {
-                          setSelectedBookings([]);
+                          setSelectedBookings(selectedBookings.filter(id => id !== booking.id));
                         }
                       }}
                       className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                     />
-                  </th>
-                  <th 
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                    onClick={() => handleSort('date')}
-                  >
-                    <div className="flex items-center">
-                      Date & Time
-                      {getSortIcon('date')}
+                    {getStatusBadge(booking.status)}
+                  </div>
+                  <div className="text-xs text-gray-400 font-mono">#{booking.id}</div>
+                </div>
+
+                {/* Card Content */}
+                <div className="p-4 space-y-3">
+                  {/* Date & Time */}
+                  <div className="flex items-center gap-2">
+                    <FaCalendarAlt className="text-indigo-500 text-sm" />
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">{booking.date}</div>
+                      <div className="text-xs text-gray-500">{booking.time} ({booking.duration})</div>
                     </div>
-                  </th>
-                  <th 
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                    onClick={() => handleSort('customer')}
-                  >
-                    <div className="flex items-center">
-                      Customer & Pet
-                      {getSortIcon('customer')}
-                    </div>
-                  </th>
-                  <th 
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                    onClick={() => handleSort('service')}
-                  >
-                    <div className="flex items-center">
-                      Service & Provider
-                      {getSortIcon('service')}
-                    </div>
-                  </th>
-                  <th 
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                    onClick={() => handleSort('status')}
-                  >
-                    <div className="flex items-center">
-                      Status
-                      {getSortIcon('status')}
-                    </div>
-                  </th>
-                  <th 
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                    onClick={() => handleSort('price')}
-                  >
-                    <div className="flex items-center">
-                      Price
-                      {getSortIcon('price')}
-                    </div>
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredAndSortedBookings.map((booking) => (
-                  <tr key={booking.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
-                      <input
-                        type="checkbox"
-                        checked={selectedBookings.includes(booking.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedBookings([...selectedBookings, booking.id]);
-                          } else {
-                            setSelectedBookings(selectedBookings.filter(id => id !== booking.id));
-                          }
+                  </div>
+
+                  {/* Customer & Pet */}
+                  <div className="space-y-1">
+                    <div className="text-sm font-medium text-gray-900">{booking.customerName}</div>
+                    <div className="text-xs text-gray-500">Pet: {booking.petName}</div>
+                    <div className="text-xs text-gray-400">{booking.phone}</div>
+                  </div>
+
+                  {/* Service & Provider */}
+                  <div className="space-y-1">
+                    <div className="text-sm font-medium text-gray-900">{booking.service}</div>
+                    <div className="text-xs text-gray-500">{booking.provider}</div>
+                    <div className="text-xs text-gray-400">{booking.location}</div>
+                  </div>
+
+                  {/* Price */}
+                  <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                    <div className="text-lg font-bold text-gray-900">₹{booking.price.toFixed(0)}</div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => {
+                          alert(`Viewing details for booking ${booking.id}\n\nCustomer: ${booking.customerName}\nPet: ${booking.petName}\nService: ${booking.service}\nProvider: ${booking.provider}\nDate: ${booking.date} at ${booking.time}\nNotes: ${booking.notes}`);
                         }}
-                        className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                      />
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{booking.date}</div>
-                      <div className="text-sm text-gray-500">{booking.time} ({booking.duration})</div>
-                      <div className="text-xs text-gray-400">#{booking.id}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{booking.customerName}</div>
-                      <div className="text-sm text-gray-500">Pet: {booking.petName}</div>
-                      <div className="text-xs text-gray-400">{booking.phone}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{booking.service}</div>
-                      <div className="text-sm text-gray-500">{booking.provider}</div>
-                      <div className="text-xs text-gray-400">{booking.location}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {getStatusBadge(booking.status)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">${booking.price.toFixed(2)}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => {
-                            alert(`Viewing details for booking ${booking.id}\n\nCustomer: ${booking.customerName}\nPet: ${booking.petName}\nService: ${booking.service}\nProvider: ${booking.provider}\nDate: ${booking.date} at ${booking.time}\nNotes: ${booking.notes}`);
-                          }}
-                          className="text-indigo-600 hover:text-indigo-900 p-1 hover:bg-indigo-50 rounded"
-                          title="View Details"
-                        >
-                          <FaEye />
-                        </button>
-                        <button
-                          onClick={() => handleReschedule(booking)}
-                          className="text-blue-600 hover:text-blue-900 p-1 hover:bg-blue-50 rounded"
-                          title="Reschedule"
-                        >
-                          <FaEdit />
-                        </button>
-                        <button
-                          onClick={() => handleApplyDiscount(booking)}
-                          className="text-green-600 hover:text-green-900 p-1 hover:bg-green-50 rounded"
-                          title="Apply Discount"
-                        >
-                          <FaPercent />
-                        </button>
-                        <button
-                          onClick={() => handleCancel(booking.id)}
-                          className="text-red-600 hover:text-red-900 p-1 hover:bg-red-50 rounded"
-                          title="Cancel Booking"
-                        >
-                          <FaTimes />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                        className="text-indigo-600 hover:text-indigo-900 p-2 hover:bg-indigo-50 rounded-lg transition-colors"
+                        title="View Details"
+                      >
+                        <FaEye className="text-sm" />
+                      </button>
+                      <button
+                        onClick={() => handleReschedule(booking)}
+                        className="text-blue-600 hover:text-blue-900 p-2 hover:bg-blue-50 rounded-lg transition-colors"
+                        title="Reschedule"
+                      >
+                        <FaEdit className="text-sm" />
+                      </button>
+                      <button
+                        onClick={() => handleApplyDiscount(booking)}
+                        className="text-green-600 hover:text-green-900 p-2 hover:bg-green-50 rounded-lg transition-colors"
+                        title="Apply Discount"
+                      >
+                        <FaPercent className="text-sm" />
+                      </button>
+                      <button
+                        onClick={() => handleCancel(booking.id)}
+                        className="text-red-600 hover:text-red-900 p-2 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Cancel Booking"
+                      >
+                        <FaTimes className="text-sm" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Notes Preview */}
+                {booking.notes && (
+                  <div className="px-4 pb-4">
+                    <div className="text-xs text-gray-500 bg-gray-50 rounded-lg p-2 truncate">
+                      <span className="font-medium">Notes:</span> {booking.notes}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
+
+          {/* Empty State */}
+          {filteredAndSortedBookings.length === 0 && (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+              <FaCalendarAlt className="text-gray-300 text-4xl mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No bookings found</h3>
+              <p className="text-gray-500">Try adjusting your search or filter criteria.</p>
+            </div>
+          )}
         </div>
 
         {/* Reschedule Modal */}

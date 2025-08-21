@@ -37,16 +37,112 @@ const Users = () => {
     suspendedUsers: 8
   };
 
-  // Sample data for users
+  // Sample data for users - Updated with Indian standards for 2025
   const usersData = [
-    { id: 1, name: 'John Smith', email: 'john.smith@example.com', role: 'Pet Owner', status: 'Active', lastActive: '2 hours ago', registeredDate: '12/05/2023', pets: 2 },
-    { id: 2, name: 'Sarah Johnson', email: 'sarah.j@example.com', role: 'Pet Owner', status: 'Active', lastActive: '1 day ago', registeredDate: '10/15/2023', pets: 1 },
-    { id: 3, name: 'Michael Brown', email: 'michael.b@example.com', role: 'Service Provider', status: 'Active', lastActive: '3 hours ago', registeredDate: '11/20/2023', pets: 0 },
-    { id: 4, name: 'Emily Davis', email: 'emily.d@example.com', role: 'Pet Owner', status: 'Pending', lastActive: 'Never', registeredDate: '12/01/2023', pets: 0 },
-    { id: 5, name: 'David Wilson', email: 'david.w@example.com', role: 'Service Provider', status: 'Active', lastActive: '5 hours ago', registeredDate: '09/18/2023', pets: 0 },
-    { id: 6, name: 'Jessica Taylor', email: 'jessica.t@example.com', role: 'Admin', status: 'Active', lastActive: '1 hour ago', registeredDate: '08/30/2023', pets: 0 },
-    { id: 7, name: 'Robert Martinez', email: 'robert.m@example.com', role: 'Pet Owner', status: 'Suspended', lastActive: '2 weeks ago', registeredDate: '07/12/2023', pets: 3 },
-    { id: 8, name: 'Lisa Anderson', email: 'lisa.a@example.com', role: 'Moderator', status: 'Active', lastActive: '4 hours ago', registeredDate: '10/05/2023', pets: 0 }
+    { 
+      id: 1, 
+      name: 'Rajesh Kumar Sharma', 
+      email: 'rajesh.sharma@gmail.com', 
+      phone: '+91 98765 43210',
+      address: 'A-204, Sunrise Apartments, Sector 15, Noida, Uttar Pradesh - 201301',
+      role: 'Pet Owner', 
+      status: 'Active', 
+      lastActive: '2 hours ago', 
+      registeredDate: '05/12/2023', 
+      pets: 2,
+      totalSpent: '₹15,450'
+    },
+    { 
+      id: 2, 
+      name: 'Priya Patel', 
+      email: 'priya.patel@yahoo.in', 
+      phone: '+91 87654 32109',
+      address: 'B-12, Green Valley Society, Andheri West, Mumbai, Maharashtra - 400058',
+      role: 'Pet Owner', 
+      status: 'Active', 
+      lastActive: '1 day ago', 
+      registeredDate: '15/10/2023', 
+      pets: 1,
+      totalSpent: '₹8,750'
+    },
+    { 
+      id: 3, 
+      name: 'Arjun Singh Rajput', 
+      email: 'arjun.rajput@outlook.com', 
+      phone: '+91 76543 21098',
+      address: 'House No. 45, Malviya Nagar, Jaipur, Rajasthan - 302017',
+      role: 'Service Provider', 
+      status: 'Active', 
+      lastActive: '3 hours ago', 
+      registeredDate: '20/11/2023', 
+      pets: 0,
+      totalSpent: '₹0'
+    },
+    { 
+      id: 4, 
+      name: 'Sneha Agarwal', 
+      email: 'sneha.agarwal@rediffmail.com', 
+      phone: '+91 65432 10987',
+      address: 'Flat 3B, Shanti Niketan, Salt Lake, Kolkata, West Bengal - 700064',
+      role: 'Pet Owner', 
+      status: 'Pending', 
+      lastActive: 'Never', 
+      registeredDate: '01/12/2023', 
+      pets: 0,
+      totalSpent: '₹0'
+    },
+    { 
+      id: 5, 
+      name: 'Vikram Reddy', 
+      email: 'vikram.reddy@gmail.com', 
+      phone: '+91 54321 09876',
+      address: '12-3-456, Banjara Hills, Hyderabad, Telangana - 500034',
+      role: 'Service Provider', 
+      status: 'Active', 
+      lastActive: '5 hours ago', 
+      registeredDate: '18/09/2023', 
+      pets: 0,
+      totalSpent: '₹0'
+    },
+    { 
+      id: 6, 
+      name: 'Kavya Nair', 
+      email: 'kavya.nair@admin.pawsiq.in', 
+      phone: '+91 43210 98765',
+      address: 'TC 15/234, Vazhuthacaud, Thiruvananthapuram, Kerala - 695014',
+      role: 'Admin', 
+      status: 'Active', 
+      lastActive: '1 hour ago', 
+      registeredDate: '30/08/2023', 
+      pets: 0,
+      totalSpent: '₹0'
+    },
+    { 
+      id: 7, 
+      name: 'Rohit Gupta', 
+      email: 'rohit.gupta@hotmail.com', 
+      phone: '+91 32109 87654',
+      address: 'D-45, Lajpat Nagar II, New Delhi - 110024',
+      role: 'Pet Owner', 
+      status: 'Suspended', 
+      lastActive: '2 weeks ago', 
+      registeredDate: '12/07/2023', 
+      pets: 3,
+      totalSpent: '₹22,300'
+    },
+    { 
+      id: 8, 
+      name: 'Meera Iyer', 
+      email: 'meera.iyer@moderator.pawsiq.in', 
+      phone: '+91 21098 76543',
+      address: '23, 4th Cross, Jayanagar, Bengaluru, Karnataka - 560011',
+      role: 'Moderator', 
+      status: 'Active', 
+      lastActive: '4 hours ago', 
+      registeredDate: '05/10/2023', 
+      pets: 0,
+      totalSpent: '₹0'
+    }
   ];
 
   // Filter and sort users
@@ -141,7 +237,7 @@ const Users = () => {
               className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md flex items-center gap-2 hover:bg-gray-50 transition-colors"
               onClick={() => {
                 // Create a CSV string from the filtered users
-                const headers = ['ID', 'Name', 'Email', 'Role', 'Status', 'Last Active', 'Registered Date', 'Pets'];
+                const headers = ['ID', 'Name', 'Email', 'Phone', 'Address', 'Role', 'Status', 'Last Active', 'Registered Date', 'Pets', 'Total Spent'];
                 const csvRows = [headers];
                 
                 filteredAndSortedUsers.forEach(user => {
@@ -149,11 +245,14 @@ const Users = () => {
                     user.id,
                     user.name,
                     user.email,
+                    user.phone,
+                    user.address,
                     user.role,
                     user.status,
                     user.lastActive,
                     user.registeredDate,
-                    user.pets
+                    user.pets,
+                    user.totalSpent
                   ]);
                 });
                 
@@ -429,6 +528,9 @@ const Users = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Last Active
                   </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Address & Spending
+                  </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('registeredDate')}>
                     <div className="flex items-center">
                       Registered {getSortIcon('registeredDate')}
@@ -458,6 +560,7 @@ const Users = () => {
                         <div className="ml-4">
                           <div className="text-sm font-medium text-gray-900">{user.name}</div>
                           <div className="text-sm text-gray-500">{user.email}</div>
+                          <div className="text-xs text-gray-400">{user.phone}</div>
                         </div>
                       </div>
                     </td>
@@ -480,6 +583,19 @@ const Users = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {user.lastActive}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500 max-w-xs">
+                      <div className="truncate" title={user.address}>
+                        {user.address}
+                      </div>
+                      <div className="text-xs font-medium text-green-600 mt-1">
+                        Total Spent: {user.totalSpent}
+                      </div>
+                      {user.pets > 0 && (
+                        <div className="text-xs text-gray-400">
+                          {user.pets} pet{user.pets > 1 ? 's' : ''}
+                        </div>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {user.registeredDate}

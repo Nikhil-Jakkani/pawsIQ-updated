@@ -51,15 +51,15 @@ const Marketplace = () => {
     pendingSellerApprovals: 8
   };
 
-  // Sample products data
+  // Sample products data - Updated with Indian pricing
   const productsData = [
     {
       id: 'PRD001',
       name: 'Premium Dog Food - Chicken & Rice',
       category: 'Food',
-      seller: 'PetNutrition Plus',
-      price: 45.99,
-      originalPrice: 52.99,
+      seller: 'PetNutrition Plus India',
+      price: 1899,
+      originalPrice: 2199,
       stock: 150,
       lowStockThreshold: 20,
       sold: 89,
@@ -73,9 +73,9 @@ const Marketplace = () => {
       id: 'PRD002',
       name: 'Interactive Cat Toy Set',
       category: 'Toys',
-      seller: 'PlayTime Pets',
-      price: 24.99,
-      originalPrice: 24.99,
+      seller: 'PlayTime Pets Mumbai',
+      price: 999,
+      originalPrice: 999,
       stock: 85,
       lowStockThreshold: 15,
       sold: 234,
@@ -89,9 +89,9 @@ const Marketplace = () => {
       id: 'PRD003',
       name: 'Orthopedic Dog Bed - Large',
       category: 'Bedding',
-      seller: 'ComfortPaws',
-      price: 89.99,
-      originalPrice: 109.99,
+      seller: 'ComfortPaws Delhi',
+      price: 3599,
+      originalPrice: 4399,
       stock: 0,
       lowStockThreshold: 5,
       sold: 67,
@@ -103,11 +103,11 @@ const Marketplace = () => {
     },
     {
       id: 'PRD004',
-      name: 'Natural Cat Litter - 20lb',
+      name: 'Natural Cat Litter - 10kg',
       category: 'Hygiene',
-      seller: 'EcoClean',
-      price: 18.99,
-      originalPrice: 18.99,
+      seller: 'EcoClean Bengaluru',
+      price: 799,
+      originalPrice: 799,
       stock: 200,
       lowStockThreshold: 30,
       sold: 345,
@@ -121,9 +121,9 @@ const Marketplace = () => {
       id: 'PRD005',
       name: 'GPS Pet Tracker Collar',
       category: 'Electronics',
-      seller: 'TechPets',
-      price: 79.99,
-      originalPrice: 79.99,
+      seller: 'TechPets Hyderabad',
+      price: 3199,
+      originalPrice: 3199,
       stock: 45,
       lowStockThreshold: 10,
       sold: 12,
@@ -135,11 +135,11 @@ const Marketplace = () => {
     },
     {
       id: 'PRD006',
-      name: 'Grooming Kit Professional',
+      name: 'Professional Grooming Kit',
       category: 'Grooming',
-      seller: 'GroomMaster',
-      price: 129.99,
-      originalPrice: 149.99,
+      seller: 'GroomMaster Chennai',
+      price: 5199,
+      originalPrice: 5999,
       stock: 25,
       lowStockThreshold: 5,
       sold: 38,
@@ -151,37 +151,37 @@ const Marketplace = () => {
     }
   ];
 
-  // Sample seller accounts
+  // Sample seller accounts - Updated with Indian standards
   const sellersData = [
     {
       id: 'SLR001',
-      name: 'PetNutrition Plus',
-      email: 'info@petnutritionplus.com',
+      name: 'PetNutrition Plus India',
+      email: 'info@petnutritionplus.in',
       status: 'Approved',
       products: 45,
-      totalSales: 15670.50,
+      totalSales: 625000.00,
       rating: 4.8,
-      joinDate: '2023-08-15'
+      joinDate: '15/08/2023'
     },
     {
       id: 'SLR002',
-      name: 'PlayTime Pets',
-      email: 'contact@playtimepets.com',
+      name: 'PlayTime Pets Mumbai',
+      email: 'contact@playtimepets.in',
       status: 'Approved',
       products: 23,
-      totalSales: 8940.25,
+      totalSales: 357000.00,
       rating: 4.6,
-      joinDate: '2023-09-22'
+      joinDate: '22/09/2023'
     },
     {
       id: 'SLR003',
-      name: 'NewPetSupplier',
-      email: 'hello@newpetsupplier.com',
+      name: 'Pawsome Supplies Delhi',
+      email: 'hello@pawsomesupplies.in',
       status: 'Pending Approval',
       products: 0,
       totalSales: 0,
       rating: 0,
-      joinDate: '2024-01-10'
+      joinDate: '10/01/2024'
     }
   ];
 
@@ -310,7 +310,7 @@ const Marketplace = () => {
                     product.name,
                     product.category,
                     product.seller,
-                    `$${product.price}`,
+                    `₹${product.price}`,
                     product.stock,
                     product.sold,
                     product.status,
@@ -442,22 +442,40 @@ const Marketplace = () => {
               </div>
             </div>
             
-            {/* Category Filter */}
-            <div className="flex items-center gap-2">
+            {/* Category Filter - Modern Gradient Buttons */}
+            <div className="flex flex-wrap items-center gap-2">
               <FaFilter className="text-gray-400" />
-              <select
-                className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                value={filterCategory}
-                onChange={(e) => setFilterCategory(e.target.value)}
-              >
-                <option value="all">All Categories</option>
-                <option value="food">Food</option>
-                <option value="toys">Toys</option>
-                <option value="bedding">Bedding</option>
-                <option value="hygiene">Hygiene</option>
-                <option value="electronics">Electronics</option>
-                <option value="grooming">Grooming</option>
-              </select>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { value: 'all', label: 'All Categories', icon: '🏪', gradient: 'from-gray-500 to-gray-600' },
+                  { value: 'food', label: 'Food', icon: '🍖', gradient: 'from-orange-500 to-red-500' },
+                  { value: 'toys', label: 'Toys', icon: '🎾', gradient: 'from-pink-500 to-purple-500' },
+                  { value: 'bedding', label: 'Bedding', icon: '🛏️', gradient: 'from-blue-500 to-indigo-500' },
+                  { value: 'hygiene', label: 'Hygiene', icon: '🧼', gradient: 'from-green-500 to-teal-500' },
+                  { value: 'electronics', label: 'Electronics', icon: '📱', gradient: 'from-cyan-500 to-blue-500' },
+                  { value: 'grooming', label: 'Grooming', icon: '✂️', gradient: 'from-purple-500 to-pink-500' }
+                ].map((category) => (
+                  <button
+                    key={category.value}
+                    onClick={() => setFilterCategory(category.value)}
+                    className={`
+                      relative overflow-hidden px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 transform hover:scale-105 hover:shadow-lg
+                      ${filterCategory === category.value 
+                        ? `bg-gradient-to-r ${category.gradient} text-white shadow-md` 
+                        : 'bg-white text-gray-700 border border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                      }
+                    `}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">{category.icon}</span>
+                      <span>{category.label}</span>
+                    </div>
+                    {filterCategory === category.value && (
+                      <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-50"></div>
+                    )}
+                  </button>
+                ))}
+              </div>
             </div>
             
             {/* Status Filter */}
@@ -612,9 +630,9 @@ const Marketplace = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">${product.price}</div>
+                      <div className="text-sm font-medium text-gray-900">₹{product.price}</div>
                       {product.originalPrice !== product.price && (
-                        <div className="text-xs text-gray-400 line-through">${product.originalPrice}</div>
+                        <div className="text-xs text-gray-400 line-through">₹{product.originalPrice}</div>
                       )}
                       {product.originalPrice !== product.price && (
                         <div className="text-xs text-red-600">
@@ -647,7 +665,7 @@ const Marketplace = () => {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => {
-                            alert(`Product Details:\n\nID: ${product.id}\nName: ${product.name}\nCategory: ${product.category}\nSeller: ${product.seller}\nPrice: $${product.price}\nStock: ${product.stock}\nSold: ${product.sold}\nRating: ${product.rating}/5 (${product.reviews} reviews)\nStatus: ${product.status}`);
+                            alert(`Product Details:\n\nID: ${product.id}\nName: ${product.name}\nCategory: ${product.category}\nSeller: ${product.seller}\nPrice: ₹${product.price}\nStock: ${product.stock}\nSold: ${product.sold}\nRating: ${product.rating}/5 (${product.reviews} reviews)\nStatus: ${product.status}`);
                           }}
                           className="text-indigo-600 hover:text-indigo-900 p-1 hover:bg-indigo-50 rounded"
                           title="View Details"
