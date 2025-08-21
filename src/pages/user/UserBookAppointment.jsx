@@ -74,7 +74,9 @@ const UserBookAppointment = () => {
               });
               const urlPayload = await urlRes.json().catch(() => ({}));
               if (urlRes.ok && urlPayload?.url) return { ...pet, image: urlPayload.url };
-            } catch {}
+            } catch {
+              // Ignore errors when resolving signed image URLs
+            }
             return pet;
           })
         );
@@ -398,7 +400,9 @@ const UserBookAppointment = () => {
                             if (urlRes.ok && urlPayload?.url) {
                               setPets((prev) => prev.map((p) => (p.id === pet.id ? { ...p, image: urlPayload.url } : p)));
                             }
-                          } catch {}
+                          } catch {
+                          // Ignore errors when resolving signed image URLs
+                          }       
                         })();
                       }}
                     />
@@ -452,7 +456,7 @@ const UserBookAppointment = () => {
             <h2 className="text-xl font-semibold text-gray-800">Find a Service</h2>
             <p className="text-gray-600">Search and select a service to continue booking</p>
 
-            {/* Inline Find Services (merged) */}
+            {/* Service Selection */}
             <div className="bg-white p-4 rounded-lg border border-gray-200 space-y-4">
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="relative flex-1">

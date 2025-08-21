@@ -9,7 +9,7 @@ import UserAddPet from './pages/user/UserAddPet.jsx';
 import UserAppointments from './pages/user/UserAppointments.jsx';
 import UserBookAppointment from './pages/user/UserBookAppointment.jsx';
 import UserAppointmentConfirmation from './pages/user/UserAppointmentConfirmation.jsx';
-import UserServices from './pages/user/UserServices.jsx';
+
 import UserMarketplace from './pages/user/UserMarketplace.jsx';
 import UserOrders from './pages/user/UserOrders.jsx';
 import UserPayments from './pages/user/UserPayments.jsx';
@@ -211,12 +211,6 @@ function App() {
           <Route path="/user/appointments/upcoming" element={<UserProtectedRoute><UserAppointments /></UserProtectedRoute>} />
           <Route path="/user/appointments/history" element={<UserProtectedRoute><UserAppointments /></UserProtectedRoute>} />
           
-          {/* Service Routes */}
-          <Route path="/user/services" element={<UserProtectedRoute><UserServices /></UserProtectedRoute>} />
-          <Route path="/user/services/vets" element={<UserProtectedRoute><UserServices /></UserProtectedRoute>} />
-          <Route path="/user/services/grooming" element={<UserProtectedRoute><UserServices /></UserProtectedRoute>} />
-          <Route path="/user/services/sitting" element={<UserProtectedRoute><UserServices /></UserProtectedRoute>} />
-          <Route path="/user/services/training" element={<UserProtectedRoute><UserServices /></UserProtectedRoute>} />
           
           {/* Marketplace Routes */}
           <Route path="/user/marketplace" element={<UserProtectedRoute><UserMarketplace /></UserProtectedRoute>} />

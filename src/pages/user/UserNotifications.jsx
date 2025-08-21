@@ -43,7 +43,7 @@ const UserNotifications = () => {
       message: 'Get 20% off on all pet grooming services this week. Use code: GROOM20',
       date: '2023-12-08T16:45:00',
       isRead: true,
-      actionUrl: '/user/services'
+      actionUrl: '/user/marketplace'
     },
     {
       id: 5,

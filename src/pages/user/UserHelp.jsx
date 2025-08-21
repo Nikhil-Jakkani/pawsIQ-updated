@@ -85,7 +85,7 @@ const UserHelp = () => {
         {
           id: 11,
           question: 'What types of pet services do you offer?',
-          answer: 'We offer a wide range of pet services including veterinary care, grooming, training, boarding, daycare, and dog walking. You can explore all available services in the "Find Services" section.'
+          answer: 'We offer a wide range of pet services including veterinary care, grooming, training, boarding, daycare, and dog walking. You can book appointments for these services through our appointment booking system.'
         },
         {
           id: 12,

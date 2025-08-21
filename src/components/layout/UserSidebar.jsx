@@ -92,18 +92,7 @@ const UserSidebar = ({ isOpen, toggleSidebar }) => {
         { path: '/user/appointments/history', icon: <FaClipboardList />, label: 'History' }
       ]
     },
-    {
-      id: 'services',
-      icon: <FaMapMarkerAlt />,
-      label: 'Find Services',
-      path: '/user/services',
-      items: [
-        { path: '/user/services/vets', icon: <FaHeart />, label: 'Veterinarians' },
-        { path: '/user/services/grooming', icon: <FaPaw />, label: 'Grooming' },
-        { path: '/user/services/sitting', icon: <FaHome />, label: 'Pet Sitting' },
-        { path: '/user/services/training', icon: <FaClipboardList />, label: 'Training' }
-      ]
-    },
+
     {
       id: 'marketplace',
       icon: <FaShoppingCart />,
