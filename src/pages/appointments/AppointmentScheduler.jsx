@@ -23,7 +23,11 @@ import {
   FaCheckCircle,
   FaExclamationTriangle,
   FaBell,
-  FaSync
+  FaSync,
+  FaWalking,
+  FaCut,
+  FaHome,
+  FaDumbbell
 } from 'react-icons/fa';
 
 const AppointmentScheduler = () => {
@@ -35,11 +39,11 @@ const AppointmentScheduler = () => {
 
   // Sample providers data
   const providers = [
-    { id: 1, name: 'Dr. Sarah Wilson', specialty: 'Veterinarian', color: '#3B82F6', avatar: '👩‍⚕️' },
-    { id: 2, name: 'Mike Thompson', specialty: 'Dog Walker', color: '#10B981', avatar: '🚶‍♂️' },
-    { id: 3, name: 'Lisa Chen', specialty: 'Groomer', color: '#8B5CF6', avatar: '✂️' },
-    { id: 4, name: 'James Rodriguez', specialty: 'Pet Sitter', color: '#F59E0B', avatar: '🏠' },
-    { id: 5, name: 'Emma Davis', specialty: 'Trainer', color: '#EF4444', avatar: '🎾' }
+    { id: 1, name: 'Dr. Sarah Wilson', specialty: 'Veterinarian', color: '#3B82F6', avatar: FaUserMd },
+    { id: 2, name: 'Mike Thompson', specialty: 'Dog Walker', color: '#10B981', avatar: FaWalking },
+    { id: 3, name: 'Lisa Chen', specialty: 'Groomer', color: '#8B5CF6', avatar: FaCut },
+    { id: 4, name: 'James Rodriguez', specialty: 'Pet Sitter', color: '#F59E0B', avatar: FaHome },
+    { id: 5, name: 'Emma Davis', specialty: 'Trainer', color: '#EF4444', avatar: FaDumbbell }
   ];
 
   // Sample appointments
@@ -269,7 +273,7 @@ const AppointmentScheduler = () => {
                           className="w-10 h-10 rounded-full flex items-center justify-center text-white text-lg"
                           style={{ backgroundColor: provider.color }}
                         >
-                          {provider.avatar}
+                          <provider.avatar />
                         </div>
                         <div>
                           <div className="font-medium text-gray-800">{provider.name}</div>

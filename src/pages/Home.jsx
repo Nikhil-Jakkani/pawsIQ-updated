@@ -1277,6 +1277,9 @@ const Home = () => {
                 <div className="absolute top-1/3 right-1/4 bg-white rounded-full p-2 shadow-lg animate-float animation-delay-500">
                   <FaRegHeart className="h-6 w-6 text-indigo-500" />
                 </div>
+                <div className="absolute top-1/6 left-1/2 bg-white rounded-full p-2 shadow-lg animate-float animation-delay-200">
+                  <FaPaw className="h-6 w-6 text-indigo-500" />
+                </div>
               </div>
             </div>
           </div>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaShoppingCart, FaSearch, FaFilter, FaStar, FaHeart, FaRegHeart, FaChevronDown, FaChevronUp, FaTags, FaShippingFast, FaStore } from 'react-icons/fa';
+import { FaShoppingCart, FaSearch, FaFilter, FaStar, FaHeart, FaRegHeart, FaChevronDown, FaChevronUp, FaTags, FaShippingFast, FaStore, FaDog, FaCat, FaBed, FaCut, FaTshirt } from 'react-icons/fa';
 import UserLayout from '../../components/layout/UserLayout';
 
 const UserMarketplace = () => {
@@ -199,11 +199,11 @@ const UserMarketplace = () => {
   
   // Featured categories for the top section
   const featuredCategories = [
-    { name: 'Dog Food', icon: '🐕', link: '?category=food&pet=dog' },
-    { name: 'Cat Toys', icon: '🐈', link: '?category=toys&pet=cat' },
-    { name: 'Beds', icon: '🛏️', link: '?category=beds' },
-    { name: 'Grooming', icon: '✂️', link: '?category=grooming' },
-    { name: 'Accessories', icon: '🧶', link: '?category=accessories' }
+    { name: 'Dog Food', icon: FaDog, link: '?category=food&pet=dog' },
+    { name: 'Cat Toys', icon: FaCat, link: '?category=toys&pet=cat' },
+    { name: 'Beds', icon: FaBed, link: '?category=beds' },
+    { name: 'Grooming', icon: FaCut, link: '?category=grooming' },
+    { name: 'Accessories', icon: FaTshirt, link: '?category=accessories' }
   ];
   
   return (
@@ -242,7 +242,7 @@ const UserMarketplace = () => {
                 onClick={() => setFilterCategory(category.link.split('=')[1].split('&')[0])}
                 className="bg-white rounded-lg p-4 text-center border border-blue-100 hover:shadow-md transition-shadow"
               >
-                <div className="text-3xl mb-2">{category.icon}</div>
+                <div className="text-3xl mb-2 text-blue-600"><category.icon /></div>
                 <h3 className="font-medium text-gray-800">{category.name}</h3>
               </button>
             ))}

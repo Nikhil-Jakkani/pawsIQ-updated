@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaCalendarAlt, FaArrowLeft, FaPaw, FaMapMarkerAlt, FaClock, FaMoneyBillWave, FaCheck, FaChevronRight, FaCalendarCheck, FaSearch, FaFilter } from 'react-icons/fa';
+import { FaCalendarAlt, FaArrowLeft, FaPaw, FaMapMarkerAlt, FaClock, FaMoneyBillWave, FaCheck, FaChevronRight, FaCalendarCheck, FaSearch, FaFilter, FaUserMd, FaCut, FaDog, FaHome, FaWalking } from 'react-icons/fa';
 import UserLayout from '../../components/layout/UserLayout';
 import { useAuth } from '../../context/AuthContext';
 
@@ -103,12 +103,12 @@ const UserBookAppointment = () => {
   }, [accessToken]);
 
   const serviceTypes = [
-    { id: 'vet', name: 'Veterinary Care', icon: '🩺', description: 'Health checkups, vaccinations, and medical treatments' },
-    { id: 'grooming', name: 'Grooming', icon: '✂️', description: 'Bathing, haircuts, nail trimming, and more' },
-    { id: 'training', name: 'Training', icon: '🦮', description: 'Obedience training, behavior modification, and socialization' },
-    { id: 'boarding', name: 'Boarding', icon: '🏠', description: 'Overnight pet care in a safe and comfortable environment' },
-    { id: 'daycare', name: 'Daycare', icon: '🐾', description: 'Supervised play and care during the day' },
-    { id: 'walking', name: 'Dog Walking', icon: '🚶', description: 'Regular exercise and bathroom breaks for your dog' }
+    { id: 'vet', name: 'Veterinary Care', icon: FaUserMd, description: 'Health checkups, vaccinations, and medical treatments' },
+    { id: 'grooming', name: 'Grooming', icon: FaCut, description: 'Bathing, haircuts, nail trimming, and more' },
+    { id: 'training', name: 'Training', icon: FaDog, description: 'Obedience training, behavior modification, and socialization' },
+    { id: 'boarding', name: 'Boarding', icon: FaHome, description: 'Overnight pet care in a safe and comfortable environment' },
+    { id: 'daycare', name: 'Daycare', icon: FaPaw, description: 'Supervised play and care during the day' },
+    { id: 'walking', name: 'Dog Walking', icon: FaWalking, description: 'Regular exercise and bathroom breaks for your dog' }
   ];
 
   const services = {
@@ -499,7 +499,7 @@ const UserBookAppointment = () => {
                     onClick={() => handleServiceTypeSelect(type.id)}
                     className={`text-left p-3 rounded-lg border transition-all hover:shadow-sm ${formData.serviceType === type.id ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-purple-300'}`}
                   >
-                    <div className="text-xl">{type.icon}</div>
+                    <div className="text-xl text-purple-600"><type.icon /></div>
                     <div className="text-sm font-medium mt-1">{type.name}</div>
                     <div className="text-xs text-gray-500 line-clamp-2">{type.description}</div>
                   </button>
