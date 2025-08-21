@@ -71,6 +71,9 @@ export default {
           900: '#7c2d12',
         },
       },
+      fontFamily: {
+        'fredoka': ['Fredoka', 'sans-serif'],
+      },
       borderRadius: {
         'xl': '0.75rem',
         '2xl': '1rem',

@@ -353,7 +353,7 @@ const Home = () => {
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6 md:justify-start md:space-x-10">
             <div className="flex justify-start lg:w-0 lg:flex-1">
-              <a href="/" className="flex items-center group">
+              <a href="/" className="flex  items-center group">
                 <span className="sr-only">PawsIQ</span>
                 <div 
                   ref={logoRef} 
@@ -365,7 +365,7 @@ const Home = () => {
                     alt="PawsIQ"
                   />
                 </div>
-                <span className="ml-2 text-xl font-bold text-indigo-600 group-hover:text-indigo-500 transition-colors duration-300">PawsIQ</span>
+                <span className="ml-2 text-xl font-bold text-indigo-600 group-hover:text-indigo-500 transition-colors duration-300 font-fredoka">PawsIQ</span>
               </a>
             </div>
             
@@ -1046,7 +1046,7 @@ const Home = () => {
                             <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
                               <FaPaw className="h-5 w-5 text-indigo-600" />
                             </div>
-                            <span className="text-white font-bold">PawsIQ</span>
+                            <span className="text-white font-bold font-fredoka">PawsIQ</span>
                           </div>
                         </div>
                         
@@ -1636,7 +1636,7 @@ const Home = () => {
                   src={logoImage}
                   alt="PawsIQ"
                 />
-                <span className="ml-2 text-xl font-bold text-white group-hover:text-indigo-300 transition-colors duration-300">PawsIQ</span>
+                <span className="ml-2 text-xl font-bold text-white group-hover:text-indigo-300 transition-colors duration-300 font-fredoka">PawsIQ</span>
               </div>
               <p className="text-gray-300 text-base">
                 Making pet care accessible, reliable, and convenient for everyone. Our platform connects pet owners with trusted professionals for all their pet care needs.

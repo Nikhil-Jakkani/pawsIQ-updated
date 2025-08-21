@@ -295,7 +295,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
             </div>
             {!minimized && (
               <div>
-                <h1 className="text-xl font-bold flex items-center">
+                <h1 className="text-xl font-bold flex items-center font-fredoka">
                   PawsIQ Admin
                 </h1>
               </div>
