@@ -35,12 +35,12 @@ const Appointments = () => {
 
   // Sample booking data
   const bookingStats = {
-    totalBookings: 1247,
-    upcomingBookings: 156,
-    completedToday: 23,
-    noShows: 8,
-    cancellations: 12,
-    disputes: 3
+    totalBookings: 1259,
+    upcomingBookings: 168,
+    completedToday: 25,
+    noShows: 9,
+    cancellations: 13,
+    disputes: 4
   };
 
   const bookingsData = [
@@ -57,7 +57,9 @@ const Appointments = () => {
       price: 500.00,
       location: 'Lodhi Gardens, New Delhi',
       phone: '+91 98765 43210',
-      notes: 'Buddy is very energetic and loves to play fetch'
+      notes: 'Buddy is very energetic and loves to play fetch',
+      petType: 'Dog',
+      urgency: 'Normal'
     },
     {
       id: 'BK002',
@@ -72,7 +74,9 @@ const Appointments = () => {
       price: 1800.00,
       location: 'Bandra West, Mumbai',
       phone: '+91 87654 32109',
-      notes: 'Full grooming service including nail trim'
+      notes: 'Full grooming service including nail trim',
+      petType: 'Cat',
+      urgency: 'Normal'
     },
     {
       id: 'BK003',
@@ -87,7 +91,9 @@ const Appointments = () => {
       price: 2500.00,
       location: 'Jubilee Hills, Hyderabad',
       phone: '+91 76543 21098',
-      notes: 'Annual checkup and vaccinations'
+      notes: 'Annual checkup and vaccinations',
+      petType: 'Dog',
+      urgency: 'High'
     },
     {
       id: 'BK004',
@@ -102,7 +108,9 @@ const Appointments = () => {
       price: 1200.00,
       location: 'Customer Home, Gurgaon',
       phone: '+91 65432 10987',
-      notes: 'All day pet sitting while owners at work'
+      notes: 'All day pet sitting while owners at work',
+      petType: 'Dog',
+      urgency: 'Normal'
     },
     {
       id: 'BK005',
@@ -117,7 +125,9 @@ const Appointments = () => {
       price: 1500.00,
       location: 'Koramangala, Bengaluru',
       phone: '+91 54321 09876',
-      notes: 'Basic obedience training session'
+      notes: 'Basic obedience training session',
+      petType: 'Dog',
+      urgency: 'Low'
     },
     {
       id: 'BK006',
@@ -132,7 +142,111 @@ const Appointments = () => {
       price: 3000.00,
       location: 'Connaught Place, New Delhi',
       phone: '+91 43210 98765',
-      notes: 'Professional pet photoshoot package'
+      notes: 'Professional pet photoshoot package',
+      petType: 'Cat',
+      urgency: 'Normal'
+    },
+    {
+      id: 'BK007',
+      customerName: 'Anita Desai',
+      petName: 'Rocky',
+      service: 'Emergency Vet',
+      provider: 'Dr. Suresh Kumar',
+      date: '2024-01-18',
+      time: '9:15 AM',
+      duration: '1 hour',
+      status: 'Confirmed',
+      price: 3500.00,
+      location: 'Sector 18, Noida',
+      phone: '+91 99887 76655',
+      notes: 'Emergency consultation for stomach issues',
+      petType: 'Dog',
+      urgency: 'Emergency'
+    },
+    {
+      id: 'BK008',
+      customerName: 'Ravi Krishnan',
+      petName: 'Mittens',
+      service: 'Cat Boarding',
+      provider: 'Cozy Paws Boarding',
+      date: '2024-01-19',
+      time: '6:00 PM',
+      duration: '3 days',
+      status: 'Confirmed',
+      price: 2400.00,
+      location: 'Indiranagar, Bengaluru',
+      phone: '+91 88776 65544',
+      notes: '3-day boarding while family is traveling',
+      petType: 'Cat',
+      urgency: 'Normal'
+    },
+    {
+      id: 'BK009',
+      customerName: 'Deepika Joshi',
+      petName: 'Simba',
+      service: 'Dental Cleaning',
+      provider: 'Pet Dental Care Clinic',
+      date: '2024-01-20',
+      time: '1:30 PM',
+      duration: '90 min',
+      status: 'Confirmed',
+      price: 2200.00,
+      location: 'Powai, Mumbai',
+      phone: '+91 77665 54433',
+      notes: 'Professional dental cleaning and checkup',
+      petType: 'Dog',
+      urgency: 'Normal'
+    },
+    {
+      id: 'BK010',
+      customerName: 'Sanjay Mehta',
+      petName: 'Fluffy',
+      service: 'Behavioral Training',
+      provider: 'Animal Behavior Expert',
+      date: '2024-01-21',
+      time: '10:30 AM',
+      duration: '2 hours',
+      status: 'In Progress',
+      price: 2800.00,
+      location: 'Vasant Kunj, New Delhi',
+      phone: '+91 66554 43322',
+      notes: 'Addressing aggressive behavior issues',
+      petType: 'Dog',
+      urgency: 'High'
+    },
+    {
+      id: 'BK011',
+      customerName: 'Meera Iyer',
+      petName: 'Coco',
+      service: 'Spa Treatment',
+      provider: 'Luxury Pet Spa',
+      date: '2024-01-22',
+      time: '3:00 PM',
+      duration: '3 hours',
+      status: 'Confirmed',
+      price: 4500.00,
+      location: 'Banjara Hills, Hyderabad',
+      phone: '+91 55443 32211',
+      notes: 'Full spa package with massage and aromatherapy',
+      petType: 'Cat',
+      urgency: 'Low'
+    },
+    {
+      id: 'BK012',
+      customerName: 'Amit Sharma',
+      petName: 'Tiger',
+      service: 'Vaccination',
+      provider: 'City Vet Clinic',
+      date: '2024-01-23',
+      time: '11:45 AM',
+      duration: '30 min',
+      status: 'Completed',
+      price: 800.00,
+      location: 'Malviya Nagar, Jaipur',
+      phone: '+91 44332 21100',
+      notes: 'Annual vaccination booster shots',
+      petType: 'Dog',
+      urgency: 'Normal'
     }
   ];
 
@@ -415,6 +529,12 @@ const Appointments = () => {
                 <option value="sitting">Pet Sitting</option>
                 <option value="training">Dog Training</option>
                 <option value="photography">Pet Photography</option>
+                <option value="emergency">Emergency Vet</option>
+                <option value="boarding">Cat Boarding</option>
+                <option value="dental">Dental Cleaning</option>
+                <option value="behavioral">Behavioral Training</option>
+                <option value="spa">Spa Treatment</option>
+                <option value="vaccination">Vaccination</option>
               </select>
             </div>
 
@@ -485,104 +605,171 @@ const Appointments = () => {
             </div>
           </div>
 
-          {/* Bookings Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredAndSortedBookings.map((booking) => (
-              <div key={booking.id} className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 overflow-hidden">
-                {/* Card Header */}
-                <div className="p-4 border-b border-gray-100">
-                  <div className="flex items-center justify-between mb-2">
-                    <input
-                      type="checkbox"
-                      checked={selectedBookings.includes(booking.id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedBookings([...selectedBookings, booking.id]);
-                        } else {
-                          setSelectedBookings(selectedBookings.filter(id => id !== booking.id));
-                        }
-                      }}
-                      className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                    />
-                    {getStatusBadge(booking.status)}
+          {/* Bookings Cards Grid - Fixed 3x3 Layout */}
+          <div className="grid grid-cols-3 gap-6 max-w-7xl mx-auto">
+            {filteredAndSortedBookings.slice(0, 9).map((booking) => {
+              // Get urgency color
+              const getUrgencyColor = (urgency) => {
+                switch(urgency) {
+                  case 'Emergency': return 'border-l-red-500 bg-red-50';
+                  case 'High': return 'border-l-orange-500 bg-orange-50';
+                  case 'Normal': return 'border-l-blue-500 bg-blue-50';
+                  case 'Low': return 'border-l-green-500 bg-green-50';
+                  default: return 'border-l-gray-500 bg-gray-50';
+                }
+              };
+
+              // Get pet type icon
+              const getPetIcon = (petType) => {
+                return petType === 'Dog' ? '🐕' : '🐱';
+              };
+
+              return (
+                <div key={booking.id} className={`bg-white rounded-xl shadow-lg border-l-4 ${getUrgencyColor(booking.urgency)} hover:shadow-xl transition-all duration-300 overflow-hidden transform hover:-translate-y-1`}>
+                  {/* Card Header */}
+                  <div className="p-5 border-b border-gray-100">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={selectedBookings.includes(booking.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedBookings([...selectedBookings, booking.id]);
+                            } else {
+                              setSelectedBookings(selectedBookings.filter(id => id !== booking.id));
+                            }
+                          }}
+                          className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <span className="text-lg">{getPetIcon(booking.petType)}</span>
+                        <div className="text-xs font-mono text-gray-400">#{booking.id}</div>
+                      </div>
+                      {getStatusBadge(booking.status)}
+                    </div>
+                    
+                    {/* Urgency Badge */}
+                    <div className="flex items-center justify-between">
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        booking.urgency === 'Emergency' ? 'bg-red-100 text-red-800' :
+                        booking.urgency === 'High' ? 'bg-orange-100 text-orange-800' :
+                        booking.urgency === 'Normal' ? 'bg-blue-100 text-blue-800' :
+                        'bg-green-100 text-green-800'
+                      }`}>
+                        {booking.urgency === 'Emergency' && '🚨'} {booking.urgency}
+                      </span>
+                    </div>
                   </div>
-                  <div className="text-xs text-gray-400 font-mono">#{booking.id}</div>
+
+                  {/* Card Content */}
+                  <div className="p-5 space-y-4">
+                    {/* Date & Time */}
+                    <div className="flex items-center gap-3">
+                      <div className="bg-indigo-100 p-2 rounded-lg">
+                        <FaCalendarAlt className="text-indigo-600 text-sm" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-semibold text-gray-900">{booking.date}</div>
+                        <div className="text-xs text-gray-500">{booking.time} • {booking.duration}</div>
+                      </div>
+                    </div>
+
+                    {/* Customer & Pet */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                          {booking.customerName.split(' ').map(n => n[0]).join('')}
+                        </div>
+                        <div>
+                          <div className="text-sm font-semibold text-gray-900">{booking.customerName}</div>
+                          <div className="text-xs text-gray-500">Pet: {booking.petName} ({booking.petType})</div>
+                        </div>
+                      </div>
+                      <div className="text-xs text-gray-400 flex items-center gap-1">
+                        📞 {booking.phone}
+                      </div>
+                    </div>
+
+                    {/* Service & Provider */}
+                    <div className="space-y-2">
+                      <div className="bg-gray-50 rounded-lg p-3">
+                        <div className="text-sm font-semibold text-gray-900 mb-1">{booking.service}</div>
+                        <div className="text-xs text-gray-600">{booking.provider}</div>
+                        <div className="text-xs text-gray-500 flex items-center gap-1 mt-1">
+                          📍 {booking.location}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Price */}
+                    <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                      <div className="text-xl font-bold text-gray-900">₹{booking.price.toFixed(0)}</div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => {
+                            alert(`Viewing details for booking ${booking.id}\n\nCustomer: ${booking.customerName}\nPet: ${booking.petName} (${booking.petType})\nService: ${booking.service}\nProvider: ${booking.provider}\nDate: ${booking.date} at ${booking.time}\nUrgency: ${booking.urgency}\nNotes: ${booking.notes}`);
+                          }}
+                          className="text-indigo-600 hover:text-indigo-900 p-2 hover:bg-indigo-50 rounded-lg transition-colors"
+                          title="View Details"
+                        >
+                          <FaEye className="text-sm" />
+                        </button>
+                        <button
+                          onClick={() => handleReschedule(booking)}
+                          className="text-blue-600 hover:text-blue-900 p-2 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Reschedule"
+                        >
+                          <FaEdit className="text-sm" />
+                        </button>
+                        <button
+                          onClick={() => handleApplyDiscount(booking)}
+                          className="text-green-600 hover:text-green-900 p-2 hover:bg-green-50 rounded-lg transition-colors"
+                          title="Apply Discount"
+                        >
+                          <FaPercent className="text-sm" />
+                        </button>
+                        <button
+                          onClick={() => handleCancel(booking.id)}
+                          className="text-red-600 hover:text-red-900 p-2 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Cancel Booking"
+                        >
+                          <FaTimes className="text-sm" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Notes Preview */}
+                  {booking.notes && (
+                    <div className="px-5 pb-4">
+                      <div className="text-xs text-gray-600 bg-gray-50 rounded-lg p-3 border-l-2 border-gray-300">
+                        <span className="font-semibold">💬 Notes:</span> {booking.notes}
+                      </div>
+                    </div>
+                  )}
                 </div>
-
-                {/* Card Content */}
-                <div className="p-4 space-y-3">
-                  {/* Date & Time */}
-                  <div className="flex items-center gap-2">
-                    <FaCalendarAlt className="text-indigo-500 text-sm" />
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">{booking.date}</div>
-                      <div className="text-xs text-gray-500">{booking.time} ({booking.duration})</div>
-                    </div>
-                  </div>
-
-                  {/* Customer & Pet */}
-                  <div className="space-y-1">
-                    <div className="text-sm font-medium text-gray-900">{booking.customerName}</div>
-                    <div className="text-xs text-gray-500">Pet: {booking.petName}</div>
-                    <div className="text-xs text-gray-400">{booking.phone}</div>
-                  </div>
-
-                  {/* Service & Provider */}
-                  <div className="space-y-1">
-                    <div className="text-sm font-medium text-gray-900">{booking.service}</div>
-                    <div className="text-xs text-gray-500">{booking.provider}</div>
-                    <div className="text-xs text-gray-400">{booking.location}</div>
-                  </div>
-
-                  {/* Price */}
-                  <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                    <div className="text-lg font-bold text-gray-900">₹{booking.price.toFixed(0)}</div>
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => {
-                          alert(`Viewing details for booking ${booking.id}\n\nCustomer: ${booking.customerName}\nPet: ${booking.petName}\nService: ${booking.service}\nProvider: ${booking.provider}\nDate: ${booking.date} at ${booking.time}\nNotes: ${booking.notes}`);
-                        }}
-                        className="text-indigo-600 hover:text-indigo-900 p-2 hover:bg-indigo-50 rounded-lg transition-colors"
-                        title="View Details"
-                      >
-                        <FaEye className="text-sm" />
-                      </button>
-                      <button
-                        onClick={() => handleReschedule(booking)}
-                        className="text-blue-600 hover:text-blue-900 p-2 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="Reschedule"
-                      >
-                        <FaEdit className="text-sm" />
-                      </button>
-                      <button
-                        onClick={() => handleApplyDiscount(booking)}
-                        className="text-green-600 hover:text-green-900 p-2 hover:bg-green-50 rounded-lg transition-colors"
-                        title="Apply Discount"
-                      >
-                        <FaPercent className="text-sm" />
-                      </button>
-                      <button
-                        onClick={() => handleCancel(booking.id)}
-                        className="text-red-600 hover:text-red-900 p-2 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Cancel Booking"
-                      >
-                        <FaTimes className="text-sm" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Notes Preview */}
-                {booking.notes && (
-                  <div className="px-4 pb-4">
-                    <div className="text-xs text-gray-500 bg-gray-50 rounded-lg p-2 truncate">
-                      <span className="font-medium">Notes:</span> {booking.notes}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
+
+          {/* Pagination Info */}
+          {filteredAndSortedBookings.length > 9 && (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
+              <div className="flex items-center justify-center gap-4">
+                <div className="text-sm text-gray-600">
+                  Showing 9 of {filteredAndSortedBookings.length} appointments
+                </div>
+                <button 
+                  onClick={() => {
+                    alert(`This would show the next set of appointments. Total available: ${filteredAndSortedBookings.length}`);
+                  }}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors text-sm"
+                >
+                  View All Appointments
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Empty State */}
           {filteredAndSortedBookings.length === 0 && (
