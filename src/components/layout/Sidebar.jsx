@@ -44,7 +44,7 @@ import {
   FaBook
 } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
-import logoImage from '.public/7.png';
+import logoImage from '/7.png';
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
   const location = useLocation();
