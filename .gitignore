@@ -59,3 +59,4 @@ server/.env.*
 
 # Lock files
 pnpm-lock.yaml
+.vercel
