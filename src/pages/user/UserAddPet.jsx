@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaPaw, FaArrowLeft, FaUpload, FaCalendarAlt, FaDog, FaCat, FaFish, FaHorse, FaSyringe, FaShieldAlt, FaCheck, FaTimes } from 'react-icons/fa';
 import { FaDove } from 'react-icons/fa6';
+import { GiRabbit } from 'react-icons/gi';
 import UserLayout from '../../components/layout/UserLayout';
 import { useAuth } from '../../context/AuthContext';
 
@@ -234,7 +235,7 @@ const UserAddPet = () => {
     { value: 'dog', label: 'Dog', icon: <FaDog /> },
     { value: 'cat', label: 'Cat', icon: <FaCat /> },
     { value: 'bird', label: 'Bird', icon: <FaDove /> },
-    { value: 'rabbit', label: 'Rabbit', icon: <FaPaw /> },
+    { value: 'rabbit', label: 'Rabbit', icon: <GiRabbit /> },
     { value: 'fish', label: 'Fish', icon: <FaFish /> },
     { value: 'horse', label: 'Horse', icon: <FaHorse /> },
     { value: 'other', label: 'Other', icon: <FaPaw /> }
