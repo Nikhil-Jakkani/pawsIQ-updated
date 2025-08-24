@@ -606,7 +606,7 @@ const Appointments = () => {
           </div>
 
           {/* Bookings Cards Grid - Fixed 3x3 Layout */}
-          <div className="grid grid-cols-3 gap-6 max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 min-h-0">
             {filteredAndSortedBookings.slice(0, 9).map((booking) => {
               // Get urgency color
               const getUrgencyColor = (urgency) => {
