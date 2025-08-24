@@ -189,12 +189,12 @@ const PetHealthCard = ({ pet }) => {
             </div>
 
             {/* Activity Recommendation */}
-            <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg p-3 border border-blue-100">
+            <div className="bg-gradient-to-r from-pink-50 to-purple-50 rounded-lg p-3 border border-pink-100">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
-                <span className="font-semibold text-blue-800 text-sm">Activity Level</span>
+                <div className="w-2 h-2 bg-pink-400 rounded-full animate-pulse"></div>
+                <span className="font-semibold text-pink-800 text-sm">Activity Level</span>
               </div>
-              <p className="text-xs text-blue-700">
+              <p className="text-xs text-pink-700">
                 {pet.type === 'dog' && `${pet.name} needs ${pet.breed === 'Golden Retriever' ? '90-120' : '60-90'} minutes of daily exercise.`}
                 {pet.type === 'cat' && `${pet.name} benefits from 15-20 minutes of interactive play daily.`}
                 {parseInt(pet.age) > 7 && ' Adjust intensity for senior pet comfort.'}

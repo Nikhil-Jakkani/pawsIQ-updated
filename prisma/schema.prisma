@@ -12,7 +12,7 @@ model PIQ_Health_Records {
   pet_id           BigInt
   record_type      String    @db.VarChar(50)
   title            String    @db.VarChar(255)
-  description      String?   @db.Text
+  description      String?
   record_date      DateTime  @db.Date
   next_due_date    DateTime? @db.Date
   file_path        String    @db.VarChar(512)
@@ -23,9 +23,9 @@ model PIQ_Health_Records {
   last_updated_dtm DateTime? @default(now()) @db.Timestamp(6)
   PIQ_Pets         PIQ_Pets  @relation(fields: [pet_id], references: [pet_id], onDelete: Cascade)
 
-  @@index([pet_id], name: "idx_health_records_pet_id")
-  @@index([record_type], name: "idx_health_records_record_type")
-  @@index([record_date], name: "idx_health_records_record_date")
+  @@index([pet_id], map: "idx_health_records_pet_id")
+  @@index([record_type], map: "idx_health_records_record_type")
+  @@index([record_date], map: "idx_health_records_record_date")
 }
 
 model PIQ_Pets {
@@ -42,11 +42,11 @@ model PIQ_Pets {
   last_updated_dtm   DateTime?            @default(now()) @db.Timestamp(6)
   pet_image          String?
   PIQ_Appointments   PIQ_Appointments[]
+  PIQ_Health_Records PIQ_Health_Records[]
   PIQ_User           PIQ_User?            @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
   PIQ_Pets_Photo     PIQ_Pets_Photo[]
-  PIQ_pets_profile   PIQ_pets_profile[]
-  PIQ_Health_Records PIQ_Health_Records[]
   PIQ_Reminders      PIQ_Reminders[]
+  PIQ_pets_profile   PIQ_pets_profile[]
 }
 
 model PIQ_Pets_Photo {

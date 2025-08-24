@@ -35,8 +35,6 @@ const UserDashboard = () => {
   const { currentUser } = useAuth();
   const accessToken = currentUser?.tokens?.access?.token;
   const [pets, setPets] = useState([]);
-  const [loadingPets, setLoadingPets] = useState(false);
-  const [petsError, setPetsError] = useState('');
   const careRemRef = useRef(null);
 
   useEffect(() => {
@@ -49,8 +47,6 @@ const UserDashboard = () => {
 
   useEffect(() => {
     if (!accessToken) return;
-    setLoadingPets(true);
-    setPetsError('');
     (async () => {
       try {
         const res = await fetch(`${API_URL}/user/profile`, {
@@ -86,7 +82,9 @@ const UserDashboard = () => {
               if (urlRes.ok && urlPayload?.url) {
                 return { ...pet, image: urlPayload.url };
               }
-            } catch {}
+            } catch (error) {
+              console.error('Failed to load pet image:', error);
+            }
             return pet;
           })
         );
@@ -95,13 +93,11 @@ const UserDashboard = () => {
           setSelectedPetForAI(withUrls[0]);
         }
       } catch (e) {
-        setPetsError(e.message || 'Failed to load pets');
+        console.error('Failed to load pets:', e);
         setPets([]);
-      } finally {
-        setLoadingPets(false);
       }
     })();
-  }, [accessToken]);
+  }, [accessToken, selectedPetForAI]);
 
   const getGreeting = () => {
     const hour = currentTime.getHours();

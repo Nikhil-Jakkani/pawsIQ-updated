@@ -103,13 +103,13 @@ const PetProfiles = () => {
         </div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="pet-grid grid">
         {pets.map((pet) => (
           <div 
             key={pet.id}
-            className="border border-pink-100 rounded-lg overflow-hidden hover:shadow-md transition-shadow"
+            className="pet-card"
           >
-            <div className="h-48 overflow-hidden">
+            <div className="pet-card-image">
               <img 
                 src={pet.image} 
                 alt={pet.name} 
@@ -123,11 +123,11 @@ const PetProfiles = () => {
               />
             </div>
             
-            <div className="p-4">
+            <div className="pet-card-content">
               <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="font-semibold text-gray-800 text-lg">{pet.name}</h3>
-                  <p className="text-sm text-gray-600">{pet.breed}</p>
+                <div className="flex-1 min-w-0">
+                  <h3 className="pet-name text-lg">{pet.name}</h3>
+                  <p className="pet-breed text-sm">{pet.breed}</p>
                 </div>
                 <div className={`rounded-full p-2 ${pet.type === 'cat' ? 'bg-purple-100' : 'bg-pink-100'}`}>
                   <PetIcon type={pet.type} className={pet.type === 'cat' ? 'text-purple-600' : 'text-pink-600'} />
@@ -145,7 +145,7 @@ const PetProfiles = () => {
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   {pet.gender === 'male' ? (
-                    <FaMars className="text-blue-500" />
+                    <FaMars className="text-pink-500" />
                   ) : (
                     <FaVenus className="text-pink-500" />
                   )}
@@ -153,11 +153,11 @@ const PetProfiles = () => {
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <FaCalendarAlt className="text-pink-500" />
-                  <span>Last checkup: {new Date(pet.lastCheckup).toLocaleDateString()}</span>
+                  <span className="pet-info-text">Last checkup: {new Date(pet.lastCheckup).toLocaleDateString()}</span>
                 </div>
               </div>
               
-              <div className="mt-4 flex gap-2">
+              <div className="pet-card-buttons">
                 <Link 
                   to={`/user/pets/${pet.id}`}
                   className="text-sm font-medium px-3 py-1 bg-pink-100 text-pink-700 rounded-full hover:bg-pink-200 transition-colors"
