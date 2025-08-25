@@ -15,28 +15,7 @@ export const usePWA = () => {
 
     checkInstalled();
 
-    // Register service worker and handle updates
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js')
-        .then((registration) => {
-          setRegistration(registration);
-          
-          // Check for updates
-          registration.addEventListener('updatefound', () => {
-            const newWorker = registration.installing;
-            if (newWorker) {
-              newWorker.addEventListener('statechange', () => {
-                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                  setIsUpdateAvailable(true);
-                }
-              });
-            }
-          });
-        })
-        .catch((error) => {
-          console.error('Service worker registration failed:', error);
-        });
-    }
+    // Service worker registration is handled centrally via VitePWA helper
 
     // Listen for app installation
     const handleAppInstalled = () => {
@@ -51,13 +30,7 @@ export const usePWA = () => {
   }, []);
 
   const updateApp = () => {
-    if (registration && registration.waiting) {
-      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-      
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        window.location.reload();
-      });
-    }
+    // No-op here; updates are handled via VitePWA helper in UI components
   };
 
   return {
