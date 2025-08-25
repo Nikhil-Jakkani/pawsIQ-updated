@@ -1,5 +1,7 @@
 import app from './app.js';
 import config from './config/config.js';
+import dotenv from "dotenv";
+dotenv.config();
 
 const port = config.port;
 const host = '0.0.0.0';
