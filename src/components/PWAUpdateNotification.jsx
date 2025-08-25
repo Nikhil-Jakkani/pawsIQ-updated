@@ -1,49 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { FiRefreshCw, FiX } from 'react-icons/fi';
+import { registerSW } from 'virtual:pwa-register';
 
 const PWAUpdateNotification = () => {
   const [showUpdatePrompt, setShowUpdatePrompt] = useState(false);
-  const [registration, setRegistration] = useState(null);
+  const [updateSW, setUpdateSW] = useState(null);
 
   useEffect(() => {
-    // Check if service worker is available
-    if ('serviceWorker' in navigator) {
-      const checkForUpdates = async () => {
-        try {
-          const registration = await navigator.serviceWorker.getRegistration();
-          if (registration) {
-            setRegistration(registration);
-            
-            // Check for updates
-            registration.addEventListener('updatefound', () => {
-              const newWorker = registration.installing;
-              if (newWorker) {
-                newWorker.addEventListener('statechange', () => {
-                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                    setShowUpdatePrompt(true);
-                  }
-                });
-              }
-            });
-          }
-        } catch (error) {
-          console.error('Error checking for service worker updates:', error);
+    // Register SW via VitePWA helper; show prompt when update is available
+    const update = registerSW({
+      immediate: true,
+      onNeedRefresh() {
+        setShowUpdatePrompt(true);
+      },
+      onRegisteredSW(swUrl, registration) {
+        // Optional: log SW registration
+        if (registration) {
+          console.log('Service Worker registered:', swUrl);
         }
-      };
-
-      checkForUpdates();
-    }
+      },
+      onRegisterError(error) {
+        console.error('Service worker registration failed:', error);
+      },
+    });
+    setUpdateSW(() => update);
   }, []);
 
   const handleUpdateClick = () => {
-    if (registration && registration.waiting) {
-      // Tell the waiting service worker to skip waiting
-      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-      
-      // Listen for the controlling service worker to change
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        window.location.reload();
-      });
+    if (typeof updateSW === 'function') {
+      // This will call skipWaiting and optionally reload the page
+      updateSW(true);
     }
   };
 
