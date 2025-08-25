@@ -46,7 +46,7 @@ const PetHealthCard = ({ pet }) => {
   const daysSinceCheckup = Math.floor((today - lastCheckupDate) / (1000 * 60 * 60 * 24));
 
   return (
-    <div className="bg-gradient-to-br from-pink-50 to-purple-50 rounded-xl p-6 border border-pink-100 shadow-sm hover:shadow-md transition-all duration-300">
+    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100 shadow-sm hover:shadow-md transition-all duration-300" style={{background: 'linear-gradient(135deg, #f0f7ff 0%, #e6f2ff 100%)'}}>
       <div className="flex items-start gap-4">
         {/* Pet Image */}
         <div className="relative">
@@ -69,7 +69,7 @@ const PetHealthCard = ({ pet }) => {
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
             <h3 className="text-lg font-bold text-gray-800">{pet.name}</h3>
-            <PetIcon type={pet.type} className={`text-lg ${pet.type === 'cat' ? 'text-purple-600' : 'text-pink-600'}`} />
+            <PetIcon type={pet.type} className="text-lg" style={{color: '#145ae6'}} />
           </div>
           <div className="flex items-center gap-2 mb-2">
             <span className="text-sm font-medium text-gray-700">{pet.age}</span>
@@ -91,20 +91,24 @@ const PetHealthCard = ({ pet }) => {
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div 
-                className={`h-2 rounded-full transition-all duration-500 ${
-                  healthScore >= 85 ? 'bg-gradient-to-r from-green-400 to-green-500' :
-                  healthScore >= 70 ? 'bg-gradient-to-r from-yellow-400 to-yellow-500' :
-                  'bg-gradient-to-r from-red-400 to-red-500'
-                }`}
-                style={{ width: `${healthScore}%` }}
+                className="h-2 rounded-full transition-all duration-500"
+                style={{
+                  width: `${healthScore}%`,
+                  background: healthScore >= 85 ? 'linear-gradient(to right, #145ae6, #1e40af)' :
+                             healthScore >= 70 ? 'linear-gradient(to right, #f59e0b, #d97706)' :
+                             'linear-gradient(to right, #ef4444, #dc2626)'
+                }}
               ></div>
             </div>
           </div>
           
           <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${
-            healthStatus.color === 'green' ? 'bg-green-100 text-green-800' :
+            healthStatus.color === 'green' ? 'text-white' :
             healthStatus.color === 'yellow' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
-          }`}>
+          }`}
+          style={{
+            backgroundColor: healthStatus.color === 'green' ? '#145ae6' : undefined
+          }}>
             <FaHeart />
             {healthStatus.message}
           </div>
@@ -114,7 +118,7 @@ const PetHealthCard = ({ pet }) => {
       {/* Health Stats Grid */}
       <div className="mt-4 grid grid-cols-2 gap-3">
         <div className="bg-white rounded-lg p-3 shadow-sm">
-          <div className="flex items-center gap-2 text-blue-600 mb-1">
+          <div className="flex items-center gap-2 mb-1" style={{color: '#145ae6'}}>
             <FaSyringe className="text-sm" />
             <span className="text-xs font-medium">Vaccines</span>
           </div>
@@ -122,7 +126,7 @@ const PetHealthCard = ({ pet }) => {
         </div>
         
         <div className="bg-white rounded-lg p-3 shadow-sm">
-          <div className="flex items-center gap-2 text-green-600 mb-1">
+          <div className="flex items-center gap-2 mb-1" style={{color: '#145ae6'}}>
             <FaStethoscope className="text-sm" />
             <span className="text-xs font-medium">Last Checkup</span>
           </div>
@@ -136,15 +140,19 @@ const PetHealthCard = ({ pet }) => {
       <div className="mt-4">
         <button 
           onClick={() => setShowInsights(!showInsights)}
-          className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 rounded-lg p-3 border border-indigo-100 hover:border-indigo-200 transition-all duration-200"
+          className="w-full flex items-center justify-center gap-2 rounded-lg p-3 border transition-all duration-200"
+          style={{
+            background: 'linear-gradient(to right, #f0f7ff, #e6f2ff)',
+            borderColor: '#145ae6'
+          }}
         >
-          <div className="bg-gradient-to-br from-indigo-500 to-purple-500 p-1.5 rounded-lg">
+          <div className="p-1.5 rounded-lg" style={{background: '#145ae6'}}>
             <FaStethoscope className="text-white text-xs" />
           </div>
           <span className="text-sm font-medium text-gray-700">
             {showInsights ? 'Hide' : 'View'} AI Insights
           </span>
-          <div className="bg-indigo-100 text-indigo-700 text-xs font-semibold px-2 py-1 rounded-full">
+          <div className="text-white text-xs font-semibold px-2 py-1 rounded-full" style={{backgroundColor: '#145ae6'}}>
             AI
           </div>
           {showInsights ? 
@@ -220,11 +228,11 @@ const PetHealthCard = ({ pet }) => {
 
       {/* Quick Actions */}
       <div className="mt-4 flex gap-2">
-        <button className="flex-1 bg-pink-500 hover:bg-pink-600 text-white text-xs font-medium py-2 px-3 rounded-lg transition-colors flex items-center justify-center gap-1">
+        <button className="flex-1 text-white text-xs font-medium py-2 px-3 rounded-lg transition-colors flex items-center justify-center gap-1" style={{backgroundColor: '#145ae6'}}>
           <FaCalendarCheck />
           Book Checkup
         </button>
-        <button className="flex-1 bg-purple-500 hover:bg-purple-600 text-white text-xs font-medium py-2 px-3 rounded-lg transition-colors">
+        <button className="flex-1 text-white text-xs font-medium py-2 px-3 rounded-lg transition-colors" style={{backgroundColor: '#145ae6'}}>
           View Profile
         </button>
       </div>

@@ -21,7 +21,8 @@ const UserMarketplace = () => {
       category: 'food',
       petType: 'dog',
       image: 'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
-      price: 49.99,
+      price: 3999.99,
+      priceINR: 3999.99,
       rating: 4.8,
       reviewCount: 124,
       seller: 'PetNutrition Co.',
@@ -35,7 +36,8 @@ const UserMarketplace = () => {
       category: 'toys',
       petType: 'cat',
       image: 'https://images.unsplash.com/photo-1526336179256-1347bdb255ee?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
-      price: 19.99,
+      price: 1599.99,
+      priceINR: 1599.99,
       rating: 4.7,
       reviewCount: 98,
       seller: 'FunPets',
@@ -49,7 +51,8 @@ const UserMarketplace = () => {
       category: 'beds',
       petType: 'all',
       image: 'https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
-      price: 79.99,
+      price: 6399.99,
+      priceINR: 6399.99,
       rating: 4.9,
       reviewCount: 76,
       seller: 'ComfortPets',
@@ -63,7 +66,8 @@ const UserMarketplace = () => {
       category: 'accessories',
       petType: 'dog',
       image: 'https://images.unsplash.com/photo-1599839575945-a9e5af0c3fa5?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
-      price: 15.99,
+      price: 1279.99,
+      priceINR: 1279.99,
       rating: 4.6,
       reviewCount: 112,
       seller: 'PetStyle',
@@ -77,7 +81,8 @@ const UserMarketplace = () => {
       category: 'supplies',
       petType: 'cat',
       image: 'https://images.unsplash.com/photo-1563398216289-4e5e877a816d?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
-      price: 24.99,
+      price: 1999.99,
+      priceINR: 1999.99,
       rating: 4.5,
       reviewCount: 87,
       seller: 'EcoPets',
@@ -91,7 +96,8 @@ const UserMarketplace = () => {
       category: 'food',
       petType: 'dog',
       image: 'https://images.unsplash.com/photo-1582798358481-d199fb7347bb?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
-      price: 12.99,
+      price: 1039.99,
+      priceINR: 1039.99,
       rating: 4.7,
       reviewCount: 64,
       seller: 'TrainingBuddies',
@@ -105,7 +111,8 @@ const UserMarketplace = () => {
       category: 'grooming',
       petType: 'all',
       image: 'https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
-      price: 34.99,
+      price: 2799.99,
+      priceINR: 2799.99,
       rating: 4.4,
       reviewCount: 53,
       seller: 'GroomPro',
@@ -119,7 +126,8 @@ const UserMarketplace = () => {
       category: 'supplies',
       petType: 'all',
       image: 'https://images.unsplash.com/photo-1585090163844-8398079e540a?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
-      price: 89.99,
+      price: 7199.99,
+      priceINR: 7199.99,
       rating: 4.8,
       reviewCount: 92,
       seller: 'SmartPet',
@@ -133,7 +141,8 @@ const UserMarketplace = () => {
       category: 'accessories',
       petType: 'dog',
       image: 'https://images.unsplash.com/photo-1576201836106-db1758fd1c97?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
-      price: 39.99,
+      price: 3199.99,
+      priceINR: 3199.99,
       rating: 4.6,
       reviewCount: 78,
       seller: 'PetComfort',
@@ -152,10 +161,10 @@ const UserMarketplace = () => {
     const matchesCategory = filterCategory === 'all' || product.category === filterCategory;
     
     const matchesPrice = filterPrice === 'all' || 
-                         (filterPrice === 'under25' && product.price < 25) ||
-                         (filterPrice === '25to50' && product.price >= 25 && product.price <= 50) ||
-                         (filterPrice === '50to100' && product.price > 50 && product.price <= 100) ||
-                         (filterPrice === 'over100' && product.price > 100);
+                         (filterPrice === 'under2000' && product.price < 2000) ||
+                         (filterPrice === '2000to4000' && product.price >= 2000 && product.price <= 4000) ||
+                         (filterPrice === '4000to8000' && product.price > 4000 && product.price <= 8000) ||
+                         (filterPrice === 'over8000' && product.price > 8000);
     
     const matchesRating = product.rating >= filterRating;
     
@@ -188,13 +197,13 @@ const UserMarketplace = () => {
     { value: 'grooming', label: 'Grooming' }
   ];
   
-  // Price range options
+  // Price range options (Indian Rupees)
   const priceRanges = [
     { value: 'all', label: 'All Prices' },
-    { value: 'under25', label: 'Under $25' },
-    { value: '25to50', label: '$25 to $50' },
-    { value: '50to100', label: '$50 to $100' },
-    { value: 'over100', label: 'Over $100' }
+    { value: 'under2000', label: 'Under ₹2,000' },
+    { value: '2000to4000', label: '₹2,000 to ₹4,000' },
+    { value: '4000to8000', label: '₹4,000 to ₹8,000' },
+    { value: 'over8000', label: 'Over ₹8,000' }
   ];
   
   // Featured categories for the top section
@@ -398,7 +407,7 @@ const UserMarketplace = () => {
                   </div>
                   
                   <div className="mt-2">
-                    <span className="text-lg font-bold text-blue-600">${product.price.toFixed(2)}</span>
+                    <span className="text-lg font-bold text-blue-600">₹{product.priceINR.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                   
                   <p className="text-gray-600 text-sm mt-2 line-clamp-2">{product.description}</p>
@@ -476,7 +485,7 @@ const UserMarketplace = () => {
                     <div className="flex-1">
                       <h3 className="font-medium text-gray-800 line-clamp-1">{product.name}</h3>
                       <div className="flex items-center justify-between mt-1">
-                        <span className="text-blue-600 font-bold">${product.price.toFixed(2)}</span>
+                        <span className="text-blue-600 font-bold">₹{product.priceINR.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                         <button 
                           onClick={() => addToCart(product)}
                           className="text-xs bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded transition-colors"
@@ -490,6 +499,45 @@ const UserMarketplace = () => {
             </div>
           </div>
         )}
+
+        {/* Indian Payment Methods */}
+        <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-6 border border-green-100">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="bg-green-100 p-2 rounded-lg">
+              <FaShoppingCart className="text-green-600 text-xl" />
+            </div>
+            <h2 className="text-lg font-semibold text-green-900">Accepted Payment Methods</h2>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4">
+            <div className="bg-white rounded-lg p-3 text-center border border-green-100 hover:shadow-md transition-shadow">
+              <div className="text-2xl mb-2">💳</div>
+              <p className="text-xs font-medium text-gray-700">Credit/Debit Cards</p>
+            </div>
+            <div className="bg-white rounded-lg p-3 text-center border border-green-100 hover:shadow-md transition-shadow">
+              <div className="text-2xl mb-2">📱</div>
+              <p className="text-xs font-medium text-gray-700">UPI</p>
+            </div>
+            <div className="bg-white rounded-lg p-3 text-center border border-green-100 hover:shadow-md transition-shadow">
+              <div className="text-2xl mb-2">🏦</div>
+              <p className="text-xs font-medium text-gray-700">Net Banking</p>
+            </div>
+            <div className="bg-white rounded-lg p-3 text-center border border-green-100 hover:shadow-md transition-shadow">
+              <div className="text-2xl mb-2">💰</div>
+              <p className="text-xs font-medium text-gray-700">Paytm</p>
+            </div>
+            <div className="bg-white rounded-lg p-3 text-center border border-green-100 hover:shadow-md transition-shadow">
+              <div className="text-2xl mb-2">📲</div>
+              <p className="text-xs font-medium text-gray-700">PhonePe</p>
+            </div>
+            <div className="bg-white rounded-lg p-3 text-center border border-green-100 hover:shadow-md transition-shadow">
+              <div className="text-2xl mb-2">💸</div>
+              <p className="text-xs font-medium text-gray-700">Google Pay</p>
+            </div>
+          </div>
+          <div className="mt-4 text-center">
+            <p className="text-sm text-green-700">✓ Secure payments • ✓ COD available • ✓ EMI options • ✓ Free delivery above ₹999</p>
+          </div>
+        </div>
       </div>
     </UserLayout>
   );
