@@ -24,7 +24,7 @@ const PetActivityTracker = () => {
       breed: 'Siamese Cat', 
       type: 'cat',
       image: 'https://images.unsplash.com/photo-1592194996308-7b43878e84a6?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=60',
-      color: 'from-purple-500 to-pink-600'
+      color: 'from-purple-500 to-blue-600'
     }
   ];
   

@@ -48,15 +48,18 @@ const UserAppointments = () => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-6 border border-pink-100">
+    <div className="bg-white rounded-xl shadow-sm p-6 border border-blue-100">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-          <FaCalendarAlt className="text-pink-600" />
+          <FaCalendarAlt style={{ color: '#145ae6' }} />
           Upcoming Appointments
         </h2>
         <Link 
           to="/user/appointments"
-          className="text-sm font-medium text-pink-600 hover:text-pink-700 flex items-center gap-1"
+          className="text-sm font-medium flex items-center gap-1"
+          style={{ color: '#145ae6' }}
+          onMouseEnter={(e) => e.target.style.color = '#0f4bc7'}
+          onMouseLeave={(e) => e.target.style.color = '#145ae6'}
         >
           View All <FaArrowRight size={12} />
         </Link>
@@ -66,11 +69,11 @@ const UserAppointments = () => {
         {appointments.map((appointment) => (
           <div 
             key={appointment.id}
-            className="border border-pink-100 rounded-lg p-4 hover:shadow-md transition-shadow"
+            className="border border-blue-100 rounded-lg p-4 hover:shadow-md transition-shadow"
           >
             <div className="flex items-start gap-4">
-              <div className={`rounded-full p-3 ${appointment.petType === 'cat' ? 'bg-purple-100' : 'bg-pink-100'}`}>
-                <PetIcon type={appointment.petType} className={appointment.petType === 'cat' ? 'text-purple-600' : 'text-pink-600'} />
+              <div className="rounded-full p-3" style={{ backgroundColor: '#e3f2fd' }}>
+                <PetIcon type={appointment.petType} style={{ color: '#145ae6' }} />
               </div>
               
               <div className="flex-1">

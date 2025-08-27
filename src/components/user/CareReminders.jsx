@@ -50,7 +50,7 @@ const CareReminders = React.forwardRef(({ pets }, ref) => {
 
   const getTypeMeta = (type) => {
     const typeMap = {
-      grooming: { icon: FaCut, color: 'from-pink-500 to-pink-600', bgColor: 'bg-pink-50', textColor: 'text-pink-600' },
+      grooming: { icon: FaCut, color: 'from-blue-500 to-[#145ae6]', bgColor: 'bg-blue-50', textColor: 'text-blue-600' },
       vaccination: { icon: FaSyringe, color: 'from-blue-500 to-blue-600', bgColor: 'bg-blue-50', textColor: 'text-blue-600' },
       checkup: { icon: FaStethoscope, color: 'from-green-500 to-green-600', bgColor: 'bg-green-50', textColor: 'text-green-600' },
       health_checkup: { icon: FaStethoscope, color: 'from-green-500 to-green-600', bgColor: 'bg-green-50', textColor: 'text-green-600' },
@@ -59,7 +59,7 @@ const CareReminders = React.forwardRef(({ pets }, ref) => {
       dental_care: { icon: FaBone, color: 'from-yellow-500 to-yellow-600', bgColor: 'bg-yellow-50', textColor: 'text-yellow-600' },
       flea: { icon: FaBath, color: 'from-blue-500 to-[#145ae6]', bgColor: 'bg-blue-50', textColor: 'text-blue-600' },
       flea_prevention: { icon: FaBath, color: 'from-blue-500 to-[#145ae6]', bgColor: 'bg-blue-50', textColor: 'text-blue-600' },
-      appointment: { icon: FaCalendarCheck, color: 'from-purple-500 to-purple-600', bgColor: 'bg-purple-50', textColor: 'text-purple-600' },
+      appointment: { icon: FaCalendarCheck, color: 'from-blue-500 to-[#145ae6]', bgColor: 'bg-blue-50', textColor: 'text-blue-600' },
     };
 
     return typeMap[type?.toLowerCase()] || {
@@ -310,7 +310,7 @@ const CareReminders = React.forwardRef(({ pets }, ref) => {
     <div className="relative space-y-4">
       {/* Priority Reminders */}
       {urgentReminders.length > 0 && (
-        <div className="bg-gradient-to-r from-red-50 to-pink-50 rounded-xl p-4 border border-red-200">
+        <div className="bg-gradient-to-r from-red-50 to-blue-50 rounded-xl p-4 border border-red-200">
           <div className="flex items-center gap-2 mb-3">
             <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
             <h3 className="text-sm font-bold text-red-800">Urgent Care Needed</h3>

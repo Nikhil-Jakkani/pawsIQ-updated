@@ -50,7 +50,7 @@ const WeatherWidget = () => {
   const WeatherIcon = getWeatherIcon(weather.condition);
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-6 border border-pink-100">
+    <div className="bg-white rounded-xl shadow-sm p-6" style={{ border: '1px solid #e3f2fd' }}>
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-semibold text-gray-800">Pet Weather</h2>
         <span className={`text-xs px-2 py-1 rounded-full font-medium ${getSafetyColor(weather.petSafetyLevel)}`}>

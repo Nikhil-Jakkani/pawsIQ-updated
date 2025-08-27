@@ -4,6 +4,7 @@ import { FaPaw, FaPlus, FaSearch, FaFilter, FaEdit, FaTrash, FaHeart, FaCalendar
 import UserLayout from '../../components/layout/UserLayout';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabaseClient';
+import MedicalRecordsPopup from '../../components/user/MedicalRecordsPopup';
 const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
 
 const UserPets = () => {
@@ -14,6 +15,8 @@ const UserPets = () => {
   const { currentUser } = useAuth();
   const accessToken = currentUser?.tokens?.access?.token;
   const [pets, setPets] = useState([]);
+  const [showMedicalRecordsPopup, setShowMedicalRecordsPopup] = useState(false);
+  const [selectedPetForMedical, setSelectedPetForMedical] = useState(null);
 
   // Determine current view based on route
   const getCurrentView = () => {
@@ -159,14 +162,119 @@ const UserPets = () => {
     }
   };
 
+  // Handle opening medical records popup
+  const handleOpenMedicalRecords = (pet) => {
+    setSelectedPetForMedical(pet);
+    setShowMedicalRecordsPopup(true);
+  };
+
+  // Handle closing medical records popup
+  const handleCloseMedicalRecords = () => {
+    setShowMedicalRecordsPopup(false);
+    setSelectedPetForMedical(null);
+  };
+
+  // Handle submitting medical record
+  const handleSubmitMedicalRecord = async (recordData) => {
+    if (!selectedPetForMedical || !accessToken) {
+      throw new Error('Missing pet information or authentication');
+    }
+
+    try {
+      // Create the medical record
+      const response = await fetch(`${API_URL}/pets/${selectedPetForMedical.id}/health-records`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: recordData.title,
+          recordDate: recordData.recordDate,
+          description: recordData.description,
+          recordType: 'medical_condition',
+          conditions: recordData.conditions,
+          // Files will be handled separately if provided
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to create medical record');
+      }
+
+      const createdRecord = await response.json();
+
+      // Handle file uploads if any files were provided
+      if (recordData.files && recordData.files.length > 0) {
+        for (const file of recordData.files) {
+          try {
+            // Get signed upload URL
+            const uploadUrlResponse = await fetch(`${API_URL}/pets/${selectedPetForMedical.id}/health-records/upload-url`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                fileName: file.name,
+                fileType: file.type,
+              }),
+            });
+
+            if (uploadUrlResponse.ok) {
+              const { signedUrl, path } = await uploadUrlResponse.json();
+              
+              // Upload file
+              const uploadResponse = await fetch(signedUrl, {
+                method: 'PUT',
+                body: file,
+                headers: {
+                  'Content-Type': file.type,
+                },
+              });
+
+              if (uploadResponse.ok) {
+                // Update the record with file information
+                await fetch(`${API_URL}/health-records/${createdRecord.id}/file`, {
+                  method: 'PUT',
+                  headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    filePath: path,
+                    fileName: file.name,
+                    fileType: file.type,
+                    fileSize: file.size,
+                  }),
+                });
+              }
+            }
+          } catch (fileError) {
+            console.error('Error uploading file:', fileError);
+            // Continue with other files even if one fails
+          }
+        }
+      }
+
+      // Show success message or update UI as needed
+      console.log('Medical record created successfully');
+      
+    } catch (error) {
+      console.error('Error creating medical record:', error);
+      throw error;
+    }
+  };
+
   return (
     <UserLayout>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
             <div className="flex items-center gap-3">
-              <div className="bg-pink-100 p-2 rounded-lg">
-                <FaPaw className="text-pink-600 text-2xl" />
+              <div className="bg-blue-100 p-2 rounded-lg">
+                <FaPaw className="text-2xl" style={{ color: '#145ae6' }} />
               </div>
               <h1 className="text-2xl font-bold text-gray-800">My Pets</h1>
             </div>
@@ -174,7 +282,10 @@ const UserPets = () => {
           </div>
           <button
             onClick={() => navigate('/user/pets/add')}
-            className="bg-pink-600 hover:bg-pink-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+            className="text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+            style={{ backgroundColor: '#145ae6' }}
+            onMouseEnter={(e) => e.target.style.backgroundColor = '#0f4bc7'}
+            onMouseLeave={(e) => e.target.style.backgroundColor = '#145ae6'}
           >
             <FaPlus />
             Add New Pet
@@ -191,7 +302,10 @@ const UserPets = () => {
                 placeholder="Search pets by name or breed..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-gray-300"
+                style={{ '--tw-ring-color': '#145ae6' }}
+                onFocus={(e) => e.target.style.borderColor = '#145ae6'}
+                onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
               />
             </div>
             <div className="flex items-center gap-2">
@@ -199,7 +313,10 @@ const UserPets = () => {
               <select
                 value={filterType}
                 onChange={(e) => setFilterType(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:border-gray-300"
+                style={{ '--tw-ring-color': '#145ae6' }}
+                onFocus={(e) => e.target.style.borderColor = '#145ae6'}
+                onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
               >
                 <option value="all">All Pets</option>
                 <option value="dog">Dogs</option>
@@ -244,7 +361,8 @@ const UserPets = () => {
                     />
                     <label
                       htmlFor={`pet-upload-${pet.id}`}
-                      className="cursor-pointer bg-white/90 hover:bg-white text-pink-600 text-xs font-medium px-2 py-1 rounded shadow"
+                      className="cursor-pointer bg-white/90 hover:bg-white text-xs font-medium px-2 py-1 rounded shadow"
+                      style={{ color: '#145ae6' }}
                     >
                       Change Photo
                     </label>
@@ -262,11 +380,14 @@ const UserPets = () => {
                     </div>
                     <div className="flex flex-col gap-2 ml-2">
                       <button
-                        onClick={() => navigate(`/user/pets/edit/${pet.id}`)}
-                        className="p-2 text-gray-500 hover:text-pink-600 transition-colors text-xs"
-                        title="Edit Pet"
+                        onClick={() => handleOpenMedicalRecords(pet)}
+                        className="p-2 text-gray-500 transition-colors text-xs"
+                        style={{ '--hover-color': '#145ae6' }}
+                        onMouseEnter={(e) => e.target.style.color = '#145ae6'}
+                        onMouseLeave={(e) => e.target.style.color = '#6b7280'}
+                        title="Add Medical Record"
                       >
-                        <FaFileMedical className="inline mr-1" /> Health Records
+                        <FaFileMedical className="inline mr-1" /> Add Medical Record
                       </button>
                       <button
                         onClick={() => handleDeletePet(pet.id)}
@@ -283,21 +404,33 @@ const UserPets = () => {
                       <span className="pet-info-text">{pet.healthStatus}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <FaCalendarAlt className="text-pink-500" />
+                      <FaCalendarAlt style={{ color: '#145ae6' }} />
                       <span className="pet-info-text">Last checkup: {new Date(pet.lastCheckup).toLocaleDateString()}</span>
                     </div>
                   </div>
                   
                   <div className="pet-card-buttons">
                     <button 
-                      onClick={() => navigate(`/user/pets/health/${pet.id}`)}
-                      className="flex-1 bg-pink-100 hover:bg-pink-200 text-pink-600 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                      onClick={() => handleOpenMedicalRecords(pet)}
+                      className="flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                      style={{ 
+                        backgroundColor: '#e3f2fd', 
+                        color: '#145ae6' 
+                      }}
+                      onMouseEnter={(e) => e.target.style.backgroundColor = '#bbdefb'}
+                      onMouseLeave={(e) => e.target.style.backgroundColor = '#e3f2fd'}
                     >
-                      Health Records
+                      Add Medical Record
                     </button>
                     <button 
                       onClick={() => navigate('/user/appointments/new')}
-                      className="flex-1 bg-purple-100 hover:bg-purple-200 text-purple-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                      className="flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                      style={{ 
+                        backgroundColor: '#e3f2fd', 
+                        color: '#145ae6' 
+                      }}
+                      onMouseEnter={(e) => e.target.style.backgroundColor = '#bbdefb'}
+                      onMouseLeave={(e) => e.target.style.backgroundColor = '#e3f2fd'}
                     >
                       Book Appointment
                     </button>
@@ -307,9 +440,9 @@ const UserPets = () => {
             ))}
           </div>
         ) : (
-          <div className="bg-white rounded-lg p-8 text-center border border-pink-200">
-            <div className="bg-pink-100 w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4">
-              <FaPaw className="text-pink-600 text-2xl" />
+          <div className="bg-white rounded-lg p-8 text-center" style={{ border: '1px solid #145ae6' }}>
+            <div className="w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4" style={{ backgroundColor: '#e3f2fd' }}>
+              <FaPaw className="text-2xl" style={{ color: '#145ae6' }} />
             </div>
             <h3 className="text-xl font-semibold text-gray-800 mb-2">No pets found</h3>
             <p className="text-gray-600 mb-6">
@@ -319,7 +452,10 @@ const UserPets = () => {
             </p>
             <button 
               onClick={() => navigate('/user/pets/add')}
-              className="bg-pink-600 hover:bg-pink-700 text-white px-4 py-2 rounded-lg inline-flex items-center gap-2 transition-colors"
+              className="text-white px-4 py-2 rounded-lg inline-flex items-center gap-2 transition-colors"
+              style={{ backgroundColor: '#145ae6' }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#0f4bc7'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#145ae6'}
             >
               <FaPlus />
               Add New Pet
@@ -327,6 +463,14 @@ const UserPets = () => {
           </div>
         )}
       </div>
+
+      {/* Medical Records Popup */}
+      <MedicalRecordsPopup
+        isOpen={showMedicalRecordsPopup}
+        onClose={handleCloseMedicalRecords}
+        onSubmit={handleSubmitMedicalRecord}
+        petName={selectedPetForMedical?.name || 'your pet'}
+      />
     </UserLayout>
   );
 };
