@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FaPaw, FaPlus, FaSearch, FaFilter, FaEdit, FaTrash, FaHeart, FaCalendarAlt, FaUser, FaClipboardList, FaFileMedical } from 'react-icons/fa';
+import { FaPaw, FaPlus, FaSearch, FaFilter, FaEdit, FaTrash, FaHeart, FaCalendarAlt, FaUser, FaClipboardList, FaFileMedical, FaSyringe } from 'react-icons/fa';
 import UserLayout from '../../components/layout/UserLayout';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabaseClient';
 import MedicalRecordsPopup from '../../components/user/MedicalRecordsPopup';
+import VaccinationRecordsPopup from '../../components/user/VaccinationRecordsPopup';
 const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
 
 const UserPets = () => {
@@ -17,6 +18,8 @@ const UserPets = () => {
   const [pets, setPets] = useState([]);
   const [showMedicalRecordsPopup, setShowMedicalRecordsPopup] = useState(false);
   const [selectedPetForMedical, setSelectedPetForMedical] = useState(null);
+  const [showVaccinationPopup, setShowVaccinationPopup] = useState(false);
+  const [selectedPetForVaccination, setSelectedPetForVaccination] = useState(null);
 
   // Determine current view based on route
   const getCurrentView = () => {
@@ -174,6 +177,17 @@ const UserPets = () => {
     setSelectedPetForMedical(null);
   };
 
+  // Vaccination popup handlers
+  const handleOpenVaccination = (pet) => {
+    setSelectedPetForVaccination(pet);
+    setShowVaccinationPopup(true);
+  };
+
+  const handleCloseVaccination = () => {
+    setShowVaccinationPopup(false);
+    setSelectedPetForVaccination(null);
+  };
+
   // Handle submitting medical record
   const handleSubmitMedicalRecord = async (recordData) => {
     if (!selectedPetForMedical || !accessToken) {
@@ -265,6 +279,116 @@ const UserPets = () => {
       console.error('Error creating medical record:', error);
       throw error;
     }
+  };
+
+  // Handle vaccination submission (multiple entries)
+  const handleSubmitVaccinations = async ({ entries, createReminder, bookAppointment }) => {
+    if (!selectedPetForVaccination || !accessToken) {
+      throw new Error('Missing pet information or authentication');
+    }
+
+    const petId = selectedPetForVaccination.id;
+
+    // Helper to create one vaccination record
+    const createOneRecord = async (entry) => {
+      const basePayload = {
+        recordType: 'vaccination',
+        title: entry.vaccineName,
+        description: entry.notes || '',
+        recordDate: entry.recordDate,
+        nextDueDate: entry.nextDueDate || null,
+      };
+
+      // 1) Create record without file
+      const res = await fetch(`${API_URL}/pets/${petId}/health-records`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(basePayload),
+      });
+      const created = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(created?.message || 'Failed to create vaccination record');
+
+      // 2) If file provided, get signed URL, upload, then attach to record
+      if (entry.file) {
+        const up = await fetch(`${API_URL}/pets/${petId}/health-records/upload-url`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ fileName: entry.file.name, fileType: entry.file.type }),
+        });
+        const upPayload = await up.json().catch(() => ({}));
+        if (!up.ok) throw new Error(upPayload?.message || 'Failed to get upload URL');
+        const { signedUrl, path } = upPayload;
+        const put = await fetch(signedUrl, { method: 'PUT', body: entry.file, headers: { 'Content-Type': entry.file.type } });
+        if (!put.ok) throw new Error('File upload failed');
+
+        // attach to record
+        await fetch(`${API_URL}/health-records/${created.id}/file`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            filePath: path,
+            fileName: entry.file.name,
+            fileType: entry.file.type,
+            fileSize: entry.file.size,
+          }),
+        });
+      }
+
+      // 3) Optionally create reminder for nextDueDate
+      if (createReminder && entry.nextDueDate) {
+        const r = await fetch(`${API_URL}/reminders`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({
+            pet_id: petId,
+            title: `${entry.vaccineName} booster due`,
+            reminder_type: 'vaccination',
+            due_date: new Date(entry.nextDueDate).toISOString(),
+            priority: 'normal',
+            notes: entry.notes || undefined,
+          }),
+        });
+        const rj = await r.json().catch(() => ({}));
+        if (!r.ok) console.warn('Failed to create reminder', rj);
+      }
+
+      return created;
+    };
+
+    // Create all records sequentially (to keep logic simple and respect order)
+    for (const entry of entries) {
+      await createOneRecord(entry);
+    }
+
+    // After all saved, optionally navigate to appointment booking
+    if (bookAppointment) {
+      // Pre-fill vaccination booking for this pet
+      navigate('/user/appointments/new', {
+        state: {
+          prefill: {
+            petId,
+            serviceType: 'vet',
+            serviceId: 'vet2', // our mapping uses vet2 -> Vaccination in UserBookAppointment
+            reason: 'Vaccination',
+          },
+        },
+      });
+    }
+
+    // Close modal
+    handleCloseVaccination();
   };
 
   return (
@@ -470,6 +594,15 @@ const UserPets = () => {
         onClose={handleCloseMedicalRecords}
         onSubmit={handleSubmitMedicalRecord}
         petName={selectedPetForMedical?.name || 'your pet'}
+      />
+
+      {/* Vaccination Records Popup */}
+      <VaccinationRecordsPopup
+        isOpen={showVaccinationPopup}
+        onClose={handleCloseVaccination}
+        onSubmit={handleSubmitVaccinations}
+        petName={selectedPetForVaccination?.name || 'your pet'}
+        petType={selectedPetForVaccination?.type || 'dog'}
       />
     </UserLayout>
   );
