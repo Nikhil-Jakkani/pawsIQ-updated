@@ -168,7 +168,7 @@ const PetHealthCard = ({ pet }) => {
             <div className={`bg-gradient-to-r ${
               daysSinceCheckup < 90 ? 'from-green-50 to-emerald-50 border-green-100' : 
               daysSinceCheckup < 180 ? 'from-yellow-50 to-orange-50 border-yellow-100' : 
-              'from-red-50 to-pink-50 border-red-100'
+              'from-red-50 to-blue-50 border-red-100'
             } rounded-lg p-3 border`}>
               <div className="flex items-center gap-2 mb-2">
                 <div className={`w-2 h-2 ${
@@ -197,12 +197,12 @@ const PetHealthCard = ({ pet }) => {
             </div>
 
             {/* Activity Recommendation */}
-            <div className="bg-gradient-to-r from-pink-50 to-purple-50 rounded-lg p-3 border border-pink-100">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-3" style={{ border: '1px solid #e3f2fd' }}>
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-2 h-2 bg-pink-400 rounded-full animate-pulse"></div>
-                <span className="font-semibold text-pink-800 text-sm">Activity Level</span>
+                <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: '#145ae6' }}></div>
+                <span className="font-semibold text-sm" style={{ color: '#145ae6' }}>Activity Level</span>
               </div>
-              <p className="text-xs text-pink-700">
+              <p className="text-xs" style={{ color: '#0f4bc7' }}>
                 {pet.type === 'dog' && `${pet.name} needs ${pet.breed === 'Golden Retriever' ? '90-120' : '60-90'} minutes of daily exercise.`}
                 {pet.type === 'cat' && `${pet.name} benefits from 15-20 minutes of interactive play daily.`}
                 {parseInt(pet.age) > 7 && ' Adjust intensity for senior pet comfort.'}

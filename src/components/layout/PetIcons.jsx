@@ -41,8 +41,8 @@ export const PetIcon = ({ type = 'paw', size = 'md', className = '' }) => {
 
 export const PetIconButton = ({ type, onClick, label, variant = 'primary', size = 'md', className = '' }) => {
   const variants = {
-    primary: 'bg-indigo-600 hover:bg-indigo-700 text-white',
-    secondary: 'bg-white border border-indigo-600 text-indigo-600 hover:bg-indigo-50',
+    primary: 'text-white',
+    secondary: 'bg-white text-white hover:bg-blue-50',
     success: 'bg-green-600 hover:bg-green-700 text-white',
     danger: 'bg-red-600 hover:bg-red-700 text-white',
     warning: 'bg-yellow-500 hover:bg-yellow-600 text-white',
@@ -56,10 +56,35 @@ export const PetIconButton = ({ type, onClick, label, variant = 'primary', size 
     xl: 'text-lg px-5 py-3 rounded-lg',
   };
 
+  const getButtonStyle = () => {
+    if (variant === 'primary') {
+      return { backgroundColor: '#145ae6' };
+    }
+    if (variant === 'secondary') {
+      return { border: `1px solid #145ae6`, color: '#145ae6' };
+    }
+    return {};
+  };
+
+  const handleMouseEnter = (e) => {
+    if (variant === 'primary') {
+      e.target.style.backgroundColor = '#0f4bc7';
+    }
+  };
+
+  const handleMouseLeave = (e) => {
+    if (variant === 'primary') {
+      e.target.style.backgroundColor = '#145ae6';
+    }
+  };
+
   return (
     <button
       onClick={onClick}
       className={`flex items-center justify-center gap-2 font-medium transition-colors ${variants[variant]} ${sizes[size]} ${className}`}
+      style={getButtonStyle()}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       <PetIcon type={type} size={size} />
       {label && <span>{label}</span>}
@@ -69,7 +94,7 @@ export const PetIconButton = ({ type, onClick, label, variant = 'primary', size 
 
 export const PetBadge = ({ type, label, variant = 'primary', size = 'sm' }) => {
   const variants = {
-    primary: 'bg-indigo-100 text-indigo-800',
+    primary: 'bg-blue-100',
     secondary: 'bg-gray-100 text-gray-800',
     success: 'bg-green-100 text-green-800',
     danger: 'bg-red-100 text-red-800',
@@ -84,8 +109,18 @@ export const PetBadge = ({ type, label, variant = 'primary', size = 'sm' }) => {
     lg: 'text-base px-3 py-1.5',
   };
 
+  const getBadgeStyle = () => {
+    if (variant === 'primary') {
+      return { color: '#145ae6' };
+    }
+    return {};
+  };
+
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full font-medium ${variants[variant]} ${sizes[size]}`}>
+    <span 
+      className={`inline-flex items-center gap-1 rounded-full font-medium ${variants[variant]} ${sizes[size]}`}
+      style={getBadgeStyle()}
+    >
       <PetIcon type={type} size="sm" />
       {label}
     </span>

@@ -68,11 +68,7 @@ const UserSidebar = ({ isOpen, toggleSidebar }) => {
       icon: <FaPaw />,
       label: 'My Pets',
       path: '/user/pets',
-      items: [
-        { path: '/user/pets/add', icon: <FaPaw />, label: 'Add a Pet' },
-        { path: '/user/pets/profiles', icon: <FaUser />, label: 'Pet Profiles' },
-        { path: '/user/pets/health', icon: <FaHeart />, label: 'Health Records' }
-      ]
+      items: []
     },
     {
       id: 'ai-pet-care',
@@ -98,11 +94,7 @@ const UserSidebar = ({ isOpen, toggleSidebar }) => {
       icon: <FaShoppingCart />,
       label: 'Shop',
       path: '/user/marketplace',
-      items: [
-        { path: '/user/marketplace/food', icon: <FaShoppingCart />, label: 'Pet Food' },
-        { path: '/user/marketplace/toys', icon: <FaShoppingCart />, label: 'Toys & Accessories' },
-        { path: '/user/marketplace/health', icon: <FaHeart />, label: 'Health Products' }
-      ]
+      items: []
     },
     {
       id: 'orders',

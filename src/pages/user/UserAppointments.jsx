@@ -177,8 +177,8 @@ const UserAppointments = () => {
         <div className="flex justify-between items-center">
           <div>
             <div className="flex items-center gap-3">
-              <div className="bg-purple-100 p-2 rounded-lg">
-                <FaCalendarAlt className="text-purple-600 text-2xl" />
+              <div className="p-2 rounded-lg" style={{ backgroundColor: '#e3f2fd' }}>
+                <FaCalendarAlt className="text-2xl" style={{ color: '#145ae6' }} />
               </div>
               <h1 className="text-2xl font-bold text-gray-800">My Appointments</h1>
             </div>
@@ -186,7 +186,10 @@ const UserAppointments = () => {
           </div>
           <button 
             onClick={() => navigate('/user/appointments/new')}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+            className="text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+            style={{ backgroundColor: '#145ae6' }}
+            onMouseEnter={(e) => e.target.style.backgroundColor = '#0f4bc7'}
+            onMouseLeave={(e) => e.target.style.backgroundColor = '#145ae6'}
           >
             <FaPlus />
             Book New Appointment
@@ -369,8 +372,8 @@ const UserAppointments = () => {
           </div>
         ) : (
           <div className="bg-white rounded-lg p-8 text-center border border-gray-200">
-            <div className="bg-purple-100 w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4">
-              <FaCalendarAlt className="text-purple-600 text-2xl" />
+            <div className="w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4" style={{ backgroundColor: '#e3f2fd' }}>
+              <FaCalendarAlt className="text-2xl" style={{ color: '#145ae6' }} />
             </div>
             <h3 className="text-xl font-semibold text-gray-800 mb-2">No appointments found</h3>
             <p className="text-gray-600 mb-6">
@@ -380,7 +383,10 @@ const UserAppointments = () => {
             </p>
             <button 
               onClick={() => navigate('/user/appointments/new')}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg inline-flex items-center gap-2 transition-colors"
+              className="text-white px-4 py-2 rounded-lg inline-flex items-center gap-2 transition-colors"
+              style={{ backgroundColor: '#145ae6' }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#0f4bc7'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#145ae6'}
             >
               <FaPlus />
               Book New Appointment

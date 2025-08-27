@@ -9,9 +9,9 @@ const QuickStats = () => {
       value: '2',
       subtitle: 'Healthy & Active',
       icon: FaPaw,
-      color: 'from-pink-500 to-pink-600',
-      bgColor: 'bg-pink-50',
-      textColor: 'text-pink-600'
+      color: 'from-blue-500 to-blue-600',
+      bgColor: 'bg-blue-50',
+      textColor: 'text-blue-600'
     },
     {
       id: 2,
@@ -73,7 +73,8 @@ const QuickStats = () => {
         return (
           <div 
             key={stat.id}
-            className="bg-white rounded-xl p-4 border border-pink-100 shadow-sm hover:shadow-md transition-all duration-200 group"
+            className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 group"
+            style={{ border: '1px solid #e3f2fd' }}
           >
             <div className="flex flex-col items-center text-center">
               <div className={`${stat.bgColor} rounded-full p-3 mb-3 group-hover:scale-110 transition-transform duration-200`}>
