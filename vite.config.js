@@ -14,7 +14,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       injectRegister: null,
       workbox: {
-        globPatterns: ['**/*.{js,css,ico,png,svg,webp,woff,woff2}'],
+        globPatterns: ['**/*.{js,css,html,json,ico,png,svg,webp,woff,woff2,webmanifest}'],
         skipWaiting: true,
         clientsClaim: true,
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB limit
