@@ -59,7 +59,7 @@ export default defineConfig({
         name: 'PawsIQ - Pet Care Platform',
         short_name: 'PawsIQ',
         description: 'Complete pet care management platform with health tracking, appointment scheduling, and more.',
-        theme_color: '#ec4899',
+        theme_color: '#145ae6',
         background_color: '#ffffff',
         display: 'standalone',
         orientation: 'portrait',
