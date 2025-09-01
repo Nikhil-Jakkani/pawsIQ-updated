@@ -4,6 +4,7 @@ import httpStatus from 'http-status';
 import { db } from '../../../config/db.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { tokenTypes } from '../../../config/tokens.js';
+import config from '../../../config/config.js';
 
 /**
  * Generate token
@@ -13,7 +14,7 @@ const generateToken = (
   expires: moment.Moment,
   type: string,
   role: string,
-  secret: string = process.env.JWT_SECRET || 'your-secret-key'
+  secret: string = config.jwtSecret
 ) => {
   const payload = {
     sub: subject,
@@ -53,7 +54,7 @@ const saveToken = async (token: string, userId: number, expires: moment.Moment, 
  * Verify token and return token doc (or throw an error if it is not valid)
  */
 const verifyToken = async (token: string, type: string) => {
-  const payload = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+  const payload = jwt.verify(token, config.jwtSecret);
   
   const { data: tokenDoc, error } = await db
     .from('tokens')
