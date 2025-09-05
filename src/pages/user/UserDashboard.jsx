@@ -105,47 +105,71 @@ const UserDashboard = () => {
     return () => clearInterval(timer);
   }, []);
 
+  // Load pet data and cache image URLs
   useEffect(() => {
     if (!accessToken) return;
-    (async () => {
+    
+    let isMounted = true;
+    
+    const loadPets = async () => {
       try {
+        // Fetch pet data
         const res = await fetch(`${API_URL}/user/profile`, {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data?.message || 'Failed to load pets');
-        const mapped = (data?.pets || []).map((p) => ({
-          id: Number(p.pet_id),
-          name: p.pet_name || 'Pet',
-          type: (p.pet_type || '').toLowerCase(),
-          breed: p.pet_breed || '',
-          age: p.pet_age != null ? `${p.pet_age} years` : '0 years',
-          weight: p.pet_weight != null ? `${p.pet_weight} lbs` : '0 lbs',
-          gender: p.pet_gender || '',
-          birthday: p.pet_birthday || new Date().toISOString().slice(0, 10),
-          imagePath: p.pet_image || '',
-          image: 'https://placehold.co/600x400?text=Pet',
-          lastCheckup: p.last_checkup || new Date().toISOString().slice(0, 10),
-          vaccinations: p.vaccinations || 'Unknown',
-        }));
-        setPets(mapped);
-        // Resolve signed URLs for any stored image paths, with caching
-        const withUrls = await Promise.all(
-          mapped.map(async (pet) => {
-            if (!pet.imagePath) return pet;
-            const url = await getSignedUrlForPath(pet.imagePath);
-            return url ? { ...pet, image: url } : pet;
+        
+        // Map pet data and prepare image URLs in parallel
+        const petsData = await Promise.all(
+          (data?.pets || []).map(async (p) => {
+            const pet = {
+              id: Number(p.pet_id),
+              name: p.pet_name || 'Pet',
+              type: (p.pet_type || '').toLowerCase(),
+              breed: p.pet_breed || '',
+              age: p.pet_age != null ? `${p.pet_age} years` : '0 years',
+              weight: p.pet_weight != null ? `${p.pet_weight} lbs` : '0 lbs',
+              gender: p.pet_gender || '',
+              birthday: p.pet_birthday || new Date().toISOString().slice(0, 10),
+              imagePath: p.pet_image || '',
+              image: 'https://placehold.co/600x400?text=Pet',
+              lastCheckup: p.last_checkup || new Date().toISOString().slice(0, 10),
+              vaccinations: p.vaccinations || 'Unknown',
+            };
+            
+            // Only fetch signed URL if there's an image path
+            if (pet.imagePath) {
+              const url = await getSignedUrlForPath(pet.imagePath);
+              if (url) {
+                pet.image = url;
+              }
+            }
+            
+            return pet;
           })
         );
-        setPets(withUrls);
-        if (withUrls.length > 0 && !selectedPetForAI) {
-          setSelectedPetForAI(withUrls[0]);
+        
+        if (!isMounted) return;
+        
+        // Single state update with all data
+        setPets(petsData);
+        if (petsData.length > 0 && !selectedPetForAI) {
+          setSelectedPetForAI(petsData[0]);
         }
       } catch (e) {
         console.error('Failed to load pets:', e);
-        setPets([]);
+        if (isMounted) {
+          setPets([]);
+        }
       }
-    })();
+    };
+    
+    loadPets();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [accessToken]);
 
   const getGreeting = () => {
@@ -500,8 +524,8 @@ const UserDashboard = () => {
 
           {/* Middle Column - Schedule and Reminders */}
           <div className="lg:col-span-1 space-y-4">
-            {/* Today's Schedule */}
-            <UpcomingSchedule pets={pets} />
+            {/* Today's Schedule - Pass pets data to prevent duplicate loading */}
+            <UpcomingSchedule pets={pets} accessToken={accessToken} />
 
             {/* Care Reminders */}
             <div className="bg-white rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 border border-blue-50 relative">
