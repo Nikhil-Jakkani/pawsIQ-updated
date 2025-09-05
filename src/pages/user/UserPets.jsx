@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaPaw, FaPlus, FaSearch, FaFilter, FaEdit, FaTrash, FaHeart, FaCalendarAlt, FaUser, FaClipboardList, FaFileMedical, FaSyringe } from 'react-icons/fa';
 import UserLayout from '../../components/layout/UserLayout';
@@ -16,6 +16,8 @@ const UserPets = () => {
   const { currentUser } = useAuth();
   const accessToken = currentUser?.tokens?.access?.token;
   const [pets, setPets] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [showMedicalRecordsPopup, setShowMedicalRecordsPopup] = useState(false);
   const [selectedPetForMedical, setSelectedPetForMedical] = useState(null);
   const [showVaccinationPopup, setShowVaccinationPopup] = useState(false);
@@ -28,35 +30,67 @@ const UserPets = () => {
     return 'overview';
   };
 
-  // Refresh a pet image URL once if it fails (likely expired signed URL)
-  const refreshImage = async (petId, path) => {
-    if (!path) return;
+  // Refresh a pet image URL with proper error handling and caching
+  const refreshImage = useCallback(async (petId, path) => {
+    if (!path) return false;
+    
     try {
-      const qs = new URLSearchParams({ bucket: 'pets-photos', path, expiresIn: String(60 * 60 * 24 * 6) }).toString();
+      const qs = new URLSearchParams({ 
+        bucket: 'pets-photos', 
+        path, 
+        expiresIn: String(60 * 60 * 24 * 6) // 6 days expiry
+      }).toString();
+      
       const urlRes = await fetch(`${API_URL}/media/signed-url?${qs}`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
+        headers: { 
+          Authorization: `Bearer ${accessToken}`,
+          'Cache-Control': 'no-cache'
+        },
       });
-      const urlPayload = await urlRes.json().catch(() => ({}));
-      const signedUrl = urlPayload?.url;
-      if (signedUrl) {
-        setPets((prev) => prev.map((p) => (p.id === petId ? { ...p, image: signedUrl } : p)));
+      
+      if (!urlRes.ok) {
+        throw new Error(`Failed to refresh image: ${urlRes.statusText}`);
       }
-    } catch (e) {
-      // ignore; UI keeps previous image or placeholder
+      
+      const urlPayload = await urlRes.json();
+      const signedUrl = urlPayload?.url;
+      
+      if (signedUrl) {
+        setPets(prev => 
+          prev.map(p => p.id === petId ? { ...p, image: signedUrl } : p)
+        );
+        return true;
+      }
+      
+      return false;
+      
+    } catch (error) {
+      console.error(`Error refreshing image for pet ${petId}:`, error);
+      return false;
     }
-  };
+  }, [accessToken, API_URL]);
 
 
 
+  // Fetch pets with loading and error states
   useEffect(() => {
     if (!accessToken) return;
-    (async () => {
+
+    const fetchPets = async () => {
+      setIsLoading(true);
+      setError(null);
+      
       try {
         const res = await fetch(`${API_URL}/user/profile`, {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data?.message || 'Failed to load pets');
+        
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData?.message || 'Failed to load pets');
+        }
+        
+        const data = await res.json();
         const mapped = (data?.pets || []).map((p) => ({
           id: Number(p.pet_id),
           name: p.pet_name || 'Pet',
@@ -69,40 +103,65 @@ const UserPets = () => {
           lastCheckup: new Date().toISOString().slice(0, 10),
           upcomingAppointments: 0,
         }));
-        setPets(mapped);
-        // Resolve signed URLs for any stored image paths
+
+        // Process images in parallel and update state once
         const withUrls = await Promise.all(
           mapped.map(async (pet) => {
             if (!pet.imagePath) return pet;
+            
             try {
-              const qs = new URLSearchParams({ bucket: 'pets-photos', path: pet.imagePath, expiresIn: String(60 * 60 * 24 * 6) }).toString();
+              const qs = new URLSearchParams({ 
+                bucket: 'pets-photos', 
+                path: pet.imagePath, 
+                expiresIn: String(60 * 60 * 24 * 6) 
+              }).toString();
+              
               const urlRes = await fetch(`${API_URL}/media/signed-url?${qs}`, {
-                headers: { Authorization: `Bearer ${accessToken}` },
+                headers: { 
+                  Authorization: `Bearer ${accessToken}`,
+                  'Cache-Control': 'no-cache'
+                },
               });
-              const urlPayload = await urlRes.json().catch(() => ({}));
-              if (urlRes.ok && urlPayload?.url) {
-                return { ...pet, image: urlPayload.url };
+              
+              if (!urlRes.ok) {
+                console.warn(`Failed to get signed URL for pet ${pet.id}`);
+                return pet;
               }
+              
+              const urlPayload = await urlRes.json();
+              return { ...pet, image: urlPayload?.url || pet.image };
+              
             } catch (error) {
-              console.error('Failed to load pet image:', error);
+              console.error(`Error loading image for pet ${pet.id}:`, error);
+              return pet;
             }
-            return pet;
           })
         );
+        
         setPets(withUrls);
+        
       } catch (e) {
         console.error('Failed to load pets:', e);
+        setError(e.message || 'An error occurred while loading pets');
         setPets([]);
+      } finally {
+        setIsLoading(false);
       }
-    })();
-  }, [accessToken]);
+    };
 
-  // Filter pets based on search term and filter type
-  const filteredPets = pets.filter((pet) => {
-    const matchesSearch = pet.name.toLowerCase().includes(searchTerm.toLowerCase()) || pet.breed.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterType === 'all' || pet.type === filterType;
-    return matchesSearch && matchesFilter;
-  });
+    fetchPets();
+  }, [accessToken, API_URL]);
+
+  // Memoize filtered pets to prevent unnecessary re-renders
+  const filteredPets = useMemo(() => {
+    return pets.filter((pet) => {
+      const searchLower = searchTerm.toLowerCase();
+      const matchesSearch = pet.name.toLowerCase().includes(searchLower) || 
+                          (pet.breed && pet.breed.toLowerCase().includes(searchLower));
+      const matchesFilter = filterType === 'all' || pet.type === filterType;
+      return matchesSearch && matchesFilter;
+    });
+  }, [pets, searchTerm, filterType]);
 
   // Delete pet handler
   const handleDeletePet = (id) => {
@@ -453,8 +512,27 @@ const UserPets = () => {
           </div>
         </div>
 
-        {/* Pet Cards */}
-        {filteredPets.length > 0 ? (
+        {/* Loading and Error States */}
+        {isLoading ? (
+          <div className="flex justify-center items-center p-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          </div>
+        ) : error ? (
+          <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-red-700">
+                  {error}
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : filteredPets.length > 0 ? (
           <div className="pet-grid grid">
             {filteredPets.map((pet) => (
               <div key={pet.id} className="pet-card">
@@ -592,8 +670,9 @@ const UserPets = () => {
       <MedicalRecordsPopup
         isOpen={showMedicalRecordsPopup}
         onClose={handleCloseMedicalRecords}
-        onSubmit={handleSubmitMedicalRecord}
+        petId={selectedPetForMedical?.id}
         petName={selectedPetForMedical?.name || 'your pet'}
+        accessToken={accessToken}
       />
 
       {/* Vaccination Records Popup */}
