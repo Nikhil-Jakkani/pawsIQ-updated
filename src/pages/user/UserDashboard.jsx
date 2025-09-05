@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 import { FaCalendarCheck, FaShoppingCart, FaPaw, FaDog, FaCat, FaBone, FaRobot, FaStethoscope, FaHeart, FaStar, FaBell, FaChartLine, FaMagic, FaArrowRight, FaRunning, FaUtensils, FaCut, FaHeartbeat, FaBrain, FaThermometerHalf, FaClock, FaTint, FaPlay, FaMinus, FaWeight, FaBirthdayCake, FaPlus } from 'react-icons/fa';
@@ -20,9 +20,9 @@ import UpcomingSchedule from '../../components/user/UpcomingSchedule';
 import CareReminders from '../../components/user/CareReminders';
 import PetActivityTracker from '../../components/user/PetActivityTracker';
 import UserLayout from '../../components/layout/UserLayout';
- import { useAuth } from '../../context/AuthContext';
- 
- const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
+import { useAuth } from '../../context/AuthContext';
+
+const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
 
 const UserDashboard = () => {
 
@@ -36,6 +36,66 @@ const UserDashboard = () => {
   const accessToken = currentUser?.tokens?.access?.token;
   const [pets, setPets] = useState([]);
   const careRemRef = useRef(null);
+
+  // In-memory cache for signed image URLs with persistence to localStorage
+  const imageCacheRef = useRef(new Map());
+
+  useEffect(() => {
+    // Hydrate cache from localStorage (drop expired entries)
+    try {
+      const persisted = localStorage.getItem('petImageUrlCache');
+      if (persisted) {
+        const parsed = JSON.parse(persisted);
+        const now = Date.now();
+        const map = new Map();
+        Object.entries(parsed).forEach(([path, entry]) => {
+          if (entry?.url && entry?.expiry > now) {
+            map.set(path, { url: entry.url, expiry: entry.expiry });
+          }
+        });
+        imageCacheRef.current = map;
+      }
+    } catch (e) {
+      console.warn('Failed to load image cache', e);
+    }
+  }, []);
+
+  const persistImageCache = () => {
+    try {
+      const obj = {};
+      imageCacheRef.current.forEach((val, key) => {
+        obj[key] = val;
+      });
+      localStorage.setItem('petImageUrlCache', JSON.stringify(obj));
+    } catch {
+      // ignore storage errors
+    }
+  };
+
+  const getSignedUrlForPath = async (path) => {
+    if (!path) return null;
+    const cached = imageCacheRef.current.get(path);
+    const now = Date.now();
+    if (cached && cached.expiry > now) return cached.url;
+
+    const expiresInSec = 60 * 60 * 24 * 6; // 6 days
+    try {
+      const qs = new URLSearchParams({ bucket: 'pets-photos', path, expiresIn: String(expiresInSec) }).toString();
+      const urlRes = await fetch(`${API_URL}/media/signed-url?${qs}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const urlPayload = await urlRes.json().catch(() => ({}));
+      if (urlRes.ok && urlPayload?.url) {
+        const expiry = now + expiresInSec * 1000;
+        imageCacheRef.current.set(path, { url: urlPayload.url, expiry });
+        persistImageCache();
+        return urlPayload.url;
+      }
+    } catch (error) {
+      console.error('Failed to fetch signed URL:', error);
+    }
+    return null;
+  };
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -69,23 +129,12 @@ const UserDashboard = () => {
           vaccinations: p.vaccinations || 'Unknown',
         }));
         setPets(mapped);
-        // Resolve signed URLs for any stored image paths
+        // Resolve signed URLs for any stored image paths, with caching
         const withUrls = await Promise.all(
           mapped.map(async (pet) => {
             if (!pet.imagePath) return pet;
-            try {
-              const qs = new URLSearchParams({ bucket: 'pets-photos', path: pet.imagePath, expiresIn: String(60 * 60 * 24 * 6) }).toString();
-              const urlRes = await fetch(`${API_URL}/media/signed-url?${qs}`, {
-                headers: { Authorization: `Bearer ${accessToken}` },
-              });
-              const urlPayload = await urlRes.json().catch(() => ({}));
-              if (urlRes.ok && urlPayload?.url) {
-                return { ...pet, image: urlPayload.url };
-              }
-            } catch (error) {
-              console.error('Failed to load pet image:', error);
-            }
-            return pet;
+            const url = await getSignedUrlForPath(pet.imagePath);
+            return url ? { ...pet, image: url } : pet;
           })
         );
         setPets(withUrls);
@@ -97,7 +146,7 @@ const UserDashboard = () => {
         setPets([]);
       }
     })();
-  }, [accessToken, selectedPetForAI]);
+  }, [accessToken]);
 
   const getGreeting = () => {
     const hour = currentTime.getHours();
@@ -201,12 +250,12 @@ const UserDashboard = () => {
       // Seasonal Care Tips
       tips.push({
         id: `seasonal-${pet.id}`,
-        petName: pet.name,
+        petName: 'All Pets',
         petType: pet.type,
         icon: FaThermometerHalf,
         color: 'green',
-        title: `${currentSeason.charAt(0).toUpperCase() + currentSeason.slice(1)} Care for ${pet.name}`,
-        tip: getSeasonalTip(pet, currentSeason),
+        title: `${getCurrentSeason().charAt(0).toUpperCase() + getCurrentSeason().slice(1)} Care for ${pet.name}`,
+        tip: getSeasonalTip(pet, getCurrentSeason()),
         aiGenerated: true
       });
     });
@@ -256,8 +305,11 @@ const UserDashboard = () => {
     };
     return seasonTips[season];
   };
- 
+
   // Pets are loaded from the API and stored in state
+
+  // Memoize AI tips to avoid recomputation on every render
+  const tipsMemo = useMemo(() => getAIPetCareTips(), [pets, currentTime]);
 
   return (
     <UserLayout>
@@ -284,8 +336,8 @@ const UserDashboard = () => {
                   <div className="flex items-center gap-2 mt-2">
                     <div className="flex -space-x-2">
                       {pets.map((pet, index) => (
-                        <div key={pet.id} className="w-8 h-8 rounded-full border-2 border-white shadow-sm overflow-hidden transform hover:scale-110 transition-transform duration-200" style={{zIndex: pets.length - index}}>
-                          <img src={pet.image} alt={pet.name} className="w-full h-full object-cover" />
+                        <div key={pet.id} className="w-8 h-8 rounded-full border-2 border-white shadow-sm overflow-hidden transform hover:scale-110 transition-transform duration-200" style={{ zIndex: pets.length - index }}>
+                          <img src={pet.image} alt={pet.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                         </div>
                       ))}
                     </div>
@@ -340,9 +392,8 @@ const UserDashboard = () => {
 
         {/* Compact Quick Actions Overview */}
         <div className="bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-50 rounded-2xl p-4 border border-blue-100 shadow-md hover:shadow-lg transition-all duration-300">
-          
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            <button 
+            <button
               onClick={() => navigate('/user/community')}
               className="group bg-white rounded-xl p-3 text-center border border-orange-100 hover:shadow-md transition-all duration-300 hover:scale-105 hover:border-orange-200"
             >
@@ -351,8 +402,8 @@ const UserDashboard = () => {
               </div>
               <h3 className="font-bold text-gray-800 text-sm">Community</h3>
             </button>
-            
-            <button 
+
+            <button
               onClick={() => navigate('/user/appointments/new')}
               className="group bg-white rounded-xl p-3 text-center border border-blue-100 hover:shadow-md transition-all duration-300 hover:scale-105 hover:border-blue-200"
             >
@@ -361,8 +412,8 @@ const UserDashboard = () => {
               </div>
               <h3 className="font-bold text-gray-800 text-sm">Book Service</h3>
             </button>
-            
-            <button 
+
+            <button
               onClick={() => navigate('/user/marketplace')}
               className="group bg-white rounded-xl p-3 text-center border border-blue-100 hover:shadow-md transition-all duration-300 hover:scale-105 hover:border-blue-200"
             >
@@ -371,8 +422,8 @@ const UserDashboard = () => {
               </div>
               <h3 className="font-bold text-gray-800 text-sm">Shop</h3>
             </button>
-            
-            <button 
+
+            <button
               onClick={() => {
                 setShowAIPopup(true);
                 // Set active service to suggestions when opening AI Care
@@ -385,8 +436,8 @@ const UserDashboard = () => {
               </div>
               <h3 className="font-bold text-gray-800 text-sm">AI Care</h3>
             </button>
-            
-            <button 
+
+            <button
               onClick={() => {
                 setShowAIPopup(true);
                 // Set active service to symptom-checker when opening Symptom Checker
@@ -422,7 +473,7 @@ const UserDashboard = () => {
                   const lastCheckupDate = new Date(pet.lastCheckup);
                   const daysSinceCheckup = Math.floor((new Date() - lastCheckupDate) / (1000 * 60 * 60 * 24));
                   const age = parseInt(pet.age);
-                  
+
                   // Health status based on actual pet data
                   const healthStatus = daysSinceCheckup < 90 ? 'excellent' : daysSinceCheckup < 180 ? 'good' : 'needs-attention';
                   const statusColors = {
@@ -438,18 +489,14 @@ const UserDashboard = () => {
                       <div className="transform hover:scale-105 transition-transform duration-200 mb-4">
                         <PetHealthCard pet={pet} />
                       </div>
-                      
 
                     </div>
                   );
                 })}
               </div>
-              
 
             </div>
           </div>
-
-
 
           {/* Middle Column - Schedule and Reminders */}
           <div className="lg:col-span-1 space-y-4">
@@ -464,7 +511,6 @@ const UserDashboard = () => {
                 </div>
                 Care Reminders
                 <div className="ml-auto flex items-center gap-2">
-                  
                   <div className="bg-blue-100 text-blue-700 text-xs font-semibold px-3 py-1 rounded-full">
                     Upcoming
                   </div>
@@ -519,9 +565,9 @@ const UserDashboard = () => {
                   )}
                 </button>
               </div>
-              
+
               <div className="space-y-3 max-h-96 overflow-y-auto">
-                {getAIPetCareTips().slice(0, showAllTips ? undefined : 3).map((tip) => {
+                {tipsMemo.slice(0, showAllTips ? undefined : 3).map((tip) => {
                   const IconComponent = tip.icon;
                   const colorClasses = {
                     blue: {
@@ -550,7 +596,7 @@ const UserDashboard = () => {
                     }
                   };
                   const colors = colorClasses[tip.color];
-                  
+
                   return (
                     <div key={tip.id} className={`group bg-white rounded-lg p-3 shadow-sm border border-orange-50 hover:shadow-md transition-all duration-300 ${colors.border}`}>
                       <div className="flex items-center gap-2 mb-2">
@@ -580,11 +626,11 @@ const UserDashboard = () => {
                   );
                 })}
               </div>
-              
-              {!showAllTips && getAIPetCareTips().length > 3 && (
+
+              {!showAllTips && tipsMemo.length > 3 && (
                 <div className="mt-3 text-center">
                   <p className="text-xs text-gray-500">
-                    Showing 3 of {getAIPetCareTips().length} tips
+                    Showing 3 of {tipsMemo.length} tips
                   </p>
                 </div>
               )}
