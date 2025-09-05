@@ -4,7 +4,7 @@ import { FaEnvelope, FaLock, FaGoogle, FaFacebook, FaApple, FaPaw } from 'react-
 import { useAuth } from '../../context/AuthContext';
 
 // Cute pet-themed logo
-const logoImage = "/1.svg";
+const logoImage = "/7.png";
 
 const ProviderLogin = () => {
   const navigate = useNavigate();
@@ -342,28 +342,28 @@ const ProviderLogin = () => {
               <button
                 type="button"
                 onClick={() => handleSocialLogin('Google')}
-                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+                className="w-full inline-flex items-center justify-center py-2.5 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <span className="sr-only">Sign in with Google</span>
                 <FaGoogle className="h-5 w-5 text-red-500" />
+                <span className="ml-2">Google</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => handleSocialLogin('Facebook')}
-                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+                className="w-full inline-flex items-center justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#1877F2] hover:bg-[#166FE5] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#166FE5] disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <span className="sr-only">Sign in with Facebook</span>
-                <FaFacebook className="h-5 w-5 text-blue-600" />
+                <FaFacebook className="h-5 w-5 text-white" />
+                <span className="ml-2">Facebook</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => handleSocialLogin('Apple')}
-                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+                className="w-full inline-flex items-center justify-center py-2.5 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <span className="sr-only">Sign in with Apple</span>
-                <FaApple className="h-5 w-5" />
+                <FaApple className="h-5 w-5 text-gray-900" />
+                <span className="ml-2">Apple</span>
               </button>
             </div>
           </div>

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import adminAuthRoutes from './admin/auth.route.js';
 import adminUserRoutes from './admin/user.route.js';
+import authRoutes from './auth.routes.js';
 import userAiRoutes from './user/ai.route.js';
 import userSuggestionRoutes from './user/suggestion.route.js';
 import userAuthRoutes from './user/auth.route.js';
@@ -14,6 +15,9 @@ import healthRecordRoutes from './healthRecord.route.js';
 import reminderRoutes from './reminder/reminder.route.js';
 
 const router = Router();
+
+// OAuth routes (Google, Facebook)
+router.use('', authRoutes);
 
 router.use('/admin/auth', adminAuthRoutes);
 router.use('/admin/users', adminUserRoutes);

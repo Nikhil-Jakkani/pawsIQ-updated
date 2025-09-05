@@ -198,9 +198,7 @@ const UserSidebar = ({ isOpen, toggleSidebar }) => {
         <div className="flex flex-col h-full">
           {/* Logo and Title */}
           <div className={`p-4 border-b border-blue-500 flex items-center ${minimized ? 'justify-center' : 'gap-3'}`}>
-            <div className="bg-white p-2 rounded-full">
-              <img src={logoImage} alt="PawsIQ Logo" className="w-8 h-8 object-contain" />
-            </div>
+            <img src="/7.png" alt="PawsIQ Logo" className="w-8 h-8 rounded-full object-cover" />
             {!minimized && (
               <div>
                 <h1 className="text-xl font-bold flex items-center font-fredoka">
