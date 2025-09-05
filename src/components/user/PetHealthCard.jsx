@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { FaHeart, FaWeight, FaBirthdayCake, FaSyringe, FaStethoscope, FaCalendarCheck, FaChevronDown, FaChevronUp } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
 import { PetIcon } from '../layout/PetIcons';
 
 const PetHealthCard = ({ pet }) => {
+  const navigate = useNavigate();
   const [showInsights, setShowInsights] = useState(false);
   
   const getHealthStatus = (pet) => {
@@ -228,11 +230,19 @@ const PetHealthCard = ({ pet }) => {
 
       {/* Quick Actions */}
       <div className="mt-4 flex gap-2">
-        <button className="flex-1 text-white text-xs font-medium py-2 px-3 rounded-lg transition-colors flex items-center justify-center gap-1" style={{backgroundColor: '#145ae6'}}>
+        <button 
+          onClick={() => navigate(`/user/appointments/new?petId=${pet.id}`)}
+          className="flex-1 text-white text-xs font-medium py-2 px-3 rounded-lg transition-colors flex items-center justify-center gap-1 hover:bg-blue-600" 
+          style={{backgroundColor: '#145ae6'}}
+        >
           <FaCalendarCheck />
           Book Checkup
         </button>
-        <button className="flex-1 text-white text-xs font-medium py-2 px-3 rounded-lg transition-colors" style={{backgroundColor: '#145ae6'}}>
+        <button 
+          onClick={() => navigate(`/pets/${pet.id}`)}
+          className="flex-1 text-white text-xs font-medium py-2 px-3 rounded-lg transition-colors hover:bg-blue-600" 
+          style={{backgroundColor: '#145ae6'}}
+        >
           View Profile
         </button>
       </div>

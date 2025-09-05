@@ -5,7 +5,13 @@ import { errorConverter, errorHandler } from './api/middlewares/error.js';
 
 const app = express();
 
-app.use(cors());
+// Configure CORS with specific origin and credentials
+app.use(cors({
+  origin: ['http://localhost:3001', 'https://pawsiq.in', 'https://www.pawsiq.in'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
 app.use(express.json());
 // Ensure BigInt values from Prisma can be serialized in JSON responses
 app.set('json replacer', (key: string, value: any) => (typeof value === 'bigint' ? Number(value) : value));
