@@ -4,15 +4,16 @@ import { PetIcon } from '../layout/PetIcons';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
-const UpcomingSchedule = ({ pets = [] }) => {
-  const { currentUser } = useAuth();
-  const accessToken = currentUser?.tokens?.access?.token;
-  const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
+const UpcomingSchedule = ({ pets = [], accessToken }) => {
   const navigate = useNavigate();
-
+  const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [items, setItems] = useState([]);
+  
+  // Memoize the current date to prevent unnecessary re-renders
+  const currentDate = useMemo(() => new Date(), []);
 
   const isSameDay = (a, b) =>
     a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
@@ -29,33 +30,41 @@ const UpcomingSchedule = ({ pets = [] }) => {
       try {
         setLoading(true);
         setError('');
+        // Only load appointments if we have pets data
+        if (!pets.length) return [];
+        
         const res = await fetch(`${API_URL}/appointments?page=1&limit=50`, {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data?.message || 'Failed to load appointments');
-        const now = new Date();
-        const mapped = (data?.items || []).map((a) => {
-          const dt = new Date(a.appointment_date);
-          const petIdNum = Number(a.pet_id);
-          const pet = pets.find((p) => Number(p.id) === petIdNum);
-          return {
-            id: a.appointment_id ?? `${petIdNum}-${dt.toISOString()}`,
-            type: 'appointment',
-            title: a.appointment_type || 'Appointment',
-            petName: pet?.name || 'Pet',
-            petType: (pet?.type || 'dog').toLowerCase(),
-            time: isNaN(dt.getTime()) ? '' : dt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
-            date: isSameDay(dt, now) ? 'Today' : 'Other',
-            location: a.appointment_comments || '',
-            status:
-              (a.appointment_status || 'Scheduled').toLowerCase() === 'scheduled'
-                ? 'confirmed'
-                : (a.appointment_status || 'Scheduled').toLowerCase(),
-            urgent: isSameDay(dt, now) && isWithinHours(dt, 2),
-            isToday: isSameDay(dt, now),
-          };
-        });
+        
+        // Process appointments in a single pass
+        return (data?.items || [])
+          .map((a) => {
+            const dt = new Date(a.appointment_date);
+            if (isNaN(dt.getTime())) return null;
+            
+            const petIdNum = Number(a.pet_id);
+            const pet = pets.find((p) => Number(p.id) === petIdNum);
+            const isToday = isSameDay(dt, currentDate);
+            const status = (a.appointment_status || 'Scheduled').toLowerCase();
+            
+            return {
+              id: a.appointment_id ?? `${petIdNum}-${dt.toISOString()}`,
+              type: 'appointment',
+              title: a.appointment_type || 'Appointment',
+              petName: pet?.name || 'Pet',
+              petType: (pet?.type || 'dog').toLowerCase(),
+              time: dt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
+              date: isToday ? 'Today' : 'Other',
+              location: a.appointment_comments || '',
+              status: status === 'scheduled' ? 'confirmed' : status,
+              urgent: isToday && isWithinHours(dt, 2),
+              isToday,
+            };
+          })
+          .filter(Boolean); // Remove any null entries from invalid dates
         if (!cancelled) setItems(mapped);
       } catch (e) {
         if (!cancelled) {
@@ -69,7 +78,7 @@ const UpcomingSchedule = ({ pets = [] }) => {
     return () => {
       cancelled = true;
     };
-  }, [accessToken, API_URL, pets]);
+  }, [accessToken, API_URL, pets, currentDate]);
 
   const getItemIcon = (type) => {
     return type === 'appointment' ? FaCalendarAlt : FaBell;
@@ -81,8 +90,10 @@ const UpcomingSchedule = ({ pets = [] }) => {
     return 'border-l-yellow-400 bg-yellow-50';
   };
 
-  // Filter only today's items
-  const todayItems = useMemo(() => items.filter((item) => item.isToday), [items]);
+  // Memoize today's items to prevent re-filtering on every render
+  const todayItems = useMemo(() => {
+    return items.filter((item) => item.isToday);
+  }, [items]);
 
   return (
     <div className="bg-white rounded-xl shadow-sm p-4 border border-blue-100">
