@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   FaTimes, 
   FaPlus, 
@@ -14,14 +14,26 @@ import {
   FaEye,
   FaTooth,
   FaBone,
-  FaAllergies
+  FaAllergies,
+  FaSpinner
 } from 'react-icons/fa';
+import { healthRecordService } from '../../services/healthRecordService';
 
-const MedicalRecordsPopup = ({ isOpen, onClose, onSubmit, petName = "your pet" }) => {
+const MedicalRecordsPopup = ({ 
+  isOpen, 
+  onClose, 
+  petId, 
+  petName = "your pet", 
+  accessToken,
+  onRecordAdded 
+}) => {
+  const fileInputRef = useRef(null);
+  
   const [formData, setFormData] = useState({
     title: '',
     recordDate: new Date().toISOString().split('T')[0],
     description: '',
+    recordType: 'general',
     selectedConditions: [],
     customConditions: [],
     files: []
@@ -29,7 +41,9 @@ const MedicalRecordsPopup = ({ isOpen, onClose, onSubmit, petName = "your pet" }
   
   const [newCustomCondition, setNewCustomCondition] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   // Common medical conditions with icons and categories
   const commonConditions = [
@@ -85,23 +99,31 @@ const MedicalRecordsPopup = ({ isOpen, onClose, onSubmit, petName = "your pet" }
   };
 
   const handleFileChange = (e) => {
-    const selectedFiles = Array.from(e.target.files);
-    const validFiles = selectedFiles.filter(file => {
-      // Check file type
-      const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    const selectedFiles = Array.from(e.target.files || []);
+    if (selectedFiles.length === 0) return;
+
+    const allowedTypes = [
+      'application/pdf',
+      'image/jpeg',
+      'image/png',
+      'image/jpg',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ];
+    const maxSizeBytes = 5 * 1024 * 1024; // 5MB
+
+    const validFiles = [];
+    for (const file of selectedFiles) {
       if (!allowedTypes.includes(file.type)) {
         setError(`File "${file.name}" is not a supported format. Please use PDF, JPG, PNG, or DOCX files.`);
-        return false;
+        continue;
       }
-      
-      // Check file size (10MB limit)
-      if (file.size > 10 * 1024 * 1024) {
-        setError(`File "${file.name}" exceeds the 10MB size limit.`);
-        return false;
+      if (file.size > maxSizeBytes) {
+        setError(`File "${file.name}" is too large. Max size is 5MB.`);
+        continue;
       }
-      
-      return true;
-    });
+      validFiles.push(file);
+    }
 
     if (validFiles.length > 0) {
       setFormData(prev => ({
@@ -110,66 +132,137 @@ const MedicalRecordsPopup = ({ isOpen, onClose, onSubmit, petName = "your pet" }
       }));
       setError('');
     }
-  };
 
-  const handleRemoveFile = (index) => {
-    setFormData(prev => ({
-      ...prev,
-      files: prev.files.filter((_, i) => i !== index)
-    }));
+    // reset input value so the same file can be selected again if needed
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validation
-    if (!formData.title.trim()) {
-      setError('Please enter a title for this medical record.');
-      return;
-    }
-
-    if (formData.selectedConditions.length === 0 && formData.customConditions.length === 0) {
-      setError('Please select at least one medical condition or add a custom condition.');
-      return;
-    }
-
-    setIsSubmitting(true);
+    // Reset previous states
     setError('');
+    setSuccess('');
+    setUploadProgress(0);
+    console.log('Submitting medical record', { petId, filesCount: formData.files.length });
+    
+    if (!accessToken) {
+      setError('Please log in to add medical records');
+      return;
+    }
 
+    if (!petId) {
+      setError('No pet selected. Please select a pet first.');
+      return;
+    }
+    
+    if (!formData.title.trim()) {
+      setError('Please provide a title for this record');
+      return;
+    }
+    
+    if (formData.files.length === 0) {
+      setError('Please upload at least one file');
+      return;
+    }
+    
     try {
-      // Combine selected and custom conditions
-      const allConditions = [
-        ...formData.selectedConditions.map(id => 
-          commonConditions.find(c => c.id === id)?.name || id
-        ),
-        ...formData.customConditions
-      ];
-
-      const recordData = {
-        title: formData.title,
-        recordDate: formData.recordDate,
-        description: formData.description,
-        conditions: allConditions,
-        files: formData.files
-      };
-
-      await onSubmit(recordData);
+      setIsSubmitting(true);
+      setUploadProgress(10);
       
-      // Reset form
-      setFormData({
-        title: '',
-        recordDate: new Date().toISOString().split('T')[0],
-        description: '',
-        selectedConditions: [],
-        customConditions: [],
-        files: []
-      });
+      const uploadedFiles = [];
       
-      onClose();
+      for (const file of formData.files) {
+        setUploadProgress(prev => Math.min(prev + 10, 70));
+        
+        try {
+          if (!accessToken) {
+            throw new Error('Authentication token is missing');
+          }
+          
+          const { signedUrl, path, publicUrl, token } = await healthRecordService.getSignedUploadUrl(
+            petId,
+            file.name,
+            file.type,
+            accessToken
+          );
+          
+          if (!path || !token) {
+            throw new Error('Failed to get upload URL');
+          }
+          
+          // Upload the file to Supabase using the signed upload token
+          await healthRecordService.uploadFile(path, token, file);
+          
+          uploadedFiles.push({
+            path,
+            fileName: file.name,
+            fileType: file.type,
+            fileSize: file.size,
+            publicUrl
+          });
+        } catch (fileError) {
+          console.error('Error uploading file:', fileError);
+          throw new Error(`Failed to upload file ${file.name}: ${fileError.message}`);
+        }
+      }
+      
+      setUploadProgress(80);
+      
+      // Create health record for each uploaded file
+      for (const file of uploadedFiles) {
+        const recordData = {
+          title: formData.title,
+          description: formData.description,
+          recordType: formData.recordType,
+          recordDate: formData.recordDate,
+          conditions: [
+            ...formData.selectedConditions.map(id => 
+              commonConditions.find(c => c.id === id)?.name || id
+            ),
+            ...formData.customConditions
+          ].join(', '),
+          filePath: file.path,
+          fileName: file.fileName,
+          fileType: file.fileType,
+          fileSize: file.fileSize,
+          fileUrl: file.publicUrl
+        };
+        
+        await healthRecordService.createHealthRecord(petId, recordData, accessToken);
+      }
+      
+      setUploadProgress(100);
+      setSuccess('Health record added successfully!');
+      
+      // Notify parent component and close after delay
+      if (onRecordAdded) {
+        onRecordAdded();
+      }
+      
+      // Reset form and close after delay
+      setTimeout(() => {
+        setFormData({
+          title: '',
+          recordDate: new Date().toISOString().split('T')[0],
+          description: '',
+          recordType: 'general',
+          selectedConditions: [],
+          customConditions: [],
+          files: []
+        });
+        setSuccess('');
+        onClose();
+      }, 1500);
+      
     } catch (err) {
-      setError(err.message || 'Failed to save medical record. Please try again.');
+      console.error('Error uploading health record:', err);
+      setError(err.message || 'Failed to upload health record. Please try again.');
     } finally {
       setIsSubmitting(false);
+      setUploadProgress(0);
     }
   };
 
@@ -198,7 +291,57 @@ const MedicalRecordsPopup = ({ isOpen, onClose, onSubmit, petName = "your pet" }
     }
   };
 
+  const removeFile = (index) => {
+    const newFiles = [...formData.files];
+    newFiles.splice(index, 1);
+    setFormData(prev => ({
+      ...prev,
+      files: newFiles
+    }));
+  };
+
   if (!isOpen) return null;
+  
+  // Show loading state
+  if (isSubmitting) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 max-w-md w-full text-center">
+          <div className="mb-4">
+            <FaSpinner className="animate-spin text-blue-500 text-4xl mx-auto" />
+          </div>
+          <p className="text-lg font-medium mb-2">Uploading files...</p>
+          <div className="w-full bg-gray-200 rounded-full h-2.5">
+            <div 
+              className="bg-blue-600 h-2.5 rounded-full" 
+              style={{ width: `${uploadProgress}%` }}
+            ></div>
+          </div>
+          <p className="text-sm text-gray-500 mt-2">{Math.round(uploadProgress)}% complete</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!accessToken) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 max-w-md w-full">
+          <div className="text-red-500 mb-4">
+            <FaExclamationTriangle className="inline-block mr-2" />
+            Authentication required
+          </div>
+          <p className="mb-4">You need to be logged in to add medical records.</p>
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -206,42 +349,49 @@ const MedicalRecordsPopup = ({ isOpen, onClose, onSubmit, petName = "your pet" }
       <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onClick={onClose} />
       
       {/* Modal */}
-      <div className="flex min-h-screen items-center justify-center p-4">
-        <div className="relative bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="bg-white bg-opacity-20 p-2 rounded-lg">
-                  <FaFileMedical className="text-white text-xl" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-white">Add Medical Record</h2>
-                  <p className="text-blue-100 text-sm">Record medical information for {petName}</p>
-                </div>
-              </div>
-              <button
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold text-gray-800">Add Medical Record for {petName}</h2>
+              <button 
                 onClick={onClose}
-                className="text-white hover:text-blue-200 transition-colors p-2 rounded-lg hover:bg-white hover:bg-opacity-10"
+                className="text-gray-500 hover:text-gray-700 disabled:opacity-50"
+                disabled={isSubmitting}
               >
                 <FaTimes className="text-xl" />
               </button>
             </div>
-          </div>
-
-          {/* Content */}
-          <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Error Message */}
-              {error && (
-                <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
-                  <div className="flex items-center">
-                    <FaExclamationTriangle className="text-red-400 mr-2" />
-                    <p className="text-red-700 text-sm">{error}</p>
-                  </div>
+            
+            {error && (
+              <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md flex items-center">
+                <FaExclamationTriangle className="mr-2" />
+                {error}
+              </div>
+            )}
+            
+            {success && (
+              <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-md flex items-center">
+                <FaCheck className="mr-2" />
+                {success}
+              </div>
+            )}
+            
+            {isSubmitting && uploadProgress > 0 && (
+              <div className="mb-4">
+                <div className="w-full bg-gray-200 rounded-full h-2.5">
+                  <div 
+                    className="bg-blue-600 h-2.5 rounded-full transition-all duration-300" 
+                    style={{ width: `${uploadProgress}%` }}
+                  ></div>
                 </div>
-              )}
-
+                <p className="text-sm text-gray-600 mt-1 text-right">
+                  {uploadProgress}% {uploadProgress < 100 ? 'Uploading...' : 'Completed!'}
+                </p>
+              </div>
+            )}
+            
+            <form onSubmit={handleSubmit} className="space-y-6">
               {/* Basic Information */}
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
@@ -290,6 +440,24 @@ const MedicalRecordsPopup = ({ isOpen, onClose, onSubmit, petName = "your pet" }
                     placeholder="Additional notes about this medical record..."
                   />
                 </div>
+              </div>
+
+              {/* Record Type */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Record Type *</label>
+                <select
+                  className="w-full p-2 border border-gray-300 rounded-md disabled:opacity-50"
+                  value={formData.recordType}
+                  onChange={(e) => setFormData({...formData, recordType: e.target.value})}
+                  disabled={isSubmitting}
+                >
+                  <option value="vaccination">Vaccination</option>
+                  <option value="medication">Medication</option>
+                  <option value="treatment">Treatment</option>
+                  <option value="surgery">Surgery</option>
+                  <option value="general">General Checkup</option>
+                  <option value="other">Other</option>
+                </select>
               </div>
 
               {/* Medical Conditions */}
@@ -385,81 +553,101 @@ const MedicalRecordsPopup = ({ isOpen, onClose, onSubmit, petName = "your pet" }
                 </h3>
                 
                 {/* File Upload Area */}
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
-                  <FaUpload className="mx-auto text-4xl text-gray-400 mb-4" />
-                  <div className="space-y-2">
-                    <p className="text-gray-600">
-                      <label htmlFor="file-upload" className="cursor-pointer text-blue-600 hover:text-blue-700 font-medium">
-                        Click to upload files
-                      </label>
-                      {' '}or drag and drop
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      PDF, JPG, PNG, DOCX files up to 10MB each
-                    </p>
-                  </div>
-                  <input
-                    id="file-upload"
-                    type="file"
-                    multiple
-                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                    onChange={handleFileChange}
-                    className="hidden"
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                  <textarea
+                    className="w-full p-2 border border-gray-300 rounded-md h-24 disabled:opacity-50"
+                    value={formData.description}
+                    onChange={(e) => setFormData({...formData, description: e.target.value})}
+                    placeholder="Add any additional details about this record..."
+                    disabled={isSubmitting}
                   />
                 </div>
-
-                {/* Uploaded Files */}
-                {formData.files.length > 0 && (
-                  <div className="mt-4 space-y-2">
-                    <h4 className="text-sm font-medium text-gray-700">Uploaded Files:</h4>
-                    {formData.files.map((file, index) => (
-                      <div key={index} className="flex items-center justify-between bg-white p-3 rounded-lg border">
-                        <div className="flex items-center gap-3">
-                          <span className="text-2xl">{getFileIcon(file.name)}</span>
-                          <div>
-                            <p className="text-sm font-medium text-gray-800">{file.name}</p>
-                            <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveFile(index)}
-                          className="text-red-500 hover:text-red-700 transition-colors p-1"
-                        >
-                          <FaTrash />
-                        </button>
-                      </div>
-                    ))}
+                
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Medical Files *</label>
+                  <div 
+                    className={`border-2 border-dashed ${isSubmitting ? 'border-gray-200' : 'border-gray-300 hover:border-blue-400'} rounded-lg p-6 text-center transition-colors cursor-pointer`}
+                    onClick={() => !isSubmitting && fileInputRef.current?.click()}
+                  >
+                    <FaUpload className={`mx-auto ${isSubmitting ? 'text-gray-300' : 'text-gray-400'} text-3xl mb-2`} />
+                    <p className={`text-sm ${isSubmitting ? 'text-gray-400' : 'text-gray-600'} mb-2`}>
+                      {isSubmitting ? 'Uploading...' : 'Drag & drop files here, or click to select files'}
+                    </p>
+                    <p className="text-xs text-gray-500 mb-4">
+                      Supported formats: PDF, JPG, PNG, DOCX (Max 5MB per file)
+                    </p>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      className="hidden"
+                      multiple
+                      onChange={handleFileChange}
+                      disabled={isSubmitting}
+                      accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                    />
                   </div>
-                )}
+                  
+                  {formData.files.length > 0 && (
+                    <div className="mt-4">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">Selected Files ({formData.files.length}):</h4>
+                      <ul className="space-y-2 max-h-40 overflow-y-auto">
+                        {formData.files.map((file, index) => (
+                          <li key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded border border-gray-200">
+                            <div className="flex items-center min-w-0">
+                              <FaFileMedical className="text-blue-500 mr-2 flex-shrink-0" />
+                              <div className="min-w-0">
+                                <p className="text-sm text-gray-700 truncate" title={file.name}>
+                                  {file.name}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {formatFileSize(file.size)}
+                                </p>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              className="text-red-500 hover:text-red-700 ml-2 flex-shrink-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeFile(index);
+                              }}
+                              disabled={isSubmitting}
+                              title="Remove file"
+                            >
+                              <FaTimes className="text-sm" />
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex justify-end gap-3 pt-4 border-t">
+              <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 mt-6">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 flex-1 sm:flex-none"
                   disabled={isSubmitting}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
+                  className={`px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70 flex-1 sm:flex-none flex items-center justify-center ${
+                    isSubmitting ? 'bg-blue-400' : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
                   disabled={isSubmitting}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   {isSubmitting ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
-                      Saving...
+                      <FaSpinner className="animate-spin mr-2" />
+                      Uploading...
                     </>
-                  ) : (
-                    <>
-                      <FaCheck />
-                      Save Medical Record
-                    </>
-                  )}
+                  ) : 'Save Medical Record'}
                 </button>
               </div>
             </form>
