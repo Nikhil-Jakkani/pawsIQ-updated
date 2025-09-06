@@ -10,6 +10,7 @@ import UserAppointments from './pages/user/UserAppointments.jsx';
 import UserBookAppointment from './pages/user/UserBookAppointment.jsx';
 import UserAppointmentConfirmation from './pages/user/UserAppointmentConfirmation.jsx';
 import UserRescheduleAppointment from './pages/user/UserRescheduleAppointment.jsx';
+import UserAppointmentDetails from './pages/user/UserAppointmentDetails.jsx';
 
 import UserMarketplace from './pages/user/UserMarketplace.jsx';
 import UserOrders from './pages/user/UserOrders.jsx';
@@ -213,6 +214,8 @@ function App() {
           <Route path="/user/appointments/history" element={<UserProtectedRoute><UserAppointments /></UserProtectedRoute>} />
           <Route path="/user/appointments/reschedule/:id" element={<UserProtectedRoute><UserRescheduleAppointment /></UserProtectedRoute>} />
           
+          
+          <Route path="/user/appointments/:id" element={<UserProtectedRoute><UserAppointmentDetails /></UserProtectedRoute>} />
           
           {/* Marketplace Routes */}
           <Route path="/user/marketplace" element={<UserProtectedRoute><UserMarketplace /></UserProtectedRoute>} />
