@@ -6,6 +6,7 @@
     "node": "20.x"
   },
   "scripts": {
+    "dev": "tsx src/index.ts",
     "build": "tsc --project ../tsconfig.json && tsc-alias -p ../tsconfig.json",
     "ensure-types": "test -d node_modules/@types/node || npm i @types/node@^20 -S",
     "start": "node dist/server/index.js",

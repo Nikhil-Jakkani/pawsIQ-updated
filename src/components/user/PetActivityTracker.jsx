@@ -10,6 +10,9 @@ const PetActivityTracker = () => {
   const [activityNote, setActivityNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [foodImage, setFoodImage] = useState(null); // { base64, preview }
+  const [nutrition, setNutrition] = useState(null);
+  const [analyzing, setAnalyzing] = useState(false);
   
   const pets = [
     { 
@@ -251,6 +254,71 @@ const PetActivityTracker = () => {
                   placeholder="Add any notes about this activity"
                 ></textarea>
               </div>
+
+              {/* Nutrition analyzer (visible when food selected) */}
+              {activityType === 'food' && (
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Analyze food from image</label>
+                  <div className="flex items-center gap-2">
+                    <label className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm cursor-pointer hover:bg-gray-50">
+                      <span className="text-sm text-gray-700">Choose / Capture</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const reader = new FileReader();
+                          reader.onload = () => {
+                            setFoodImage({ base64: reader.result, preview: reader.result });
+                            setNutrition(null);
+                          };
+                          reader.readAsDataURL(file);
+                        }}
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!foodImage?.base64) return;
+                        try {
+                          setAnalyzing(true);
+                          const mod = await import('../../services/nutritionService');
+                          const data = await mod.analyzeFoodImage({ base64: String(foodImage.base64) });
+                          setNutrition(data);
+                          // Auto-fill amount with calories only
+                          if (typeof data?.calories === 'number') {
+                            setActivityType('food');
+                            setActivityValue(String(Math.max(1, Math.round(data.calories))));
+                          }
+                        } catch (e) {
+                          console.error(e);
+                        } finally {
+                          setAnalyzing(false);
+                        }
+                      }}
+                      disabled={!foodImage || analyzing}
+                      className="px-3 py-2 bg-green-600 text-white text-sm rounded-md disabled:opacity-50"
+                    >
+                      {analyzing ? 'Analyzing…' : 'Analyze'}
+                    </button>
+                  </div>
+                  {foodImage?.preview && (
+                    <div className="mt-3 flex items-center gap-3">
+                      <img src={foodImage.preview} alt="food" className="w-16 h-16 object-cover rounded border" />
+                      {nutrition && (
+                        <div className="text-xs text-gray-700">
+                          <div className="font-semibold">{nutrition.name} ({Math.round((nutrition.confidence||0)*100)}%)</div>
+                          <div>Calories: {nutrition.calories}</div>
+                          <div className="italic text-gray-500">Amount auto-filled with calories. You can edit if needed.</div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
               
               {/* Submit button */}
               <button

@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import UserLayout from '../../components/layout/UserLayout';
 import AIPetCareSuggestions from '../../components/user/AIPetCareSuggestions';
 import AISymptomChecker from '../../components/user/AISymptomChecker';
+import AINutritionAnalyzer from '../../components/user/AINutritionAnalyzer';
 import PetSelector from '../../components/user/PetSelector';
 
 const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
@@ -196,6 +197,19 @@ const AIPetCare = () => {
                   <span>Symptom Checker</span>
                 </div>
               </button>
+              <button
+                onClick={() => setActiveTab('nutrition')}
+                className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
+                  activeTab === 'nutrition'
+                    ? 'bg-green-50 text-green-700 border-b-2 border-green-500'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <span className="text-lg">🍽️</span>
+                  <span>Nutrition Analyzer</span>
+                </div>
+              </button>
             </div>
           </div>
 
@@ -206,6 +220,9 @@ const AIPetCare = () => {
             )}
             {activeTab === 'symptom-checker' && (
               <AISymptomChecker selectedPet={selectedPetForAI} />
+            )}
+            {activeTab === 'nutrition' && (
+              <AINutritionAnalyzer selectedPet={selectedPetForAI} />
             )}
           </div>
         </div>
