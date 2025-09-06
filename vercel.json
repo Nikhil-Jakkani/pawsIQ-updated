@@ -1,6 +1,7 @@
 {
   "rewrites": [
-    { "source": "/api/v1/(.*)", "destination": "https://pawsiq-96l2.onrender.com/api/v1/$1" }
+    { "source": "/api/v1/(.*)", "destination": "https://pawsiq-96l2.onrender.com/api/v1/$1" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
     {

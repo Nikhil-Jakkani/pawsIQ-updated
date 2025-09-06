@@ -184,6 +184,13 @@ function App() {
           <Route path="/support/assignment" element={<AdminProtectedRoute><TicketAssignment /></AdminProtectedRoute>} />
 
           {/* User Routes */}
+          {/* Top-level aliases for SEO/direct links */}
+          <Route path="/signup" element={<UserSignIn />} />
+          <Route path="/register" element={<UserSignIn />} />
+          <Route path="/forgot-password" element={<UserForgotPassword />} />
+          <Route path="/reset-password" element={<UserResetPassword />} />
+
+          {/* Scoped user routes */}
           <Route path="/user/signin" element={<UserSignIn />} />
           <Route path="/user/signup" element={<UserSignIn />} />
           <Route path="/user/forgot-password" element={<React.Suspense fallback={null}><UserForgotPassword /></React.Suspense>} />
