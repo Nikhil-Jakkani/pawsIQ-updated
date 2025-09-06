@@ -5,6 +5,8 @@ import Home from './pages/Home.jsx';
 import UserLogin from './pages/user/UserLogin.jsx';
 import UserDashboard from './pages/user/UserDashboard.jsx';
 import UserSignIn from './pages/user/UserSignIn.jsx';
+import UserForgotPassword from './pages/user/UserForgotPassword.jsx';
+import UserResetPassword from './pages/user/UserResetPassword.jsx';
 import UserPets from './pages/user/UserPets.jsx';
 import UserAddPet from './pages/user/UserAddPet.jsx';
 import UserAppointments from './pages/user/UserAppointments.jsx';
@@ -183,6 +185,8 @@ function App() {
 
           {/* User Routes */}
           <Route path="/user/signin" element={<UserSignIn />} />
+          <Route path="/user/forgot-password" element={<React.Suspense fallback={null}><UserForgotPassword /></React.Suspense>} />
+          <Route path="/user/reset-password" element={<React.Suspense fallback={null}><UserResetPassword /></React.Suspense>} />
           <Route
             path="/user/login"
             element={
