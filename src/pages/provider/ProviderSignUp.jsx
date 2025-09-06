@@ -17,7 +17,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 
 // Cute pet-themed logo
-const logoImage = "/1.svg";
+const logoImage = "/7.png";
 
 const ProviderSignUp = () => {
   const navigate = useNavigate();
@@ -226,7 +226,7 @@ const ProviderSignUp = () => {
       </div>
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow-xl sm:rounded-lg sm:px-10">
+        <div className="bg-white py-8 px-4 shadow-xl sm:rounded-lg sm:px-10 max-h-[75vh] overflow-y-auto">
           {/* Progress indicator */}
           <div className="mb-6">
             <div className="flex items-center justify-between">
