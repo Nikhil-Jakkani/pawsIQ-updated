@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { FaUser, FaEnvelope, FaPhone, FaPaw } from 'react-icons/fa';
 
 // Cute pet-themed logo
-const logoImage = "/1.svg";
+const logoImage = "/7.png";
 
 const UserSignIn = () => {
   const [name, setName] = useState('');

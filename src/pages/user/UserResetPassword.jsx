@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { FaLock, FaPaw } from 'react-icons/fa';
 
-const logoImage = "/1.svg";
+const logoImage = "/7.png";
 const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
 
 const UserResetPassword = () => {
