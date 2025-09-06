@@ -99,41 +99,56 @@ const PetActivityTracker = () => {
     }
   };
   
-  const handleSubmitActivity = (e) => {
+  const handleSubmitActivity = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      // Update the activity data (in a real app, this would be an API call)
+
+    try {
       const currentPetName = pets[currentPetIndex].name;
+
+      // If food activity, persist calories only
+      if (activityType === 'food') {
+        const calories = parseInt(activityValue || '0', 10);
+        try {
+          const mod = await import('../../services/nutritionService');
+          await mod.saveFoodCalories({
+            pet_id: currentPetIndex + 1, // TODO: replace with real pet_id from your store
+            calories,
+            note: activityNote || undefined,
+            image_url: foodImage?.preview || undefined,
+          });
+        } catch (err) {
+          console.error('Failed to save food calories:', err);
+        }
+      }
+
+      // Local UI update simulation
       const currentActivity = activities[currentPetName].today[activityType];
-      
       if (currentActivity) {
         currentActivity.value = Math.min(
           parseInt(currentActivity.value) + parseInt(activityValue || 0),
-          currentActivity.goal * 1.5 // Allow exceeding goal by up to 50%
+          currentActivity.goal * 1.5
         );
       } else {
-        // If this is a new activity type not in the original data
         activities[currentPetName].today[activityType] = {
           value: parseInt(activityValue || 0),
-          goal: parseInt(activityValue || 0) * 1.2, // Set goal slightly higher
+          goal: parseInt(activityValue || 0) * 1.2,
           unit: getActivityUnit(activityType)
         };
       }
-      
-      setIsSubmitting(false);
+
       setShowPopup(false);
-      
-      // Show success message
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
-      
+
       // Reset form
       setActivityValue('');
       setActivityNote('');
-    }, 800);
+      setFoodImage(null);
+      setNutrition(null);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const getProgressColor = (percentage) => {

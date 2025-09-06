@@ -13,6 +13,7 @@ import mediaRoutes from './media.route.js';
 import petRoutes from './pet/pet.route.js';
 import healthRecordRoutes from './healthRecord.route.js';
 import reminderRoutes from './reminder/reminder.route.js';
+import userActivityRoutes from './user/activity.route.js';
 
 const router = Router();
 
@@ -25,6 +26,7 @@ router.use('/admin/users', adminUserRoutes);
 router.use('/user/auth', userAuthRoutes);
 router.use('/user/ai', userAiRoutes);
 router.use('/user/suggestions', userSuggestionRoutes);
+router.use('/user/activities', userActivityRoutes);
 router.use('/user', userRoutes);
 
 router.use('/provider/auth', providerAuthRoutes);
