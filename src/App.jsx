@@ -185,6 +185,7 @@ function App() {
 
           {/* User Routes */}
           <Route path="/user/signin" element={<UserSignIn />} />
+          <Route path="/user/signup" element={<UserSignIn />} />
           <Route path="/user/forgot-password" element={<React.Suspense fallback={null}><UserForgotPassword /></React.Suspense>} />
           <Route path="/user/reset-password" element={<React.Suspense fallback={null}><UserResetPassword /></React.Suspense>} />
           <Route

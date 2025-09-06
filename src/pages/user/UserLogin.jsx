@@ -176,13 +176,13 @@ const UserLogin = () => {
             Don't have an account?
           </p>
           <div className="flex flex-col sm:flex-row gap-2">
-            <a 
-              href="#" 
+            <Link 
+              to="/user/signin" 
               className="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1"
             >
               <FaPaw size={12} />
               Create a Pet Owner Account
-            </a>
+            </Link>
             <span className="hidden sm:inline text-gray-400">|</span>
             <Link 
               to="/provider/signup" 
