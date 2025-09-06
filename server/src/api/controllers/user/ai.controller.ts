@@ -10,6 +10,14 @@ const generatePetCareSuggestions = catchAsync(async (req: Request, res: Response
   res.status(httpStatus.OK).send(suggestions);
 });
 
+const analyzeFoodFromImage = catchAsync(async (req: Request, res: Response) => {
+  // Expect: { imageUrl?: string, base64?: string }
+  const payload = req.body;
+  const result = await aiService.analyzeFoodFromImage(payload);
+  res.status(httpStatus.OK).send(result);
+});
+
 export default {
   generatePetCareSuggestions,
+  analyzeFoodFromImage,
 };

@@ -5,5 +5,6 @@ import { auth } from '../../../middlewares/auth.js';
 const router = express.Router();
 
 router.post('/suggestions', auth(), aiController.generatePetCareSuggestions);
+router.post('/nutrition-from-image', auth(), aiController.analyzeFoodFromImage);
 
 export default router;
