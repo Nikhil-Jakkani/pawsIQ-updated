@@ -30,7 +30,6 @@ const UserResetPassword = () => {
 
   const verifyOTP = async () => {
     try {
-      console.log('Sending OTP verification request:', { email, otp });
       const res = await fetch(`${API_URL}/user/auth/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -40,7 +39,6 @@ const UserResetPassword = () => {
       // Safely parse JSON (backend returns JSON on errors, 200 with JSON on success)
       const text = await res.text();
       const data = text ? JSON.parse(text) : {};
-      console.log('OTP verification response:', { status: res.status, data });
       
       if (!res.ok || !data.success) {
         const msg = data?.message || 'Invalid or expired OTP';

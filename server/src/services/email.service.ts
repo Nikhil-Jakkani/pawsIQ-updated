@@ -16,14 +16,11 @@ const emailConfig = {
   }
 };
 
-// Create transporter
 const transporter = nodemailer.createTransport(emailConfig);
 
-// Verify connection
 const verifyEmailConnection = async () => {
   try {
     await transporter.verify();
-    console.log('SMTP Server is ready to take our messages');
     return true;
   } catch (error) {
     console.error('SMTP Connection Error:', error);
@@ -31,10 +28,8 @@ const verifyEmailConnection = async () => {
   }
 };
 
-// Verify connection on startup
 verifyEmailConnection();
 
-// Send email function
 export const sendEmail = async (to: string, subject: string, html: string) => {
   if (!process.env.EMAIL_USERNAME || !process.env.EMAIL_PASSWORD) {
     console.warn('Email credentials not configured. Email not sent.');
@@ -49,7 +44,6 @@ export const sendEmail = async (to: string, subject: string, html: string) => {
       html,
     });
 
-    console.log('Email sent:', info.messageId);
     return info;
   } catch (error) {
     console.error('Error sending email:', error);
@@ -57,7 +51,6 @@ export const sendEmail = async (to: string, subject: string, html: string) => {
   }
 };
 
-// Send OTP email
 export const sendOTPEmail = async (to: string, otp: string) => {
   const subject = 'Your PawsIQ Password Reset OTP';
   const html = `
@@ -87,7 +80,6 @@ export const sendOTPEmail = async (to: string, otp: string) => {
   return sendEmail(to, subject, html);
 };
 
-// Send password reset email
 export const sendPasswordResetEmail = async (to: string, token: string) => {
   const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/user/reset-password?token=${token}`;
   
