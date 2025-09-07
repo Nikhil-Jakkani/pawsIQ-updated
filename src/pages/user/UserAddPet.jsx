@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaPaw, FaArrowLeft, FaUpload, FaCalendarAlt, FaDog, FaCat, FaFish, FaHorse, FaSyringe, FaShieldAlt, FaCheck, FaTimes } from 'react-icons/fa';
+import { FaPaw, FaArrowLeft, FaUpload, FaCalendarAlt, FaDog, FaCat, FaFish, FaHorse, FaSyringe, FaShieldAlt, FaCheck, FaTimes, FaPlus } from 'react-icons/fa';
 import { FaDove } from 'react-icons/fa6';
 import { GiRabbit } from 'react-icons/gi';
 import UserLayout from '../../components/layout/UserLayout';

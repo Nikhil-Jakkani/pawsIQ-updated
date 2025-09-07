@@ -11,7 +11,7 @@ router.post('/', userAuth as any, async (req: any, res) => {
     const type = req.body?.type ?? req.body?.pet_type ?? req.body?.pet_species;
     const breed = req.body?.breed ?? req.body?.pet_breed;
     const gender = req.body?.gender ?? req.body?.pet_gender;
-    const birthdate = req.body?.birthdate ?? req.body?.pet_dob;
+    const birthdate = req.body?.birthdate ?? req.body?.pet_birth_dtm;
     const color = req.body?.color ?? req.body?.pet_colour;
     if (!name) return res.status(httpStatus.BAD_REQUEST).send({ message: 'name is required' });
 
@@ -23,7 +23,7 @@ router.post('/', userAuth as any, async (req: any, res) => {
     if (type) insert.pet_type = type;
     if (breed) insert.pet_breed = breed;
     if (gender) insert.pet_gender = gender;
-    if (birthdate) insert.pet_dob = birthdate;
+    if (birthdate) insert.pet_birth_dtm = birthdate;
     if (color) insert.pet_colour = color;
 
     const { data: created, error } = await db
@@ -63,8 +63,8 @@ router.get('/user/:userId', userAuth as any, async (req: any, res) => {
 
     const enriched = (pets || []).map((p: any) => {
       let ageYears: number | null = null;
-      if (p?.pet_dob) {
-        const dob = new Date(p.pet_dob);
+      if (p?.pet_birth_dtm) {
+        const dob = new Date(p.pet_birth_dtm);
         const now = new Date();
         ageYears = Math.max(0, Math.floor((now.getTime() - dob.getTime()) / (1000 * 60 * 60 * 24 * 365.25)));
       }
@@ -127,7 +127,7 @@ router.patch('/:petId', userAuth as any, async (req: any, res) => {
     if (body.type ?? body.pet_type ?? body.pet_species) upd.pet_type = body.type ?? body.pet_type ?? body.pet_species;
     if (body.breed ?? body.pet_breed) upd.pet_breed = body.breed ?? body.pet_breed;
     if (body.gender ?? body.pet_gender) upd.pet_gender = body.gender ?? body.pet_gender;
-    if (body.birthdate ?? body.pet_dob) upd.pet_dob = body.birthdate ?? body.pet_dob;
+    if (body.birthdate ?? body.pet_birth_dtm) upd.pet_birth_dtm = body.birthdate ?? body.pet_birth_dtm;
     if (body.color ?? body.pet_colour) upd.pet_colour = body.color ?? body.pet_colour;
     if (body.pet_image ?? body.profileImage) upd.pet_image = body.pet_image ?? body.profileImage;
 
