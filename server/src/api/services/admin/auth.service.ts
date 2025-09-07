@@ -9,7 +9,7 @@ const login = async (email: string, password: string): Promise<any> => {
     .from('admins')
     .select('*')
     .eq('email', email)
-    .single(); // Use .single() to get one record or null
+    .single();
 
   if (supabaseError || !data) {
     throw new ApiError(httpStatus.UNAUTHORIZED, 'Incorrect email or password');

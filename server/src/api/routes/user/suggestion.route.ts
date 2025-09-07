@@ -4,8 +4,6 @@ import suggestionController from '../../../api/controllers/user/suggestion.contr
 
 const router = Router();
 
-// Protected routes (require authentication)
-// Apply auth middleware to all routes
 router.use((req, res, next) => auth(req, res, next));
 
 router

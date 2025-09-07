@@ -4,7 +4,6 @@ import { catchAsync } from '../../../api/utils/catchAsync.js';
 import { ApiError } from '../../../api/utils/ApiError.js';
 import suggestionService from '../../services/user/suggestion.service.js';
 
-// Extend the Express Request type to include user
 interface AuthenticatedRequest extends Request {
   user?: {
     id: string;
@@ -69,7 +68,6 @@ const deleteSuggestion = catchAsync(async (req: AuthenticatedRequest, res: Respo
     throw new ApiError(httpStatus.UNAUTHORIZED, 'User not authenticated');
   }
 
-  // Verify the suggestion belongs to the user
   const suggestions = await suggestionService.getUserSuggestions(userId);
   const suggestionExists = suggestions.some(s => s.id === id);
   

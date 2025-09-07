@@ -1,21 +1,27 @@
 import express from 'express';
 import cors from 'cors';
+import compression from 'compression';
 import apiRoutes from './api/routes/index.js';
 import { errorConverter, errorHandler } from './api/middlewares/error.js';
 
 const app = express();
 
-// Configure CORS with specific origin and credentials
 app.use(cors({
   origin: ['http://localhost:3001', 'https://pawsiq.in', 'https://www.pawsiq.in'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  credentials: true,
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }));
+
+app.use((req, res, next) => {
+  res.header('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+  next();
+});
+app.use(compression());
 app.use(express.json());
-// Ensure BigInt values from Prisma can be serialized in JSON responses
 app.set('json replacer', (key: string, value: any) => (typeof value === 'bigint' ? Number(value) : value));
-// Harden: override res.json to always stringify BigInt safely (as string) before sending
 app.use((_req, res, next) => {
   const originalJson = res.json.bind(res);
   res.json = (data: any) => {
@@ -36,7 +42,6 @@ app.get('/', (_req, res) => {
 
 app.use('/api/v1', apiRoutes);
 
-// Error handling must come after routes
 app.use(errorConverter);
 app.use(errorHandler);
 

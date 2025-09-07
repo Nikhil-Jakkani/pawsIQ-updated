@@ -9,7 +9,7 @@ import FacebookLogin from '@greatsumini/react-facebook-login';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login: adminLogin, currentUser, error: authError } = useAuth();
+  const { login: adminLogin, currentUser, error: authError, setCurrentUserData } = useAuth();
   
   // Form state
   const [formData, setFormData] = useState({
@@ -124,12 +124,22 @@ const Login = () => {
       
       const data = await response.json();
       
-      // Store tokens
+      // Persist user in AuthContext + localStorage for route guards
+      const userData = {
+        ...data.user,
+        role: data.user?.role || 'user',
+        tokens: {
+          access: { token: data.accessToken },
+          refresh: { token: data.refreshToken },
+        },
+      };
+      setCurrentUserData(userData);
+      // Optional: also keep raw tokens for other consumers
       localStorage.setItem('accessToken', data.accessToken);
       localStorage.setItem('refreshToken', data.refreshToken);
       
       // Redirect based on user role
-      const role = data.user?.role || 'user';
+      const role = userData.role;
       navigate(role === 'admin' ? '/dashboard' : `/${role}/dashboard`);
       
     } catch (error) {

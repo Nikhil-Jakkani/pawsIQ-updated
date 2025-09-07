@@ -70,14 +70,12 @@ export const getSignedUploadUrl = catchAsync(async (req: AuthenticatedRequest, r
     throw new ApiError(httpStatus.UNAUTHORIZED, 'User not authenticated');
   }
 
-  // Ensure the storage bucket exists (create if missing)
   const BUCKET_NAME = 'health-records';
   try {
     const { error: bucketCreateError } = await db.storage.createBucket(BUCKET_NAME, { public: true });
     if (bucketCreateError) {
       const msg = (bucketCreateError as any)?.message || String(bucketCreateError);
       const status = (bucketCreateError as any)?.status || (bucketCreateError as any)?.statusCode;
-      // Ignore if the bucket already exists
       if (!(typeof msg === 'string' && msg.toLowerCase().includes('already exists')) && status !== 409) {
         console.error('Error creating storage bucket:', bucketCreateError);
         throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Storage bucket is missing');
@@ -88,11 +86,9 @@ export const getSignedUploadUrl = catchAsync(async (req: AuthenticatedRequest, r
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to prepare storage');
   }
 
-  // Generate a unique file path
   const fileExt = fileName.split('.').pop();
   const filePath = `${req.user.user_id}/${petId}/${Date.now()}.${fileExt}`;
   
-  // Get signed upload URL from Supabase
   const { data, error } = await db.storage
     .from(BUCKET_NAME)
     .createSignedUploadUrl(filePath);
