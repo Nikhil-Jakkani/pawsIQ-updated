@@ -666,7 +666,7 @@ const Home = () => {
                     </div>
                   </div>
                   <div className="mt-4">
-                    <div className="rounded-xl bg-white/70 backdrop-blur p-4 border border-indigo-100 min-h-[88px] whitespace-pre-line text-gray-700 [transform:translateZ(20px)]">
+                    <div className="rounded-xl bg-white/70 backdrop-blur p-4 border border-indigo-100 min-h-[88px] whitespace-pre-line text-gray-700 text-left [transform:translateZ(20px)]">
                       {aiResponse ? aiResponse : 'Your guidance will appear here.'}
                     </div>
                   </div>

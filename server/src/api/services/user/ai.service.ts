@@ -65,6 +65,52 @@ const generatePetCareSuggestions = async (pet: any) => {
   }
 };
 
+const analyzeFoodFromImage = async (payload: { imageUrl?: string; base64?: string }) => {
+  if (!payload || (!payload.imageUrl && !payload.base64)) {
+    throw new ApiError(httpStatus.BAD_REQUEST, 'imageUrl or base64 image is required');
+  }
+
+  try {
+    // Use Gemini with image input if URL or base64 provided
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+    const instructions = `You are a nutrition analyzer for pet food. From the provided image, identify the food and estimate a nutrition breakdown suitable for dogs/cats where applicable. Return a strict JSON with keys: name, confidence (0-1), servingSize (string), calories (number), macros { protein_g, fat_g, carbs_g }, micronutrients { fiber_g, sodium_mg }, warnings [string], and notes (string). If uncertain, include a low confidence and add a helpful note.`;
+
+    const parts: any[] = [{ text: instructions }];
+
+    if (payload.base64) {
+      parts.push({
+        inlineData: {
+          mimeType: 'image/jpeg',
+          data: payload.base64.replace(/^data:image\/\w+;base64,/, ''),
+        },
+      });
+    } else if (payload.imageUrl) {
+      parts.push({
+        imageUrl: payload.imageUrl,
+      } as any);
+    }
+
+    const result = await (model as any).generateContent(parts);
+    const response = await (result as any).response;
+    const text: string = response.text();
+
+    // Extract JSON safely
+    const start = text.indexOf('{');
+    const end = text.lastIndexOf('}');
+    if (start === -1 || end === -1) {
+      throw new Error('No JSON found in AI response');
+    }
+    const json = JSON.parse(text.substring(start, end + 1));
+
+    return json;
+  } catch (error) {
+    console.error('Error analyzing food image:', error);
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to analyze food image');
+  }
+};
+
 export default {
   generatePetCareSuggestions,
+  analyzeFoodFromImage,
 };

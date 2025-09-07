@@ -10,6 +10,9 @@ const PetActivityTracker = () => {
   const [activityNote, setActivityNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [foodImage, setFoodImage] = useState(null); // { base64, preview }
+  const [nutrition, setNutrition] = useState(null);
+  const [analyzing, setAnalyzing] = useState(false);
   
   const pets = [
     { 
@@ -96,41 +99,56 @@ const PetActivityTracker = () => {
     }
   };
   
-  const handleSubmitActivity = (e) => {
+  const handleSubmitActivity = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      // Update the activity data (in a real app, this would be an API call)
+
+    try {
       const currentPetName = pets[currentPetIndex].name;
+
+      // If food activity, persist calories only
+      if (activityType === 'food') {
+        const calories = parseInt(activityValue || '0', 10);
+        try {
+          const mod = await import('../../services/nutritionService');
+          await mod.saveFoodCalories({
+            pet_id: currentPetIndex + 1, // TODO: replace with real pet_id from your store
+            calories,
+            note: activityNote || undefined,
+            image_url: foodImage?.preview || undefined,
+          });
+        } catch (err) {
+          console.error('Failed to save food calories:', err);
+        }
+      }
+
+      // Local UI update simulation
       const currentActivity = activities[currentPetName].today[activityType];
-      
       if (currentActivity) {
         currentActivity.value = Math.min(
           parseInt(currentActivity.value) + parseInt(activityValue || 0),
-          currentActivity.goal * 1.5 // Allow exceeding goal by up to 50%
+          currentActivity.goal * 1.5
         );
       } else {
-        // If this is a new activity type not in the original data
         activities[currentPetName].today[activityType] = {
           value: parseInt(activityValue || 0),
-          goal: parseInt(activityValue || 0) * 1.2, // Set goal slightly higher
+          goal: parseInt(activityValue || 0) * 1.2,
           unit: getActivityUnit(activityType)
         };
       }
-      
-      setIsSubmitting(false);
+
       setShowPopup(false);
-      
-      // Show success message
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
-      
+
       // Reset form
       setActivityValue('');
       setActivityNote('');
-    }, 800);
+      setFoodImage(null);
+      setNutrition(null);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const getProgressColor = (percentage) => {
@@ -251,6 +269,71 @@ const PetActivityTracker = () => {
                   placeholder="Add any notes about this activity"
                 ></textarea>
               </div>
+
+              {/* Nutrition analyzer (visible when food selected) */}
+              {activityType === 'food' && (
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Analyze food from image</label>
+                  <div className="flex items-center gap-2">
+                    <label className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm cursor-pointer hover:bg-gray-50">
+                      <span className="text-sm text-gray-700">Choose / Capture</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const reader = new FileReader();
+                          reader.onload = () => {
+                            setFoodImage({ base64: reader.result, preview: reader.result });
+                            setNutrition(null);
+                          };
+                          reader.readAsDataURL(file);
+                        }}
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!foodImage?.base64) return;
+                        try {
+                          setAnalyzing(true);
+                          const mod = await import('../../services/nutritionService');
+                          const data = await mod.analyzeFoodImage({ base64: String(foodImage.base64) });
+                          setNutrition(data);
+                          // Auto-fill amount with calories only
+                          if (typeof data?.calories === 'number') {
+                            setActivityType('food');
+                            setActivityValue(String(Math.max(1, Math.round(data.calories))));
+                          }
+                        } catch (e) {
+                          console.error(e);
+                        } finally {
+                          setAnalyzing(false);
+                        }
+                      }}
+                      disabled={!foodImage || analyzing}
+                      className="px-3 py-2 bg-green-600 text-white text-sm rounded-md disabled:opacity-50"
+                    >
+                      {analyzing ? 'Analyzing…' : 'Analyze'}
+                    </button>
+                  </div>
+                  {foodImage?.preview && (
+                    <div className="mt-3 flex items-center gap-3">
+                      <img src={foodImage.preview} alt="food" className="w-16 h-16 object-cover rounded border" />
+                      {nutrition && (
+                        <div className="text-xs text-gray-700">
+                          <div className="font-semibold">{nutrition.name} ({Math.round((nutrition.confidence||0)*100)}%)</div>
+                          <div>Calories: {nutrition.calories}</div>
+                          <div className="italic text-gray-500">Amount auto-filled with calories. You can edit if needed.</div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
               
               {/* Submit button */}
               <button

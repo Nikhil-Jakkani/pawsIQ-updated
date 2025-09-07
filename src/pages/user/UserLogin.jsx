@@ -94,9 +94,9 @@ const UserLogin = () => {
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                   Password
                 </label>
-                <a href="#" className="text-xs text-blue-600 hover:text-blue-700">
+                <Link to="/user/forgot-password" className="text-xs text-blue-600 hover:text-blue-700">
                   Forgot Password?
-                </a>
+                </Link>
               </div>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -176,13 +176,13 @@ const UserLogin = () => {
             Don't have an account?
           </p>
           <div className="flex flex-col sm:flex-row gap-2">
-            <a 
-              href="#" 
+            <Link 
+              to="/user/signin" 
               className="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1"
             >
               <FaPaw size={12} />
               Create a Pet Owner Account
-            </a>
+            </Link>
             <span className="hidden sm:inline text-gray-400">|</span>
             <Link 
               to="/provider/signup" 

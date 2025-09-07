@@ -4,11 +4,16 @@ import Dashboard from './pages/Dashboard.jsx';
 import Home from './pages/Home.jsx';
 import UserLogin from './pages/user/UserLogin.jsx';
 import UserDashboard from './pages/user/UserDashboard.jsx';
+import UserSignIn from './pages/user/UserSignIn.jsx';
+import UserForgotPassword from './pages/user/UserForgotPassword.jsx';
+import UserResetPassword from './pages/user/UserResetPassword.jsx';
 import UserPets from './pages/user/UserPets.jsx';
 import UserAddPet from './pages/user/UserAddPet.jsx';
 import UserAppointments from './pages/user/UserAppointments.jsx';
 import UserBookAppointment from './pages/user/UserBookAppointment.jsx';
 import UserAppointmentConfirmation from './pages/user/UserAppointmentConfirmation.jsx';
+import UserRescheduleAppointment from './pages/user/UserRescheduleAppointment.jsx';
+import UserAppointmentDetails from './pages/user/UserAppointmentDetails.jsx';
 
 import UserMarketplace from './pages/user/UserMarketplace.jsx';
 import UserOrders from './pages/user/UserOrders.jsx';
@@ -179,6 +184,17 @@ function App() {
           <Route path="/support/assignment" element={<AdminProtectedRoute><TicketAssignment /></AdminProtectedRoute>} />
 
           {/* User Routes */}
+          {/* Top-level aliases for SEO/direct links */}
+          <Route path="/signup" element={<UserSignIn />} />
+          <Route path="/register" element={<UserSignIn />} />
+          <Route path="/forgot-password" element={<UserForgotPassword />} />
+          <Route path="/reset-password" element={<UserResetPassword />} />
+
+          {/* Scoped user routes */}
+          <Route path="/user/signin" element={<UserSignIn />} />
+          <Route path="/user/signup" element={<UserSignIn />} />
+          <Route path="/user/forgot-password" element={<React.Suspense fallback={null}><UserForgotPassword /></React.Suspense>} />
+          <Route path="/user/reset-password" element={<React.Suspense fallback={null}><UserResetPassword /></React.Suspense>} />
           <Route
             path="/user/login"
             element={
@@ -210,7 +226,10 @@ function App() {
           <Route path="/user/appointments/new" element={<UserProtectedRoute><UserBookAppointment /></UserProtectedRoute>} />
           <Route path="/user/appointments/upcoming" element={<UserProtectedRoute><UserAppointments /></UserProtectedRoute>} />
           <Route path="/user/appointments/history" element={<UserProtectedRoute><UserAppointments /></UserProtectedRoute>} />
+          <Route path="/user/appointments/reschedule/:id" element={<UserProtectedRoute><UserRescheduleAppointment /></UserProtectedRoute>} />
           
+          
+          <Route path="/user/appointments/:id" element={<UserProtectedRoute><UserAppointmentDetails /></UserProtectedRoute>} />
           
           {/* Marketplace Routes */}
           <Route path="/user/marketplace" element={<UserProtectedRoute><UserMarketplace /></UserProtectedRoute>} />
