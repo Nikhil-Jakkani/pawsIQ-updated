@@ -164,7 +164,7 @@ export default defineConfig(({ mode }) => {
   },
   // Optimize dependencies
   optimizeDeps: {
-    include: ['react', 'react-dom', 'react-router-dom'],
+    include: ['react', 'react-dom', 'react-router-dom', '@react-oauth/google', '@greatsumini/react-facebook-login'],
   },
   define: {
     'process.env': { ...env, VITE_API_URL: env.VITE_API_URL || '/api/v1' }
