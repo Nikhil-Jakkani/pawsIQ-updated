@@ -1,9 +1,8 @@
-import { PrismaClient, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import httpStatus from 'http-status';
 import { ApiError } from '../utils/ApiError.js';
 import { db } from '../../config/db.js';
-
-const prisma = new PrismaClient();
+import prisma from '../../lib/prisma.js';
 
 interface FileData {
   path: string;

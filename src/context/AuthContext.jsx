@@ -193,6 +193,14 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('pawsiq_user');
   };
 
+  const setCurrentUserData = (userData) => {
+    try {
+      setCurrentUser(userData);
+      localStorage.setItem('pawsiq_user', JSON.stringify(userData));
+    } catch (_) {
+    }
+  };
+
   // Check if user is a provider
   const isProvider = () => {
     return currentUser && currentUser.role === 'provider';
@@ -212,6 +220,7 @@ export const AuthProvider = ({ children }) => {
     currentUser,
     login,
     logout,
+    setCurrentUserData,
     isProvider,
     isUser,
     isAdmin,

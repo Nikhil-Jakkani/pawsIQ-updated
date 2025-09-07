@@ -164,9 +164,28 @@ const UserPets = () => {
   }, [pets, searchTerm, filterType]);
 
   // Delete pet handler
-  const handleDeletePet = (id) => {
-    if (window.confirm('Are you sure you want to remove this pet?')) {
+  const handleDeletePet = async (id) => {
+    if (!window.confirm('Are you sure you want to remove this pet?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/pets/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete pet');
+      }
+
       setPets(pets.filter((pet) => pet.id !== id));
+    } catch (error) {
+      console.error('Error deleting pet:', error);
+      alert('Failed to delete pet. Please try again.');
     }
   };
 

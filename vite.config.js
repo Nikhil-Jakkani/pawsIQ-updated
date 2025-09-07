@@ -115,6 +115,9 @@ export default defineConfig(({ mode }) => {
     hmr: {
       overlay: true, // Show errors as overlay
     },
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+    },
     proxy: {
       '/api/v1': {
         target: 'http://localhost:4000',

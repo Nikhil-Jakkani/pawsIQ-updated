@@ -1,17 +1,14 @@
 import httpStatus from 'http-status';
-import { PrismaClient } from '@prisma/client';
 import { ApiError } from '../../utils/ApiError.js';
-
-const prisma = new PrismaClient();
+import prisma from '../../../lib/prisma.js';
 
 // Serialize any BigInt fields to string to prevent JSON serialization issues
 const serializeBigInt = <T>(data: T): T => {
   return JSON.parse(
-    JSON.stringify(
-      data as any,
-      (_k, v) => (typeof v === 'bigint' ? v.toString() : v)
+    JSON.stringify(data, (_key, value) => 
+      typeof value === 'bigint' ? value.toString() : value
     )
-  );
+  ) as T;
 };
 
 export type AppointmentStatus = 'Scheduled' | 'Cancelled' | 'Completed';

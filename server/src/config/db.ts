@@ -16,13 +16,11 @@ export const db = createClient(supabaseUrl, supabaseKey, {
   },
 });
 
-// Helper function to handle Supabase errors
 const handleSupabaseError = (error: any, defaultMessage = 'Database error') => {
   console.error('Supabase Error:', error);
   throw new Error(error?.message || defaultMessage);
 };
 
-// Helper function to execute a query and handle errors
 export const executeQuery = async (query: any) => {
   const { data, error } = await query;
   if (error) {

@@ -1,8 +1,6 @@
 import httpStatus from 'http-status';
-import { PrismaClient } from '@prisma/client';
 import { ApiError } from '../../utils/ApiError.js';
-
-const prisma = new PrismaClient();
+import prisma from '../../../lib/prisma.js';
 
 const getProviderById = async (id: number) => {
   const provider = await prisma.pIQ_Service_Provider.findUnique({

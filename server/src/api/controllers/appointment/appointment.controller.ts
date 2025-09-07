@@ -3,7 +3,6 @@ import httpStatus from 'http-status';
 import { catchAsync } from '../../utils/catchAsync.js';
 import { appointmentService } from '../../services/appointment/appointment.service.js';
 
-// User-facing
 const create = catchAsync(async (req: any, res: Response) => {
   const userId = BigInt(req.user.user_id); // set by global auth middleware
   const appt = await appointmentService.createAppointment(userId, req.body);
