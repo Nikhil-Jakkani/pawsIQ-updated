@@ -27,7 +27,7 @@ const ProviderLogin = () => {
   useEffect(() => {
     if (currentUser) {
       if (currentUser.role === 'provider') {
-        navigate('/provider/dashboard');
+        navigate('/provider/vet/dashboard');
       } else if (currentUser.role === 'user') {
         navigate('/user/dashboard');
       } else if (currentUser.role === 'admin') {
@@ -91,8 +91,11 @@ const ProviderLogin = () => {
       if (result.success) {
         // Login successful
         if (result.userType === 'provider') {
-          // Redirect to provider dashboard
-          navigate('/provider/dashboard');
+          // Redirect to vet dashboard if veterinarian, else generic provider dashboard
+          const stored = localStorage.getItem('pawsiq_user');
+          const parsed = stored ? JSON.parse(stored) : null;
+          // For now, all providers go to the vet dashboard
+          navigate('/provider/vet/dashboard');
         } else {
           // If somehow a non-provider logged in through provider login
           navigate('/');

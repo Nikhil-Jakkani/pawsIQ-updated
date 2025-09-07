@@ -28,7 +28,7 @@ const Login = () => {
       if (currentUser.role === 'user') {
         navigate('/user/dashboard');
       } else if (currentUser.role === 'provider') {
-        navigate('/provider/dashboard');
+        navigate('/provider/vet/dashboard');
       } else if (currentUser.role === 'admin') {
         navigate('/dashboard');
       }
@@ -71,7 +71,7 @@ const Login = () => {
         if (userType === 'user') {
           navigate('/user/dashboard');
         } else if (userType === 'provider') {
-          navigate('/provider/dashboard');
+          navigate('/provider/vet/dashboard');
         } else if (userType === 'admin') {
           navigate('/dashboard');
         }

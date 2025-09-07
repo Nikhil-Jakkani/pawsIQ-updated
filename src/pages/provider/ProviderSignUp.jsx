@@ -50,7 +50,7 @@ const ProviderSignUp = () => {
   // Redirect if already logged in
   useEffect(() => {
     if (currentUser) {
-      navigate('/provider/dashboard');
+      navigate('/provider/vet/dashboard');
     }
   }, [currentUser, navigate]);
   

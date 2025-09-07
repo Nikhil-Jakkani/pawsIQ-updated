@@ -49,7 +49,16 @@ import PaymentInfo from './pages/provider/PaymentInfo.jsx';
 import ReviewSubmission from './pages/provider/ReviewSubmission.jsx';
 import ApplicationStatus from './pages/provider/ApplicationStatus.jsx';
 import ProviderLogin from './pages/provider/ProviderLogin.jsx';
-import ProviderDashboard from './pages/provider/ProviderDashboard.jsx';
+// import ProviderDashboard from './pages/provider/ProviderDashboard.jsx';
+import VetDashboard from './pages/provider/VetDashboard.jsx';
+import VetAppointments from './pages/provider/VetAppointments.jsx';
+import VetClients from './pages/provider/VetClients.jsx';
+import VetServices from './pages/provider/VetServices.jsx';
+import VetPrescriptions from './pages/provider/VetPrescriptions.jsx';
+import VetLabReports from './pages/provider/VetLabReports.jsx';
+import VetAnalytics from './pages/provider/VetAnalytics.jsx';
+import VetNotifications from './pages/provider/VetNotifications.jsx';
+import VetSettings from './pages/provider/VetSettings.jsx';
 
 // Auth pages
 import Login from './pages/auth/Login.jsx';
@@ -100,7 +109,7 @@ const AdminProtectedRoute = ({ children }) => {
     const fallback = currentUser.role === 'user'
       ? '/user/dashboard'
       : currentUser.role === 'provider'
-      ? '/provider/dashboard'
+      ? '/provider/vet/dashboard'
       : '/';
     return <Navigate to={fallback} replace />;
   }
@@ -112,6 +121,18 @@ const UserProtectedRoute = ({ children }) => {
   const { currentUser } = useAuth();
   if (!currentUser) {
     return <Navigate to="/user/login" replace />;
+  }
+  return children;
+};
+
+// Protected route component for Veterinarian providers
+const VetProtectedRoute = ({ children }) => {
+  const { currentUser } = useAuth();
+  if (!currentUser) {
+    return <Navigate to="/provider/login" replace />;
+  }
+  if (!(currentUser.role === 'provider' && currentUser.providerType === 'Veterinarian')) {
+    return <Navigate to="/provider/login" replace />;
   }
   return children;
 };
@@ -130,7 +151,9 @@ function App() {
             currentUser ? (
               currentUser.role === 'admin' ? <Navigate to="/dashboard" replace /> :
               currentUser.role === 'user' ? <Navigate to="/user/dashboard" replace /> :
-              currentUser.role === 'provider' ? <Navigate to="/provider/dashboard" replace /> :
+              currentUser.role === 'provider' ? (
+                <Navigate to="/provider/vet/dashboard" replace />
+              ) :
               <Home />
             ) : <Home />
           } />
@@ -203,7 +226,7 @@ function App() {
                     currentUser.role === 'user'
                       ? <Navigate to="/user/dashboard" />
                       : currentUser.role === 'provider'
-                      ? <Navigate to="/provider/dashboard" />
+                      ? <Navigate to="/provider/vet/dashboard" />
                       : <Navigate to="/dashboard" />
                   )
                 : <UserLogin />
@@ -211,6 +234,19 @@ function App() {
           />
           <Route path="/user/dashboard" element={<UserProtectedRoute><UserDashboard /></UserProtectedRoute>} />
           
+          {/* Provider Routes */}
+          <Route path="/provider/login" element={<ProviderLogin />} />
+          {/* Vet (Provider - Veterinarian) Routes */}
+          <Route path="/provider/vet/dashboard" element={<VetProtectedRoute><VetDashboard /></VetProtectedRoute>} />
+          <Route path="/provider/vet/appointments" element={<VetProtectedRoute><VetAppointments /></VetProtectedRoute>} />
+          <Route path="/provider/vet/clients" element={<VetProtectedRoute><VetClients /></VetProtectedRoute>} />
+          <Route path="/provider/vet/services" element={<VetProtectedRoute><VetServices /></VetProtectedRoute>} />
+          <Route path="/provider/vet/prescriptions" element={<VetProtectedRoute><VetPrescriptions /></VetProtectedRoute>} />
+          <Route path="/provider/vet/labs" element={<VetProtectedRoute><VetLabReports /></VetProtectedRoute>} />
+          <Route path="/provider/vet/analytics" element={<VetProtectedRoute><VetAnalytics /></VetProtectedRoute>} />
+          <Route path="/provider/vet/notifications" element={<VetProtectedRoute><VetNotifications /></VetProtectedRoute>} />
+          <Route path="/provider/vet/settings" element={<VetProtectedRoute><VetSettings /></VetProtectedRoute>} />
+
           {/* Pet Management Routes */}
           <Route path="/user/pets" element={<UserProtectedRoute><UserPets /></UserProtectedRoute>} />
           <Route path="/user/pets/add" element={<UserProtectedRoute><UserAddPet /></UserProtectedRoute>} />
@@ -267,7 +303,6 @@ function App() {
 
           {/* Provider Routes */}
           <Route path="/provider/login" element={<ProviderLogin />} />
-          <Route path="/provider/dashboard" element={<ProviderDashboard />} />
           {/* Provider Onboarding Flow */}
           <Route path="/provider/signup" element={<ProviderSignUp />} />
           <Route path="/provider/onboarding/professional-info" element={<ProfessionalInfo />} />

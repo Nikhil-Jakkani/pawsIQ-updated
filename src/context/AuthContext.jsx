@@ -216,9 +216,20 @@ export const AuthProvider = ({ children }) => {
     return currentUser && currentUser.role === 'admin';
   };
 
+  // Convenience login specifically for providers
+  const providerLogin = async (email, password) => {
+    const result = await login(email, password);
+    if (result.success && (currentUser?.role === 'provider')) {
+      return { success: true, userType: 'provider', providerType: currentUser?.providerType };
+    }
+    // If API returned a user but not a provider, treat as failure for provider portal
+    return { success: false };
+  };
+
   const value = {
     currentUser,
     login,
+    providerLogin,
     logout,
     setCurrentUserData,
     isProvider,
