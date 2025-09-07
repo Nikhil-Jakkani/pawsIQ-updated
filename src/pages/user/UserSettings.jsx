@@ -476,15 +476,17 @@ const UserSettings = () => {
           <form onSubmit={handleSubmit}>
             <div className="space-y-6">
               <h3 className="text-lg font-medium text-gray-800 mb-4">Notification Preferences</h3>
+              <p className="text-sm text-gray-500 -mt-2 mb-4">Choose how you want to hear from us. Toggle each category on or off.</p>
               
               {/* Email Notifications */}
-              <div>
+              <div className="bg-white rounded-lg p-4 border border-gray-200">
                 <h4 className="font-medium text-gray-800 mb-3">Email Notifications</h4>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-700">Order Updates</p>
-                      <p className="text-sm text-gray-500">Receive updates about your orders</p>
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <p className="font-medium text-gray-700 whitespace-nowrap">Order Updates</p>
+                      <span className="text-xs text-green-700 bg-green-100 px-2 py-0.5 rounded-full whitespace-nowrap">Recommended</span>
+                      <span className="text-sm text-gray-500 truncate">• Receive updates about your orders</span>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input 
@@ -498,9 +500,9 @@ const UserSettings = () => {
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-700">Promotions and Deals</p>
-                      <p className="text-sm text-gray-500">Receive special offers and discounts</p>
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <p className="font-medium text-gray-700 whitespace-nowrap">Promotions and Deals</p>
+                      <span className="text-sm text-gray-500 truncate">• Receive special offers and discounts</span>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input 
@@ -514,9 +516,10 @@ const UserSettings = () => {
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-700">Pet Reminders</p>
-                      <p className="text-sm text-gray-500">Receive reminders about pet care</p>
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <p className="font-medium text-gray-700 whitespace-nowrap">Pet Reminders</p>
+                      <span className="text-xs text-green-700 bg-green-100 px-2 py-0.5 rounded-full whitespace-nowrap">Recommended</span>
+                      <span className="text-sm text-gray-500 truncate">• Receive reminders about pet care</span>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input 
@@ -530,9 +533,9 @@ const UserSettings = () => {
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-700">Newsletter</p>
-                      <p className="text-sm text-gray-500">Receive our monthly newsletter</p>
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <p className="font-medium text-gray-700 whitespace-nowrap">Newsletter</p>
+                      <span className="text-sm text-gray-500 truncate">• Receive our monthly newsletter</span>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input 
@@ -548,13 +551,14 @@ const UserSettings = () => {
               </div>
               
               {/* Push Notifications */}
-              <div>
+              <div className="bg-white rounded-lg p-4 border border-gray-200">
                 <h4 className="font-medium text-gray-800 mb-3">Push Notifications</h4>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-700">Order Updates</p>
-                      <p className="text-sm text-gray-500">Receive updates about your orders</p>
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <p className="font-medium text-gray-700 whitespace-nowrap">Order Updates</p>
+                      <span className="text-xs text-green-700 bg-green-100 px-2 py-0.5 rounded-full whitespace-nowrap">Recommended</span>
+                      <span className="text-sm text-gray-500 truncate">• Receive updates about your orders</span>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input 
@@ -568,9 +572,9 @@ const UserSettings = () => {
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-700">Promotions and Deals</p>
-                      <p className="text-sm text-gray-500">Receive special offers and discounts</p>
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <p className="font-medium text-gray-700 whitespace-nowrap">Promotions and Deals</p>
+                      <span className="text-sm text-gray-500 truncate">• Receive special offers and discounts</span>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input 
@@ -584,9 +588,10 @@ const UserSettings = () => {
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-700">Pet Reminders</p>
-                      <p className="text-sm text-gray-500">Receive reminders about pet care</p>
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <p className="font-medium text-gray-700 whitespace-nowrap">Pet Reminders</p>
+                      <span className="text-xs text-green-700 bg-green-100 px-2 py-0.5 rounded-full whitespace-nowrap">Recommended</span>
+                      <span className="text-sm text-gray-500 truncate">• Receive reminders about pet care</span>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input 
@@ -600,9 +605,9 @@ const UserSettings = () => {
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-700">Newsletter</p>
-                      <p className="text-sm text-gray-500">Receive our monthly newsletter</p>
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <p className="font-medium text-gray-700 whitespace-nowrap">Newsletter</p>
+                      <span className="text-sm text-gray-500 truncate">• Receive our monthly newsletter</span>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input 
@@ -843,12 +848,14 @@ const UserSettings = () => {
           <div className="space-y-8">
             <div>
               <h3 className="text-lg font-medium text-gray-800 mb-4">Privacy Settings</h3>
+              <p className="text-sm text-gray-500 -mt-2 mb-4">Control what data we collect and who can see your information.</p>
               
-              <div className="space-y-4">
+              <div className="bg-white rounded-lg p-4 border border-gray-200 space-y-4">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-gray-700">Data Collection</p>
-                    <p className="text-sm text-gray-500">Allow us to collect usage data to improve your experience</p>
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <p className="font-medium text-gray-700 whitespace-nowrap">Data Collection</p>
+                    <span className="text-xs text-green-700 bg-green-100 px-2 py-0.5 rounded-full whitespace-nowrap">Recommended</span>
+                    <span className="text-sm text-gray-500 truncate">• Allow us to collect usage data to improve your experience</span>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" className="sr-only peer" defaultChecked />
@@ -857,9 +864,9 @@ const UserSettings = () => {
                 </div>
                 
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-gray-700">Personalized Ads</p>
-                    <p className="text-sm text-gray-500">Allow us to show personalized ads based on your activity</p>
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <p className="font-medium text-gray-700 whitespace-nowrap">Personalized Ads</p>
+                    <span className="text-sm text-gray-500 truncate">• Allow us to show personalized ads based on your activity</span>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" className="sr-only peer" />
