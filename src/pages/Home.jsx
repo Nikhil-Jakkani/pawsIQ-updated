@@ -40,7 +40,7 @@ const logoImage = "/7.png";
 
 const Home = () => {
   // State for UI interactions
-  const [isHovering, setIsHovering] = useState(false);
+  const [setIsHovering] = useState(false);
   
   // State for pet selector
   const [selectedPet, setSelectedPet] = useState('dog');
@@ -1820,19 +1820,6 @@ const Home = () => {
               <p className="text-base text-gray-400">
                 &copy; 2025 PawsIQ, Inc. All rights reserved.
               </p>
-              <div className="mt-4 md:mt-0 flex items-center space-x-4">
-                <a href="#" className="text-gray-400 hover:text-indigo-300 transition-colors duration-300 text-sm" onMouseEnter={() => setIsHovering(true)} onMouseLeave={() => setIsHovering(false)}>
-                  Sitemap
-                </a>
-                <span className="text-gray-500">•</span>
-                <a href="#" className="text-gray-400 hover:text-indigo-300 transition-colors duration-300 text-sm" onMouseEnter={() => setIsHovering(true)} onMouseLeave={() => setIsHovering(false)}>
-                  Do Not Sell My Info
-                </a>
-                <span className="text-gray-500">•</span>
-                <a href="#" className="text-gray-400 hover:text-indigo-300 transition-colors duration-300 text-sm" onMouseEnter={() => setIsHovering(true)} onMouseLeave={() => setIsHovering(false)}>
-                  Preferences
-                </a>
-              </div>
             </div>
           </div>
         </div>
