@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link, useSearchParams } from 'react-router-dom';
 import { FaLock, FaPaw } from 'react-icons/fa';
+import { toast } from 'react-toastify';
 
 const logoImage = "/7.png";
 const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
 
 const UserResetPassword = () => {
-  const [searchParams] = useSearchParams();
-  const token = searchParams.get('token');
+  const location = useLocation();
+  const { state } = location;
+  const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -16,39 +19,94 @@ const UserResetPassword = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!token) {
-      setError('Reset token is missing. Please use the link from your email.');
+    if (!state?.email || !state?.otp) {
+      setError('Invalid password reset request. Please try again.');
+      setTimeout(() => navigate('/forgot-password'), 3000);
+      return;
     }
-  }, [token]);
+    setEmail(state.email);
+    setOtp(state.otp);
+  }, [state, navigate]);
+
+  const verifyOTP = async () => {
+    try {
+      const res = await fetch(`${API_URL}/user/auth/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, otp })
+      });
+      
+      // Safely parse JSON (backend returns JSON on errors, 200 with JSON on success)
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : {};
+      
+      if (!res.ok || !data.success) {
+        const msg = data?.message || 'Invalid or expired OTP';
+        throw new Error(msg);
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('OTP verification error:', error);
+      // Show a clear message for wrong OTP
+      const msg = (error?.message || '').toLowerCase().includes('invalid')
+        ? 'Invalid OTP. Please check and try again.'
+        : (error.message || 'Failed to verify OTP. Please try again.');
+      setError(msg);
+      return false;
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    if (!token) return;
+    if (!email || !otp) {
+      setError('Invalid password reset request. Please try again.');
+      return;
+    }
+
     if (password.length < 8) {
       setError('Password must be at least 8 characters long.');
       return;
     }
+    
     if (password !== confirmPassword) {
       setError('Passwords do not match.');
       return;
     }
 
+    // First verify the OTP
+    const isOtpValid = await verifyOTP();
+    if (!isOtpValid) {
+      return; // Error is already set by verifyOTP
+    }
+
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_URL}/user/auth/reset-password?token=${encodeURIComponent(token)}`, {
+      const res = await fetch(`${API_URL}/user/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ 
+          email,
+          otp,
+          newPassword: password 
+        }),
       });
-      if (res.ok) {
+
+      // Some backends return 204 No Content; handle gracefully
+      const isJson = res.headers.get('content-type')?.includes('application/json');
+      const data = isJson ? await res.json() : null;
+      
+      if (res.ok || res.status === 204) {
         setSuccess(true);
+        toast.success('Password reset successful!');
         setTimeout(() => navigate('/user/login'), 1200);
       } else {
-        setError('The reset link is invalid or expired. Request a new one.');
+        setError((data && data.message) || 'Failed to reset password. Please try again.');
       }
     } catch (e) {
+      console.error('Reset password error:', e);
       setError('Something went wrong. Please try again.');
     } finally {
       setIsLoading(false);
@@ -117,7 +175,7 @@ const UserResetPassword = () => {
 
             <button
               type="submit"
-              disabled={isLoading || !token}
+              disabled={isLoading || !email || !otp}
               className={`w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-[#145ae6] text-white font-medium rounded-xl shadow-sm hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center justify-center gap-2 ${
                 isLoading ? 'opacity-70 cursor-not-allowed' : ''
               }`}

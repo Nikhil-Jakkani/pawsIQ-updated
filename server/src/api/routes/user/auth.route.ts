@@ -11,6 +11,7 @@ router.post('/refresh-tokens', userAuthController.refreshTokens);
 router.post('/forgot-password', userAuthController.forgotPassword);
 router.post('/reset-password', userAuthController.resetPassword);
 router.post('/verify-email', userAuthController.verifyEmail);
+router.post('/verify-otp', userAuthController.verifyOTP);
 
 // Protected routes
 router.use(auth());

@@ -31,18 +31,44 @@ export const userAuthController = {
   }),
 
   forgotPassword: catchAsync(async (req: Request, res: Response) => {
-    const resetPasswordToken = await userAuthService.generateResetPasswordToken(req.body.email);
-    // TODO: Send email with reset password link
+    const { email } = req.body;
+    await userAuthService.generateResetPasswordOTP(email);
     res.status(httpStatus.NO_CONTENT).send();
   }),
 
   resetPassword: catchAsync(async (req: Request, res: Response) => {
-    await userAuthService.resetPassword(req.query.token as string, req.body.password);
+    const { email, otp, newPassword } = req.body;
+    await userAuthService.resetPasswordWithOTP(email, otp, newPassword);
     res.status(httpStatus.NO_CONTENT).send();
   }),
 
   verifyEmail: catchAsync(async (req: Request, res: Response) => {
     // await userAuthService.verifyEmail(req.query.token as string);
     res.status(httpStatus.NO_CONTENT).send();
+  }),
+
+  verifyOTP: catchAsync(async (req: Request, res: Response) => {
+    const { email, otp } = req.body;
+    
+    if (!email || !otp) {
+      return res.status(httpStatus.BAD_REQUEST).json({
+        success: false,
+        message: 'Email and OTP are required'
+      });
+    }
+    
+    const isValid = await userAuthService.verifyOTP(email, otp);
+    
+    if (!isValid) {
+      return res.status(httpStatus.BAD_REQUEST).json({
+        success: false,
+        message: 'Invalid or expired OTP. Please request a new one.'
+      });
+    }
+    
+    return res.status(httpStatus.OK).json({ 
+      success: true,
+      message: 'OTP verified successfully' 
+    });
   }),
 };

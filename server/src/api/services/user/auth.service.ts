@@ -6,6 +6,8 @@ import { tokenService } from './token.service.js';
 import { userService } from './user.service.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { tokenTypes } from '../../../config/tokens.js';
+import { sendEmail, sendOTPEmail } from '../../../services/email.service.js';
+import { otpService } from '../../../services/otp.service.js';
 
 const loginUserWithEmailAndPassword = async (email: string, password: string) => {
   // Find user by email
@@ -111,52 +113,102 @@ const logout = async (refreshToken: string) => {
   await db.from('tokens').delete().eq('token', refreshToken);
 };
 
-const generateResetPasswordToken = async (email: string) => {
+const generateResetPasswordOTP = async (email: string) => {
   const user = await userService.getUserByEmail(email);
   if (!user) {
-    throw new ApiError(httpStatus.NOT_FOUND, 'No users found with this email');
+    return { success: true };
   }
   
-  const expires = moment().add(process.env.JWT_RESET_PASSWORD_EXPIRATION_MINUTES, 'minutes');
-  const resetPasswordToken = tokenService.generateToken(
-    user.user_id,
-    expires,
-    tokenTypes.RESET_PASSWORD,
-    'user'
-  );
-  
-  // TODO: Store token in database with expiry
-  
-  return resetPasswordToken;
+  try {
+    const otp = otpService.generateOTP();
+    await otpService.storeOTP(email, otp);
+    
+    try {
+      await sendOTPEmail(email, otp);
+      return { success: true };
+    } catch (emailError) {
+      console.error('Failed to send OTP email:', emailError);
+      throw new ApiError(
+        httpStatus.INTERNAL_SERVER_ERROR,
+        'Failed to send OTP. Please try again.'
+      );
+    }
+  } catch (error) {
+    throw new ApiError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      'Failed to generate OTP'
+    );
+  }
 };
 
-const resetPassword = async (token: string, newPassword: string) => {
+interface ResetPasswordResponse {
+  success: boolean;
+  message?: string;
+  error?: string;
+}
+
+const resetPasswordWithOTP = async (email: string, otp: string, newPassword: string): Promise<ResetPasswordResponse> => {
+  const isOtpValid = await otpService.verifyOTP(email, otp);
+  
+  if (!isOtpValid) {
+    throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid OTP');
+  }
+  
+  const user = await userService.getUserByEmail(email);
+  if (!user) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
+  }
+  
   try {
-    const tokenDoc = await tokenService.verifyToken(token, tokenTypes.RESET_PASSWORD);
-    const user = await userService.getUserById(tokenDoc.user_id);
-    if (!user) {
-      throw new Error();
-    }
-    
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await db
+    const { error: updateError } = await db
       .from('PIQ_User')
       .update({ user_password: hashedPassword })
       .eq('user_id', user.user_id);
-      
-    // Delete all user's refresh tokens
+
+    if (updateError) {
+      throw updateError;
+    }
+    
     await db.from('tokens').delete().eq('user_id', user.user_id);
+    
+    return { 
+      success: true,
+      message: 'Password reset successful' 
+    };
   } catch (error) {
-    throw new ApiError(httpStatus.UNAUTHORIZED, 'Password reset failed');
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    throw new ApiError(
+      httpStatus.INTERNAL_SERVER_ERROR, 
+      `Failed to reset password: ${errorMessage}`
+    );
   }
 };
 
-export const userAuthService = {
+// Define the auth service interface
+export interface IUserAuthService {
+  loginUserWithEmailAndPassword(email: string, password: string): Promise<{ user: any; tokens: any }>;
+  registerUser(userData: any): Promise<any>;
+  getCurrentUser(userId: number): Promise<any>;
+  refreshAuth(refreshToken: string): Promise<any>;
+  logout(refreshToken: string): Promise<void>;
+  generateResetPasswordOTP(email: string): Promise<{ success: boolean }>;
+  resetPasswordWithOTP(email: string, otp: string, newPassword: string): Promise<{ success: boolean }>;
+  verifyOTP(email: string, otp: string): Promise<boolean>;
+}
+
+// Non-consuming verification used by /verify-otp endpoint
+const verifyOTP = async (email: string, otp: string): Promise<boolean> => {
+  return await otpService.checkOTP(email, otp);
+};
+
+export const userAuthService: IUserAuthService = {
   loginUserWithEmailAndPassword,
   registerUser,
   getCurrentUser,
   refreshAuth,
   logout,
-  generateResetPasswordToken,
-  resetPassword,
+  generateResetPasswordOTP,
+  resetPasswordWithOTP,
+  verifyOTP,
 };
