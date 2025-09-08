@@ -6,6 +6,7 @@ import UserLogin from './pages/user/UserLogin.jsx';
 import UserDashboard from './pages/user/UserDashboard.jsx';
 import UserSignIn from './pages/user/UserSignIn.jsx';
 import UserForgotPassword from './pages/user/UserForgotPassword.jsx';
+import OTPVerification from './pages/auth/OTPVerification.jsx';
 import UserResetPassword from './pages/user/UserResetPassword.jsx';
 import UserPets from './pages/user/UserPets.jsx';
 import UserAddPet from './pages/user/UserAddPet.jsx';
@@ -210,7 +211,8 @@ function App() {
           {/* Top-level aliases for SEO/direct links */}
           <Route path="/signup" element={<UserSignIn />} />
           <Route path="/register" element={<UserSignIn />} />
-          <Route path="/forgot-password" element={<UserForgotPassword />} />
+          <Route path="/user/forgot-password" element={<UserForgotPassword />} />
+          <Route path="/otp-verification" element={<OTPVerification />} />
           <Route path="/reset-password" element={<UserResetPassword />} />
 
           {/* Scoped user routes */}
