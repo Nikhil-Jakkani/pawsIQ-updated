@@ -185,6 +185,18 @@ const resetPasswordWithOTP = async (email: string, otp: string, newPassword: str
   }
 };
 
+const sendMobileOTP = async (phone: string): Promise<{ success: boolean }> => {
+  // Generate OTP and store using phone as identifier
+  const otp = otpService.generateOTP();
+  await otpService.storeOTP(phone, otp);
+  console.log(`Generated OTP for ${phone}: ${otp}`);
+  return { success: true };
+};
+
+const verifyMobileOTP = async (phone: string, otp: string): Promise<boolean> => {
+  return await otpService.checkOTP(phone, otp);
+};
+
 // Define the auth service interface
 export interface IUserAuthService {
   loginUserWithEmailAndPassword(email: string, password: string): Promise<{ user: any; tokens: any }>;
@@ -195,6 +207,8 @@ export interface IUserAuthService {
   generateResetPasswordOTP(email: string): Promise<{ success: boolean }>;
   resetPasswordWithOTP(email: string, otp: string, newPassword: string): Promise<{ success: boolean }>;
   verifyOTP(email: string, otp: string): Promise<boolean>;
+  sendMobileOTP(phone: string): Promise<{ success: boolean }>;
+  verifyMobileOTP(phone: string, otp: string): Promise<boolean>;
 }
 
 // Non-consuming verification used by /verify-otp endpoint
@@ -211,4 +225,6 @@ export const userAuthService: IUserAuthService = {
   generateResetPasswordOTP,
   resetPasswordWithOTP,
   verifyOTP,
+  sendMobileOTP,
+  verifyMobileOTP,
 };

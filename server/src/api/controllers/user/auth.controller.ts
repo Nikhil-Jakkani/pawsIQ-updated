@@ -71,4 +71,27 @@ export const userAuthController = {
       message: 'OTP verified successfully' 
     });
   }),
+
+  // Send OTP to mobile number
+  sendMobileOTP: catchAsync(async (req: Request, res: Response) => {
+    const { phone } = req.body;
+    if (!phone) {
+      return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'Phone number is required' });
+    }
+    await userAuthService.sendMobileOTP(phone);
+    return res.status(httpStatus.NO_CONTENT).send();
+  }),
+
+  // Verify OTP for mobile number (non-consuming)
+  verifyMobileOTP: catchAsync(async (req: Request, res: Response) => {
+    const { phone, otp } = req.body;
+    if (!phone || !otp) {
+      return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'Phone and OTP are required' });
+    }
+    const isValid = await userAuthService.verifyMobileOTP(phone, otp);
+    if (!isValid) {
+      return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'Invalid or expired OTP' });
+    }
+    return res.status(httpStatus.OK).json({ success: true, message: 'OTP verified' });
+  }),
 };
