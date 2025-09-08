@@ -379,6 +379,15 @@ const Home = () => {
                 <FaPaw className="text-indigo-500" />
                 Login
               </Link>
+              <Link 
+                to="/user/signin" 
+                className="whitespace-nowrap text-base font-medium text-indigo-600 hover:text-indigo-700 transition-colors duration-300 flex items-center gap-2"
+                onMouseEnter={() => setIsHovering(true)}
+                onMouseLeave={() => setIsHovering(false)}
+              >
+                <FaPaw className="text-indigo-600" />
+                Sign Up
+              </Link>
             </div>
           </div>
         </nav>
@@ -530,7 +539,7 @@ const Home = () => {
                 </div>
                 
                 {/* Action buttons */}
-                <div className="mt-6 flex justify-center items-center animate-fadeInUp animation-delay-1000">
+                <div className="mt-6 flex justify-center items-center gap-3 animate-fadeInUp animation-delay-1000">
                   <Link
                     to="/login"
                     className="inline-flex items-center px-6 py-3 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300 transform hover:scale-105 shadow-lg"
@@ -539,6 +548,15 @@ const Home = () => {
                   >
                     <FaPaw className="mr-2" />
                     Login to PawsIQ
+                  </Link>
+                  <Link
+                    to="/user/signin"
+                    className="inline-flex items-center px-6 py-3 border border-indigo-600 text-sm font-medium rounded-md text-indigo-700 bg-white hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300 transform hover:scale-105 shadow"
+                    onMouseEnter={() => setIsHovering(true)}
+                    onMouseLeave={() => setIsHovering(false)}
+                  >
+                    <FaPaw className="mr-2 text-indigo-600" />
+                    Sign Up
                   </Link>
                 </div>
                 
