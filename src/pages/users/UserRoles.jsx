@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   FaUsers, 
@@ -22,122 +22,40 @@ import {
   FaUnlock
 } from 'react-icons/fa';
 import DashboardLayout from '../../components/layout/DashboardLayout';
+import useApi from '../../hooks/useApi';
 
 const UserRoles = () => {
+  const api = useApi();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRoles, setSelectedRoles] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [currentRole, setCurrentRole] = useState(null);
+  const [roles, setRoles] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   
-  // Sample data for roles
-  const rolesData = [
-    { 
-      id: 1, 
-      name: 'Administrator', 
-      description: 'Full access to all system features and settings', 
-      usersCount: 5,
-      permissions: {
-        dashboard: { view: true, edit: true },
-        users: { view: true, create: true, edit: true, delete: true },
-        providers: { view: true, create: true, edit: true, delete: true },
-        pets: { view: true, create: true, edit: true, delete: true },
-        appointments: { view: true, create: true, edit: true, delete: true },
-        transactions: { view: true, create: true, edit: true, delete: true },
-        marketplace: { view: true, create: true, edit: true, delete: true },
-        content: { view: true, create: true, edit: true, delete: true },
-        analytics: { view: true, create: true, edit: true, delete: true },
-        notifications: { view: true, create: true, edit: true, delete: true },
-        settings: { view: true, create: true, edit: true, delete: true },
-        security: { view: true, create: true, edit: true, delete: true },
-        support: { view: true, create: true, edit: true, delete: true }
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const data = await api.get('/admin/roles');
+        if (!alive) return;
+        setRoles(Array.isArray(data?.results) ? data.results : []);
+      } catch (e) {
+        if (!alive) return;
+        setError('Failed to load roles');
+      } finally {
+        if (alive) setLoading(false);
       }
-    },
-    { 
-      id: 2, 
-      name: 'Moderator', 
-      description: 'Can moderate content and manage users, but cannot change system settings', 
-      usersCount: 8,
-      permissions: {
-        dashboard: { view: true, edit: false },
-        users: { view: true, create: false, edit: true, delete: false },
-        providers: { view: true, create: false, edit: true, delete: false },
-        pets: { view: true, create: false, edit: true, delete: false },
-        appointments: { view: true, create: true, edit: true, delete: false },
-        transactions: { view: true, create: false, edit: false, delete: false },
-        marketplace: { view: true, create: false, edit: true, delete: false },
-        content: { view: true, create: false, edit: true, delete: true },
-        analytics: { view: true, create: false, edit: false, delete: false },
-        notifications: { view: true, create: true, edit: true, delete: false },
-        settings: { view: false, create: false, edit: false, delete: false },
-        security: { view: false, create: false, edit: false, delete: false },
-        support: { view: true, create: true, edit: true, delete: false }
-      }
-    },
-    { 
-      id: 3, 
-      name: 'Support Agent', 
-      description: 'Can handle customer support tickets and basic user management', 
-      usersCount: 12,
-      permissions: {
-        dashboard: { view: true, edit: false },
-        users: { view: true, create: false, edit: false, delete: false },
-        providers: { view: true, create: false, edit: false, delete: false },
-        pets: { view: true, create: false, edit: false, delete: false },
-        appointments: { view: true, create: false, edit: false, delete: false },
-        transactions: { view: true, create: false, edit: false, delete: false },
-        marketplace: { view: true, create: false, edit: false, delete: false },
-        content: { view: false, create: false, edit: false, delete: false },
-        analytics: { view: false, create: false, edit: false, delete: false },
-        notifications: { view: true, create: true, edit: false, delete: false },
-        settings: { view: false, create: false, edit: false, delete: false },
-        security: { view: false, create: false, edit: false, delete: false },
-        support: { view: true, create: true, edit: true, delete: false }
-      }
-    },
-    { 
-      id: 4, 
-      name: 'Analyst', 
-      description: 'Can view and analyze data but cannot make changes', 
-      usersCount: 7,
-      permissions: {
-        dashboard: { view: true, edit: false },
-        users: { view: true, create: false, edit: false, delete: false },
-        providers: { view: true, create: false, edit: false, delete: false },
-        pets: { view: true, create: false, edit: false, delete: false },
-        appointments: { view: true, create: false, edit: false, delete: false },
-        transactions: { view: true, create: false, edit: false, delete: false },
-        marketplace: { view: true, create: false, edit: false, delete: false },
-        content: { view: true, create: false, edit: false, delete: false },
-        analytics: { view: true, create: true, edit: true, delete: false },
-        notifications: { view: false, create: false, edit: false, delete: false },
-        settings: { view: false, create: false, edit: false, delete: false },
-        security: { view: false, create: false, edit: false, delete: false },
-        support: { view: false, create: false, edit: false, delete: false }
-      }
-    },
-    { 
-      id: 5, 
-      name: 'Provider Manager', 
-      description: 'Manages service providers and their verification process', 
-      usersCount: 4,
-      permissions: {
-        dashboard: { view: true, edit: false },
-        users: { view: false, create: false, edit: false, delete: false },
-        providers: { view: true, create: true, edit: true, delete: false },
-        pets: { view: false, create: false, edit: false, delete: false },
-        appointments: { view: true, create: false, edit: false, delete: false },
-        transactions: { view: true, create: false, edit: false, delete: false },
-        marketplace: { view: false, create: false, edit: false, delete: false },
-        content: { view: false, create: false, edit: false, delete: false },
-        analytics: { view: true, create: false, edit: false, delete: false },
-        notifications: { view: true, create: true, edit: false, delete: false },
-        settings: { view: false, create: false, edit: false, delete: false },
-        security: { view: false, create: false, edit: false, delete: false },
-        support: { view: false, create: false, edit: false, delete: false }
-      }
-    }
-  ];
+    })();
+    return () => { alive = false; };
+  }, [api]);
+  
+  // Dynamic roles from API
+  const rolesData = roles;
 
   // Filter roles based on search term
   const filteredRoles = rolesData.filter(role => 

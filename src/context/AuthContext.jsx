@@ -165,20 +165,37 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      const response = await fetch(`${API_URL}/user/auth/refresh-tokens`, {
+      // Try unified refresh endpoint first
+      let response = await fetch(`${API_URL}/auth/refresh-token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refreshToken: tokens.refresh.token })
       });
 
       if (!response.ok) {
+        // Fallback to legacy user endpoint
+        response = await fetch(`${API_URL}/user/auth/refresh-tokens`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken: tokens.refresh.token })
+        });
+      }
+
+      if (!response.ok) {
         throw new Error('Failed to refresh token');
       }
 
       const data = await response.json();
-      setTokens(data);
-      localStorage.setItem('authTokens', JSON.stringify(data));
-      return data.access.token;
+      // Support { accessToken } shape and { access: { token } } shape
+      let nextTokens = tokens;
+      if (data?.accessToken) {
+        nextTokens = { ...tokens, access: { ...(tokens.access || {}), token: data.accessToken } };
+      } else if (data?.access?.token) {
+        nextTokens = data;
+      }
+      setTokens(nextTokens);
+      localStorage.setItem('authTokens', JSON.stringify(nextTokens));
+      return nextTokens.access?.token || null;
     } catch (error) {
       console.error('Token refresh failed:', error);
       logout();
@@ -245,8 +262,8 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
 
     try {
-      // First try API authentication for regular users
-      const response = await fetch(`${API_URL}/user/auth/login`, {
+      // Use unified credentials login (tries admin, then user)
+      const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -259,20 +276,13 @@ export const AuthProvider = ({ children }) => {
 
       if (response.ok) {
         const { user, tokens } = data;
-        
-        // Combine user data and tokens for storage, ensure role is present for routing
-        const userData = {
-          ...user,
-          role: user?.role || 'user',
-          tokens,
-        };
-
-        setCurrentUser(userData);
+        const role = user?.role || 'user';
+        setCurrentUser(user);
         setTokens(tokens);
-        localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem('user', JSON.stringify(user));
         localStorage.setItem('authTokens', JSON.stringify(tokens));
         setLoading(false);
-        return { success: true, userType: userData.role };
+        return { success: true, userType: role };
       }
     } catch (apiError) {
       // API failed
@@ -327,7 +337,10 @@ export const AuthProvider = ({ children }) => {
       if (tokens?.refresh?.token) {
         await fetch(`${API_URL}/user/auth/logout`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            ...(tokens?.access?.token ? { Authorization: `Bearer ${tokens.access.token}` } : {})
+          },
           body: JSON.stringify({ refreshToken: tokens.refresh.token })
         });
       }
@@ -382,12 +395,21 @@ export const AuthProvider = ({ children }) => {
       try {
         if (tokens?.access?.token) {
           // Verify the token is still valid against the correct endpoint
-          const response = await authFetch(`${API_URL}/user/auth/me`);
+          let response = await authFetch(`${API_URL}/user/auth/me`);
           if (response.ok) {
             const userData = await response.json();
             setCurrentUser(userData);
           } else {
-            throw new Error('Session expired');
+            // Try admin session validation as fallback
+            const adminResp = await fetch(`${API_URL}/admin/auth/me`, {
+              headers: { Authorization: `Bearer ${tokens.access.token}` }
+            });
+            if (adminResp.ok) {
+              const adminData = await adminResp.json();
+              setCurrentUser({ ...(adminData || {}), role: 'admin' });
+            } else {
+              throw new Error('Session expired');
+            }
           }
         }
       } catch (error) {

@@ -60,23 +60,38 @@ const useApi = () => {
       // If token is expired, try to refresh it and retry the request
       if (response.status === 401 && requiresAuth && authTokens.refresh?.token) {
         try {
-          const refreshResponse = await fetch(`${API_URL}/user/auth/refresh-tokens`, {
+          // Try unified refresh endpoint first
+          let refreshResponse = await fetch(`${API_URL}/auth/refresh-token`, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ refreshToken: authTokens.refresh.token }),
           });
 
+          // Fallback to legacy user endpoint if needed
+          if (!refreshResponse.ok) {
+            refreshResponse = await fetch(`${API_URL}/user/auth/refresh-tokens`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ refreshToken: authTokens.refresh.token }),
+            });
+          }
+
           if (refreshResponse.ok) {
             const newTokens = await refreshResponse.json();
-            localStorage.setItem('authTokens', JSON.stringify(newTokens));
+            // Support both shapes: { accessToken } or { access: { token }, refresh: {...} }
+            let mergedTokens = { ...authTokens };
+            if (newTokens?.accessToken) {
+              mergedTokens = { ...authTokens, access: { ...(authTokens.access || {}), token: newTokens.accessToken } };
+            } else if (newTokens?.access?.token) {
+              mergedTokens = newTokens;
+            }
+            localStorage.setItem('authTokens', JSON.stringify(mergedTokens));
             
             // Build updated headers with the new access token
             const retryHeaders = {
               'Content-Type': 'application/json',
               ...(options.headers || {}),
-              'Authorization': `Bearer ${newTokens.access.token}`,
+              'Authorization': `Bearer ${(mergedTokens.access || {}).token}`,
             };
 
             // Retry the original request with the new token

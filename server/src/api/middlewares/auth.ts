@@ -19,9 +19,9 @@ export const auth = async (req: Request, res: Response, next: NextFunction) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
 
     const { data: admin, error } = await supabase
-      .from('admins')
+      .from('PIQ_Admins')
       .select('*')
-      .eq('id', decoded.id)
+      .eq('admin_id', decoded.id)
       .single();
 
     if (error || !admin) {

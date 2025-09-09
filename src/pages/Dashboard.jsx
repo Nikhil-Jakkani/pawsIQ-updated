@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaUsers, FaCalendarCheck, FaShoppingCart, FaDollarSign, FaPaw, FaDog, FaCat, FaBone } from 'react-icons/fa';
 import { PetIcon, PetIconButton } from '../components/layout/PetIcons';
@@ -8,9 +8,38 @@ import RecentActivity from '../components/dashboard/RecentActivity';
 //import UpcomingAppointments from '../components/dashboard/UpcomingAppointments';
 import CalendarView from '../components/dashboard/CalendarView';
 import DashboardLayout from '../components/layout/DashboardLayout';
+import useApi from '../hooks/useApi';
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const api = useApi();
+  const [stats, setStats] = useState({ users: 0, pets: 0, appointments: 0, providers: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      try {
+        const data = await api.get('/admin/stats');
+        if (isMounted && data) {
+          setStats({
+            users: Number(data.users) || 0,
+            pets: Number(data.pets) || 0,
+            appointments: Number(data.appointments) || 0,
+            providers: Number(data.providers) || 0,
+          });
+        }
+      } catch (e) {
+        setError('Failed to load stats');
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    })();
+    return () => {
+      isMounted = false;
+    };
+  }, [api]);
 
   return (
     <DashboardLayout>
@@ -44,10 +73,10 @@ const Dashboard = () => {
                 const reportDate = new Date().toLocaleDateString();
                 const reportData = {
                   date: reportDate,
-                  petOwners: 2543,
-                  appointments: 1235,
-                  products: 854,
-                  revenue: 35210,
+                  petOwners: stats.users,
+                  appointments: stats.appointments,
+                  products: stats.pets,
+                  revenue: 0,
                   activeServices: {
                     veterinary: 438,
                     grooming: 327,
@@ -60,7 +89,7 @@ const Dashboard = () => {
                 const csvContent = `PawsIQ Dashboard Report,${reportDate}\n\n` +
                   `Pet Owners,${reportData.petOwners}\n` +
                   `Appointments,${reportData.appointments}\n` +
-                  `Products,${reportData.products}\n` +
+                  `Pets,${reportData.products}\n` +
                   `Revenue,$${reportData.revenue}\n\n` +
                   `Active Services\n` +
                   `Veterinary,${reportData.activeServices.veterinary}\n` +
@@ -82,12 +111,12 @@ const Dashboard = () => {
             />
           </div>
         </div>
-      
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
           title="Pet Owners" 
-          value="2,543" 
+          value={loading ? '...' : String(stats.users)} 
           icon={<PetIcon type="dog" size="lg" className="text-white" />} 
           change="12% from last month" 
           changeType="increase" 
@@ -95,15 +124,15 @@ const Dashboard = () => {
         />
         <StatCard 
           title="Appointments" 
-          value="1,235" 
+          value={loading ? '...' : String(stats.appointments)} 
           icon={<PetIcon type="cat" size="lg" className="text-white" />} 
           change="5% from last month" 
           changeType="increase" 
           bgColor="bg-gradient-to-br from-green-500 to-green-600"
         />
         <StatCard 
-          title="Pet Products" 
-          value="854" 
+          title="Pets" 
+          value={loading ? '...' : String(stats.pets)} 
           icon={<PetIcon type="fish" size="lg" className="text-white" />} 
           change="3% from last month" 
           changeType="decrease" 

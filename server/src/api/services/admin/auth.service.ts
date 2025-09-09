@@ -1,12 +1,12 @@
 import { supabase } from '@config/supabase.js';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import { ApiError } from '../../utils/ApiError.js';
 import httpStatus from 'http-status';
+import { tokenService } from '../user/token.service.js';
 
 const login = async (email: string, password: string): Promise<any> => {
   const { data, error: supabaseError } = await supabase
-    .from('admins')
+    .from('PIQ_Admins')
     .select('*')
     .eq('email', email)
     .single();
@@ -22,13 +22,13 @@ const login = async (email: string, password: string): Promise<any> => {
     throw new ApiError(httpStatus.UNAUTHORIZED, 'Incorrect email or password');
   }
 
-  const token = jwt.sign({ id: admin.id, role: admin.role }, process.env.JWT_SECRET as string, {
-    expiresIn: '1d',
-  });
+  // Generate tokens compatible with the main auth middleware (ACCESS token with role 'admin')
+  const adminSub = Number((admin as any).admin_id);
+  const tokens = await tokenService.generateAuthTokens(adminSub, 'admin');
 
-  // Return user and token, as expected by the frontend
+  // Return user and tokens, consistent with user login shape
   const { password: _, ...userWithoutPassword } = admin;
-  return { user: userWithoutPassword, token };
+  return { user: { ...userWithoutPassword, role: 'admin' }, tokens };
 };
 
 export const authService = {

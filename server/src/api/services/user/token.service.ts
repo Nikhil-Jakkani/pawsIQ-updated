@@ -103,25 +103,34 @@ const generateAuthTokens = async (userId: number, role: string) => {
  */
 const refreshAuth = async (refreshToken: string) => {
   try {
+    // Verify the refresh token exists and is valid in DB
     const refreshTokenDoc = await verifyToken(refreshToken, tokenTypes.REFRESH);
-    const user = await db
-      .from('PIQ_User')
-      .select('*')
-      .eq('user_id', refreshTokenDoc.sub)
-      .single();
+    // Decode JWT to get role and subject
+    const payload: any = jwt.verify(refreshToken, config.jwtSecret);
+    const role = payload?.role || 'user';
+    const sub = Number(payload?.sub);
 
-    if (!user.data) {
-      throw new Error('User not found');
+    // Validate the subject exists in the correct table based on role
+    let subjectExists = false;
+    if (role === 'admin') {
+      const { data } = await db.from('PIQ_Admins').select('admin_id').eq('admin_id', sub).single();
+      subjectExists = !!data;
+    } else if (role === 'user') {
+      const { data } = await db.from('PIQ_User').select('user_id').eq('user_id', sub).single();
+      subjectExists = !!data;
+    } else if (role === 'provider') {
+      const { data } = await db.from('PIQ_Service_Provider').select('provider_id').eq('provider_id', sub).single();
+      subjectExists = !!data;
+    }
+    if (!subjectExists) {
+      throw new Error('Subject not found');
     }
 
-    // Delete the old refresh token
-    await db
-      .from('tokens')
-      .delete()
-      .eq('token', refreshToken);
+    // Invalidate the old refresh token
+    await db.from('tokens').delete().eq('token', refreshToken);
 
-    // Generate new tokens
-    return await generateAuthTokens(user.data.user_id, user.data.role);
+    // Generate new token pair preserving role and subject
+    return await generateAuthTokens(sub, role);
   } catch (error) {
     throw new ApiError(httpStatus.UNAUTHORIZED, 'Invalid refresh token');
   }

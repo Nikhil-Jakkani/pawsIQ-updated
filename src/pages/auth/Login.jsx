@@ -127,7 +127,7 @@ const Login = () => {
       }
       
       const data = await response.json();
-      
+
       // Persist user in AuthContext + localStorage for route guards
       const userData = {
         ...data.user,
@@ -138,7 +138,9 @@ const Login = () => {
         },
       };
       setCurrentUserData(userData);
-      // Optional: also keep raw tokens for other consumers
+      // Persist tokens in the same shape used across the app
+      localStorage.setItem('authTokens', JSON.stringify(userData.tokens));
+      // Optional legacy keys
       localStorage.setItem('accessToken', data.accessToken);
       localStorage.setItem('refreshToken', data.refreshToken);
       
@@ -367,11 +369,6 @@ const Login = () => {
               </div>
 
               <div className="mt-6 space-y-4">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300"></div>
-                </div>
-              </div>
 
               <div className="grid grid-cols-2 gap-3">
                 {/* Google Login */}
