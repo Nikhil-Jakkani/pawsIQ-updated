@@ -74,18 +74,42 @@ const UserSignIn = () => {
       return false;
     }
     try {
+      // Remove any non-digit characters from phone number except the leading +
+      const cleanPhone = fullPhone.replace(/[^\d+]/g, '');
+      
+      console.log('Verifying OTP with:', { 
+        phone: cleanPhone, 
+        otp: otpCode,
+        endpoint: `${API_URL}/user/auth/verify-mobile-otp` 
+      });
+      
       const res = await fetch(`${API_URL}/user/auth/verify-mobile-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: fullPhone, otp: otpCode })
+        body: JSON.stringify({ 
+          phone: cleanPhone, 
+          otp: otpCode 
+        })
       });
-      const data = await res.json().catch(() => ({}));
+
+      const data = await res.json().catch(() => ({
+        success: false,
+        message: 'Invalid response from server'
+      }));
+
+      console.log('OTP verification response:', { 
+        status: res.status, 
+        data 
+      });
+      
       if (!res.ok || !data.success) {
-        throw new Error(data.message || 'Invalid OTP');
+        throw new Error(data.message || `OTP verification failed (${res.status})`);
       }
+      
       return true;
     } catch (err) {
-      toast.error(err.message || 'OTP verification failed');
+      console.error('OTP verification error:', err);
+      toast.error(err.message || 'OTP verification failed. Please try again.');
       return false;
     }
   };
@@ -99,15 +123,8 @@ const UserSignIn = () => {
       toast.error('Passwords do not match');
       return;
     }
-    
     setIsLoading(true);
     try {
-      console.log('Attempting registration with:', {
-        email,
-        phone: fullPhone,
-        name
-      });
-      
       const res = await fetch(`${API_URL}/user/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -118,22 +135,14 @@ const UserSignIn = () => {
           user_phone_number: fullPhone
         })
       });
-
-      const data = await res.json().catch(() => ({}));
-      console.log('Registration response:', {
-        status: res.status,
-        data
-      });
-
       if (!res.ok) {
-        throw new Error(data.message || `Registration failed with status ${res.status}`);
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || 'Registration failed');
       }
-
       toast.success('Account created! You can now log in.');
       navigate('/user/login');
     } catch (err) {
-      console.error('Registration error:', err);
-      toast.error(err.message || 'Registration failed. Please try again.');
+      toast.error(err.message || 'Error during registration');
     } finally {
       setIsLoading(false);
     }

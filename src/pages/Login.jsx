@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { FaLock, FaEnvelope, FaPaw, FaUserMd, FaShieldAlt } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
 // Simplified logo SVG for better performance
 const logoImage = "/1.svg";
 
@@ -11,10 +14,11 @@ const Login = () => {
   const [userType, setUserType] = useState('user'); // 'user', 'provider', or 'admin'
   const [isLoading, setIsLoading] = useState(false);
   const [localError, setLocalError] = useState('');
-  const { login, error: authError, currentUser } = useAuth();
+  const { login, currentUser } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   
-  // Hide loading screen when Login component mounts
+  // Hide loading screen when Login component mounts (do not clear tokens to allow persistent login)
   useEffect(() => {
     const loadingElement = document.getElementById('loading');
     if (loadingElement) {
@@ -22,65 +26,49 @@ const Login = () => {
     }
   }, []);
   
-  // Check if already logged in
+  // Check if already logged in and redirect based on role
   useEffect(() => {
     if (currentUser) {
+      const from = location.state?.from?.pathname || '/';
+      
+      // Redirect based on user role
       if (currentUser.role === 'user') {
-        navigate('/user/dashboard');
+        navigate('/user/dashboard', { replace: true });
       } else if (currentUser.role === 'provider') {
-        navigate('/provider/vet/dashboard');
+        navigate('/provider/vet/dashboard', { replace: true });
       } else if (currentUser.role === 'admin') {
-        navigate('/dashboard');
+        navigate('/admin/dashboard', { replace: true });
+      } else {
+        // Default redirect for unknown roles
+        navigate(from, { replace: true });
       }
     }
-  }, [currentUser, navigate]);
+  }, [currentUser, navigate, location]);
   
-  // Handle auth errors
-  useEffect(() => {
-    if (authError) {
-      setLocalError(authError);
-    }
-  }, [authError]);
-
-  // Set default email/password based on user type
-  useEffect(() => {
-    if (userType === 'user') {
-      setEmail('user@pawsiq.com');
-      setPassword('user123');
-    } else if (userType === 'provider') {
-      setEmail('provider@pawsiq.com');
-      setPassword('provider123');
-    } else if (userType === 'admin') {
-      setEmail('admin@pawsiq.com');
-      setPassword('admin123');
-    }
-  }, [userType]);
+  // Removed auto-filling of credentials. Users must now enter email and password manually.
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
     setLocalError('');
-    
+    setIsLoading(true);
+
     try {
-      let response;
+      const result = await login(email, password);
       
-      // Use the login function for all user types
-      response = await login(email, password);
-      
-      if (response && response.success) {
-        if (userType === 'user') {
-          navigate('/user/dashboard');
-        } else if (userType === 'provider') {
-          navigate('/provider/vet/dashboard');
-        } else if (userType === 'admin') {
-          navigate('/dashboard');
-        }
+      if (result.success) {
+        const { userType } = result;
+        // Show success message
+        toast.success('Login successful! Redirecting...');
+        
+        // The actual navigation will be handled by the useEffect that watches currentUser
       } else {
-        setLocalError('Invalid email or password. Please try again.');
-        setIsLoading(false);
+        throw new Error('Login failed. Please check your credentials.');
       }
-    } catch (err) {
-      setLocalError('An error occurred during login. Please try again.');
+    } catch (error) {
+      console.error('Login error:', error);
+      setLocalError(error.message || 'Login failed. Please try again.');
+      toast.error(error.message || 'Login failed. Please try again.');
+    } finally {
       setIsLoading(false);
     }
   };

@@ -40,7 +40,7 @@ const logoImage = "/7.png";
 
 const Home = () => {
   // State for UI interactions
-  const [setIsHovering] = useState(false);
+  const [isHovering, setIsHovering] = useState(false);
   
   // State for pet selector
   const [selectedPet, setSelectedPet] = useState('dog');

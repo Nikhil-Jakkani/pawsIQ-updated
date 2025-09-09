@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import httpStatus from 'http-status';
 import { userAuthService } from '../../services/user/auth.service.js';
 import { catchAsync } from '../../utils/catchAsync.js';
+import { ApiError } from '../../utils/ApiError.js';
 
 export const userAuthController = {
   login: catchAsync(async (req: Request, res: Response) => {
@@ -21,7 +22,11 @@ export const userAuthController = {
   }),
 
   refreshTokens: catchAsync(async (req: Request, res: Response) => {
-    const tokens = await userAuthService.refreshAuth(req.body.refreshToken);
+    const { refreshToken } = req.body;
+    if (!refreshToken) {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Refresh token is required');
+    }
+    const tokens = await userAuthService.refreshAuth(refreshToken);
     res.send({ ...tokens });
   }),
 

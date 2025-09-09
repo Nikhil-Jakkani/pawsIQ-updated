@@ -1,8 +1,21 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
+const ENABLE_MOCK_AUTH = import.meta?.env?.VITE_ENABLE_MOCK_AUTH === 'true';
 
 const AuthContext = createContext(null);
+
+const getStoredAuth = () => {
+  const storedTokens = localStorage.getItem('authTokens');
+  const storedUser = localStorage.getItem('user');
+  
+  return {
+    tokens: storedTokens ? JSON.parse(storedTokens) : null,
+    user: storedUser ? JSON.parse(storedUser) : null
+  };
+};
 
 // Mock user data for demonstration
 const USERS = [
@@ -86,9 +99,35 @@ const PROVIDERS = [
 ];
 
 export const AuthProvider = ({ children }) => {
+  const stored = getStoredAuth();
+  // Do not trust stored user before validation; start as null and validate via /user/auth/me
   const [currentUser, setCurrentUser] = useState(null);
-  const [loading, setLoading] = useState(false); // Set to false initially
+  const [tokens, setTokens] = useState(() => stored.tokens);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const navigateRef = useRef();
+  const refreshPromiseRef = useRef(null);
+  
+  // Store the navigate function in a ref to avoid dependency issues
+  const navigate = useCallback((...args) => {
+    if (navigateRef.current) {
+      navigateRef.current(...args);
+    }
+  }, []);
+  
+  // Navigation component to get the navigate function
+  const NavigationHandler = () => {
+    const nav = useNavigate();
+    
+    useEffect(() => {
+      navigateRef.current = nav;
+      return () => {
+        navigateRef.current = undefined;
+      };
+    }, [nav]);
+    
+    return null;
+  };
 
   // Initialize auth state
   useEffect(() => {
@@ -119,6 +158,88 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  // Function to refresh access token
+  const refreshToken = useCallback(async () => {
+    if (!tokens?.refresh?.token) {
+      return null;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/user/auth/refresh-tokens`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: tokens.refresh.token })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to refresh token');
+      }
+
+      const data = await response.json();
+      setTokens(data);
+      localStorage.setItem('authTokens', JSON.stringify(data));
+      return data.access.token;
+    } catch (error) {
+      console.error('Token refresh failed:', error);
+      logout();
+      return null;
+    }
+  }, [tokens]);
+
+  // API request interceptor to handle token refresh
+  const authFetch = useCallback(async (url, options = {}, requiresAuth = true) => {
+    if (requiresAuth && !tokens?.access?.token) {
+      // Avoid hitting server before login; let caller handle not-authenticated state
+      throw new Error('Not authenticated');
+    }
+    // Build headers without sending an empty Authorization header
+    const baseHeaders = {
+      ...(options.headers || {}),
+    };
+    if (tokens?.access?.token) {
+      baseHeaders['Authorization'] = `Bearer ${tokens.access.token}`;
+    }
+
+    let response = await fetch(url, {
+      ...options,
+      headers: baseHeaders,
+    });
+
+    // If token is expired/unauthorized, try a single-flight refresh
+    if (response.status === 401) {
+      // Create or await a single refresh promise
+      if (!refreshPromiseRef.current) {
+        refreshPromiseRef.current = (async () => {
+          try {
+            const newTok = await refreshToken();
+            return newTok;
+          } finally {
+            // Ensure ref is cleared after completion
+            setTimeout(() => { refreshPromiseRef.current = null; }, 0);
+          }
+        })();
+      }
+
+      const newAccessToken = await refreshPromiseRef.current;
+      if (newAccessToken) {
+        const retryHeaders = {
+          ...(options.headers || {}),
+        };
+        retryHeaders['Authorization'] = `Bearer ${newAccessToken}`;
+
+        response = await fetch(url, {
+          ...options,
+          headers: retryHeaders,
+        });
+      } else {
+        navigate('/login');
+        throw new Error('Session expired. Please log in again.');
+      }
+    }
+
+    return response;
+  }, [tokens, refreshToken, navigate]);
+
   const login = async (email, password) => {
     setError('');
     setLoading(true);
@@ -147,56 +268,85 @@ export const AuthProvider = ({ children }) => {
         };
 
         setCurrentUser(userData);
-        localStorage.setItem('pawsiq_user', JSON.stringify(userData));
+        setTokens(tokens);
+        localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem('authTokens', JSON.stringify(tokens));
         setLoading(false);
         return { success: true, userType: userData.role };
       }
     } catch (apiError) {
-      // API failed, fallback to mock authentication
-      console.log('API authentication failed, using mock data');
+      // API failed
+      console.warn('API authentication failed');
     }
 
-    // Fallback to mock authentication
-    try {
-      // Check in USERS array
-      const user = USERS.find(u => u.email === email && u.password === password);
-      if (user) {
-        const userData = { ...user, token: 'mock-token-' + Date.now() };
-        setCurrentUser(userData);
-        localStorage.setItem('pawsiq_user', JSON.stringify(userData));
+    // Optional fallback to mock authentication (disabled by default)
+    if (ENABLE_MOCK_AUTH) {
+      try {
+        // Check in USERS array
+        const user = USERS.find(u => u.email === email && u.password === password);
+        if (user) {
+          const userData = { ...user, token: 'mock-token-' + Date.now() };
+          setCurrentUser(userData);
+          setTokens({ access: { token: userData.token } });
+          localStorage.setItem('user', JSON.stringify(userData));
+          localStorage.setItem('authTokens', JSON.stringify({ access: { token: userData.token } }));
+          setLoading(false);
+          return { success: true, userType: user.role };
+        }
+
+        // Check in PROVIDERS array
+        const provider = PROVIDERS.find(p => p.email === email && p.password === password);
+        if (provider) {
+          const userData = { ...provider, token: 'mock-token-' + Date.now() };
+          setCurrentUser(userData);
+          setTokens({ access: { token: userData.token } });
+          localStorage.setItem('user', JSON.stringify(userData));
+          localStorage.setItem('authTokens', JSON.stringify({ access: { token: userData.token } }));
+          setLoading(false);
+          return { success: true, userType: userData.role };
+        }
+
+        // No user found
+        throw new Error('Invalid email or password');
+      } catch (error) {
+        setError(error.message || 'An error occurred during login');
         setLoading(false);
-        return { success: true, userType: user.role };
+        return { success: false };
       }
-
-      // Check in PROVIDERS array
-      const provider = PROVIDERS.find(p => p.email === email && p.password === password);
-      if (provider) {
-        const userData = { ...provider, token: 'mock-token-' + Date.now() };
-        setCurrentUser(userData);
-        localStorage.setItem('pawsiq_user', JSON.stringify(userData));
-        setLoading(false);
-        return { success: true, userType: provider.role };
-      }
-
-      // No user found
-      throw new Error('Invalid email or password');
-
-    } catch (error) {
-      setError(error.message || 'An error occurred during login');
-      setLoading(false);
-      return { success: false };
     }
+
+    // If mock auth is disabled, surface failure
+    setError('Login failed. Please check your credentials.');
+    setLoading(false);
+    return { success: false };
   };
 
-  const logout = () => {
-    setCurrentUser(null);
-    localStorage.removeItem('pawsiq_user');
+  const logout = async () => {
+    try {
+      // Call logout API if we have a refresh token
+      if (tokens?.refresh?.token) {
+        await fetch(`${API_URL}/user/auth/logout`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken: tokens.refresh.token })
+        });
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      // Clear state and storage
+      setCurrentUser(null);
+      setTokens(null);
+      localStorage.removeItem('user');
+      localStorage.removeItem('authTokens');
+      navigate('/login');
+    }
   };
 
   const setCurrentUserData = (userData) => {
     try {
       setCurrentUser(userData);
-      localStorage.setItem('pawsiq_user', JSON.stringify(userData));
+      localStorage.setItem('user', JSON.stringify(userData));
     } catch (_) {
     }
   };
@@ -226,8 +376,34 @@ export const AuthProvider = ({ children }) => {
     return { success: false };
   };
 
+  // Initialize auth state on mount
+  useEffect(() => {
+    const initializeAuth = async () => {
+      try {
+        if (tokens?.access?.token) {
+          // Verify the token is still valid against the correct endpoint
+          const response = await authFetch(`${API_URL}/user/auth/me`);
+          if (response.ok) {
+            const userData = await response.json();
+            setCurrentUser(userData);
+          } else {
+            throw new Error('Session expired');
+          }
+        }
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+        logout();
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initializeAuth();
+  }, [authFetch]);
+
   const value = {
     currentUser,
+    tokens,
     login,
     providerLogin,
     logout,
@@ -236,10 +412,16 @@ export const AuthProvider = ({ children }) => {
     isUser,
     isAdmin,
     error,
-    loading
+    loading,
+    authFetch
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      <NavigationHandler />
+      {!loading && children}
+    </AuthContext.Provider>
+  );
 };
 
 export const useAuth = () => {

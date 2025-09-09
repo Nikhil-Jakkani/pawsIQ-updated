@@ -9,12 +9,12 @@ import FacebookLogin from '@greatsumini/react-facebook-login';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login: adminLogin, currentUser, error: authError, setCurrentUserData } = useAuth();
+  const { login: adminLogin, currentUser, error: authError, setCurrentUserData, tokens } = useAuth();
   
   // Form state
   const [formData, setFormData] = useState({
-    email: 'user@pawsiq.com',
-    password: 'user123',
+    email: '',
+    password: '',
     rememberMe: false
   });
   
@@ -27,7 +27,8 @@ const Login = () => {
   const FACEBOOK_APP_ID = import.meta.env.VITE_FACEBOOK_APP_ID;
 
   useEffect(() => {
-    if (currentUser) {
+    // Only redirect if we truly have an authenticated session (tokens present)
+    if (currentUser && tokens?.access?.token) {
       if (currentUser.role === 'user') {
         navigate('/user/dashboard');
       } else if (currentUser.role === 'provider') {
@@ -84,7 +85,10 @@ const Login = () => {
       const result = await adminLogin(formData.email, formData.password);
       
       if (result.success) {
-        navigate('/dashboard');
+        const role = result.userType || currentUser?.role || 'user';
+        if (role === 'admin') navigate('/dashboard');
+        else if (role === 'provider') navigate('/provider/vet/dashboard');
+        else navigate('/user/dashboard');
       } else {
         setErrors(prev => ({
           ...prev,
@@ -322,21 +326,7 @@ const Login = () => {
                 )}
               </div>
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <input
-                    id="rememberMe"
-                    name="rememberMe"
-                    type="checkbox"
-                    checked={formData.rememberMe}
-                    onChange={handleChange}
-                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                  />
-                  <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-900">
-                    Remember me
-                  </label>
-                </div>
-
+              <div className="flex items-center justify-end">
                 <div className="text-sm">
                   <Link to="/user/forgot-password" className="font-medium text-indigo-600 hover:text-indigo-500">
                     Forgot your password?
