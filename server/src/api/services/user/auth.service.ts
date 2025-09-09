@@ -202,9 +202,13 @@ const resetPasswordWithOTP = async (email: string, otp: string, newPassword: str
 const sendMobileOTP = async (phone: string): Promise<{ success: boolean }> => {
   // Generate OTP and store using phone as identifier
   const otp = otpService.generateOTP();
-  await otpService.storeOTP(phone, otp);
-  console.log(`Generated OTP for ${phone}: ${otp}`);
-  return { success: true };
+  try {
+    await otpService.storeOTP(phone, otp);
+    return { success: true };
+  } catch (error) {
+    console.error(`Failed to store OTP for ${phone}:`, error);
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to process OTP request');
+  }
 };
 
 const verifyMobileOTP = async (phone: string, otp: string): Promise<boolean> => {

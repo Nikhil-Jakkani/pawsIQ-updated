@@ -77,12 +77,6 @@ const UserSignIn = () => {
       // Remove any non-digit characters from phone number except the leading +
       const cleanPhone = fullPhone.replace(/[^\d+]/g, '');
       
-      console.log('Verifying OTP with:', { 
-        phone: cleanPhone, 
-        otp: otpCode,
-        endpoint: `${API_URL}/user/auth/verify-mobile-otp` 
-      });
-      
       const res = await fetch(`${API_URL}/user/auth/verify-mobile-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -96,11 +90,6 @@ const UserSignIn = () => {
         success: false,
         message: 'Invalid response from server'
       }));
-
-      console.log('OTP verification response:', { 
-        status: res.status, 
-        data 
-      });
       
       if (!res.ok || !data.success) {
         throw new Error(data.message || `OTP verification failed (${res.status})`);

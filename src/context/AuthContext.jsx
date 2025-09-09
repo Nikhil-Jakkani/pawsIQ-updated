@@ -145,7 +145,6 @@ export const AuthProvider = ({ children }) => {
       setTimeout(() => {
         const loadingElement = document.getElementById('loading');
         if (loadingElement && loadingElement.style.display !== 'none') {
-          console.log('AuthContext: Hiding loading screen after auth check');
           loadingElement.style.opacity = '0';
           loadingElement.style.transition = 'opacity 0.3s ease-out';
           setTimeout(() => {

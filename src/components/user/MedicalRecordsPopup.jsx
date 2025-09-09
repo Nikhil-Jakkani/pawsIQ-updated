@@ -146,7 +146,6 @@ const MedicalRecordsPopup = ({
     setError('');
     setSuccess('');
     setUploadProgress(0);
-    console.log('Submitting medical record', { petId, filesCount: formData.files.length });
     
     if (!petId) {
       setError('No pet selected. Please select a pet first.');
