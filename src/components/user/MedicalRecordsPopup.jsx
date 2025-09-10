@@ -179,7 +179,7 @@ const MedicalRecordsPopup = ({
             petId,
             file.name,
             file.type,
-            authFetch
+            accessToken
           );
           
           if (!path || !token) {
@@ -224,7 +224,7 @@ const MedicalRecordsPopup = ({
           fileUrl: file.publicUrl
         };
         
-        const response = await healthRecordService.createHealthRecord(petId, recordData, authFetch);
+        const response = await healthRecordService.createHealthRecord(petId, recordData, accessToken);
       }
       
       setUploadProgress(100);
