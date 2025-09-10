@@ -7,21 +7,21 @@ import { useAuth } from '../../context/AuthContext';
 const logoImage = "/1.svg";
 
 const UserLogin = () => {
-  const [email, setEmail] = useState('user@pawsiq.com');
-  const [password, setPassword] = useState('user123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [localError, setLocalError] = useState('');
-  const { login, error: authError, currentUser } = useAuth();
+  const { login, error: authError, currentUser, tokens } = useAuth();
   const navigate = useNavigate();
   
   // Component mounted - loading screen should be handled by AuthContext
   
   // Check if already logged in
   useEffect(() => {
-    if (currentUser) {
+    if (currentUser && tokens?.access?.token) {
       navigate('/user/dashboard');
     }
-  }, [currentUser, navigate]);
+  }, [currentUser, tokens, navigate]);
   
   // Handle auth errors
   useEffect(() => {

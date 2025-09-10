@@ -7,11 +7,12 @@ import { useNavigate } from 'react-router-dom';
 const UpcomingSchedule = ({ pets = [], accessToken }) => {
   const navigate = useNavigate();
   const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
-  
+  const { authFetch, loading: authLoading, currentUser } = useAuth();
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [items, setItems] = useState([]);
-  
+
   // Memoize the current date to prevent unnecessary re-renders
   const currentDate = useMemo(() => new Date(), []);
 
@@ -24,7 +25,7 @@ const UpcomingSchedule = ({ pets = [], accessToken }) => {
   };
 
   useEffect(() => {
-    if (!accessToken) return;
+    if (authLoading || !currentUser) return;
     let cancelled = false;
     (async () => {
       try {
@@ -32,24 +33,22 @@ const UpcomingSchedule = ({ pets = [], accessToken }) => {
         setError('');
         // Only load appointments if we have pets data
         if (!pets.length) return [];
-        
-        const res = await fetch(`${API_URL}/appointments?page=1&limit=50`, {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        });
+
+        const res = await authFetch(`${API_URL}/appointments?page=1&limit=50`);
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data?.message || 'Failed to load appointments');
-        
+
         // Process appointments in a single pass
-        return (data?.items || [])
+        const mapped = (data?.items || [])
           .map((a) => {
             const dt = new Date(a.appointment_date);
             if (isNaN(dt.getTime())) return null;
-            
+
             const petIdNum = Number(a.pet_id);
             const pet = pets.find((p) => Number(p.id) === petIdNum);
             const isToday = isSameDay(dt, currentDate);
             const status = (a.appointment_status || 'Scheduled').toLowerCase();
-            
+
             return {
               id: a.appointment_id ?? `${petIdNum}-${dt.toISOString()}`,
               type: 'appointment',
@@ -78,7 +77,7 @@ const UpcomingSchedule = ({ pets = [], accessToken }) => {
     return () => {
       cancelled = true;
     };
-  }, [accessToken, API_URL, pets, currentDate]);
+  }, [authLoading, currentUser, authFetch, API_URL, pets, currentDate]);
 
   const getItemIcon = (type) => {
     return type === 'appointment' ? FaCalendarAlt : FaBell;

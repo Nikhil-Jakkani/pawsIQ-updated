@@ -3,8 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { FaCut, FaSyringe, FaStethoscope, FaBone, FaBath, FaCalendarCheck, FaTrash } from 'react-icons/fa';
 
 const CareReminders = React.forwardRef(({ pets }, ref) => {
-  const { currentUser } = useAuth();
-  const accessToken = currentUser?.tokens?.access?.token;
+  const { authFetch, loading, currentUser } = useAuth();
   const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
 
   const [reminders, setReminders] = useState([]);
@@ -84,14 +83,13 @@ const CareReminders = React.forwardRef(({ pets }, ref) => {
   };
 
   const handleDeleteReminder = async (id) => {
-    if (id == null || id === '' || !accessToken) return;
+    if (id == null || id === '') return;
     if (!window.confirm('Delete this reminder?')) return;
     
     try {
       setDeletingId(String(id));
-      const res = await fetch(`${API_URL}/reminders/${id}`, {
+      const res = await authFetch(`${API_URL}/reminders/${id}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${accessToken}` },
       });
       
       const data = await res.json().catch(() => ({}));
@@ -106,9 +104,8 @@ const CareReminders = React.forwardRef(({ pets }, ref) => {
   };
 
   const loadReminders = useCallback(async () => {
-    const res = await fetch(`${API_URL}/reminders`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
+    if (loading || !currentUser) return { items: [] };
+    const res = await authFetch(`${API_URL}/reminders`);
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data?.message || 'Failed to load reminders');
 
@@ -160,28 +157,26 @@ const CareReminders = React.forwardRef(({ pets }, ref) => {
       });
 
     setReminders(mapped);
-  }, [accessToken, API_URL, pets]);
+  }, [authFetch, API_URL, pets, loading, currentUser]);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        if (!accessToken) {
-          if (!cancelled) setReminders([]);
-          return;
+        if (!loading && currentUser) {
+          await loadReminders();
+        } else if (!cancelled) {
+          setReminders([]);
         }
-        await loadReminders();
       } catch (_e) {
         if (!cancelled) setReminders([]);
       }
     })();
     return () => { cancelled = true; };
-  }, [accessToken, loadReminders]);
+  }, [loadReminders, loading, currentUser]);
 
   const submitNewReminder = async (e) => {
     e?.preventDefault?.();
-    if (!accessToken) return;
-    
     try {
       setSaving(true);
       setError('');
@@ -208,11 +203,10 @@ const CareReminders = React.forwardRef(({ pets }, ref) => {
         ? `${API_URL}/reminders/${form.reminder_id}`
         : `${API_URL}/reminders`;
         
-      const res = await fetch(url, {
+      const res = await authFetch(url, {
         method: form.reminder_id ? 'PATCH' : 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify(payload),
       });

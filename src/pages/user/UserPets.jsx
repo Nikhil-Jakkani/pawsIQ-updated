@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaPaw, FaPlus, FaSearch, FaFilter, FaEdit, FaTrash, FaHeart, FaCalendarAlt, FaUser, FaClipboardList, FaFileMedical, FaSyringe } from 'react-icons/fa';
 import UserLayout from '../../components/layout/UserLayout';
@@ -13,10 +13,10 @@ const UserPets = () => {
   const location = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
-  const { currentUser } = useAuth();
-  const accessToken = currentUser?.tokens?.access?.token;
+  const { currentUser, authFetch, loading: authLoading } = useAuth();
+
   const [pets, setPets] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+  // Loading state removed; pets are rendered instantly from cache
   const [error, setError] = useState(null);
   const [showMedicalRecordsPopup, setShowMedicalRecordsPopup] = useState(false);
   const [selectedPetForMedical, setSelectedPetForMedical] = useState(null);
@@ -30,9 +30,34 @@ const UserPets = () => {
     return 'overview';
   };
 
+  // Cache key for storing user's pets for instant paint on refresh
+  const petsCacheKey = React.useMemo(() => {
+    if (!currentUser) return null;
+    const uid = currentUser.id || currentUser.user_id || currentUser.email || 'me';
+    return `pawsiq:pets:${uid}`;
+  }, [currentUser]);
+
+  // Hydrate pets from cache on component mount (instant paint)
+  useEffect(() => {
+    if (!petsCacheKey) return;
+    try {
+      const raw = localStorage.getItem(petsCacheKey);
+      if (raw) {
+        const cachedPets = JSON.parse(raw);
+        if (Array.isArray(cachedPets) && cachedPets.length) {
+          setPets(cachedPets);
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to read cached pets', e);
+    }
+  }, [petsCacheKey]);
+
+  const imageCacheRef = useRef(new Map());
+
   // Refresh a pet image URL with proper error handling and caching
   const refreshImage = useCallback(async (petId, path) => {
-    if (!path) return false;
+    if (!path || !authFetch) return false;
     
     try {
       const qs = new URLSearchParams({ 
@@ -41,11 +66,8 @@ const UserPets = () => {
         expiresIn: String(60 * 60 * 24 * 6) // 6 days expiry
       }).toString();
       
-      const urlRes = await fetch(`${API_URL}/media/signed-url?${qs}`, {
-        headers: { 
-          Authorization: `Bearer ${accessToken}`,
-          'Cache-Control': 'no-cache'
-        },
+      const urlRes = await authFetch(`${API_URL}/media/signed-url?${qs}`, {
+        headers: { 'Cache-Control': 'no-cache' },
       });
       
       if (!urlRes.ok) {
@@ -68,89 +90,115 @@ const UserPets = () => {
       console.error(`Error refreshing image for pet ${petId}:`, error);
       return false;
     }
-  }, [accessToken, API_URL]);
+  }, [authFetch, API_URL]);
 
+  const getSignedUrlForPath = async (path) => {
+    if (!path) return null;
+    const cached = imageCacheRef.current.get(path);
+    const now = Date.now();
+    if (cached && cached.expiry > now) return cached.url;
 
+    const expiresInSec = 60 * 60 * 24 * 6; // 6 days
+    try {
+      const qs = new URLSearchParams({ bucket: 'pets-photos', path, expiresIn: String(expiresInSec) }).toString();
+      const urlRes = await authFetch(`${API_URL}/media/signed-url?${qs}`);
+      const urlPayload = await urlRes.json().catch(() => ({}));
+      if (urlRes.ok && urlPayload?.url) {
+        const expiry = now + expiresInSec * 1000;
+        imageCacheRef.current.set(path, { url: urlPayload.url, expiry });
+        // persist image cache
+        try {
+          const obj = {};
+          imageCacheRef.current.forEach((val, key) => { obj[key] = val; });
+          localStorage.setItem('petImageUrlCache', JSON.stringify(obj));
+        } catch {}
+        return urlPayload.url;
+      }
+    } catch (error) {
+      console.error('Failed to fetch signed URL:', error);
+    }
+    return null;
+  };
+
+  // Fast synchronous cache read for image URLs (no network)
+  const getCachedUrlIfFresh = (path) => {
+    if (!path) return null;
+    const now = Date.now();
+    const cached = imageCacheRef.current.get(path);
+    if (cached && cached.expiry > now && cached.url) return cached.url;
+    return null;
+  };
 
   // Fetch pets with loading and error states
   useEffect(() => {
-    if (!accessToken) return;
+    if (authLoading || !currentUser) return;
 
     const fetchPets = async () => {
-      setIsLoading(true);
+      // setIsLoading(true); // loading removed
       setError(null);
       
       try {
-        const res = await fetch(`${API_URL}/user/profile`, {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        });
-        
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => ({}));
-          throw new Error(errorData?.message || 'Failed to load pets');
-        }
-        
-        const data = await res.json();
-        const mapped = (data?.pets || []).map((p) => ({
-          id: Number(p.pet_id),
-          name: p.pet_name || 'Pet',
-          type: (p.pet_type || '').toLowerCase(),
-          breed: p.pet_breed || '',
-          age: '0 years',
-          imagePath: p.pet_image || '',
-          image: 'https://placehold.co/600x400?text=Pet',
-          healthStatus: '',
-          lastCheckup: new Date().toISOString().slice(0, 10),
-          upcomingAppointments: 0,
-        }));
+        const res = await authFetch(`${API_URL}/user/profile`);
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data?.message || 'Failed to load pets');
 
-        // Process images in parallel and update state once
-        const withUrls = await Promise.all(
-          mapped.map(async (pet) => {
-            if (!pet.imagePath) return pet;
-            
-            try {
-              const qs = new URLSearchParams({ 
-                bucket: 'pets-photos', 
-                path: pet.imagePath, 
-                expiresIn: String(60 * 60 * 24 * 6) 
-              }).toString();
-              
-              const urlRes = await fetch(`${API_URL}/media/signed-url?${qs}`, {
-                headers: { 
-                  Authorization: `Bearer ${accessToken}`,
-                  'Cache-Control': 'no-cache'
-                },
-              });
-              
-              if (!urlRes.ok) {
-                console.warn(`Failed to get signed URL for pet ${pet.id}`);
-                return pet;
+        // Phase 1: map pet data using cached image URLs for instant paint
+        const rawPets = (data?.pets || []).map((p) => {
+          const imagePath = p.pet_image || '';
+          const cachedUrl = getCachedUrlIfFresh(imagePath);
+          return {
+            id: Number(p.pet_id),
+            name: p.pet_name || 'Pet',
+            type: (p.pet_type || '').toLowerCase(),
+            breed: p.pet_breed || '',
+            age: p.pet_age != null ? `${p.pet_age} years` : '0 years',
+            weight: p.pet_weight != null ? `${p.pet_weight} lbs` : '0 lbs',
+            gender: p.pet_gender || '',
+            birthday: p.pet_birthday || new Date().toISOString().slice(0, 10),
+            imagePath,
+            image: cachedUrl || 'https://placehold.co/600x400?text=Pet',
+            lastCheckup: p.last_checkup || new Date().toISOString().slice(0, 10),
+            vaccinations: p.vaccinations || 'Unknown',
+          };
+        });
+
+        // Paint immediately with cached/placeholder images
+        setPets(rawPets);
+        // Persist for instant paint on next load
+        if (petsCacheKey) {
+          try { localStorage.setItem(petsCacheKey, JSON.stringify(rawPets)); } catch {}
+        }
+
+        // Phase 2: fetch missing fresh signed URLs in background and patch state
+        const missing = rawPets.filter((p) => p.imagePath && !getCachedUrlIfFresh(p.imagePath));
+        if (missing.length) {
+          missing.forEach(async (p) => {
+            const url = await getSignedUrlForPath(p.imagePath);
+            if (url) {
+              setPets((prev) => prev.map((x) => (x.id === p.id ? { ...x, image: url } : x)));
+              // Update persisted snapshot as well
+              if (petsCacheKey) {
+                try {
+                  const snapshot = JSON.parse(localStorage.getItem(petsCacheKey) || '[]');
+                  const updated = snapshot.map((x) => (x.id === p.id ? { ...x, image: url } : x));
+                  localStorage.setItem(petsCacheKey, JSON.stringify(updated));
+                } catch {}
               }
-              
-              const urlPayload = await urlRes.json();
-              return { ...pet, image: urlPayload?.url || pet.image };
-              
-            } catch (error) {
-              console.error(`Error loading image for pet ${pet.id}:`, error);
-              return pet;
             }
-          })
-        );
-        
-        setPets(withUrls);
-        
+          });
+        }
+
       } catch (e) {
         console.error('Failed to load pets:', e);
         setError(e.message || 'An error occurred while loading pets');
         setPets([]);
       } finally {
-        setIsLoading(false);
+        // setIsLoading(false); // loading removed
       }
     };
 
     fetchPets();
-  }, [accessToken, API_URL]);
+  }, [authLoading, currentUser, authFetch, API_URL, petsCacheKey]);
 
   // Memoize filtered pets to prevent unnecessary re-renders
   const filteredPets = useMemo(() => {
@@ -170,12 +218,9 @@ const UserPets = () => {
     }
 
     try {
-      const response = await fetch(`${API_URL}/pets/${id}`, {
+      const response = await authFetch(`${API_URL}/pets/${id}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
       });
 
       if (!response.ok) {
@@ -199,12 +244,9 @@ const UserPets = () => {
     }
     try {
       // 1) get signed upload
-      const res = await fetch(`${API_URL}/media/signed-upload`, {
+      const res = await authFetch(`${API_URL}/media/signed-upload`, {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ bucket: 'pets-photos', entity: 'pet', entity_id: petId, file_ext: ext }),
       });
 
@@ -217,9 +259,9 @@ const UserPets = () => {
       if (upErr) throw upErr;
 
       // 3) update pet image path on backend
-      const upd = await fetch(`${API_URL}/pets/${petId}/image`, {
+      const upd = await authFetch(`${API_URL}/pets/${petId}/image`, {
         method: 'PUT',
-        headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ path }),
       });
 
@@ -228,9 +270,8 @@ const UserPets = () => {
 
       // 4) get a signed view url and update UI
       const qs = new URLSearchParams({ bucket: 'pets-photos', path, expiresIn: String(60 * 60 * 24 * 6) }).toString();
-      const urlRes = await fetch(`${API_URL}/media/signed-url?${qs}`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
+      const urlRes = await authFetch(`${API_URL}/media/signed-url?${qs}`);
+
       const urlPayload = await urlRes.json().catch(() => ({}));
       const signedUrl = urlPayload?.url;
 
@@ -268,18 +309,15 @@ const UserPets = () => {
 
   // Handle submitting medical record
   const handleSubmitMedicalRecord = async (recordData) => {
-    if (!selectedPetForMedical || !accessToken) {
+    if (!selectedPetForMedical || !currentUser) {
       throw new Error('Missing pet information or authentication');
     }
 
     try {
       // Create the medical record
-      const response = await fetch(`${API_URL}/pets/${selectedPetForMedical.id}/health-records`, {
+      const response = await authFetch(`${API_URL}/pets/${selectedPetForMedical.id}/health-records`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: recordData.title,
           recordDate: recordData.recordDate,
@@ -302,12 +340,9 @@ const UserPets = () => {
         for (const file of recordData.files) {
           try {
             // Get signed upload URL
-            const uploadUrlResponse = await fetch(`${API_URL}/pets/${selectedPetForMedical.id}/health-records/upload-url`, {
+            const uploadUrlResponse = await authFetch(`${API_URL}/pets/${selectedPetForMedical.id}/health-records/upload-url`, {
               method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${accessToken}`,
-                'Content-Type': 'application/json',
-              },
+              headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 fileName: file.name,
                 fileType: file.type,
@@ -328,10 +363,9 @@ const UserPets = () => {
 
               if (uploadResponse.ok) {
                 // Update the record with file information
-                await fetch(`${API_URL}/health-records/${createdRecord.id}/file`, {
+                await authFetch(`${API_URL}/health-records/${createdRecord.id}/file`, {
                   method: 'PUT',
                   headers: {
-                    'Authorization': `Bearer ${accessToken}`,
                     'Content-Type': 'application/json',
                   },
                   body: JSON.stringify({
@@ -361,7 +395,7 @@ const UserPets = () => {
 
   // Handle vaccination submission (multiple entries)
   const handleSubmitVaccinations = async ({ entries, createReminder, bookAppointment }) => {
-    if (!selectedPetForVaccination || !accessToken) {
+    if (!selectedPetForVaccination || !currentUser) {
       throw new Error('Missing pet information or authentication');
     }
 
@@ -378,10 +412,9 @@ const UserPets = () => {
       };
 
       // 1) Create record without file
-      const res = await fetch(`${API_URL}/pets/${petId}/health-records`, {
+      const res = await authFetch(`${API_URL}/pets/${petId}/health-records`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(basePayload),
@@ -391,10 +424,9 @@ const UserPets = () => {
 
       // 2) If file provided, get signed URL, upload, then attach to record
       if (entry.file) {
-        const up = await fetch(`${API_URL}/pets/${petId}/health-records/upload-url`, {
+        const up = await authFetch(`${API_URL}/pets/${petId}/health-records/upload-url`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ fileName: entry.file.name, fileType: entry.file.type }),
@@ -406,10 +438,9 @@ const UserPets = () => {
         if (!put.ok) throw new Error('File upload failed');
 
         // attach to record
-        await fetch(`${API_URL}/health-records/${created.id}/file`, {
+        await authFetch(`${API_URL}/health-records/${created.id}/file`, {
           method: 'PUT',
           headers: {
-            'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -423,11 +454,10 @@ const UserPets = () => {
 
       // 3) Optionally create reminder for nextDueDate
       if (createReminder && entry.nextDueDate) {
-        const r = await fetch(`${API_URL}/reminders`, {
+        const r = await authFetch(`${API_URL}/reminders`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken}`,
           },
           body: JSON.stringify({
             pet_id: petId,
@@ -532,11 +562,7 @@ const UserPets = () => {
         </div>
 
         {/* Loading and Error States */}
-        {isLoading ? (
-          <div className="flex justify-center items-center p-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-          </div>
-        ) : error ? (
+        {error ? (
           <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
             <div className="flex">
               <div className="flex-shrink-0">
@@ -691,7 +717,7 @@ const UserPets = () => {
         onClose={handleCloseMedicalRecords}
         petId={selectedPetForMedical?.id}
         petName={selectedPetForMedical?.name || 'your pet'}
-        accessToken={accessToken}
+        authFetch={authFetch}
       />
 
       {/* Vaccination Records Popup */}

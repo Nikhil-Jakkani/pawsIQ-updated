@@ -24,7 +24,7 @@ const MedicalRecordsPopup = ({
   onClose, 
   petId, 
   petName = "your pet", 
-  accessToken,
+  authFetch,
   onRecordAdded 
 }) => {
   const fileInputRef = useRef(null);
@@ -146,13 +146,7 @@ const MedicalRecordsPopup = ({
     setError('');
     setSuccess('');
     setUploadProgress(0);
-    console.log('Submitting medical record', { petId, filesCount: formData.files.length });
     
-    if (!accessToken) {
-      setError('Please log in to add medical records');
-      return;
-    }
-
     if (!petId) {
       setError('No pet selected. Please select a pet first.');
       return;
@@ -178,15 +172,11 @@ const MedicalRecordsPopup = ({
         setUploadProgress(prev => Math.min(prev + 10, 70));
         
         try {
-          if (!accessToken) {
-            throw new Error('Authentication token is missing');
-          }
-          
           const { signedUrl, path, publicUrl, token } = await healthRecordService.getSignedUploadUrl(
             petId,
             file.name,
             file.type,
-            accessToken
+            authFetch
           );
           
           if (!path || !token) {
@@ -231,7 +221,7 @@ const MedicalRecordsPopup = ({
           fileUrl: file.publicUrl
         };
         
-        await healthRecordService.createHealthRecord(petId, recordData, accessToken);
+        const response = await healthRecordService.createHealthRecord(petId, recordData, authFetch);
       }
       
       setUploadProgress(100);

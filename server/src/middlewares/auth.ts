@@ -68,17 +68,10 @@ const auth = (...requiredRights: string[]) => {
           break;
         }
         case 'admin': {
-          const { data, error } = await db.from('admins').select('*').eq('admin_id', payload.sub).single();
+          const { data, error } = await db.from('PIQ_Admins').select('*').eq('admin_id', payload.sub).single();
           entity = data;
           entityError = error;
-          if (
-            entity &&
-            typeof entity.admin_status === 'string' &&
-            entity.admin_status.trim() &&
-            entity.admin_status.trim().toLowerCase() !== 'active'
-          ) {
-            throw new ApiError(httpStatus.UNAUTHORIZED, 'User account is not active');
-          }
+          // No admin_status column in schema; skip status checks
           break;
         }
         case 'provider': {

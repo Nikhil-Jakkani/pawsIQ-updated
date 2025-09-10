@@ -7,6 +7,8 @@ import moment from 'moment';
 import { db } from '../../config/db.js';
 import { tokenService } from '../services/user/token.service.js';
 import { tokenTypes } from '../../config/tokens.js';
+import { authService as adminAuthService } from '../services/admin/auth.service.js';
+import { userAuthService } from '../services/user/auth.service.js';
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID;
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
@@ -17,6 +19,39 @@ const generateTokens = async (userId: number, role: string = 'user') => {
     accessToken: tokens.access.token,
     refreshToken: tokens.refresh.token,
   };
+};
+
+// Unified credentials login: tries admin first, then user
+export const login = async (req: Request, res: Response) => {
+  try {
+    const { email, password } = req.body as { email: string; password: string };
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password are required' });
+    }
+
+    // Try admin login first
+    try {
+      const adminResult = await adminAuthService.login(email, password);
+      return res.status(200).json(adminResult); // { user, tokens }
+    } catch (e) {
+      // fall through to user login
+    }
+
+    // Then try user login
+    try {
+      const userResult = await userAuthService.loginUserWithEmailAndPassword(email, password);
+      // Ensure role is present
+      return res.status(200).json({
+        user: { ...userResult.user, role: 'user' },
+        tokens: userResult.tokens,
+      });
+    } catch (e) {
+      return res.status(401).json({ message: 'Incorrect email or password' });
+    }
+  } catch (error) {
+    console.error('Credentials login error:', error);
+    return res.status(500).json({ message: 'Authentication failed' });
+  }
 };
 
 export const googleLogin = async (req: Request, res: Response) => {

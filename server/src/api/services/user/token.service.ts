@@ -3,7 +3,7 @@ import moment from 'moment';
 import httpStatus from 'http-status';
 import { db } from '../../../config/db.js';
 import { ApiError } from '../../utils/ApiError.js';
-import { tokenTypes } from '../../../config/tokens.js';
+import { tokenTypes, tokenExpiration } from '../../../config/tokens.js';
 import config from '../../../config/config.js';
 
 /**
@@ -75,16 +75,15 @@ const verifyToken = async (token: string, type: string) => {
   return tokenDoc;
 };
 
-/**
- * Generate auth tokens
- */
 const generateAuthTokens = async (userId: number, role: string) => {
-  const accessTokenExpires = moment().add(process.env.JWT_ACCESS_EXPIRATION_MINUTES || '15', 'minutes');
+  const accessTokenExpires = moment().add(tokenExpiration.access, 'seconds');
   const accessToken = generateToken(userId, accessTokenExpires, tokenTypes.ACCESS, role);
 
-  const refreshTokenExpires = moment().add(process.env.JWT_REFRESH_EXPIRATION_DAYS || '7', 'days');
+  // Generate refresh token (7 days)
+  const refreshTokenExpires = moment().add(tokenExpiration.refresh, 'seconds');
   const refreshToken = generateToken(userId, refreshTokenExpires, tokenTypes.REFRESH, role);
   
+  // Save refresh token to database
   await saveToken(refreshToken, userId, refreshTokenExpires, tokenTypes.REFRESH);
 
   return {
@@ -97,6 +96,44 @@ const generateAuthTokens = async (userId: number, role: string) => {
       expires: refreshTokenExpires.toDate(),
     },
   };
+};
+
+/**
+ * Generate new access token using refresh token
+ */
+const refreshAuth = async (refreshToken: string) => {
+  try {
+    // Verify the refresh token exists and is valid in DB
+    const refreshTokenDoc = await verifyToken(refreshToken, tokenTypes.REFRESH);
+    // Decode JWT to get role and subject
+    const payload: any = jwt.verify(refreshToken, config.jwtSecret);
+    const role = payload?.role || 'user';
+    const sub = Number(payload?.sub);
+
+    // Validate the subject exists in the correct table based on role
+    let subjectExists = false;
+    if (role === 'admin') {
+      const { data } = await db.from('PIQ_Admins').select('admin_id').eq('admin_id', sub).single();
+      subjectExists = !!data;
+    } else if (role === 'user') {
+      const { data } = await db.from('PIQ_User').select('user_id').eq('user_id', sub).single();
+      subjectExists = !!data;
+    } else if (role === 'provider') {
+      const { data } = await db.from('PIQ_Service_Provider').select('provider_id').eq('provider_id', sub).single();
+      subjectExists = !!data;
+    }
+    if (!subjectExists) {
+      throw new Error('Subject not found');
+    }
+
+    // Invalidate the old refresh token
+    await db.from('tokens').delete().eq('token', refreshToken);
+
+    // Generate new token pair preserving role and subject
+    return await generateAuthTokens(sub, role);
+  } catch (error) {
+    throw new ApiError(httpStatus.UNAUTHORIZED, 'Invalid refresh token');
+  }
 };
 
 /**
@@ -117,4 +154,5 @@ export const tokenService = {
   verifyToken,
   generateAuthTokens,
   generateVerifyEmailToken,
+  refreshAuth,
 };

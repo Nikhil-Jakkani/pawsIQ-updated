@@ -32,13 +32,20 @@ const UserDashboard = () => {
   const [activeService, setActiveService] = useState('suggestions');
   const [showAllTips, setShowAllTips] = useState(false);
   const [selectedPetForAI, setSelectedPetForAI] = useState(null);
-  const { currentUser } = useAuth();
+  const { currentUser, authFetch, loading: authLoading } = useAuth();
+
   const accessToken = currentUser?.tokens?.access?.token;
   const [pets, setPets] = useState([]);
   const careRemRef = useRef(null);
 
   // In-memory cache for signed image URLs with persistence to localStorage
   const imageCacheRef = useRef(new Map());
+
+  const petsCacheKey = React.useMemo(() => {
+    if (!currentUser) return null;
+    const uid = currentUser.id || currentUser.user_id || currentUser.email || 'me';
+    return `pawsiq:pets:${uid}`;
+  }, [currentUser]);
 
   useEffect(() => {
     // Hydrate cache from localStorage (drop expired entries)
@@ -59,6 +66,23 @@ const UserDashboard = () => {
       console.warn('Failed to load image cache', e);
     }
   }, []);
+
+  // Immediate paint from cached pets while we revalidate in background
+  useEffect(() => {
+    if (!petsCacheKey) return;
+    try {
+      const raw = localStorage.getItem(petsCacheKey);
+      if (raw) {
+        const cachedPets = JSON.parse(raw);
+        if (Array.isArray(cachedPets) && cachedPets.length) {
+          setPets(cachedPets);
+          if (!selectedPetForAI) setSelectedPetForAI(cachedPets[0]);
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to read cached pets', e);
+    }
+  }, [petsCacheKey]);
 
   const persistImageCache = () => {
     try {
@@ -81,9 +105,7 @@ const UserDashboard = () => {
     const expiresInSec = 60 * 60 * 24 * 6; // 6 days
     try {
       const qs = new URLSearchParams({ bucket: 'pets-photos', path, expiresIn: String(expiresInSec) }).toString();
-      const urlRes = await fetch(`${API_URL}/media/signed-url?${qs}`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
+      const urlRes = await authFetch(`${API_URL}/media/signed-url?${qs}`);
       const urlPayload = await urlRes.json().catch(() => ({}));
       if (urlRes.ok && urlPayload?.url) {
         const expiry = now + expiresInSec * 1000;
@@ -97,6 +119,15 @@ const UserDashboard = () => {
     return null;
   };
 
+  // Fast synchronous cache read (no network)
+  const getCachedUrlIfFresh = (path) => {
+    if (!path) return null;
+    const now = Date.now();
+    const cached = imageCacheRef.current.get(path);
+    if (cached && cached.expiry > now && cached.url) return cached.url;
+    return null;
+  };
+
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
@@ -107,55 +138,74 @@ const UserDashboard = () => {
 
   // Load pet data and cache image URLs
   useEffect(() => {
-    if (!accessToken) return;
+    if (authLoading || !currentUser) return;
     
     let isMounted = true;
     
     const loadPets = async () => {
       try {
         // Fetch pet data
-        const res = await fetch(`${API_URL}/user/profile`, {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        });
+        const res = await authFetch(`${API_URL}/user/profile`);
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data?.message || 'Failed to load pets');
         
-        // Map pet data and prepare image URLs in parallel
-        const petsData = await Promise.all(
-          (data?.pets || []).map(async (p) => {
-            const pet = {
-              id: Number(p.pet_id),
-              name: p.pet_name || 'Pet',
-              type: (p.pet_type || '').toLowerCase(),
-              breed: p.pet_breed || '',
-              age: p.pet_age != null ? `${p.pet_age} years` : '0 years',
-              weight: p.pet_weight != null ? `${p.pet_weight} lbs` : '0 lbs',
-              gender: p.pet_gender || '',
-              birthday: p.pet_birthday || new Date().toISOString().slice(0, 10),
-              imagePath: p.pet_image || '',
-              image: 'https://placehold.co/600x400?text=Pet',
-              lastCheckup: p.last_checkup || new Date().toISOString().slice(0, 10),
-              vaccinations: p.vaccinations || 'Unknown',
-            };
-            
-            // Only fetch signed URL if there's an image path
-            if (pet.imagePath) {
-              const url = await getSignedUrlForPath(pet.imagePath);
-              if (url) {
-                pet.image = url;
-              }
-            }
-            
-            return pet;
-          })
-        );
+        // Phase 1: map pet data synchronously using cached image URLs (if present)
+        const rawPets = (data?.pets || []).map((p) => {
+          const imagePath = p.pet_image || '';
+          const cachedUrl = getCachedUrlIfFresh(imagePath);
+          return {
+            id: Number(p.pet_id),
+            name: p.pet_name || 'Pet',
+            type: (p.pet_type || '').toLowerCase(),
+            breed: p.pet_breed || '',
+            age: p.pet_age != null ? `${p.pet_age} years` : '0 years',
+            weight: p.pet_weight != null ? `${p.pet_weight} lbs` : '0 lbs',
+            gender: p.pet_gender || '',
+            birthday: p.pet_birthday || new Date().toISOString().slice(0, 10),
+            imagePath,
+            image: cachedUrl || 'https://placehold.co/600x400?text=Pet',
+            lastCheckup: p.last_checkup || new Date().toISOString().slice(0, 10),
+            vaccinations: p.vaccinations || 'Unknown',
+          };
+        });
+
         
         if (!isMounted) return;
         
-        // Single state update with all data
-        setPets(petsData);
-        if (petsData.length > 0 && !selectedPetForAI) {
-          setSelectedPetForAI(petsData[0]);
+        // Paint immediately with cached/placeholder images
+        setPets(rawPets);
+        // Persist for instant paint on next load
+        if (petsCacheKey) {
+          try {
+            localStorage.setItem(petsCacheKey, JSON.stringify(rawPets));
+          } catch {}
+        }
+        if (rawPets.length > 0 && !selectedPetForAI) {
+          setSelectedPetForAI(rawPets[0]);
+        }
+
+        // Phase 2: for pets missing a fresh signed URL, fetch in background and patch state incrementally
+        const missing = rawPets.filter((p) => p.imagePath && !getCachedUrlIfFresh(p.imagePath));
+        if (missing.length) {
+          // Fire all requests concurrently but update state as each resolves
+          missing.forEach(async (p) => {
+            try {
+              const url = await getSignedUrlForPath(p.imagePath);
+              if (url) {
+                setPets((prev) => prev.map((x) => (x.id === p.id ? { ...x, image: url } : x)));
+                // Also refresh the persisted cache snapshot
+                if (petsCacheKey) {
+                  try {
+                    const snapshot = JSON.parse(localStorage.getItem(petsCacheKey) || '[]');
+                    const updated = snapshot.map((x) => (x.id === p.id ? { ...x, image: url } : x));
+                    localStorage.setItem(petsCacheKey, JSON.stringify(updated));
+                  } catch {}
+                }
+              }
+            } catch (e) {
+              // Ignore individual image failures
+            }
+          });
         }
       } catch (e) {
         console.error('Failed to load pets:', e);
@@ -170,7 +220,7 @@ const UserDashboard = () => {
     return () => {
       isMounted = false;
     };
-  }, [accessToken]);
+  }, [authLoading, currentUser, authFetch]);
 
   const getGreeting = () => {
     const hour = currentTime.getHours();

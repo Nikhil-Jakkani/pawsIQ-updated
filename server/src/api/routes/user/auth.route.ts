@@ -13,6 +13,10 @@ router.post('/reset-password', userAuthController.resetPassword);
 router.post('/verify-email', userAuthController.verifyEmail);
 router.post('/verify-otp', userAuthController.verifyOTP);
 
+// Mobile OTP routes
+router.post('/send-mobile-otp', userAuthController.sendMobileOTP);
+router.post('/verify-mobile-otp', userAuthController.verifyMobileOTP);
+
 // Protected routes
 router.use(auth());
 router.get('/me', userAuthController.me);

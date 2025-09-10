@@ -36,9 +36,10 @@ import {
 } from 'react-icons/fa';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import HealthRecords from '../../components/health/HealthRecords';
-
+import useApi from '../../hooks/useApi';
 
 const PetProfiles = () => {
+  const api = useApi();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterSpecies, setFilterSpecies] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -48,7 +49,14 @@ const PetProfiles = () => {
   const [currentPet, setCurrentPet] = useState(null);
   const [activeTab, setActiveTab] = useState('details');
   const { petId } = useParams();
-  
+  const [pets, setPets] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [page, setPage] = useState(1);
+  const [limit] = useState(24);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalResults, setTotalResults] = useState(0);
+
   // Set active tab based on URL or default to 'details'
   useEffect(() => {
     const tabFromUrl = window.location.hash.replace('#', '');
@@ -80,9 +88,9 @@ const PetProfiles = () => {
         );
       case 'details':
       default:
-        // Find the current pet from the sample data or fetch from API
-        const pet = petsData.find(p => p.id === parseInt(petId));
-        
+        // Find the current pet from dataset
+        const pet = pets.find(p => p.id === parseInt(petId));
+
         if (!pet) {
           return (
             <div className="bg-white shadow overflow-hidden sm:rounded-lg p-6">
@@ -90,7 +98,7 @@ const PetProfiles = () => {
             </div>
           );
         }
-        
+
         return (
           <div className="mt-6">
             <div className="bg-white shadow overflow-hidden sm:rounded-lg">
@@ -184,279 +192,57 @@ const PetProfiles = () => {
     }
   };
 
-  // Sample data for pet profiles
-  const petsData = [
-    { 
-      id: 1, 
-      name: 'Max', 
-      species: 'Dog',
-      breed: 'Golden Retriever',
-      age: 3,
-      gender: 'Male',
-      weight: '65 lbs',
-      height: '24 inches',
-      color: 'Golden',
-      microchipped: true,
-      neutered: true,
-      vaccinated: true,
-      ownerName: 'John Smith',
-      ownerEmail: 'john.smith@example.com',
-      ownerPhone: '(555) 123-4567',
-      profileImage: 'https://images.unsplash.com/photo-1552053831-71594a27632d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8Z29sZGVuJTIwcmV0cmlldmVyfGVufDB8fDB8fHww&auto=format&fit=crop&w=500&q=60',
-      dateAdded: '2023-01-15',
-      lastUpdated: '2023-11-20',
-      status: 'active',
-      medicalConditions: ['Allergies', 'Hip dysplasia'],
-      medications: ['Apoquel', 'Joint supplement'],
-      dietaryRestrictions: ['No chicken'],
-      emergencyContact: 'Sarah Smith, (555) 987-6543',
-      vetInfo: 'Dr. Johnson, Happy Paws Veterinary, (555) 234-5678',
-      notes: 'Friendly with other dogs and children. Loves swimming and playing fetch.'
-    },
-    { 
-      id: 2, 
-      name: 'Luna', 
-      species: 'Cat',
-      breed: 'Siamese',
-      age: 2,
-      gender: 'Female',
-      weight: '9 lbs',
-      height: '10 inches',
-      color: 'Seal Point',
-      microchipped: true,
-      neutered: true,
-      vaccinated: true,
-      ownerName: 'Sarah Johnson',
-      ownerEmail: 'sarah.j@example.com',
-      ownerPhone: '(555) 234-5678',
-      profileImage: 'https://images.unsplash.com/photo-1592194996308-7b43878e84a6?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8c2lhbWVzZSUyMGNhdHxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=500&q=60',
-      dateAdded: '2023-02-20',
-      lastUpdated: '2023-10-15',
-      status: 'active',
-      medicalConditions: ['None'],
-      medications: [],
-      dietaryRestrictions: ['Grain-free diet'],
-      emergencyContact: 'Michael Johnson, (555) 876-5432',
-      vetInfo: 'Dr. Wilson, Feline Friends Clinic, (555) 345-6789',
-      notes: 'Shy with strangers but very affectionate with family. Loves to play with string toys.'
-    },
-    { 
-      id: 3, 
-      name: 'Charlie', 
-      species: 'Dog',
-      breed: 'Beagle',
-      age: 5,
-      gender: 'Male',
-      weight: '28 lbs',
-      height: '15 inches',
-      color: 'Tricolor',
-      microchipped: true,
-      neutered: true,
-      vaccinated: true,
-      ownerName: 'Michael Brown',
-      ownerEmail: 'michael.b@example.com',
-      ownerPhone: '(555) 345-6789',
-      profileImage: 'https://images.unsplash.com/photo-1505628346881-b72b27e84530?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8YmVhZ2xlfGVufDB8fDB8fHww&auto=format&fit=crop&w=500&q=60',
-      dateAdded: '2022-11-10',
-      lastUpdated: '2023-09-05',
-      status: 'active',
-      medicalConditions: ['Ear infection (recurring)'],
-      medications: ['Ear drops as needed'],
-      dietaryRestrictions: ['Low-fat diet'],
-      emergencyContact: 'Emily Brown, (555) 765-4321',
-      vetInfo: 'Dr. Martinez, Pet Care Center, (555) 456-7890',
-      notes: 'Very energetic and loves to follow scents. Needs regular exercise and mental stimulation.'
-    },
-    { 
-      id: 4, 
-      name: 'Oliver', 
-      species: 'Cat',
-      breed: 'Maine Coon',
-      age: 4,
-      gender: 'Male',
-      weight: '18 lbs',
-      height: '12 inches',
-      color: 'Brown Tabby',
-      microchipped: true,
-      neutered: true,
-      vaccinated: true,
-      ownerName: 'Emily Davis',
-      ownerEmail: 'emily.d@example.com',
-      ownerPhone: '(555) 456-7890',
-      profileImage: 'https://images.unsplash.com/photo-1615789591457-74a63395c990?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8bWFpbmUlMjBjb29ufGVufDB8fDB8fHww&auto=format&fit=crop&w=500&q=60',
-      dateAdded: '2022-12-05',
-      lastUpdated: '2023-08-20',
-      status: 'active',
-      medicalConditions: ['Heart murmur (mild)'],
-      medications: [],
-      dietaryRestrictions: [],
-      emergencyContact: 'David Davis, (555) 654-3210',
-      vetInfo: 'Dr. Thompson, Cat Specialists, (555) 567-8901',
-      notes: 'Gentle giant who loves to be brushed. Gets along well with other cats.'
-    },
-    { 
-      id: 5, 
-      name: 'Bella', 
-      species: 'Dog',
-      breed: 'Labrador Retriever',
-      age: 1,
-      gender: 'Female',
-      weight: '55 lbs',
-      height: '22 inches',
-      color: 'Chocolate',
-      microchipped: true,
-      neutered: false,
-      vaccinated: true,
-      ownerName: 'David Wilson',
-      ownerEmail: 'david.w@example.com',
-      ownerPhone: '(555) 567-8901',
-      profileImage: 'https://images.unsplash.com/photo-1591769225440-811ad7d6eab2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8Y2hvY29sYXRlJTIwbGFicmFkb3J8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&w=500&q=60',
-      dateAdded: '2023-03-10',
-      lastUpdated: '2023-11-01',
-      status: 'active',
-      medicalConditions: ['None'],
-      medications: [],
-      dietaryRestrictions: [],
-      emergencyContact: 'Jessica Wilson, (555) 543-2109',
-      vetInfo: 'Dr. Garcia, Animal Hospital, (555) 678-9012',
-      notes: 'Energetic puppy still in training. Loves water and retrieving games.'
-    },
-    { 
-      id: 6, 
-      name: 'Coco', 
-      species: 'Bird',
-      breed: 'Cockatiel',
-      age: 3,
-      gender: 'Female',
-      weight: '90 g',
-      height: '12 inches',
-      color: 'Grey/Yellow',
-      microchipped: false,
-      neutered: false,
-      vaccinated: false,
-      ownerName: 'Jessica Taylor',
-      ownerEmail: 'jessica.t@example.com',
-      ownerPhone: '(555) 678-9012',
-      profileImage: 'https://images.unsplash.com/photo-1591198936750-16d8e15edc9f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8Y29ja2F0aWVsfGVufDB8fDB8fHww&auto=format&fit=crop&w=500&q=60',
-      dateAdded: '2023-04-15',
-      lastUpdated: '2023-10-10',
-      status: 'active',
-      medicalConditions: ['None'],
-      medications: [],
-      dietaryRestrictions: ['No avocado, chocolate, or caffeine'],
-      emergencyContact: 'Robert Taylor, (555) 432-1098',
-      vetInfo: 'Dr. Patel, Exotic Pet Clinic, (555) 789-0123',
-      notes: 'Talkative and social bird. Can whistle several tunes and says a few words.'
-    },
-    { 
-      id: 7, 
-      name: 'Rocky', 
-      species: 'Dog',
-      breed: 'Boxer',
-      age: 6,
-      gender: 'Male',
-      weight: '70 lbs',
-      height: '23 inches',
-      color: 'Fawn',
-      microchipped: true,
-      neutered: true,
-      vaccinated: true,
-      ownerName: 'Robert Martinez',
-      ownerEmail: 'robert.m@example.com',
-      ownerPhone: '(555) 789-0123',
-      profileImage: 'https://images.unsplash.com/photo-1543071220-6ee5bf71a54e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8Ym94ZXIlMjBkb2d8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&w=500&q=60',
-      dateAdded: '2022-09-20',
-      lastUpdated: '2023-07-15',
-      status: 'inactive',
-      medicalConditions: ['Arthritis'],
-      medications: ['Joint supplement', 'Pain medication as needed'],
-      dietaryRestrictions: ['Senior diet'],
-      emergencyContact: 'Maria Martinez, (555) 321-0987',
-      vetInfo: 'Dr. Lee, City Veterinary Clinic, (555) 890-1234',
-      notes: 'Senior dog who prefers calm environments. Needs moderate exercise but tires quickly.'
-    },
-    { 
-      id: 8, 
-      name: 'Nemo', 
-      species: 'Fish',
-      breed: 'Betta',
-      age: 1,
-      gender: 'Male',
-      weight: 'N/A',
-      height: '3 inches',
-      color: 'Blue/Red',
-      microchipped: false,
-      neutered: false,
-      vaccinated: false,
-      ownerName: 'Lisa Anderson',
-      ownerEmail: 'lisa.a@example.com',
-      ownerPhone: '(555) 890-1234',
-      profileImage: 'https://images.unsplash.com/photo-1545048702-79362596cdc9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8YmV0dGElMjBmaXNofGVufDB8fDB8fHww&auto=format&fit=crop&w=500&q=60',
-      dateAdded: '2023-05-05',
-      lastUpdated: '2023-09-25',
-      status: 'active',
-      medicalConditions: ['None'],
-      medications: [],
-      dietaryRestrictions: ['Betta-specific food only'],
-      emergencyContact: 'Mark Anderson, (555) 210-9876',
-      vetInfo: 'Dr. Wong, Aquatic Pet Specialists, (555) 901-2345',
-      notes: 'Lives in a 5-gallon tank with heater and filter. Water changes performed weekly.'
-    },
-    { 
-      id: 9, 
-      name: 'Daisy', 
-      species: 'Rabbit',
-      breed: 'Holland Lop',
-      age: 2,
-      gender: 'Female',
-      weight: '4 lbs',
-      height: '8 inches',
-      color: 'Brown/White',
-      microchipped: false,
-      neutered: true,
-      vaccinated: true,
-      ownerName: 'Kevin Thomas',
-      ownerEmail: 'kevin.t@example.com',
-      ownerPhone: '(555) 901-2345',
-      profileImage: 'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8aG9sbGFuZCUyMGxvcHxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=500&q=60',
-      dateAdded: '2023-01-30',
-      lastUpdated: '2023-08-10',
-      status: 'active',
-      medicalConditions: ['Dental issues'],
-      medications: [],
-      dietaryRestrictions: ['High-fiber diet', 'Limited treats'],
-      emergencyContact: 'Laura Thomas, (555) 109-8765',
-      vetInfo: 'Dr. Chen, Small Pet Clinic, (555) 012-3456',
-      notes: 'Free-roam house rabbit. Litter box trained and enjoys cardboard toys.'
-    },
-    { 
-      id: 10, 
-      name: 'Shadow', 
-      species: 'Cat',
-      breed: 'Bombay',
-      age: 7,
-      gender: 'Male',
-      weight: '12 lbs',
-      height: '10 inches',
-      color: 'Black',
-      microchipped: true,
-      neutered: true,
-      vaccinated: true,
-      ownerName: 'Amanda White',
-      ownerEmail: 'amanda.w@example.com',
-      ownerPhone: '(555) 012-3456',
-      profileImage: 'https://images.unsplash.com/photo-1570824104453-508955ab713e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8YmxhY2slMjBjYXR8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&w=500&q=60',
-      dateAdded: '2022-08-15',
-      lastUpdated: '2023-07-01',
-      status: 'active',
-      medicalConditions: ['Diabetes'],
-      medications: ['Insulin twice daily'],
-      dietaryRestrictions: ['Prescription diabetic diet'],
-      emergencyContact: 'Daniel White, (555) 098-7654',
-      vetInfo: 'Dr. Robinson, Feline Medical Center, (555) 123-4567',
-      notes: 'Indoor cat who requires consistent feeding schedule for insulin management. Very calm and affectionate.'
-    }
-  ];
+  // Fetch pets dynamically
+  useEffect(() => {
+    let alive = true;
+    const run = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const qs = new URLSearchParams();
+        qs.set('page', String(page));
+        qs.set('limit', String(limit));
+        if (searchTerm) qs.set('search', searchTerm);
+        const data = await api.get(`/admin/piq/pets?${qs.toString()}`);
+        if (!alive) return;
+        const list = Array.isArray(data?.results) ? data.results : [];
+        setPets(list.map(p => ({
+          id: p.id,
+          name: p.name,
+          species: p.species || 'Other',
+          breed: p.breed || '',
+          age: p.age || 0,
+          gender: p.gender || 'Unknown',
+          weight: p.weight || '',
+          height: p.height || '',
+          color: p.color || '',
+          microchipped: !!p.microchipped,
+          neutered: !!p.neutered,
+          vaccinated: !!p.vaccinated,
+          ownerName: p.ownerName || '',
+          ownerEmail: p.ownerEmail || '',
+          ownerPhone: p.ownerPhone || '',
+          profileImage: p.profileImage,
+          dateAdded: p.created_at ? new Date(p.created_at).toISOString().slice(0,10) : '',
+          lastUpdated: p.lastUpdated || p.updated_at || '',
+          status: p.status || 'active',
+          medicalConditions: p.medicalConditions || [],
+          medications: p.medications || [],
+          dietaryRestrictions: p.dietaryRestrictions || [],
+          notes: p.notes || '',
+        })));
+        setTotalPages(Number(data?.totalPages) || 1);
+        setTotalResults(Number(data?.totalResults) || 0);
+      } catch (e) {
+        if (!alive) return;
+        setError('Failed to load pets');
+      } finally {
+        if (alive) setLoading(false);
+      }
+    };
+    run();
+    return () => { alive = false; };
+  }, [api, page, limit, searchTerm]);
 
   // Get species icon
   const getSpeciesIcon = (species) => {
@@ -489,9 +275,9 @@ const PetProfiles = () => {
         return <FaNeuter className="text-gray-500" />;
     }
   };
-  
+
   // Filter and sort pets
-  const filteredAndSortedPets = petsData
+  const filteredAndSortedPets = pets
     .filter(pet => {
       const matchesSearch = 
         pet.name.toLowerCase().includes(searchTerm.toLowerCase()) || 

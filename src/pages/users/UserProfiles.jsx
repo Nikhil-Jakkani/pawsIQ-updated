@@ -24,8 +24,10 @@ import {
   FaSignInAlt
 } from 'react-icons/fa';
 import DashboardLayout from '../../components/layout/DashboardLayout';
+import useApi from '../../hooks/useApi';
 
 const UserProfiles = () => {
+  const api = useApi();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterRole, setFilterRole] = useState('all');
@@ -36,22 +38,60 @@ const UserProfiles = () => {
   const [selectAll, setSelectAll] = useState(false);
   const [showUserModal, setShowUserModal] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [page, setPage] = useState(1);
+  const [limit] = useState(20);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalResults, setTotalResults] = useState(0);
+  const [users, setUsers] = useState([]);
+
+  React.useEffect(() => {
+    let alive = true;
+    const run = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const qs = new URLSearchParams();
+        qs.set('page', String(page));
+        qs.set('limit', String(limit));
+        if (searchTerm) qs.set('search', searchTerm);
+        if (filterStatus !== 'all') qs.set('status', filterStatus);
+        const data = await api.get(`/admin/piq/users?${qs.toString()}`);
+        if (!alive) return;
+        setUsers(Array.isArray(data?.results) ? data.results : []);
+        setTotalPages(Number(data?.totalPages) || 1);
+        setTotalResults(Number(data?.totalResults) || 0);
+      } catch (e) {
+        if (!alive) return;
+        setError('Failed to load users');
+      } finally {
+        if (alive) setLoading(false);
+      }
+    };
+    run();
+    return () => {
+      alive = false;
+    };
+  }, [api, page, limit, searchTerm, filterStatus]);
   
-  // Sample data for users
-  const usersData = [
-    { id: 1, name: 'John Smith', email: 'john.smith@example.com', type: 'Pet Owner', role: 'User', status: 'Active', lastActive: '2 hours ago', registeredDate: '12/05/2023', pets: 2, appointments: 5, phone: '(555) 123-4567', address: '123 Main St, Anytown, CA 12345', verifiedEmail: true, verifiedPhone: true },
-    { id: 2, name: 'Sarah Johnson', email: 'sarah.j@example.com', type: 'Pet Owner', role: 'User', status: 'Active', lastActive: '1 day ago', registeredDate: '10/15/2023', pets: 1, appointments: 3, phone: '(555) 234-5678', address: '456 Oak Ave, Somewhere, NY 67890', verifiedEmail: true, verifiedPhone: false },
-    { id: 3, name: 'Michael Brown', email: 'michael.b@example.com', type: 'Service Provider', role: 'Vet', status: 'Active', lastActive: '3 hours ago', registeredDate: '11/20/2023', pets: 0, appointments: 12, phone: '(555) 345-6789', address: '789 Pine Rd, Elsewhere, TX 54321', verifiedEmail: true, verifiedPhone: true },
-    { id: 4, name: 'Emily Davis', email: 'emily.d@example.com', type: 'Pet Owner', role: 'User', status: 'Pending', lastActive: 'Never', registeredDate: '12/01/2023', pets: 0, appointments: 0, phone: '(555) 456-7890', address: '321 Elm St, Nowhere, FL 13579', verifiedEmail: false, verifiedPhone: false },
-    { id: 5, name: 'David Wilson', email: 'david.w@example.com', type: 'Service Provider', role: 'Groomer', status: 'Active', lastActive: '5 hours ago', registeredDate: '09/18/2023', pets: 0, appointments: 8, phone: '(555) 567-8901', address: '654 Maple Dr, Anyplace, WA 24680', verifiedEmail: true, verifiedPhone: true },
-    { id: 6, name: 'Jessica Taylor', email: 'jessica.t@example.com', type: 'Staff', role: 'Admin', status: 'Active', lastActive: '1 hour ago', registeredDate: '08/30/2023', pets: 0, appointments: 0, phone: '(555) 678-9012', address: '987 Cedar Ln, Somewhere, IL 97531', verifiedEmail: true, verifiedPhone: true },
-    { id: 7, name: 'Robert Martinez', email: 'robert.m@example.com', type: 'Pet Owner', role: 'User', status: 'Suspended', lastActive: '2 weeks ago', registeredDate: '07/12/2023', pets: 3, appointments: 0, phone: '(555) 789-0123', address: '246 Birch Ct, Elsewhere, GA 86420', verifiedEmail: true, verifiedPhone: true },
-    { id: 8, name: 'Lisa Anderson', email: 'lisa.a@example.com', type: 'Staff', role: 'Moderator', status: 'Active', lastActive: '4 hours ago', registeredDate: '10/05/2023', pets: 0, appointments: 0, phone: '(555) 890-1234', address: '135 Walnut Ave, Nowhere, MI 75319', verifiedEmail: true, verifiedPhone: true },
-    { id: 9, name: 'Kevin Thomas', email: 'kevin.t@example.com', type: 'Service Provider', role: 'Pet Sitter', status: 'Active', lastActive: '6 hours ago', registeredDate: '11/10/2023', pets: 0, appointments: 4, phone: '(555) 901-2345', address: '864 Spruce St, Anytown, OR 42086', verifiedEmail: true, verifiedPhone: false },
-    { id: 10, name: 'Amanda White', email: 'amanda.w@example.com', type: 'Pet Owner', role: 'User', status: 'Active', lastActive: '12 hours ago', registeredDate: '10/22/2023', pets: 2, appointments: 2, phone: '(555) 012-3456', address: '753 Fir Rd, Somewhere, AZ 31975', verifiedEmail: true, verifiedPhone: true },
-    { id: 11, name: 'Daniel Lee', email: 'daniel.l@example.com', type: 'Service Provider', role: 'Trainer', status: 'Pending', lastActive: 'Never', registeredDate: '12/02/2023', pets: 0, appointments: 0, phone: '(555) 123-4567', address: '159 Aspen Ln, Elsewhere, CO 86420', verifiedEmail: false, verifiedPhone: false },
-    { id: 12, name: 'Jennifer Clark', email: 'jennifer.c@example.com', type: 'Pet Owner', role: 'User', status: 'Active', lastActive: '2 days ago', registeredDate: '09/15/2023', pets: 1, appointments: 1, phone: '(555) 234-5678', address: '357 Redwood Dr, Nowhere, NV 75319', verifiedEmail: true, verifiedPhone: true }
-  ];
+  // Map backend users to UI rows
+  const usersData = users.map(u => ({
+    id: u.user_id,
+    name: u.user_full_name,
+    email: u.user_email_id,
+    type: 'Pet Owner',
+    role: 'User',
+    status: (u.user_status || 'Active').charAt(0).toUpperCase() + (u.user_status || 'Active').slice(1),
+    lastActive: u.last_updated_dtm ? new Date(u.last_updated_dtm).toLocaleString() : '—',
+    registeredDate: u.created_at ? new Date(u.created_at).toLocaleDateString() : '—',
+    pets: 0,
+    appointments: 0,
+    phone: u.user_phone_number || '',
+    address: '',
+    verifiedEmail: true,
+    verifiedPhone: !!u.user_phone_number,
+  }));
 
   // Filter and sort users
   const filteredAndSortedUsers = usersData
@@ -228,6 +268,12 @@ const UserProfiles = () => {
               </select>
             </div>
           </div>
+          {error && (
+            <div className="mt-3 text-sm text-red-600">{error}</div>
+          )}
+          {loading && !error && (
+            <div className="mt-3 text-sm text-gray-500">Loading users...</div>
+          )}
         </div>
 
         {/* Bulk Actions */}
@@ -455,7 +501,7 @@ const UserProfiles = () => {
             </table>
           </div>
           
-          {filteredAndSortedUsers.length === 0 && (
+          {!loading && filteredAndSortedUsers.length === 0 && (
             <div className="p-6 text-center">
               <p className="text-gray-500">No users found matching your filters.</p>
             </div>
@@ -463,13 +509,22 @@ const UserProfiles = () => {
           
           <div className="p-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
             <div className="text-sm text-gray-500">
-              Showing <span className="font-medium">{filteredAndSortedUsers.length}</span> of <span className="font-medium">{usersData.length}</span> users
+              Page <span className="font-medium">{page}</span> of <span className="font-medium">{totalPages}</span> • Showing
+              <span className="font-medium"> {filteredAndSortedUsers.length}</span> of <span className="font-medium">{totalResults}</span> users
             </div>
             <div className="flex gap-2">
-              <button className="px-3 py-1 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50" disabled>
+              <button
+                className="px-3 py-1 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                disabled={page <= 1 || loading}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
                 Previous
               </button>
-              <button className="px-3 py-1 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50" disabled>
+              <button
+                className="px-3 py-1 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                disabled={page >= totalPages || loading}
+                onClick={() => setPage((p) => p + 1)}
+              >
                 Next
               </button>
             </div>

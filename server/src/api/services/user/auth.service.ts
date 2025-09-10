@@ -98,14 +98,28 @@ const getCurrentUser = async (userId: number) => {
 const refreshAuth = async (refreshToken: string) => {
   try {
     const refreshTokenDoc = await tokenService.verifyToken(refreshToken, tokenTypes.REFRESH);
-    const user = await userService.getUserById(refreshTokenDoc.user_id);
-    if (!user) {
-      throw new Error();
+    
+    // Get user from database
+    const { data: user, error } = await db
+      .from('PIQ_User')
+      .select('*')
+      .eq('user_id', refreshTokenDoc.sub)
+      .single();
+
+    if (error || !user) {
+      throw new Error('User not found');
     }
-    await db.from('tokens').delete().eq('token', refreshToken);
-    return tokenService.generateAuthTokens(user.user_id, user.role || 'user');
+
+    // Delete the old refresh token
+    await db
+      .from('tokens')
+      .delete()
+      .eq('token', refreshToken);
+
+    // Generate new tokens
+    return await tokenService.generateAuthTokens(user.user_id, user.role || 'user');
   } catch (error) {
-    throw new ApiError(httpStatus.UNAUTHORIZED, 'Please authenticate');
+    throw new ApiError(httpStatus.UNAUTHORIZED, 'Invalid refresh token');
   }
 };
 
@@ -185,16 +199,37 @@ const resetPasswordWithOTP = async (email: string, otp: string, newPassword: str
   }
 };
 
+const sendMobileOTP = async (phone: string): Promise<{ success: boolean }> => {
+  // Generate OTP and store using phone as identifier
+  const otp = otpService.generateOTP();
+  try {
+    await otpService.storeOTP(phone, otp);
+    return { success: true };
+  } catch (error) {
+    console.error(`Failed to store OTP for ${phone}:`, error);
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to process OTP request');
+  }
+};
+
+const verifyMobileOTP = async (phone: string, otp: string): Promise<boolean> => {
+  return await otpService.checkOTP(phone, otp);
+};
+
 // Define the auth service interface
 export interface IUserAuthService {
   loginUserWithEmailAndPassword(email: string, password: string): Promise<{ user: any; tokens: any }>;
   registerUser(userData: any): Promise<any>;
   getCurrentUser(userId: number): Promise<any>;
-  refreshAuth(refreshToken: string): Promise<any>;
+  refreshAuth(refreshToken: string): Promise<{
+    access: { token: string; expires: Date };
+    refresh: { token: string; expires: Date };
+  }>;
   logout(refreshToken: string): Promise<void>;
   generateResetPasswordOTP(email: string): Promise<{ success: boolean }>;
   resetPasswordWithOTP(email: string, otp: string, newPassword: string): Promise<{ success: boolean }>;
   verifyOTP(email: string, otp: string): Promise<boolean>;
+  sendMobileOTP(phone: string): Promise<{ success: boolean }>;
+  verifyMobileOTP(phone: string, otp: string): Promise<boolean>;
 }
 
 // Non-consuming verification used by /verify-otp endpoint
@@ -211,4 +246,6 @@ export const userAuthService: IUserAuthService = {
   generateResetPasswordOTP,
   resetPasswordWithOTP,
   verifyOTP,
+  sendMobileOTP,
+  verifyMobileOTP,
 };

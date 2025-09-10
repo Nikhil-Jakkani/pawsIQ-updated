@@ -1,5 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+import { BrowserRouter as Router } from 'react-router-dom'
 import './index.css'
 import App from './App.jsx'
 import { AuthProvider } from './context/AuthContext'
@@ -78,26 +79,24 @@ try {
     throw new Error('Root element not found');
   }
   
-  // Create root and render app
+  // Create root
   const root = ReactDOM.createRoot(rootElement);
   
-  // Use a callback to hide loading screen after render
-  const renderApp = () => {
-    root.render(
-      <ErrorBoundary>
-        <AuthProvider>
-          <App />
-        </AuthProvider>
-      </ErrorBoundary>
-    );
-    
-    // Hide loading screen after React has started rendering
-    // Use a slightly longer timeout to ensure components have mounted
-    setTimeout(hideLoadingScreen, 800);
-  };
+  // Render the app with proper routing
+  root.render(
+    <React.StrictMode>
+      <Router>
+        <ErrorBoundary>
+          <AuthProvider>
+            <App />
+          </AuthProvider>
+        </ErrorBoundary>
+      </Router>
+    </React.StrictMode>
+  );
   
-  // Start rendering
-  renderApp();
+  // Hide loading screen after React has started rendering
+  setTimeout(hideLoadingScreen, 800);
   
 } catch (error) {
   console.error("Error rendering app:", error);
