@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+
 import { 
   FaRobot, 
   FaHeartbeat, 
@@ -20,6 +21,8 @@ import {
   FaList
 } from 'react-icons/fa';
 import { generatePetCareSuggestions } from '../../services/geminiService';
+import { useAuth } from '../../context/AuthContext';
+
 import PetCareTable from './PetCareTable';
 const API_URL = import.meta.env.VITE_API_URL || '/api/v1';
 
@@ -57,6 +60,8 @@ const AIPetCareSuggestions = ({ selectedPet }) => {
     preventive: 'Preventive Care'
   };
 
+  const { tokens, authFetch } = useAuth();
+
   const fetchSuggestions = async () => {
     if (!selectedPet) return;
     
@@ -65,11 +70,8 @@ const AIPetCareSuggestions = ({ selectedPet }) => {
     setSuggestions(null);
 
     try {
-      const user = JSON.parse(localStorage.getItem('pawsiq_user'));
-      const token = user?.tokens?.access?.token;
-
-      if (!token) {
-        throw new Error('Authentication token not found. Please log in again.');
+      if (!tokens?.access?.token) {
+        throw new Error('Authentication required. Please log in again.');
       }
 
       const calculateAge = (birthDate) => {
@@ -95,48 +97,15 @@ const AIPetCareSuggestions = ({ selectedPet }) => {
         health_details: selectedPet.health_details || 'Not specified',
       };
 
-      // helper to perform the suggestions request with a given access token
-      const doRequest = async (accessToken) => {
-        return fetch(`${API_URL}/user/ai/suggestions`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify(petDataForAI),
-        });
-      };
-
-      let response = await doRequest(token);
-
-      // If unauthorized, try refresh-token flow once
-      if (response.status === 401) {
-        const refreshToken = user?.tokens?.refresh?.token;
-        if (refreshToken) {
-          const refreshResp = await fetch(`${API_URL}/user/auth/refresh-tokens`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ refreshToken }),
-          });
-
-          if (refreshResp.ok) {
-            const newTokens = await refreshResp.json();
-            // Persist new tokens
-            const updatedUser = { ...user, tokens: newTokens };
-            localStorage.setItem('pawsiq_user', JSON.stringify(updatedUser));
-            // Retry original request with new access token
-            response = await doRequest(newTokens?.access?.token);
-          }
-        }
-      }
+      const response = await authFetch(`${API_URL}/user/ai/suggestions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(petDataForAI),
+      });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        const msg = response.status === 401
-          ? 'We\'re restoring your session. Please click Refresh.'
-          : (errorData.message || 'Failed to fetch suggestions from the server.');
+        const msg = errorData.message || 'Failed to fetch suggestions from the server.';
         throw new Error(msg);
       }
 
@@ -153,7 +122,6 @@ const AIPetCareSuggestions = ({ selectedPet }) => {
     if (selectedPet && selectedPet.pet_id) {
       fetchSuggestions();
     } else {
-      // Clear suggestions and stop loading if no valid pet is selected
       setSuggestions(null);
       setLoading(false);
       setError(null);

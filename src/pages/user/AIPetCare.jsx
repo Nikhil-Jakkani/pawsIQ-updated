@@ -6,6 +6,7 @@ import AIPetCareSuggestions from '../../components/user/AIPetCareSuggestions';
 import AISymptomChecker from '../../components/user/AISymptomChecker';
 import AINutritionAnalyzer from '../../components/user/AINutritionAnalyzer';
 import PetSelector from '../../components/user/PetSelector';
+import { useAuth } from '../../context/AuthContext';
 
 const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
 
@@ -15,53 +16,21 @@ const AIPetCare = () => {
   const [pets, setPets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { tokens, authFetch } = useAuth();
 
   useEffect(() => {
     const fetchUserPets = async () => {
       setLoading(true);
       setError(null);
       try {
-        const user = JSON.parse(localStorage.getItem('pawsiq_user'));
-        const token = user?.tokens?.access?.token;
-
-        if (!token) {
-          throw new Error('Authentication token not found. Please log in again.');
+        if (!tokens?.access?.token) {
+          throw new Error('Authentication required. Please log in again.');
         }
 
-        // helper to fetch profile with provided access token
-        const getProfile = async (access) => {
-          return fetch(`${API_URL}/user/profile`, {
-            headers: {
-              'Authorization': `Bearer ${access}`,
-            },
-          });
-        };
-
-        let response = await getProfile(token);
-
-        // Attempt a one-time silent refresh if unauthorized
-        if (response.status === 401) {
-          const refreshToken = user?.tokens?.refresh?.token;
-          if (refreshToken) {
-            const refreshResp = await fetch(`${API_URL}/user/auth/refresh-tokens`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ refreshToken }),
-            });
-            if (refreshResp.ok) {
-              const newTokens = await refreshResp.json();
-              const updatedUser = { ...user, tokens: newTokens };
-              localStorage.setItem('pawsiq_user', JSON.stringify(updatedUser));
-              response = await getProfile(newTokens?.access?.token);
-            }
-          }
-        }
-
+        const response = await authFetch(`${API_URL}/user/profile`);
         if (!response.ok) {
-          if (response.status === 401) {
-            throw new Error('Your session has expired. Please log out and log in again.');
-          }
-          throw new Error('Failed to fetch user profile.');
+          const data = await response.json().catch(() => ({}));
+          throw new Error(data?.message || 'Failed to fetch user profile.');
         }
 
         const userData = await response.json();
@@ -79,7 +48,7 @@ const AIPetCare = () => {
     };
 
     fetchUserPets();
-  }, []);
+  }, [tokens?.access?.token, authFetch]);
 
   return (
     <UserLayout>
