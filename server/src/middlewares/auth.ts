@@ -60,10 +60,12 @@ const auth = (...requiredRights: string[]) => {
           if (
             entity &&
             typeof entity.user_status === 'string' &&
-            entity.user_status.trim() &&
-            entity.user_status.trim().toLowerCase() !== 'active'
+            entity.user_status.trim()
           ) {
-            throw new ApiError(httpStatus.UNAUTHORIZED, 'User account is not active');
+            const status = entity.user_status.trim().toLowerCase();
+            if (status === 'inactive' || status === 'blocked') {
+              throw new ApiError(httpStatus.UNAUTHORIZED, 'User account is not active');
+            }
           }
           break;
         }

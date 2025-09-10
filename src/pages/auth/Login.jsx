@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaEnvelope, FaLock, FaGoogle, FaFacebook, FaApple, FaPaw, FaEye, FaEyeSlash } from 'react-icons/fa';
+import { FaEnvelope, FaLock, FaGoogle, FaFacebook, FaApple, FaPaw, FaEye, FaEyeSlash, FaMobile, FaArrowLeft } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 
 // Social login imports
@@ -9,7 +9,7 @@ import FacebookLogin from '@greatsumini/react-facebook-login';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login: adminLogin, currentUser, error: authError, setCurrentUserData, tokens } = useAuth();
+  const { login: adminLogin, currentUser, error: authError, setCurrentUserData, setAuthTokens, tokens } = useAuth();
   
   // Form state
   const [formData, setFormData] = useState({
@@ -21,6 +21,16 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  
+  // OTP state
+  const [loginMode, setLoginMode] = useState('email'); // 'email' or 'otp'
+  const [otpData, setOtpData] = useState({
+    phoneNumber: '',
+    code: '',
+    isCodeSent: false
+  });
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpTimer, setOtpTimer] = useState(0);
 
   // Environment variables for social login
   const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -44,6 +54,22 @@ const Login = () => {
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
+    }));
+    
+    if (errors[name]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+  };
+
+  const handleOtpChange = (e) => {
+    const { name, value } = e.target;
+    setOtpData(prev => ({
+      ...prev,
+      [name]: value
     }));
     
     if (errors[name]) {
@@ -138,6 +164,8 @@ const Login = () => {
         },
       };
       setCurrentUserData(userData);
+      // Set tokens in state immediately to satisfy route guards
+      setAuthTokens(userData.tokens);
       // Persist tokens in the same shape used across the app
       localStorage.setItem('authTokens', JSON.stringify(userData.tokens));
       // Optional legacy keys
@@ -260,103 +288,6 @@ const Login = () => {
               </div>
             )}
 
-            {/* Regular login form */}
-            <form className="space-y-6" onSubmit={handleSubmit}>
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                  Email address
-                </label>
-                <div className="mt-1 relative rounded-md shadow-sm">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FaEnvelope className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    className={`pl-10 block w-full focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md ${
-                      errors.email ? 'border-red-300' : ''
-                    }`}
-                    placeholder="you@example.com"
-                  />
-                </div>
-                {errors.email && (
-                  <p className="mt-2 text-sm text-red-600">{errors.email}</p>
-                )}
-              </div>
-
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                  Password
-                </label>
-                <div className="mt-1 relative rounded-md shadow-sm">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FaLock className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    id="password"
-                    name="password"
-                    type={showPassword ? 'text' : 'password'}
-                    autoComplete="current-password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    className={`pl-10 pr-10 block w-full focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md ${
-                      errors.password ? 'border-red-300' : ''
-                    }`}
-                    placeholder="••••••••"
-                  />
-                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="text-gray-400 hover:text-gray-500 focus:outline-none"
-                      tabIndex="-1"
-                    >
-                      {showPassword ? (
-                        <FaEyeSlash className="h-5 w-5" />
-                      ) : (
-                        <FaEye className="h-5 w-5" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-                {errors.password && (
-                  <p className="mt-2 text-sm text-red-600">{errors.password}</p>
-                )}
-              </div>
-
-              <div className="flex items-center justify-end">
-                <div className="text-sm">
-                  <Link to="/user/forgot-password" className="font-medium text-indigo-600 hover:text-indigo-500">
-                    Forgot your password?
-                  </Link>
-                </div>
-              </div>
-
-              <div>
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-                >
-                  {isLoading ? (
-                    <>
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Signing in...
-                    </>
-                  ) : (
-                    'Sign in'
-                  )}
-                </button>
-              </div>
-            </form>
-
             {/* Social Login Section */}
             <div className="mt-6">
               <div className="relative">
@@ -369,47 +300,46 @@ const Login = () => {
               </div>
 
               <div className="mt-6 space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Google Login */}
+                  <GoogleLogin
+                    onSuccess={handleGoogleSuccess}
+                    onError={handleGoogleError}
+                    useOneTap={false}
+                    render={(renderProps) => (
+                      <button
+                        onClick={renderProps.onClick}
+                        disabled={isLoading || renderProps.disabled}
+                        className="w-full inline-flex items-center justify-center py-2.5 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <FaGoogle className="h-5 w-5 text-red-500 mr-2" />
+                        <span>Google</span>
+                      </button>
+                    )}
+                  />
 
-              <div className="grid grid-cols-2 gap-3">
-                {/* Google Login */}
-                <GoogleLogin
-                  onSuccess={handleGoogleSuccess}
-                  onError={handleGoogleError}
-                  useOneTap={false}
-                  render={(renderProps) => (
-                    <button
-                      onClick={renderProps.onClick}
-                      disabled={isLoading || renderProps.disabled}
-                      className="w-full inline-flex items-center justify-center py-2.5 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <FaGoogle className="h-5 w-5 text-red-500 mr-2" />
-                      <span>Google</span>
-                    </button>
-                  )}
-                />
-
-                {/* Facebook Login */}
-                <FacebookLogin
-                  appId={FACEBOOK_APP_ID}
-                  autoLoad={false}
-                  fields="name,email,picture"
-                  scope="public_profile,email"
-                  callback={handleFacebookResponse}
-                  render={(renderProps) => (
-                    <button
-                      onClick={renderProps.onClick}
-                      disabled={isLoading}
-                      className="w-full inline-flex items-center justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#1877F2] hover:bg-[#166FE5] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#166FE5] disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <FaFacebook className="h-5 w-5 text-white mr-2" />
-                      <span>Facebook</span>
-                    </button>
-                  )}
-                />
+                  {/* Facebook Login */}
+                  <FacebookLogin
+                    appId={FACEBOOK_APP_ID}
+                    autoLoad={false}
+                    fields="name,email,picture"
+                    scope="public_profile,email"
+                    callback={handleFacebookResponse}
+                    render={(renderProps) => (
+                      <button
+                        onClick={renderProps.onClick}
+                        disabled={isLoading}
+                        className="w-full inline-flex items-center justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#1877F2] hover:bg-[#166FE5] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#166FE5] disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <FaFacebook className="h-5 w-5 text-white mr-2" />
+                        <span>Facebook</span>
+                      </button>
+                    )}
+                  />
+                </div>
               </div>
             </div>
-            </div>
-            
+
             {/* Provider Section */}
             <div className="mt-8 pt-6 border-t border-gray-200">
               <div className="flex items-center justify-center">

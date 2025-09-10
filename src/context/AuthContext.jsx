@@ -133,13 +133,13 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     // Check if user is already logged in (from localStorage)
     try {
-      const storedUser = localStorage.getItem('pawsiq_user');
+      const storedUser = localStorage.getItem('user');
       if (storedUser) {
         const parsedUser = JSON.parse(storedUser);
         setCurrentUser(parsedUser);
       }
     } catch (err) {
-      localStorage.removeItem('pawsiq_user');
+      localStorage.removeItem('user');
     } finally {
       // Hide loading screen after auth check is complete
       setTimeout(() => {
@@ -363,6 +363,14 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Allow external/social logins to immediately set tokens in memory and storage
+  const setAuthTokens = (nextTokens) => {
+    try {
+      setTokens(nextTokens);
+      localStorage.setItem('authTokens', JSON.stringify(nextTokens));
+    } catch (_) {}
+  };
+
   // Check if user is a provider
   const isProvider = () => {
     return currentUser && currentUser.role === 'provider';
@@ -429,6 +437,7 @@ export const AuthProvider = ({ children }) => {
     providerLogin,
     logout,
     setCurrentUserData,
+    setAuthTokens,
     isProvider,
     isUser,
     isAdmin,
