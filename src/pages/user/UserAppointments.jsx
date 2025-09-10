@@ -7,7 +7,8 @@ const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
 
 const UserAppointments = () => {
   const navigate = useNavigate();
-  const { currentUser } = useAuth();
+  const { currentUser, tokens } = useAuth();
+
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [appointments, setAppointments] = useState([]);
@@ -15,7 +16,7 @@ const UserAppointments = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const accessToken = currentUser?.tokens?.access?.token;
+  const accessToken = tokens?.access?.token;
 
   const toUiStatus = (status) => {
     switch (status) {

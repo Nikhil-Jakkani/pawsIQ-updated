@@ -21,8 +21,8 @@ const formatDateTimeLocal = (iso) => {
 export default function UserRescheduleAppointment() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { currentUser } = useAuth();
-  const accessToken = currentUser?.tokens?.access?.token;
+  const { currentUser, tokens } = useAuth();
+  const accessToken = tokens?.access?.token;
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);

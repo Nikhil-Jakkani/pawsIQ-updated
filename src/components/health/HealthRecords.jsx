@@ -7,7 +7,7 @@ const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
 const HealthRecords = () => {
   const { petId } = useParams();
   const navigate = useNavigate();
-  const { currentUser } = useAuth();
+  const { currentUser, tokens } = useAuth();
   const [records, setRecords] = useState([]);
   const [pet, setPet] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -35,7 +35,7 @@ const HealthRecords = () => {
     try {
       setLoading(true);
       setError('');
-      const accessToken = currentUser?.tokens?.access?.token || currentUser?.token;
+      const accessToken = tokens?.access?.token;
       
       // Fetch pet details
       const petResponse = await fetch(`${API_URL}/pets/${petId}`, {
@@ -333,7 +333,7 @@ const HealthRecords = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${currentUser?.token}`,
+          'Authorization': `Bearer ${tokens?.access?.token}`,
         },
         body: JSON.stringify({
           filename: file.name,
@@ -367,7 +367,7 @@ const HealthRecords = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${currentUser?.token}`,
+          'Authorization': `Bearer ${tokens?.access?.token}`,
         },
         body: JSON.stringify({
           ...formData,

@@ -71,6 +71,7 @@
     "tsc-alias": "^1.8.16",
     "tsconfig-paths": "^4.2.0",
     "tsx": "^4.20.3",
+    "twilio": "^5.9.0",
     "typescript": "^5.3.3",
     "vite": "^4.4.4"
   }

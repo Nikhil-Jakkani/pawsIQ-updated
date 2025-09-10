@@ -17,9 +17,8 @@ router.post('/verify-otp', userAuthController.verifyOTP);
 router.post('/send-mobile-otp', userAuthController.sendMobileOTP);
 router.post('/verify-mobile-otp', userAuthController.verifyMobileOTP);
 
-// Protected routes
-router.use(auth());
-router.get('/me', userAuthController.me);
-router.post('/logout', userAuthController.logout);
+// Protected routes (user-only)
+router.get('/me', auth('user'), userAuthController.me);
+router.post('/logout', auth('user'), userAuthController.logout);
 
 export default router;

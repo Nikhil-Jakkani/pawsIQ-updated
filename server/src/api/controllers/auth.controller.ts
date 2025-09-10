@@ -9,6 +9,7 @@ import { tokenService } from '../services/user/token.service.js';
 import { tokenTypes } from '../../config/tokens.js';
 import { authService as adminAuthService } from '../services/admin/auth.service.js';
 import { userAuthService } from '../services/user/auth.service.js';
+import { twilioService } from '../services/twilio.service.js';
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID;
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
@@ -224,10 +225,9 @@ export const refreshToken = async (req: Request, res: Response) => {
     }
     
     try {
-      const tokenDoc = await tokenService.verifyToken(refreshToken, tokenTypes.REFRESH);
-      const accessTokenExpires = moment().add(process.env.JWT_ACCESS_EXPIRATION_MINUTES || '15', 'minutes');
-      const newAccessToken = tokenService.generateToken(tokenDoc.user_id, accessTokenExpires, tokenTypes.ACCESS, 'user');
-      res.json({ accessToken: newAccessToken });
+      // Use service method to preserve role and rotate tokens
+      const tokens = await tokenService.refreshAuth(refreshToken);
+      return res.json({ accessToken: tokens.access.token, refreshToken: tokens.refresh.token });
     } catch (e) {
       return res.status(403).json({ error: 'Invalid refresh token' });
     }
@@ -235,5 +235,122 @@ export const refreshToken = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Token refresh error:', error);
     res.status(403).json({ error: 'Invalid refresh token' });
+  }
+};
+
+// Send OTP to phone number
+export const sendOTP = async (req: Request, res: Response) => {
+  try {
+    const { phoneNumber } = req.body as { phoneNumber: string };
+    
+    if (!phoneNumber) {
+      return res.status(400).json({ error: 'Phone number is required' });
+    }
+    
+    // Format and validate phone number
+    const formattedPhone = twilioService.formatPhoneNumber(phoneNumber);
+    
+    if (!twilioService.validatePhoneNumber(formattedPhone)) {
+      return res.status(400).json({ error: 'Invalid phone number format' });
+    }
+    
+    // Send OTP via Twilio
+    const result = await twilioService.sendOTP(formattedPhone, 'sms');
+    
+    res.json({
+      success: true,
+      message: 'OTP sent successfully',
+      sid: result.sid,
+      status: result.status
+    });
+    
+  } catch (error) {
+    console.error('Send OTP error:', error);
+    res.status(500).json({ 
+      error: 'Failed to send OTP',
+      message: error instanceof Error ? error.message : 'Unknown error' 
+    });
+  }
+};
+
+// Verify OTP and authenticate user
+export const verifyOTP = async (req: Request, res: Response) => {
+  try {
+    const { phoneNumber, code } = req.body as { phoneNumber: string; code: string };
+    
+    if (!phoneNumber || !code) {
+      return res.status(400).json({ 
+        error: 'Phone number and code are required' 
+      });
+    }
+    
+    // Format phone number
+    const formattedPhone = twilioService.formatPhoneNumber(phoneNumber);
+    
+    // Verify OTP via Twilio
+    const result = await twilioService.verifyOTP(formattedPhone, code);
+    
+    if (!result.valid) {
+      return res.status(400).json({ 
+        error: 'Invalid OTP code',
+        status: result.status 
+      });
+    }
+    
+    // Check if user exists with this phone number
+    let { data: existingUser, error: userError } = await db
+      .from('PIQ_User')
+      .select('*')
+      .eq('user_phone_number', formattedPhone)
+      .single();
+    
+    // If user doesn't exist, create a new one
+    if (!existingUser) {
+      const randomPassword = await bcrypt.hash(`otp-${Date.now()}-${Math.random()}`, 10);
+      const insertResult = await db
+        .from('PIQ_User')
+        .insert([
+          {
+            user_full_name: 'OTP User',
+            user_email_id: `user-${formattedPhone.replace('+', '')}@otp.pawsiq.com`,
+            user_password: randomPassword,
+            user_phone_number: formattedPhone,
+            user_status: 'active',
+            created_at: new Date(),
+            last_updated_dtm: new Date(),
+          },
+        ])
+        .select()
+        .single();
+
+      if (insertResult.error) {
+        console.error('Supabase insert error:', insertResult.error);
+        return res.status(500).json({ error: 'Failed to create user' });
+      }
+      existingUser = insertResult.data as any;
+    }
+    
+    // Generate authentication tokens
+    const { accessToken, refreshToken } = await generateTokens(existingUser.user_id, 'user');
+    
+    res.json({
+      success: true,
+      accessToken,
+      refreshToken,
+      user: {
+        id: existingUser.user_id,
+        email: existingUser.user_email_id,
+        name: existingUser.user_full_name,
+        phone: existingUser.user_phone_number,
+        role: 'user',
+      },
+    });
+    
+  } catch (error) {
+    console.error('Verify OTP error:', error);
+    res.status(500).json({ 
+      error: 'Failed to verify OTP',
+      message: error instanceof Error ? error.message : 'Unknown error' 
+    });
   }
 };

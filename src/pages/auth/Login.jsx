@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaEnvelope, FaLock, FaGoogle, FaFacebook, FaApple, FaPaw, FaEye, FaEyeSlash } from 'react-icons/fa';
+import { FaEnvelope, FaLock, FaGoogle, FaFacebook, FaPaw, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 
 // Social login imports
@@ -9,7 +9,7 @@ import FacebookLogin from '@greatsumini/react-facebook-login';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login: adminLogin, currentUser, error: authError, setCurrentUserData, tokens } = useAuth();
+  const { login: adminLogin, currentUser, setCurrentUserData, setAuthTokens, tokens } = useAuth();
   
   // Form state
   const [formData, setFormData] = useState({
@@ -37,7 +37,7 @@ const Login = () => {
         navigate('/dashboard');
       }
     }
-  }, [currentUser, navigate]);
+  }, [currentUser, tokens, navigate]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -138,15 +138,19 @@ const Login = () => {
         },
       };
       setCurrentUserData(userData);
+      // Set tokens in state immediately to satisfy route guards
+      setAuthTokens(userData.tokens);
       // Persist tokens in the same shape used across the app
       localStorage.setItem('authTokens', JSON.stringify(userData.tokens));
       // Optional legacy keys
       localStorage.setItem('accessToken', data.accessToken);
       localStorage.setItem('refreshToken', data.refreshToken);
       
-      // Redirect based on user role
+      // Redirect based on user role (align with app routes)
       const role = userData.role;
-      navigate(role === 'admin' ? '/dashboard' : `/${role}/dashboard`);
+      if (role === 'admin') navigate('/dashboard');
+      else if (role === 'provider') navigate('/provider/vet/dashboard');
+      else navigate('/user/dashboard');
       
     } catch (error) {
       console.error('Google login error:', error);
@@ -200,13 +204,28 @@ const Login = () => {
       
       const data = await apiResponse.json();
       
+      // Update user and tokens in context immediately
+      if (data.user) {
+        setCurrentUserData(data.user);
+      }
+      setAuthTokens({
+        access: { token: data.accessToken },
+        refresh: { token: data.refreshToken },
+      });
+      
       // Store tokens
+      localStorage.setItem('authTokens', JSON.stringify({
+        access: { token: data.accessToken },
+        refresh: { token: data.refreshToken },
+      }));
       localStorage.setItem('accessToken', data.accessToken);
       localStorage.setItem('refreshToken', data.refreshToken);
       
-      // Redirect based on user role
+      // Redirect based on user role (align with app routes)
       const role = data.user?.role || 'user';
-      navigate(role === 'admin' ? '/dashboard' : `/${role}/dashboard`);
+      if (role === 'admin') navigate('/dashboard');
+      else if (role === 'provider') navigate('/provider/vet/dashboard');
+      else navigate('/user/dashboard');
       
     } catch (error) {
       console.error('Facebook login error:', error);

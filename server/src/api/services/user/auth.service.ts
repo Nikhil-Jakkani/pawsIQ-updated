@@ -21,8 +21,19 @@ const loginUserWithEmailAndPassword = async (email: string, password: string) =>
     throw new ApiError(httpStatus.UNAUTHORIZED, 'Incorrect email or password');
   }
 
-  // Check password
-  const isPasswordMatch = await bcrypt.compare(password, users.user_password);
+  // Check password (support bcrypt and legacy plaintext)
+  const stored = users.user_password || '';
+  let isPasswordMatch = false;
+  try {
+    if (stored.startsWith('$2a$') || stored.startsWith('$2b$') || stored.startsWith('$2y$')) {
+      isPasswordMatch = await bcrypt.compare(password, stored);
+    } else {
+      // Legacy plaintext fallback
+      isPasswordMatch = stored === password;
+    }
+  } catch (_) {
+    isPasswordMatch = false;
+  }
   if (!isPasswordMatch) {
     throw new ApiError(httpStatus.UNAUTHORIZED, 'Incorrect email or password');
   }

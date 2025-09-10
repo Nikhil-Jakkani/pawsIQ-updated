@@ -23,8 +23,8 @@ const UserBookAppointment = () => {
   });
 
   // Auth and pets from backend
-  const { currentUser } = useAuth();
-  const accessToken = currentUser?.tokens?.access?.token;
+  const { currentUser, tokens } = useAuth();
+  const accessToken = tokens?.access?.token;
   const [pets, setPets] = useState([]);
   const [loadingPets, setLoadingPets] = useState(false);
   const [error, setError] = useState('');

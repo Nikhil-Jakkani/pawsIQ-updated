@@ -10,8 +10,8 @@ const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
 
 const UserAddPet = () => {
   const navigate = useNavigate();
-  const { currentUser } = useAuth();
-  const accessToken = currentUser?.tokens?.access?.token;
+  const { tokens, currentUser } = useAuth();
+  const accessToken = tokens?.access?.token;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
 

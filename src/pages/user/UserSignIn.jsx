@@ -33,14 +33,14 @@ const UserSignIn = () => {
     }
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_URL}/user/auth/send-mobile-otp`, {
+      const res = await fetch(`${API_URL}/auth/send-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: fullPhone })
+        body: JSON.stringify({ phoneNumber: fullPhone })
       });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.message || 'Failed to send OTP');
+      const data = await res.json().catch(() => ({ success: false }));
+      if (!res.ok || data?.success !== true) {
+        throw new Error(data?.error || data?.message || 'Failed to send OTP');
       }
       toast.success('OTP sent to your mobile');
       setOtpSent(true);
@@ -77,12 +77,12 @@ const UserSignIn = () => {
       // Remove any non-digit characters from phone number except the leading +
       const cleanPhone = fullPhone.replace(/[^\d+]/g, '');
       
-      const res = await fetch(`${API_URL}/user/auth/verify-mobile-otp`, {
+      const res = await fetch(`${API_URL}/auth/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          phone: cleanPhone, 
-          otp: otpCode 
+          phoneNumber: cleanPhone,
+          code: otpCode 
         })
       });
 
@@ -91,8 +91,8 @@ const UserSignIn = () => {
         message: 'Invalid response from server'
       }));
       
-      if (!res.ok || !data.success) {
-        throw new Error(data.message || `OTP verification failed (${res.status})`);
+      if (!res.ok || data?.success !== true) {
+        throw new Error(data?.error || data?.message || `OTP verification failed (${res.status})`);
       }
       
       return true;

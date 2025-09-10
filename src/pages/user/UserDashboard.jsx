@@ -32,9 +32,10 @@ const UserDashboard = () => {
   const [activeService, setActiveService] = useState('suggestions');
   const [showAllTips, setShowAllTips] = useState(false);
   const [selectedPetForAI, setSelectedPetForAI] = useState(null);
-  const { currentUser, authFetch, loading: authLoading } = useAuth();
+  const { currentUser, tokens, authFetch, loading: authLoading } = useAuth();
 
-  const accessToken = currentUser?.tokens?.access?.token;
+  const accessToken = tokens?.access?.token;
+
   const [pets, setPets] = useState([]);
   const careRemRef = useRef(null);
 

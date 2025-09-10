@@ -77,7 +77,7 @@ const UpcomingSchedule = ({ pets = [], accessToken }) => {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, currentUser, authFetch, API_URL, pets, currentDate]);
+  }, [authLoading, currentUser, authFetch, API_URL, pets.length, currentDate]);
 
   const getItemIcon = (type) => {
     return type === 'appointment' ? FaCalendarAlt : FaBell;

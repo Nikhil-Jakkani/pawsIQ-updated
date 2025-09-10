@@ -12,8 +12,8 @@ const ProviderLogin = () => {
   
   // Form state
   const [formData, setFormData] = useState({
-    email: 'vet@pawsiq.com', // Pre-filled for demo
-    password: 'provider123', // Pre-filled for demo
+    email: '', // Pre-filled for demo
+    password: '', // Pre-filled for demo
     rememberMe: false
   });
   
