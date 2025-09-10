@@ -261,8 +261,8 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
 
     try {
-      // Use unified credentials login (tries admin, then user)
-      const response = await fetch(`${API_URL}/auth/login`, {
+      // Use unified credentials login (tries admin, then user in backend)
+      let response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -271,7 +271,21 @@ export const AuthProvider = ({ children }) => {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
+      let data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        // Fallback to user-only endpoint for better compatibility
+        const uResp = await fetch(`${API_URL}/user/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+        const uData = await uResp.json().catch(() => ({}));
+        if (uResp.ok) {
+          data = uData;
+          response = uResp;
+        }
+      }
 
       if (response.ok) {
         const { user, tokens } = data;
@@ -386,38 +400,66 @@ export const AuthProvider = ({ children }) => {
     return currentUser && currentUser.role === 'admin';
   };
 
-  // Convenience login specifically for providers
+  // Convenience login specifically for providers (calls provider auth API)
   const providerLogin = async (email, password) => {
-    const result = await login(email, password);
-    if (result.success && (currentUser?.role === 'provider')) {
-      return { success: true, userType: 'provider', providerType: currentUser?.providerType };
+    setError('');
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/provider/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider_email: email, provider_password: password }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        const { user, tokens } = data;
+        setCurrentUser(user);
+        setTokens(tokens);
+        localStorage.setItem('user', JSON.stringify(user));
+        localStorage.setItem('authTokens', JSON.stringify(tokens));
+        setLoading(false);
+        return { success: true, userType: 'provider' };
+      }
+    } catch (err) {
+      console.error('Provider login error:', err);
+    } finally {
+      setLoading(false);
     }
-    // If API returned a user but not a provider, treat as failure for provider portal
     return { success: false };
   };
 
-  // Initialize auth state on mount
+  // Initialize auth state on mount, with provider fallback
   useEffect(() => {
     const initializeAuth = async () => {
       try {
         if (tokens?.access?.token) {
-          // Verify the token is still valid against the correct endpoint
+          // Verify as user first
           let response = await authFetch(`${API_URL}/user/auth/me`);
           if (response.ok) {
             const userData = await response.json();
             setCurrentUser(userData);
-          } else {
-            // Try admin session validation as fallback
-            const adminResp = await fetch(`${API_URL}/admin/auth/me`, {
-              headers: { Authorization: `Bearer ${tokens.access.token}` }
-            });
-            if (adminResp.ok) {
-              const adminData = await adminResp.json();
-              setCurrentUser({ ...(adminData || {}), role: 'admin' });
-            } else {
-              throw new Error('Session expired');
-            }
+            return;
           }
+
+          // Try admin session
+          const adminResp = await fetch(`${API_URL}/admin/auth/me`, {
+            headers: { Authorization: `Bearer ${tokens.access.token}` },
+          });
+          if (adminResp.ok) {
+            const adminData = await adminResp.json();
+            setCurrentUser({ ...(adminData || {}), role: 'admin' });
+            return;
+          }
+
+          // Try provider session
+          const provResp = await authFetch(`${API_URL}/provider/me`);
+          if (provResp.ok) {
+            const provData = await provResp.json();
+            setCurrentUser({ ...(provData || {}), role: 'provider' });
+            return;
+          }
+
+          throw new Error('Session expired');
         }
       } catch (error) {
         console.error('Auth initialization error:', error);
@@ -428,7 +470,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     initializeAuth();
-  }, [authFetch]);
+  }, [authFetch, tokens?.access?.token]);
 
   const value = {
     currentUser,
@@ -443,7 +485,7 @@ export const AuthProvider = ({ children }) => {
     isAdmin,
     error,
     loading,
-    authFetch
+    authFetch,
   };
 
   return (

@@ -119,7 +119,7 @@ const refreshAuth = async (refreshToken: string) => {
       const { data } = await db.from('PIQ_User').select('user_id').eq('user_id', sub).single();
       subjectExists = !!data;
     } else if (role === 'provider') {
-      const { data } = await db.from('PIQ_Service_Provider').select('provider_id').eq('provider_id', sub).single();
+      const { data } = await db.from('PIQ_Service_Provider').select('service_provider_id').eq('service_provider_id', sub).single();
       subjectExists = !!data;
     }
     if (!subjectExists) {

@@ -67,7 +67,7 @@ export const userAuthController = {
     if (!isValid) {
       return res.status(httpStatus.BAD_REQUEST).json({
         success: false,
-        message: 'Invalid or expired OTP. Please request a new one.'
+        message: 'Invalid OTP.'
       });
     }
     

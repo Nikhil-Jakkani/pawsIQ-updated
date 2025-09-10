@@ -225,10 +225,9 @@ export const refreshToken = async (req: Request, res: Response) => {
     }
     
     try {
-      const tokenDoc = await tokenService.verifyToken(refreshToken, tokenTypes.REFRESH);
-      const accessTokenExpires = moment().add(process.env.JWT_ACCESS_EXPIRATION_MINUTES || '15', 'minutes');
-      const newAccessToken = tokenService.generateToken(tokenDoc.user_id, accessTokenExpires, tokenTypes.ACCESS, 'user');
-      res.json({ accessToken: newAccessToken });
+      // Use service method to preserve role and rotate tokens
+      const tokens = await tokenService.refreshAuth(refreshToken);
+      return res.json({ accessToken: tokens.access.token, refreshToken: tokens.refresh.token });
     } catch (e) {
       return res.status(403).json({ error: 'Invalid refresh token' });
     }

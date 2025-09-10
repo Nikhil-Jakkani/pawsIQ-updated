@@ -77,14 +77,14 @@ const auth = (...requiredRights: string[]) => {
           break;
         }
         case 'provider': {
-          const { data, error } = await db.from('PIQ_Service_Provider').select('*').eq('provider_id', payload.sub).single();
+          const { data, error } = await db.from('PIQ_Service_Provider').select('*').eq('service_provider_id', payload.sub).single();
           entity = data;
           entityError = error;
           if (
             entity &&
-            typeof entity.provider_status === 'string' &&
-            entity.provider_status.trim() &&
-            entity.provider_status.trim().toLowerCase() !== 'active'
+            typeof entity.serv_provider_status === 'string' &&
+            entity.serv_provider_status.trim() &&
+            entity.serv_provider_status.trim().toLowerCase() !== 'active'
           ) {
             throw new ApiError(httpStatus.UNAUTHORIZED, 'User account is not active');
           }

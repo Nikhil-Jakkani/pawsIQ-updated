@@ -34,8 +34,8 @@ const formatDateTime = (iso) => {
 export default function UserAppointmentDetails() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { currentUser } = useAuth();
-  const accessToken = currentUser?.tokens?.access?.token;
+  const { currentUser, tokens } = useAuth();
+  const accessToken = tokens?.access?.token;
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

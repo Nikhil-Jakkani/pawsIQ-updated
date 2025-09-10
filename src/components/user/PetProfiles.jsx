@@ -6,8 +6,9 @@ import { useAuth } from '../../context/AuthContext';
 const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
 
 const PetProfiles = () => {
-  const { currentUser } = useAuth();
-  const accessToken = currentUser?.tokens?.access?.token;
+  const { currentUser, tokens } = useAuth();
+  const accessToken = tokens?.access?.token;
+
   const [pets, setPets] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');

@@ -18,6 +18,7 @@ import {
   FaSpinner
 } from 'react-icons/fa';
 import { healthRecordService } from '../../services/healthRecordService';
+import { useAuth } from '../../context/AuthContext';
 
 const MedicalRecordsPopup = ({ 
   isOpen, 
@@ -28,7 +29,9 @@ const MedicalRecordsPopup = ({
   onRecordAdded 
 }) => {
   const fileInputRef = useRef(null);
-  
+  const { tokens } = useAuth();
+  const accessToken = tokens?.access?.token;
+
   const [formData, setFormData] = useState({
     title: '',
     recordDate: new Date().toISOString().split('T')[0],

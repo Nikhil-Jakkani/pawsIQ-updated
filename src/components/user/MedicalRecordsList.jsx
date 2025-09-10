@@ -4,7 +4,7 @@ import { healthRecordService } from '../../services/healthRecordService';
 import { useAuth } from '../../context/AuthContext';
 
 const MedicalRecordsList = ({ petId }) => {
-  const { currentUser } = useAuth();
+  const { currentUser, tokens } = useAuth();
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -12,7 +12,7 @@ const MedicalRecordsList = ({ petId }) => {
   const fetchRecords = async () => {
     try {
       setLoading(true);
-      const accessToken = currentUser?.tokens?.access?.token;
+      const accessToken = tokens?.access?.token;
       if (!accessToken) throw new Error('Not authenticated');
       
       const recordsData = await healthRecordService.getPetHealthRecords(petId, accessToken);
@@ -64,7 +64,7 @@ const MedicalRecordsList = ({ petId }) => {
       }
       
       // Otherwise, try to get a signed URL
-      const accessToken = currentUser?.tokens?.access?.token;
+      const accessToken = tokens?.access?.token;
       if (!accessToken) throw new Error('Not authenticated');
       
       const response = await fetch(
@@ -94,7 +94,7 @@ const MedicalRecordsList = ({ petId }) => {
     }
     
     try {
-      const accessToken = currentUser?.tokens?.access?.token;
+      const accessToken = tokens?.access?.token;
       if (!accessToken) throw new Error('Not authenticated');
       
       await healthRecordService.deleteHealthRecord(recordId, accessToken);
