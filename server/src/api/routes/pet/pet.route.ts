@@ -5,6 +5,41 @@ import { db } from '../../../config/db.js';
 
 const router = express.Router();
 
+// Get breeds by pet type
+router.get('/breeds/:petType', async (req: any, res) => {
+  try {
+    const petType = req.params.petType;
+    if (!petType) return res.status(httpStatus.BAD_REQUEST).send({ message: 'petType is required' });
+
+    // For now, return static breed data. In production, this would come from a breed master table
+    const breedData = {
+      dog: [
+        'Labrador Retriever', 'Golden Retriever', 'German Shepherd', 'French Bulldog', 'Bulldog',
+        'Poodle', 'Beagle', 'Rottweiler', 'German Shorthaired Pointer', 'Yorkshire Terrier',
+        'Siberian Husky', 'Dachshund', 'Boxer', 'Great Dane', 'Chihuahua', 'Shih Tzu',
+        'Boston Terrier', 'Pomeranian', 'Australian Shepherd', 'Cocker Spaniel', 'Border Collie',
+        'Maltese', 'Jack Russell Terrier', 'Doberman Pinscher', 'Mastiff', 'Basset Hound',
+        'Weimaraner', 'Saint Bernard', 'Bloodhound', 'Newfoundland', 'Dalmatian', 'Mixed Breed'
+      ],
+      cat: [
+        'Persian', 'Maine Coon', 'British Shorthair', 'Ragdoll', 'Siamese', 'American Shorthair',
+        'Scottish Fold', 'Sphynx', 'Russian Blue', 'Abyssinian', 'Bengal', 'Birman',
+        'Oriental Shorthair', 'Devon Rex', 'Cornish Rex', 'Manx', 'Himalayan', 'Exotic Shorthair',
+        'Norwegian Forest Cat', 'Siberian', 'Tonkinese', 'Burmese', 'Bombay', 'Chartreux',
+        'Havana Brown', 'Japanese Bobtail', 'Korat', 'LaPerm', 'Munchkin', 'Mixed Breed'
+      ],
+      other: [
+        'Mixed Breed', 'Unknown', 'Crossbreed'
+      ]
+    };
+
+    const breeds = breedData[petType.toLowerCase()] || breedData.other;
+    return res.status(httpStatus.OK).send({ breeds });
+  } catch (e: any) {
+    return res.status(httpStatus.INTERNAL_SERVER_ERROR).send({ message: e?.message || 'Failed to fetch breeds' });
+  }
+});
+
 router.post('/', userAuth as any, async (req: any, res) => {
   try {
     const name = req.body?.name ?? req.body?.pet_name;

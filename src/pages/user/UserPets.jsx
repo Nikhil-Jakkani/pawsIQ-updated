@@ -151,7 +151,12 @@ const UserPets = () => {
             name: p.pet_name || 'Pet',
             type: (p.pet_type || '').toLowerCase(),
             breed: p.pet_breed || '',
-            age: p.pet_age != null ? `${p.pet_age} years` : '0 years',
+            age: p.pet_age != null ? `${p.pet_age} years` : (p.pet_birthday ? (() => {
+              const dob = new Date(p.pet_birthday);
+              const now = new Date();
+              const ageYears = Math.max(0, Math.floor((now.getTime() - dob.getTime()) / (1000 * 60 * 60 * 24 * 365.25)));
+              return `${ageYears} years`;
+            })() : '0 years'),
             weight: p.pet_weight != null ? `${p.pet_weight} lbs` : '0 lbs',
             gender: p.pet_gender || '',
             birthday: p.pet_birthday || new Date().toISOString().slice(0, 10),
@@ -627,6 +632,16 @@ const UserPets = () => {
                     </div>
                     <div className="flex flex-col gap-2 ml-2">
                       <button
+                        onClick={() => navigate(`/user/pets/edit/${pet.id}`)}
+                        className="p-2 text-gray-500 transition-colors text-xs"
+                        style={{ '--hover-color': '#145ae6' }}
+                        onMouseEnter={(e) => e.target.style.color = '#145ae6'}
+                        onMouseLeave={(e) => e.target.style.color = '#6b7280'}
+                        title="Edit Pet Profile"
+                      >
+                        <FaEdit className="inline mr-1" /> Edit Profile
+                      </button>
+                      <button
                         onClick={() => handleOpenMedicalRecords(pet)}
                         className="p-2 text-gray-500 transition-colors text-xs"
                         style={{ '--hover-color': '#145ae6' }}
@@ -658,6 +673,18 @@ const UserPets = () => {
                   
                   <div className="pet-card-buttons">
                     <button 
+                      onClick={() => navigate(`/user/pets/edit/${pet.id}`)}
+                      className="flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                      style={{ 
+                        backgroundColor: '#e3f2fd', 
+                        color: '#145ae6' 
+                      }}
+                      onMouseEnter={(e) => e.target.style.backgroundColor = '#bbdefb'}
+                      onMouseLeave={(e) => e.target.style.backgroundColor = '#e3f2fd'}
+                    >
+                      View/Edit Profile
+                    </button>
+                    <button 
                       onClick={() => handleOpenMedicalRecords(pet)}
                       className="flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
                       style={{ 
@@ -668,18 +695,6 @@ const UserPets = () => {
                       onMouseLeave={(e) => e.target.style.backgroundColor = '#e3f2fd'}
                     >
                       Add Medical Record
-                    </button>
-                    <button 
-                      onClick={() => navigate('/user/appointments/new')}
-                      className="flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-                      style={{ 
-                        backgroundColor: '#e3f2fd', 
-                        color: '#145ae6' 
-                      }}
-                      onMouseEnter={(e) => e.target.style.backgroundColor = '#bbdefb'}
-                      onMouseLeave={(e) => e.target.style.backgroundColor = '#e3f2fd'}
-                    >
-                      Book Appointment
                     </button>
                   </div>
                 </div>
