@@ -170,6 +170,11 @@ const ProviderLogin = () => {
             join as a new provider
           </Link>
         </p>
+        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+          <p className="text-xs text-blue-700 text-center">
+            <strong>Demo Credentials:</strong> vet@pawsiq.com / provider123
+          </p>
+        </div>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
