@@ -17,90 +17,8 @@ const getStoredAuth = () => {
   };
 };
 
-// Mock user data for demonstration
-const USERS = [
-  {
-    email: 'admin@pawsiq.com',
-    password: 'admin123',
-    role: 'admin',
-    name: 'Admin User',
-    avatar: '/avatar-admin.png'
-  },
-  {
-    email: 'user@pawsiq.com',
-    password: 'user123',
-    role: 'user',
-    name: 'Sarah Johnson',
-    avatar: '/avatar-user.png',
-    pets: [
-      {
-        id: 1,
-        name: 'Max',
-        type: 'dog',
-        breed: 'Golden Retriever'
-      },
-      {
-        id: 2,
-        name: 'Luna',
-        type: 'cat',
-        breed: 'Siamese'
-      }
-    ]
-  },
-  {
-    email: 'user@pawsiq.in',
-    password: 'user1234',
-    role: 'user',
-    name: 'PawsIQ User',
-    avatar: '/avatar-user.png',
-    pets: [
-      {
-        id: 3,
-        name: 'Buddy',
-        type: 'dog',
-        breed: 'Labrador'
-      }
-    ]
-  }
-];
-
-// Mock provider data for demonstration
-const PROVIDERS = [
-  {
-    email: 'vet@pawsiq.com',
-    password: 'provider123',
-    role: 'provider',
-    providerType: 'Veterinarian',
-    name: 'Dr. James Wilson',
-    avatar: '/avatar-vet.png',
-    verified: true,
-    applicationStatus: 'approved'
-  },
-  {
-    email: 'trainer@pawsiq.com',
-    password: 'provider123',
-    role: 'provider',
-    providerType: 'Trainer',
-    name: 'Emma Roberts',
-    avatar: '/avatar-trainer.png',
-    verified: true,
-    applicationStatus: 'approved'
-  },
-  {
-    email: 'groomer@pawsiq.com',
-    password: 'provider123',
-    role: 'provider',
-    providerType: 'Groomer',
-    name: 'Michael Chen',
-    avatar: '/avatar-groomer.png',
-    verified: true,
-    applicationStatus: 'approved'
-  }
-];
-
 export const AuthProvider = ({ children }) => {
   const stored = getStoredAuth();
-  // Do not trust stored user before validation; start as null and validate via /user/auth/me
   const [currentUser, setCurrentUser] = useState(null);
   const [tokens, setTokens] = useState(() => stored.tokens);
   const [loading, setLoading] = useState(true);
@@ -108,14 +26,12 @@ export const AuthProvider = ({ children }) => {
   const navigateRef = useRef();
   const refreshPromiseRef = useRef(null);
   
-  // Store the navigate function in a ref to avoid dependency issues
   const navigate = useCallback((...args) => {
     if (navigateRef.current) {
       navigateRef.current(...args);
     }
   }, []);
   
-  // Navigation component to get the navigate function
   const NavigationHandler = () => {
     const nav = useNavigate();
     
@@ -129,9 +45,7 @@ export const AuthProvider = ({ children }) => {
     return null;
   };
 
-  // Initialize auth state
   useEffect(() => {
-    // Check if user is already logged in (from localStorage)
     try {
       const storedUser = localStorage.getItem('user');
       if (storedUser) {
@@ -141,7 +55,6 @@ export const AuthProvider = ({ children }) => {
     } catch (err) {
       localStorage.removeItem('user');
     } finally {
-      // Hide loading screen after auth check is complete
       setTimeout(() => {
         const loadingElement = document.getElementById('loading');
         if (loadingElement && loadingElement.style.display !== 'none') {
@@ -157,14 +70,12 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  // Function to refresh access token
   const refreshToken = useCallback(async () => {
     if (!tokens?.refresh?.token) {
       return null;
     }
 
     try {
-      // Try unified refresh endpoint first
       let response = await fetch(`${API_URL}/auth/refresh-token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -172,7 +83,6 @@ export const AuthProvider = ({ children }) => {
       });
 
       if (!response.ok) {
-        // Fallback to legacy user endpoint
         response = await fetch(`${API_URL}/user/auth/refresh-tokens`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -185,7 +95,6 @@ export const AuthProvider = ({ children }) => {
       }
 
       const data = await response.json();
-      // Support { accessToken } shape and { access: { token } } shape
       let nextTokens = tokens;
       if (data?.accessToken) {
         nextTokens = { ...tokens, access: { ...(tokens.access || {}), token: data.accessToken } };
@@ -202,13 +111,10 @@ export const AuthProvider = ({ children }) => {
     }
   }, [tokens]);
 
-  // API request interceptor to handle token refresh
   const authFetch = useCallback(async (url, options = {}, requiresAuth = true) => {
     if (requiresAuth && !tokens?.access?.token) {
-      // Avoid hitting server before login; let caller handle not-authenticated state
       throw new Error('Not authenticated');
     }
-    // Build headers without sending an empty Authorization header
     const baseHeaders = {
       ...(options.headers || {}),
     };
@@ -221,16 +127,13 @@ export const AuthProvider = ({ children }) => {
       headers: baseHeaders,
     });
 
-    // If token is expired/unauthorized, try a single-flight refresh
     if (response.status === 401) {
-      // Create or await a single refresh promise
       if (!refreshPromiseRef.current) {
         refreshPromiseRef.current = (async () => {
           try {
             const newTok = await refreshToken();
             return newTok;
           } finally {
-            // Ensure ref is cleared after completion
             setTimeout(() => { refreshPromiseRef.current = null; }, 0);
           }
         })();
@@ -261,20 +164,18 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
 
     try {
-      // Use unified credentials login (tries admin, then user in backend)
       let response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include', // Important for cookies/sessions
+        credentials: 'include',
         body: JSON.stringify({ email, password }),
       });
 
       let data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        // Fallback to user-only endpoint for better compatibility
         const uResp = await fetch(`${API_URL}/user/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -298,14 +199,11 @@ export const AuthProvider = ({ children }) => {
         return { success: true, userType: role };
       }
     } catch (apiError) {
-      // API failed
       console.warn('API authentication failed');
     }
 
-    // Optional fallback to mock authentication (disabled by default)
     if (ENABLE_MOCK_AUTH) {
       try {
-        // Check in USERS array
         const user = USERS.find(u => u.email === email && u.password === password);
         if (user) {
           const userData = { ...user, token: 'mock-token-' + Date.now() };
@@ -317,7 +215,6 @@ export const AuthProvider = ({ children }) => {
           return { success: true, userType: user.role };
         }
 
-        // Check in PROVIDERS array
         const provider = PROVIDERS.find(p => p.email === email && p.password === password);
         if (provider) {
           const userData = { ...provider, token: 'mock-token-' + Date.now() };
@@ -329,7 +226,6 @@ export const AuthProvider = ({ children }) => {
           return { success: true, userType: userData.role };
         }
 
-        // No user found
         throw new Error('Invalid email or password');
       } catch (error) {
         setError(error.message || 'An error occurred during login');
@@ -338,7 +234,6 @@ export const AuthProvider = ({ children }) => {
       }
     }
 
-    // If mock auth is disabled, surface failure
     setError('Login failed. Please check your credentials.');
     setLoading(false);
     return { success: false };
@@ -346,7 +241,6 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      // Call logout API if we have a refresh token
       if (tokens?.refresh?.token) {
         await fetch(`${API_URL}/user/auth/logout`, {
           method: 'POST',
@@ -360,7 +254,6 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      // Clear state and storage
       setCurrentUser(null);
       setTokens(null);
       localStorage.removeItem('user');
@@ -377,7 +270,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Allow external/social logins to immediately set tokens in memory and storage
   const setAuthTokens = (nextTokens) => {
     try {
       setTokens(nextTokens);
@@ -385,22 +277,16 @@ export const AuthProvider = ({ children }) => {
     } catch (_) {}
   };
 
-  // Check if user is a provider
   const isProvider = () => {
     return currentUser && currentUser.role === 'provider';
   };
-
-  // Check if user is a regular user
   const isUser = () => {
     return currentUser && currentUser.role === 'user';
   };
 
-  // Check if user is an admin
   const isAdmin = () => {
     return currentUser && currentUser.role === 'admin';
   };
-
-  // Convenience login specifically for providers (calls provider auth API)
   const providerLogin = async (email, password) => {
     setError('');
     setLoading(true);
@@ -457,38 +343,51 @@ export const AuthProvider = ({ children }) => {
     return { success: false };
   };
 
-  // Initialize auth state on mount, with provider fallback
   useEffect(() => {
     const initializeAuth = async () => {
       try {
         if (tokens?.access?.token) {
-          // Verify as user first
-          let response = await authFetch(`${API_URL}/user/auth/me`);
-          if (response.ok) {
-            const userData = await response.json();
-            setCurrentUser(userData);
-            return;
+          let userData = null;
+          
+          try {
+            const provResp = await authFetch(`${API_URL}/provider/me`);
+            if (provResp.ok) {
+              const provData = await provResp.json();
+              setCurrentUser({ ...(provData || {}), role: 'provider' });
+              return;
+            }
+          } catch (error) {
+            console.log('Provider auth check failed:', error);
+          }
+          
+          try {
+            let response = await authFetch(`${API_URL}/user/auth/me`);
+            if (response.ok) {
+              const userData = await response.json();
+              setCurrentUser(userData);
+              return;
+            }
+          } catch (error) {
+            console.log('User auth check failed:', error);
           }
 
-          // Try admin session
-          const adminResp = await fetch(`${API_URL}/admin/auth/me`, {
-            headers: { Authorization: `Bearer ${tokens.access.token}` },
-          });
-          if (adminResp.ok) {
-            const adminData = await adminResp.json();
-            setCurrentUser({ ...(adminData || {}), role: 'admin' });
-            return;
+          try {
+            const adminResp = await fetch(`${API_URL}/admin/auth/me`, {
+              headers: { Authorization: `Bearer ${tokens.access.token}` },
+            });
+            if (adminResp.ok) {
+              const adminData = await adminResp.json();
+              setCurrentUser({ ...(adminData || {}), role: 'admin' });
+              return;
+            }
+          } catch (error) {
+            console.log('Admin auth check failed:', error);
           }
 
-          // Try provider session
-          const provResp = await authFetch(`${API_URL}/provider/me`);
-          if (provResp.ok) {
-            const provData = await provResp.json();
-            setCurrentUser({ ...(provData || {}), role: 'provider' });
-            return;
-          }
-
-          throw new Error('Session expired');
+          console.log('All auth checks failed, logging out');
+          logout();
+        } else {
+          setLoading(false);
         }
       } catch (error) {
         console.error('Auth initialization error:', error);

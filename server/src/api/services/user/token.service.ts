@@ -2,7 +2,6 @@ import jwt from 'jsonwebtoken';
 import moment from 'moment';
 import httpStatus from 'http-status';
 import { db } from '../../../config/db.js';
-import prisma from '../../../lib/prisma.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { tokenTypes, tokenExpiration } from '../../../config/tokens.js';
 import config from '../../../config/config.js';
@@ -104,11 +103,12 @@ const refreshAuth = async (refreshToken: string) => {
       const { data } = await db.from('PIQ_User').select('user_id').eq('user_id', sub).single();
       subjectExists = !!data;
     } else if (role === 'provider') {
-      const provider = await prisma.pIQ_Service_Provider.findUnique({
-        where: { service_provider_id: sub },
-        select: { service_provider_id: true },
-      });
-      subjectExists = !!provider;
+      const { data } = await db
+        .from('PIQ_Service_Provider')
+        .select('service_provider_id')
+        .eq('service_provider_id', sub)
+        .single();
+      subjectExists = !!data;
     }
     if (!subjectExists) {
       throw new Error('Subject not found');

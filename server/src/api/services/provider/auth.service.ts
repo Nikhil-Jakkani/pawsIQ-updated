@@ -1,22 +1,19 @@
 import bcrypt from 'bcryptjs';
 import httpStatus from 'http-status';
-import prisma from '../../../lib/prisma.js';
+import { db } from '../../../config/db.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { tokenService } from '../user/token.service.js';
 
 const login = async (email: string, password: string) => {
   const normalizedEmail = (email || '').toLowerCase().trim();
 
-  const provider = await prisma.pIQ_Service_Provider.findFirst({
-    where: {
-      serv_provider_email: {
-        equals: normalizedEmail,
-        mode: 'insensitive',
-      },
-    },
-  });
+  const { data: provider, error } = await db
+    .from('PIQ_Service_Provider')
+    .select('*')
+    .ilike('serv_provider_email', normalizedEmail)
+    .single();
 
-  if (!provider) {
+  if (error || !provider) {
     throw new ApiError(httpStatus.UNAUTHORIZED, 'Incorrect email or password');
   }
 
@@ -54,15 +51,11 @@ const register = async (providerBody: any) => {
     throw new ApiError(httpStatus.BAD_REQUEST, 'Provider email is required');
   }
 
-  const existingProvider = await prisma.pIQ_Service_Provider.findFirst({
-    where: {
-      serv_provider_email: {
-        equals: email,
-        mode: 'insensitive',
-      },
-    },
-    select: { service_provider_id: true },
-  });
+  const { data: existingProvider } = await db
+    .from('PIQ_Service_Provider')
+    .select('service_provider_id')
+    .ilike('serv_provider_email', email)
+    .single();
 
   if (existingProvider) {
     throw new ApiError(httpStatus.BAD_REQUEST, 'Email already taken');
@@ -73,25 +66,33 @@ const register = async (providerBody: any) => {
     10
   );
 
-  const newProvider = await prisma.pIQ_Service_Provider.create({
-    data: {
-      serv_provider_name: providerBody.provider_name || providerBody.serv_provider_name || null,
-      serv_provider_email: email,
-      serv_provider_password: hashedPassword,
-      serv_provider_contact_nbr:
-        providerBody.provider_contact_number || providerBody.serv_provider_contact_nbr || null,
-      serv_provider_desc: providerBody.provider_desc || providerBody.serv_provider_desc || null,
-      serv_provider_status: 'active',
-      serv_provider_exp_years:
-        providerBody.provider_experience_years || providerBody.serv_provider_exp_years || null,
-      serv_provider_certificates:
-        providerBody.provider_certificates || providerBody.serv_provider_certificates || null,
-      serv_provider_insta_acct_dtls:
-        providerBody.provider_insta || providerBody.serv_provider_insta_acct_dtls || null,
-      serv_provider_fb_acct_dtls:
-        providerBody.provider_fb || providerBody.serv_provider_fb_acct_dtls || null,
-    },
-  });
+  const newProviderData: any = {
+    serv_provider_name: providerBody.provider_name || providerBody.serv_provider_name || null,
+    serv_provider_email: email,
+    serv_provider_password: hashedPassword,
+    serv_provider_contact_nbr:
+      providerBody.provider_contact_number || providerBody.serv_provider_contact_nbr || null,
+    serv_provider_desc: providerBody.provider_desc || providerBody.serv_provider_desc || null,
+    serv_provider_status: 'active',
+    serv_provider_exp_years:
+      providerBody.provider_experience_years || providerBody.serv_provider_exp_years || null,
+    serv_provider_certificates:
+      providerBody.provider_certificates || providerBody.serv_provider_certificates || null,
+    serv_provider_insta_acct_dtls:
+      providerBody.provider_insta || providerBody.serv_provider_insta_acct_dtls || null,
+    serv_provider_fb_acct_dtls:
+      providerBody.provider_fb || providerBody.serv_provider_fb_acct_dtls || null,
+  };
+
+  const { data: newProvider, error } = await db
+    .from('PIQ_Service_Provider')
+    .insert(newProviderData)
+    .select()
+    .single();
+
+  if (error || !newProvider) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Could not create provider');
+  }
 
   return newProvider;
 };
