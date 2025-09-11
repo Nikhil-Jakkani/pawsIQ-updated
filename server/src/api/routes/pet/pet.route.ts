@@ -33,7 +33,8 @@ router.get('/breeds/:petType', async (req: any, res) => {
       ]
     };
 
-    const breeds = breedData[petType.toLowerCase()] || breedData.other;
+    const petTypeKey = petType.toLowerCase() as keyof typeof breedData;
+    const breeds = breedData[petTypeKey] || breedData.other;
     return res.status(httpStatus.OK).send({ breeds });
   } catch (e: any) {
     return res.status(httpStatus.INTERNAL_SERVER_ERROR).send({ message: e?.message || 'Failed to fetch breeds' });
