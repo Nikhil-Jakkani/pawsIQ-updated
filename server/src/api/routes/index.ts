@@ -12,7 +12,6 @@ import providerRoutes from './provider/provider.route.js';
 import providerAppointmentRoutes from './provider/appointment.route.js';
 import appointmentRoutes from './appointment/appointment.route.js';
 import mediaRoutes from './media.route.js';
-import petRoutes from './pet/pet.route.js';
 import healthRecordRoutes from './healthRecord.route.js';
 import reminderRoutes from './reminder/reminder.route.js';
 import userActivityRoutes from './user/activity.route.js';
@@ -37,7 +36,7 @@ router.use('/provider', providerRoutes);
 router.use('/provider/appointments', providerAppointmentRoutes);
 router.use('/appointments', appointmentRoutes);
 router.use('/media', mediaRoutes);
-router.use('/pets', petRoutes);
+
 router.use('', healthRecordRoutes); // Health record routes
 router.use('/reminders', reminderRoutes);
 
