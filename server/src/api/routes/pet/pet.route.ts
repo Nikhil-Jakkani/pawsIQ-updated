@@ -1,17 +1,18 @@
 import express from 'express';
 import httpStatus from 'http-status';
 import { userAuth } from '../../middlewares/user.auth.js';
+import { validate } from '../../middlewares/validate.js';
+import { petValidation } from '../../validations/user/pet.validation.js';
+import { petController } from '../../controllers/user/pet.controller.js';
 import { db } from '../../../config/db.js';
 
 const router = express.Router();
 
-// Get breeds by pet type
 router.get('/breeds/:petType', async (req: any, res) => {
   try {
     const petType = req.params.petType;
     if (!petType) return res.status(httpStatus.BAD_REQUEST).send({ message: 'petType is required' });
 
-    // For now, return static breed data. In production, this would come from a breed master table
     const breedData = {
       dog: [
         'Labrador Retriever', 'Golden Retriever', 'German Shepherd', 'French Bulldog', 'Bulldog',
@@ -144,41 +145,7 @@ router.get('/user/:userId', userAuth as any, async (req: any, res) => {
   }
 });
 
-router.patch('/:petId', userAuth as any, async (req: any, res) => {
-  try {
-    const petId = Number(req.params.petId);
-    if (!petId) return res.status(httpStatus.BAD_REQUEST).send({ message: 'petId is required' });
-
-    const { data: existing, error: selErr } = await db
-      .from('PIQ_Pets')
-      .select('pet_id, user_id')
-      .eq('pet_id', petId)
-      .single();
-    if (selErr || !existing) return res.status(httpStatus.NOT_FOUND).send({ message: 'Pet not found' });
-    if (Number(existing.user_id) !== Number(req.user.user_id)) return res.status(httpStatus.FORBIDDEN).send({ message: 'Forbidden' });
-
-    const upd: Record<string, any> = { last_updated_dtm: new Date() };
-    const body = req.body || {};
-    if (body.name ?? body.pet_name) upd.pet_name = body.name ?? body.pet_name;
-    if (body.type ?? body.pet_type ?? body.pet_species) upd.pet_type = body.type ?? body.pet_type ?? body.pet_species;
-    if (body.breed ?? body.pet_breed) upd.pet_breed = body.breed ?? body.pet_breed;
-    if (body.gender ?? body.pet_gender) upd.pet_gender = body.gender ?? body.pet_gender;
-    if (body.birthdate ?? body.pet_birth_dtm) upd.pet_birth_dtm = body.birthdate ?? body.pet_birth_dtm;
-    if (body.color ?? body.pet_colour) upd.pet_colour = body.color ?? body.pet_colour;
-    if (body.pet_image ?? body.profileImage) upd.pet_image = body.pet_image ?? body.profileImage;
-
-    const { data: updated, error } = await db
-      .from('PIQ_Pets')
-      .update(upd)
-      .eq('pet_id', petId)
-      .select('*');
-
-    if (error) return res.status(httpStatus.INTERNAL_SERVER_ERROR).send({ message: error.message || 'Failed to update pet' });
-    return res.status(httpStatus.OK).send(updated || []);
-  } catch (e: any) {
-    return res.status(httpStatus.INTERNAL_SERVER_ERROR).send({ message: e?.message || 'Failed to update pet' });
-  }
-});
+router.patch('/:petId', userAuth as any, validate(petValidation.updatePetProfile), petController.updatePetProfile);
 
 router.delete('/:petId', userAuth as any, async (req: any, res) => {
   try {
