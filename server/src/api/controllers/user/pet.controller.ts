@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import httpStatus from 'http-status';
-import { prisma } from '../../../../PawsIQ/lib/prisma';
+import { prisma } from '../../../lib/prisma.js';
 import { ApiError } from '../../utils/ApiError.js';
 
 export const petController = {
@@ -9,8 +9,8 @@ export const petController = {
     const updateData = req.body;
 
     try {
-      const pet = await prisma.pet.update({
-        where: { id: petId },
+      const pet = await prisma.pIQ_Pets.update({
+        where: { pet_id: Number(petId) },
         data: updateData,
       });
 
