@@ -1306,7 +1306,8 @@ const UserAddPet = () => {
               )}
             </button>
           </div>
-        </form>
+        </div>
+      </form>
       </div>
     </UserLayout>
   );

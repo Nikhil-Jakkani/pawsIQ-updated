@@ -642,16 +642,6 @@ const UserPets = () => {
                         <FaEdit className="inline mr-1" /> Edit Profile
                       </button>
                       <button
-                        onClick={() => navigate(`/user/pets/edit/${pet.id}`)}
-                        className="p-2 text-gray-500 transition-colors text-xs"
-                        style={{ '--hover-color': '#145ae6' }}
-                        onMouseEnter={(e) => e.target.style.color = '#145ae6'}
-                        onMouseLeave={(e) => e.target.style.color = '#6b7280'}
-                        title="Edit Pet Profile"
-                      >
-                        <FaEdit className="inline mr-1" /> Edit Profile
-                      </button>
-                      <button
                         onClick={() => navigate(`/user/pets/${pet.id}/health-records`)}
                         className="p-2 text-gray-500 transition-colors text-xs"
                         style={{ '--hover-color': '#145ae6' }}

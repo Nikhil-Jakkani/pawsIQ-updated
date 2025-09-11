@@ -7,7 +7,7 @@ const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
 const HealthRecords = () => {
   const { petId } = useParams();
   const navigate = useNavigate();
-  const { currentUser, tokens } = useAuth();
+  const { currentUser, tokens, authFetch } = useAuth();
   const [records, setRecords] = useState([]);
   const [pet, setPet] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -35,28 +35,32 @@ const HealthRecords = () => {
     try {
       setLoading(true);
       setError('');
-      const accessToken = tokens?.access?.token;
+      if (!authFetch) throw new Error('Auth not ready');
       
       // Fetch pet details
-      const petResponse = await fetch(`${API_URL}/pets/${petId}`, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-        },
-      });
+      const petResponse = await authFetch(`${API_URL}/pets/${petId}`);
       
       if (!petResponse.ok) {
         throw new Error('Failed to fetch pet details');
       }
       
       const petData = await petResponse.json();
-      setPet(petData);
+      const normalizedPet = {
+        id: Number(petData.pet_id ?? petData.id ?? petId),
+        name: petData.pet_name ?? petData.name ?? 'Pet',
+        breed: petData.pet_breed ?? petData.breed ?? '',
+        type: (petData.pet_type ?? petData.type ?? '').toLowerCase(),
+        age: petData.pet_age != null ? `${petData.pet_age} years` : (petData.pet_birthday || petData.birthdate ? (() => {
+          const d = new Date(petData.pet_birthday || petData.birthdate);
+          if (isNaN(d.getTime())) return '';
+          const years = Math.max(0, Math.floor((Date.now() - d.getTime()) / (1000*60*60*24*365.25)));
+          return `${years} years`;
+        })() : ''),
+      };
+      setPet(normalizedPet);
       
       // Fetch health records
-      const recordsResponse = await fetch(`${API_URL}/pets/${petId}/health-records`, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-        },
-      });
+      const recordsResponse = await authFetch(`${API_URL}/pets/${petId}/health-records`);
       
       if (!recordsResponse.ok) {
         const errorData = await recordsResponse.json().catch(() => ({}));
@@ -64,10 +68,11 @@ const HealthRecords = () => {
       }
       
       const recordsData = await recordsResponse.json();
-      const normalized = (Array.isArray(recordsData) ? recordsData : []).map((r) => ({
+      const list = Array.isArray(recordsData) ? recordsData : (recordsData?.records || []);
+      const normalized = list.map((r) => ({
         health_record_id: r.health_record_id ?? r.healthRecordId ?? r.id,
         pet_id: r.pet_id ?? r.petId,
-        recordType: r.record_type ?? r.recordType,
+        recordType: (r.record_type ?? r.recordType ?? '').toLowerCase(),
         title: r.title,
         description: r.description,
         recordDate: r.record_date ?? r.recordDate,
@@ -146,7 +151,7 @@ const HealthRecords = () => {
     try {
       setUploading(true);
       setError('');
-      const accessToken = currentUser?.tokens?.access?.token || currentUser?.token;
+      const accessToken = currentUser?.tokens?.access?.token || tokens?.access?.token;
 
       // 1. Get signed upload URL
       const uploadUrlResponse = await fetch(

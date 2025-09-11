@@ -12,7 +12,6 @@ import OTPVerification from './pages/auth/OTPVerification.jsx';
 import UserResetPassword from './pages/user/UserResetPassword.jsx';
 import UserPets from './pages/user/UserPets.jsx';
 import UserHealthRecords from './pages/user/UserHealthRecords.jsx';
-import UserPetProfile from './pages/user/UserPetProfile.jsx';
 import UserAddPet from './pages/user/UserAddPet.jsx';
 import UserEditPet from './pages/user/UserEditPet.jsx';
 import UserAppointments from './pages/user/UserAppointments.jsx';
@@ -249,7 +248,7 @@ function App() {
             <Route path="/user/pets/profiles" element={<UserProtectedRoute><UserPets /></UserProtectedRoute>} />
             <Route path="/user/pets/health" element={<UserProtectedRoute><UserPets /></UserProtectedRoute>} />
             <Route path="/user/pets/:petId/health-records" element={<UserProtectedRoute><UserHealthRecords /></UserProtectedRoute>} />
-            <Route path="/user/pets/:petId" element={<UserProtectedRoute><UserPetProfile /></UserProtectedRoute>} />
+            <Route path="/user/pets/:petId" element={<UserProtectedRoute><UserPets /></UserProtectedRoute>} />
             
             {/* AI Pet Care */}
             <Route path="/user/ai-pet-care" element={<UserProtectedRoute><AIPetCare /></UserProtectedRoute>} />
