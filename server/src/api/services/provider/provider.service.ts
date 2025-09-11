@@ -1,12 +1,15 @@
 import httpStatus from 'http-status';
 import { ApiError } from '../../utils/ApiError.js';
-import prisma from '../../../lib/prisma.js';
+import { db } from '../../../config/db.js';
 
 const getProviderById = async (id: number) => {
-  const provider = await prisma.pIQ_Service_Provider.findUnique({
-    where: { service_provider_id: id },
-  });
-  if (!provider) {
+  const { data: provider, error } = await db
+    .from('PIQ_Service_Provider')
+    .select('service_provider_id, serv_provider_name, serv_provider_email, serv_provider_contact_nbr, serv_provider_desc, serv_provider_type')
+    .eq('service_provider_id', id)
+    .single();
+
+  if (error || !provider) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Provider not found');
   }
   // For now, we will return mock data for dashboard components
@@ -50,10 +53,17 @@ const updateProviderProfile = async (id: number, body: any) => {
     throw new ApiError(httpStatus.BAD_REQUEST, 'No valid fields to update');
   }
 
-  const updated = await prisma.pIQ_Service_Provider.update({
-    where: { service_provider_id: id },
-    data,
-  });
+  const { data: updated, error } = await db
+    .from('PIQ_Service_Provider')
+    .update(data)
+    .eq('service_provider_id', id)
+    .select('*')
+    .single();
+
+  if (error || !updated) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to update provider profile');
+  }
+
   return updated;
 };
 

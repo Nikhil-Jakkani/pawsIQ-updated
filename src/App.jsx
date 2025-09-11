@@ -55,6 +55,7 @@ import ApplicationStatus from './pages/provider/ApplicationStatus.jsx';
 import ProviderLogin from './pages/provider/ProviderLogin.jsx';
 // import ProviderDashboard from './pages/provider/ProviderDashboard.jsx';
 import VetDashboard from './pages/provider/VetDashboard.jsx';
+import ProviderProtectedRoute from './components/common/ProviderProtectedRoute.jsx';
 import VetAppointments from './pages/provider/VetAppointments.jsx';
 import VetClients from './pages/provider/VetClients.jsx';
 import VetServices from './pages/provider/VetServices.jsx';
@@ -131,18 +132,6 @@ const UserProtectedRoute = ({ children }) => {
   return children;
 };
 
-// Protected route component for Veterinarian providers
-const VetProtectedRoute = ({ children }) => {
-  const { currentUser, loading, tokens } = useAuth();
-  if (loading) return null; // wait until auth check completes
-  if (!currentUser || !tokens?.access?.token) {
-    return <Navigate to="/provider/login" replace />;
-  }
-  if (!(currentUser.role === 'provider' && currentUser.providerType === 'Veterinarian')) {
-    return <Navigate to="/provider/login" replace />;
-  }
-  return children;
-};
 
 function App() {
   return (
@@ -241,15 +230,15 @@ function App() {
             {/* Provider Routes */}
             <Route path="/provider/login" element={<ProviderLogin />} />
             {/* Vet (Provider - Veterinarian) Routes */}
-            <Route path="/provider/vet/dashboard" element={<VetProtectedRoute><VetDashboard /></VetProtectedRoute>} />
-            <Route path="/provider/vet/appointments" element={<VetProtectedRoute><VetAppointments /></VetProtectedRoute>} />
-            <Route path="/provider/vet/clients" element={<VetProtectedRoute><VetClients /></VetProtectedRoute>} />
-            <Route path="/provider/vet/services" element={<VetProtectedRoute><VetServices /></VetProtectedRoute>} />
-            <Route path="/provider/vet/prescriptions" element={<VetProtectedRoute><VetPrescriptions /></VetProtectedRoute>} />
-            <Route path="/provider/vet/labs" element={<VetProtectedRoute><VetLabReports /></VetProtectedRoute>} />
-            <Route path="/provider/vet/analytics" element={<VetProtectedRoute><VetAnalytics /></VetProtectedRoute>} />
-            <Route path="/provider/vet/notifications" element={<VetProtectedRoute><VetNotifications /></VetProtectedRoute>} />
-            <Route path="/provider/vet/settings" element={<VetProtectedRoute><VetSettings /></VetProtectedRoute>} />
+            <Route path="/provider/vet/dashboard" element={<ProviderProtectedRoute><VetDashboard /></ProviderProtectedRoute>} />
+            <Route path="/provider/vet/appointments" element={<ProviderProtectedRoute><VetAppointments /></ProviderProtectedRoute>} />
+            <Route path="/provider/vet/clients" element={<ProviderProtectedRoute><VetClients /></ProviderProtectedRoute>} />
+            <Route path="/provider/vet/services" element={<ProviderProtectedRoute><VetServices /></ProviderProtectedRoute>} />
+            <Route path="/provider/vet/prescriptions" element={<ProviderProtectedRoute><VetPrescriptions /></ProviderProtectedRoute>} />
+            <Route path="/provider/vet/labs" element={<ProviderProtectedRoute><VetLabReports /></ProviderProtectedRoute>} />
+            <Route path="/provider/vet/analytics" element={<ProviderProtectedRoute><VetAnalytics /></ProviderProtectedRoute>} />
+            <Route path="/provider/vet/notifications" element={<ProviderProtectedRoute><VetNotifications /></ProviderProtectedRoute>} />
+            <Route path="/provider/vet/settings" element={<ProviderProtectedRoute><VetSettings /></ProviderProtectedRoute>} />
 
             {/* Pet Management Routes */}
             <Route path="/user/pets" element={<UserProtectedRoute><UserPets /></UserProtectedRoute>} />

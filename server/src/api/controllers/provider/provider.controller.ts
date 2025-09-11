@@ -3,17 +3,23 @@ import httpStatus from 'http-status';
 import { catchAsync } from '../../utils/catchAsync.js';
 import { providerService } from '../../services/provider/index.js';
 
-const getMyProfile = catchAsync(async (req: Request, res: Response) => {
-  // Support multiple possible id field names from auth middleware/entity
-  // @ts-ignore
-  const id = (req.user?.provider_id || req.user?.service_provider_id || req.user?.id) as number;
-  const provider = await providerService.getProviderById(Number(id));
-  res.status(httpStatus.OK).send(provider);
+const getMyProfile = catchAsync(async (req: any, res: Response) => {
+  const provider = await providerService.getProviderById(req.user.service_provider_id);
+  // Map serv_provider_type to providerType for frontend consistency
+  const userProfile = {
+    ...provider,
+    providerType: provider.serv_provider_type,
+  };
+  res.send(userProfile);
 });
 
 const updateMyProfile = catchAsync(async (req: Request, res: Response) => {
+  // Extract provider ID from the entity attached by auth middleware
   // @ts-ignore
-  const id = (req.user?.provider_id || req.user?.service_provider_id || req.user?.id) as number;
+  const id = req.user?.service_provider_id || req.user?.id;
+  if (!id) {
+    throw new Error('Provider ID not found in request');
+  }
   const updated = await providerService.updateProviderProfile(Number(id), req.body);
   res.status(httpStatus.OK).send(updated);
 });
