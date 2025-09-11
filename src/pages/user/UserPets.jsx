@@ -627,14 +627,14 @@ const UserPets = () => {
                     </div>
                     <div className="flex flex-col gap-2 ml-2">
                       <button
-                        onClick={() => handleOpenMedicalRecords(pet)}
+                        onClick={() => navigate(`/user/pets/${pet.id}/health-records`)}
                         className="p-2 text-gray-500 transition-colors text-xs"
                         style={{ '--hover-color': '#145ae6' }}
                         onMouseEnter={(e) => e.target.style.color = '#145ae6'}
                         onMouseLeave={(e) => e.target.style.color = '#6b7280'}
-                        title="Add Medical Record"
+                        title="Show Medical Records"
                       >
-                        <FaFileMedical className="inline mr-1" /> Add Medical Record
+                        <FaFileMedical className="inline mr-1" /> Show Medical Records
                       </button>
                       <button
                         onClick={() => handleDeletePet(pet.id)}
@@ -658,7 +658,7 @@ const UserPets = () => {
                   
                   <div className="pet-card-buttons">
                     <button 
-                      onClick={() => handleOpenMedicalRecords(pet)}
+                      onClick={() => navigate(`/user/pets/${pet.id}/health-records`)}
                       className="flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
                       style={{ 
                         backgroundColor: '#e3f2fd', 
@@ -667,7 +667,19 @@ const UserPets = () => {
                       onMouseEnter={(e) => e.target.style.backgroundColor = '#bbdefb'}
                       onMouseLeave={(e) => e.target.style.backgroundColor = '#e3f2fd'}
                     >
-                      Add Medical Record
+                      Show Medical Records
+                    </button>
+                    <button 
+                      onClick={() => navigate(`/user/pets/${pet.id}`)}
+                      className="flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                      style={{ 
+                        backgroundColor: '#e3f2fd', 
+                        color: '#145ae6' 
+                      }}
+                      onMouseEnter={(e) => e.target.style.backgroundColor = '#bbdefb'}
+                      onMouseLeave={(e) => e.target.style.backgroundColor = '#e3f2fd'}
+                    >
+                      View Profile
                     </button>
                     <button 
                       onClick={() => navigate('/user/appointments/new')}

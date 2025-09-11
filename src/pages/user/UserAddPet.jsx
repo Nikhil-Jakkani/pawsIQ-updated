@@ -5,6 +5,7 @@ import { FaDove } from 'react-icons/fa6';
 import { GiRabbit } from 'react-icons/gi';
 import UserLayout from '../../components/layout/UserLayout';
 import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../lib/supabaseClient';
 
 const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
 
@@ -49,6 +50,10 @@ const UserAddPet = () => {
   const [vaccineData, setVaccineData] = useState([]);
   const [filteredVaccines, setFilteredVaccines] = useState([]);
   const [selectedVaccines, setSelectedVaccines] = useState({});
+  const [breedOptions, setBreedOptions] = useState([]);
+  const [allBreeds, setAllBreeds] = useState([]);
+  const [breedsLoading, setBreedsLoading] = useState(false);
+  const [breedsError, setBreedsError] = useState('');
 
   // Handle form input changes
   const handleChange = (e) => {
@@ -234,10 +239,6 @@ const UserAddPet = () => {
   const petTypes = [
     { value: 'dog', label: 'Dog', icon: <FaDog /> },
     { value: 'cat', label: 'Cat', icon: <FaCat /> },
-    { value: 'bird', label: 'Bird', icon: <FaDove /> },
-    { value: 'rabbit', label: 'Rabbit', icon: <GiRabbit /> },
-    { value: 'fish', label: 'Fish', icon: <FaFish /> },
-    { value: 'horse', label: 'Horse', icon: <FaHorse /> },
     { value: 'other', label: 'Other', icon: <FaPaw /> }
   ];
   
@@ -345,6 +346,47 @@ const UserAddPet = () => {
     setFilteredVaccines(Object.values(groupedVaccines));
   }, [vaccineData, formData.type, formData.breed, formData.ageGroup]);
   
+  // Load breed options from Supabase and filter by selected species (dog/cat)
+  useEffect(() => {
+    let cancelled = false;
+    const fetchBreeds = async () => {
+      setBreedsLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('PIQ_Petbreed_Master')
+          .select('pet_breed_name,pet_type');
+        if (error) {
+          setBreedsError(error.message);
+          setAllBreeds([]);
+        } else {
+          const rows = Array.isArray(data) ? data : [];
+          if (!cancelled) setAllBreeds(rows);
+        }
+      } catch (error) {
+        if (!cancelled) setBreedsError(error.message);
+      } finally {
+        if (!cancelled) setBreedsLoading(false);
+      }
+    };
+    fetchBreeds();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Recompute breedOptions when type or allBreeds changes
+  useEffect(() => {
+    if (!allBreeds.length) { setBreedOptions([]); return; }
+    const type = formData.type; // 'dog' | 'cat' | 'other'
+    if (!type || type === 'other') { setBreedOptions([]); return; }
+    const wanted = type === 'dog' ? 'dog' : 'cat';
+    const names = allBreeds
+      .filter(r => (r.pet_type || '').toString().toLowerCase() === wanted)
+      .map(r => r.pet_breed_name)
+      .filter(Boolean);
+    // de-duplicate and sort
+    const unique = Array.from(new Set(names)).sort((a,b)=>a.localeCompare(b));
+    setBreedOptions(unique);
+  }, [formData.type, allBreeds]);
+
   return (
     <UserLayout>
       <div className="space-y-6">
@@ -414,7 +456,7 @@ const UserAddPet = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Pet Type*
                   </label>
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     {petTypes.map((type) => (
                       <label 
                         key={type.value}
@@ -445,15 +487,36 @@ const UserAddPet = () => {
                   <label htmlFor="breed" className="block text-sm font-medium text-gray-700 mb-1">
                     Breed
                   </label>
-                  <input
-                    type="text"
-                    id="breed"
-                    name="breed"
-                    value={formData.breed}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
-                    placeholder="Enter breed"
-                  />
+                  {breedOptions && breedOptions.length > 0 ? (
+                    <select
+                      id="breed"
+                      name="breed"
+                      value={formData.breed}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                    >
+                      <option value="">Select breed</option>
+                      {breedOptions.map((b) => (
+                        <option key={b} value={b}>{b}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      id="breed"
+                      name="breed"
+                      value={formData.breed}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                      placeholder="Enter breed"
+                    />
+                  )}
+                  {breedsLoading && (
+                    <p className="text-xs text-gray-500 mt-1">Loading breeds…</p>
+                  )}
+                  {breedsError && (
+                    <p className="text-xs text-red-600 mt-1">{breedsError}</p>
+                  )}
                 </div>
                 
                 <div>

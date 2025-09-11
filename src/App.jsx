@@ -11,6 +11,8 @@ import UserForgotPassword from './pages/user/UserForgotPassword.jsx';
 import OTPVerification from './pages/auth/OTPVerification.jsx';
 import UserResetPassword from './pages/user/UserResetPassword.jsx';
 import UserPets from './pages/user/UserPets.jsx';
+import UserHealthRecords from './pages/user/UserHealthRecords.jsx';
+import UserPetProfile from './pages/user/UserPetProfile.jsx';
 import UserAddPet from './pages/user/UserAddPet.jsx';
 import UserAppointments from './pages/user/UserAppointments.jsx';
 import UserBookAppointment from './pages/user/UserBookAppointment.jsx';
@@ -244,7 +246,8 @@ function App() {
             <Route path="/user/pets/add" element={<UserProtectedRoute><UserAddPet /></UserProtectedRoute>} />
             <Route path="/user/pets/profiles" element={<UserProtectedRoute><UserPets /></UserProtectedRoute>} />
             <Route path="/user/pets/health" element={<UserProtectedRoute><UserPets /></UserProtectedRoute>} />
-            <Route path="/user/pets/:petId/health-records" element={<UserProtectedRoute><PetProfiles /></UserProtectedRoute>} />
+            <Route path="/user/pets/:petId/health-records" element={<UserProtectedRoute><UserHealthRecords /></UserProtectedRoute>} />
+            <Route path="/user/pets/:petId" element={<UserProtectedRoute><UserPetProfile /></UserProtectedRoute>} />
             
             {/* AI Pet Care */}
             <Route path="/user/ai-pet-care" element={<UserProtectedRoute><AIPetCare /></UserProtectedRoute>} />
