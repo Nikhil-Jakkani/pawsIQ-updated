@@ -3,40 +3,23 @@ import { Link, useNavigate } from 'react-router-dom';
 import { FaEnvelope, FaLock, FaGoogle, FaFacebook, FaApple, FaPaw } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 
-// Cute pet-themed logo
 const logoImage = "/7.png";
 
 const ProviderLogin = () => {
   const navigate = useNavigate();
     const { providerLogin, currentUser, error: authError } = useAuth();
   
-  // Form state
   const [formData, setFormData] = useState({
-    email: '', // Pre-filled for demo
-    password: '', // Pre-filled for demo
+    email: '',
+    password: '',
     rememberMe: false
   });
   
-  // Error state
   const [errors, setErrors] = useState({});
   
-  // Loading state
   const [isLoading, setIsLoading] = useState(false);
   
-  // Check if already logged in
-  useEffect(() => {
-    if (currentUser) {
-      if (currentUser.role === 'provider') {
-        navigate('/provider/vet/dashboard');
-      } else if (currentUser.role === 'user') {
-        navigate('/user/dashboard');
-      } else if (currentUser.role === 'admin') {
-        navigate('/dashboard');
-      }
-    }
-  }, [currentUser, navigate]);
   
-  // Handle input changes
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
@@ -44,7 +27,6 @@ const ProviderLogin = () => {
       [name]: type === 'checkbox' ? checked : value
     }));
     
-    // Clear error when field is edited
     if (errors[name]) {
       setErrors(prev => {
         const newErrors = { ...prev };
@@ -53,19 +35,16 @@ const ProviderLogin = () => {
       });
     }
   };
-  
-  // Validate form
+
   const validateForm = () => {
     const newErrors = {};
     
-    // Validate email
     if (!formData.email) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Email is invalid';
     }
     
-    // Validate password
     if (!formData.password) {
       newErrors.password = 'Password is required';
     }
@@ -74,7 +53,6 @@ const ProviderLogin = () => {
     return Object.keys(newErrors).length === 0;
   };
   
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -85,35 +63,20 @@ const ProviderLogin = () => {
     setIsLoading(true);
     
     try {
-      // Call the login function with isProvider=true
-            const result = await providerLogin(formData.email, formData.password);
+      const result = await providerLogin(formData.email, formData.password);
       
       if (result.success) {
-        // Login successful
-        if (result.userType === 'provider') {
-          // Redirect to vet dashboard if veterinarian, else generic provider dashboard
-          const stored = localStorage.getItem('pawsiq_user');
-          const parsed = stored ? JSON.parse(stored) : null;
-          // For now, all providers go to the vet dashboard
-          navigate('/provider/vet/dashboard');
-        } else {
-          // If somehow a non-provider logged in through provider login
-          navigate('/');
-        }
+        navigate('/provider/vet/dashboard');
       } else {
-        // Check if there's an application in progress
         const registrationData = localStorage.getItem('provider_registration');
         
         if (registrationData) {
           const parsedData = JSON.parse(registrationData);
           
-          // If application is pending, go to status page
           if (parsedData.submissionDate) {
             navigate('/provider/application-status');
           } 
-          // If application is in progress, continue onboarding
           else {
-            // Determine which step to continue from
             const step = parsedData.registrationStep || 1;
             
             switch (step) {
@@ -124,7 +87,6 @@ const ProviderLogin = () => {
                 navigate('/provider/onboarding/professional-info');
                 break;
               case 3:
-                // Navigate to the appropriate service details page based on provider type
                 if (parsedData.providerType === 'Veterinarian') {
                   navigate('/provider/onboarding/veterinarian-details');
                 } else if (parsedData.providerType === 'Trainer') {
@@ -154,7 +116,6 @@ const ProviderLogin = () => {
             }
           }
         } else {
-          // No existing application, show error
           setErrors(prev => ({
             ...prev,
             form: 'Invalid email or password. Please try again or sign up as a new provider.'
@@ -171,19 +132,15 @@ const ProviderLogin = () => {
       setIsLoading(false);
     }
   };
-  
-  // Handle social login
+
   const handleSocialLogin = async (provider) => {
     setIsLoading(true);
     
     try {
-      // In a real app, this would call an API to authenticate with the social provider
       console.log(`Provider logging in with ${provider}`);
       
-      // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // For demo purposes, just redirect to signup
       navigate('/provider/signup');
     } catch (error) {
       console.error(`${provider} login error:`, error);
@@ -195,7 +152,7 @@ const ProviderLogin = () => {
       setIsLoading(false);
     }
   };
-  
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">

@@ -36,7 +36,7 @@ const VetDashboard = () => {
   const [istNow, setIstNow] = useState(nowIST());
 
   useEffect(() => {
-    if (!currentUser || currentUser.role !== 'provider' || currentUser.providerType !== 'Veterinarian') {
+    if (!currentUser || currentUser.role !== 'provider') {
       navigate('/provider/login');
     }
   }, [currentUser, navigate]);
@@ -68,7 +68,7 @@ const VetDashboard = () => {
 
   const handleLogout = () => { logout(); navigate('/'); };
 
-  if (!currentUser || currentUser.role !== 'provider' || currentUser.providerType !== 'Veterinarian') {
+  if (!currentUser || currentUser.role !== 'provider') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>

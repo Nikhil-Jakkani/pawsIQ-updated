@@ -21,7 +21,10 @@ const VetLayout = ({ title = 'Vet', children }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!currentUser || currentUser.role !== 'provider' || currentUser.providerType !== 'Veterinarian') {
+    console.log('VetLayout: currentUser', currentUser);
+    console.log('VetLayout: role check', currentUser?.role);
+    if (!currentUser || currentUser.role !== 'provider') {
+      console.log('VetLayout: redirecting to login');
       navigate('/provider/login');
     }
   }, [currentUser, navigate]);
