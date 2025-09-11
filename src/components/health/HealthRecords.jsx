@@ -37,14 +37,24 @@ const HealthRecords = () => {
       setError('');
       if (!authFetch) throw new Error('Auth not ready');
       
-      // Fetch pet details
-      const petResponse = await authFetch(`${API_URL}/pets/${petId}`);
-      
-      if (!petResponse.ok) {
-        throw new Error('Failed to fetch pet details');
+      // Fetch pet details with fallback
+      let petResponse = await authFetch(`${API_URL}/pets/${petId}`);
+      let petData;
+      if (petResponse.ok) {
+        petData = await petResponse.json();
+      } else {
+        const profileRes = await authFetch(`${API_URL}/user/profile`);
+        const profilePayload = await profileRes.json().catch(() => ({}));
+        if (profileRes.ok) {
+          const arr = Array.isArray(profilePayload?.pets) ? profilePayload.pets : [];
+          const idNum = Number(petId);
+          petData = arr.find(p => Number(p.pet_id ?? p.id) === idNum);
+        }
+        // If still not found, set a minimal pet object and continue without error
+        if (!petData) {
+          petData = { id: petId, name: 'Pet', pet_type: '', pet_breed: '' };
+        }
       }
-      
-      const petData = await petResponse.json();
       const normalizedPet = {
         id: Number(petData.pet_id ?? petData.id ?? petId),
         name: petData.pet_name ?? petData.name ?? 'Pet',
@@ -59,15 +69,26 @@ const HealthRecords = () => {
       };
       setPet(normalizedPet);
       
-      // Fetch health records
-      const recordsResponse = await authFetch(`${API_URL}/pets/${petId}/health-records`);
-      
-      if (!recordsResponse.ok) {
-        const errorData = await recordsResponse.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Failed to fetch health records');
+      // Fetch health records (with fallback)
+      let recordsResponse = await authFetch(`${API_URL}/pets/${petId}/health-records`);
+      let recordsData;
+      if (recordsResponse.ok) {
+        recordsData = await recordsResponse.json();
+      } else {
+        // fallback to a query endpoint if available
+        const alt = await authFetch(`${API_URL}/health-records?petId=${encodeURIComponent(petId)}`);
+        if (alt.ok) {
+          recordsData = await alt.json();
+        } else {
+          // If both fail and status is 404/403, treat as no records instead of hard error
+          if (recordsResponse.status === 404 || recordsResponse.status === 403 || alt.status === 404 || alt.status === 403) {
+            recordsData = [];
+          } else {
+            const errorData = await recordsResponse.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Failed to fetch health records');
+          }
+        }
       }
-      
-      const recordsData = await recordsResponse.json();
       const list = Array.isArray(recordsData) ? recordsData : (recordsData?.records || []);
       const normalized = list.map((r) => ({
         health_record_id: r.health_record_id ?? r.healthRecordId ?? r.id,

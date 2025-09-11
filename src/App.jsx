@@ -12,6 +12,7 @@ import OTPVerification from './pages/auth/OTPVerification.jsx';
 import UserResetPassword from './pages/user/UserResetPassword.jsx';
 import UserPets from './pages/user/UserPets.jsx';
 import UserHealthRecords from './pages/user/UserHealthRecords.jsx';
+import UserPetProfile from './pages/user/UserPetProfile.jsx';
 import UserAddPet from './pages/user/UserAddPet.jsx';
 import UserEditPet from './pages/user/UserEditPet.jsx';
 import UserAppointments from './pages/user/UserAppointments.jsx';
@@ -54,6 +55,8 @@ import PaymentInfo from './pages/provider/PaymentInfo.jsx';
 import ReviewSubmission from './pages/provider/ReviewSubmission.jsx';
 import ApplicationStatus from './pages/provider/ApplicationStatus.jsx';
 import ProviderLogin from './pages/provider/ProviderLogin.jsx';
+import ProviderForgotPassword from './pages/provider/ProviderForgotPassword.jsx';
+import ProviderOTPVerification from './pages/provider/ProviderOTPVerification.jsx';
 // import ProviderDashboard from './pages/provider/ProviderDashboard.jsx';
 import VetDashboard from './pages/provider/VetDashboard.jsx';
 import ProviderProtectedRoute from './components/common/ProviderProtectedRoute.jsx';
@@ -230,6 +233,8 @@ function App() {
             
             {/* Provider Routes */}
             <Route path="/provider/login" element={<ProviderLogin />} />
+            <Route path="/provider/forgot-password" element={<ProviderForgotPassword />} />
+            <Route path="/provider/otp-verification" element={<ProviderOTPVerification />} />
             {/* Vet (Provider - Veterinarian) Routes */}
             <Route path="/provider/vet/dashboard" element={<ProviderProtectedRoute><VetDashboard /></ProviderProtectedRoute>} />
             <Route path="/provider/vet/appointments" element={<ProviderProtectedRoute><VetAppointments /></ProviderProtectedRoute>} />
@@ -248,7 +253,7 @@ function App() {
             <Route path="/user/pets/profiles" element={<UserProtectedRoute><UserPets /></UserProtectedRoute>} />
             <Route path="/user/pets/health" element={<UserProtectedRoute><UserPets /></UserProtectedRoute>} />
             <Route path="/user/pets/:petId/health-records" element={<UserProtectedRoute><UserHealthRecords /></UserProtectedRoute>} />
-            <Route path="/user/pets/:petId" element={<UserProtectedRoute><UserPets /></UserProtectedRoute>} />
+            <Route path="/user/pets/:petId" element={<UserProtectedRoute><UserPetProfile /></UserProtectedRoute>} />
             
             {/* AI Pet Care */}
             <Route path="/user/ai-pet-care" element={<UserProtectedRoute><AIPetCare /></UserProtectedRoute>} />

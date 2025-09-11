@@ -128,21 +128,29 @@ const UserEditPet = () => {
   useEffect(() => {
     const loadPetData = async () => {
       if (!petId || !authFetch) return;
-      
       setIsLoading(true);
       try {
-        const response = await authFetch(`${API_URL}/pets/${petId}`);
-        
-        if (!response.ok) {
-          throw new Error('Failed to load pet data');
+        // Try direct pet endpoint first
+        let petRes = await authFetch(`${API_URL}/pets/${petId}`);
+        let petData;
+        if (petRes.ok) {
+          petData = await petRes.json();
+        } else {
+          // Fallback to user profile pets list
+          const profRes = await authFetch(`${API_URL}/user/profile`);
+          const prof = await profRes.json().catch(() => ({}));
+          if (!profRes.ok) throw new Error('Failed to load pet data');
+          const list = Array.isArray(prof?.pets) ? prof.pets : [];
+          const idNum = Number(petId);
+          petData = list.find(p => Number(p.pet_id ?? p.id) === idNum);
+          if (!petData) throw new Error('Pet not found');
         }
-        
-        const petData = await response.json();
-        
+
+        const mappedType = (petData.pet_type || petData.type || '').toLowerCase();
         // Map the pet data to form data
         setFormData({
           name: petData.pet_name || petData.name || '',
-          type: (petData.pet_type || petData.type || '').toLowerCase(),
+          type: mappedType,
           breed: petData.pet_breed || petData.breed || '',
           gender: petData.pet_gender || petData.gender || '',
           birthdate: (petData.pet_birth_dtm || petData.birthdate || '').split ? (petData.pet_birth_dtm || petData.birthdate || '').split('T')[0] : (petData.pet_birth_dtm || petData.birthdate || ''),
@@ -163,12 +171,12 @@ const UserEditPet = () => {
           ageGroup: petData.age_group || petData.ageGroup || 'adult',
           vaccinations: petData.vaccinations || [],
         });
-        
+
         // Fetch breeds for the pet type
-        if (petData.pet_type) {
-          await fetchBreeds(petData.pet_type);
+        if (mappedType) {
+          await fetchBreeds(mappedType);
         }
-        
+
       } catch (error) {
         console.error('Error loading pet data:', error);
         alert('Failed to load pet data');

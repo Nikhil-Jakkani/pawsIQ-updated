@@ -673,7 +673,7 @@ const UserPets = () => {
                   
                   <div className="pet-card-buttons">
                     <button 
-                      onClick={() => navigate(`/user/pets/edit/${pet.id}`)}
+                      onClick={() => navigate(`/user/pets/${pet.id}`)}
                       className="flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
                       style={{ 
                         backgroundColor: '#e3f2fd', 
@@ -682,7 +682,7 @@ const UserPets = () => {
                       onMouseEnter={(e) => e.target.style.backgroundColor = '#bbdefb'}
                       onMouseLeave={(e) => e.target.style.backgroundColor = '#e3f2fd'}
                     >
-                      View/Edit Profile
+                      View Profile
                     </button>
                     <button 
                       onClick={() => handleOpenMedicalRecords(pet)}
