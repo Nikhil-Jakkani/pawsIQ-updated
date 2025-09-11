@@ -206,31 +206,42 @@ const PetProfiles = () => {
         const data = await api.get(`/admin/piq/pets?${qs.toString()}`);
         if (!alive) return;
         const list = Array.isArray(data?.results) ? data.results : [];
-        setPets(list.map(p => ({
-          id: p.id,
-          name: p.name,
-          species: p.species || 'Other',
-          breed: p.breed || '',
-          age: p.age || 0,
-          gender: p.gender || 'Unknown',
-          weight: p.weight || '',
-          height: p.height || '',
-          color: p.color || '',
-          microchipped: !!p.microchipped,
-          neutered: !!p.neutered,
-          vaccinated: !!p.vaccinated,
-          ownerName: p.ownerName || '',
-          ownerEmail: p.ownerEmail || '',
-          ownerPhone: p.ownerPhone || '',
-          profileImage: p.profileImage,
-          dateAdded: p.created_at ? new Date(p.created_at).toISOString().slice(0,10) : '',
-          lastUpdated: p.lastUpdated || p.updated_at || '',
-          status: p.status || 'active',
-          medicalConditions: p.medicalConditions || [],
-          medications: p.medications || [],
-          dietaryRestrictions: p.dietaryRestrictions || [],
-          notes: p.notes || '',
-        })));
+        setPets(list.map(p => {
+          // Calculate age from birthdate if available
+          let calculatedAge = p.age || 0;
+          if (p.birthdate || p.birthday || p.pet_birth_dtm) {
+            const birthdate = p.birthdate || p.birthday || p.pet_birth_dtm;
+            const dob = new Date(birthdate);
+            const now = new Date();
+            calculatedAge = Math.max(0, Math.floor((now.getTime() - dob.getTime()) / (1000 * 60 * 60 * 24 * 365.25)));
+          }
+          
+          return {
+            id: p.id,
+            name: p.name,
+            species: p.species || 'Other',
+            breed: p.breed || '',
+            age: calculatedAge,
+            gender: p.gender || 'Unknown',
+            weight: p.weight || '',
+            height: p.height || '',
+            color: p.color || '',
+            microchipped: !!p.microchipped,
+            neutered: !!p.neutered,
+            vaccinated: !!p.vaccinated,
+            ownerName: p.ownerName || '',
+            ownerEmail: p.ownerEmail || '',
+            ownerPhone: p.ownerPhone || '',
+            profileImage: p.profileImage,
+            dateAdded: p.created_at ? new Date(p.created_at).toISOString().slice(0,10) : '',
+            lastUpdated: p.lastUpdated || p.updated_at || '',
+            status: p.status || 'active',
+            medicalConditions: p.medicalConditions || [],
+            medications: p.medications || [],
+            dietaryRestrictions: p.dietaryRestrictions || [],
+            notes: p.notes || '',
+          };
+        }));
         setTotalPages(Number(data?.totalPages) || 1);
         setTotalResults(Number(data?.totalResults) || 0);
       } catch (e) {

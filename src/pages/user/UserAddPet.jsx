@@ -50,10 +50,34 @@ const UserAddPet = () => {
   const [vaccineData, setVaccineData] = useState([]);
   const [filteredVaccines, setFilteredVaccines] = useState([]);
   const [selectedVaccines, setSelectedVaccines] = useState({});
-  const [breedOptions, setBreedOptions] = useState([]);
-  const [allBreeds, setAllBreeds] = useState([]);
-  const [breedsLoading, setBreedsLoading] = useState(false);
-  const [breedsError, setBreedsError] = useState('');
+  
+  // State for breeds
+  const [breeds, setBreeds] = useState([]);
+  const [loadingBreeds, setLoadingBreeds] = useState(false);
+
+  // Fetch breeds based on pet type
+  const fetchBreeds = async (petType) => {
+    if (!petType || petType === 'other') {
+      setBreeds(['Mixed Breed', 'Unknown', 'Crossbreed']);
+      return;
+    }
+    
+    setLoadingBreeds(true);
+    try {
+      const response = await fetch(`${API_URL}/pets/breeds/${petType}`);
+      const data = await response.json();
+      if (response.ok && data.breeds) {
+        setBreeds(data.breeds);
+      } else {
+        setBreeds(['Mixed Breed', 'Unknown', 'Crossbreed']);
+      }
+    } catch (error) {
+      console.error('Error fetching breeds:', error);
+      setBreeds(['Mixed Breed', 'Unknown', 'Crossbreed']);
+    } finally {
+      setLoadingBreeds(false);
+    }
+  };
 
   // Handle form input changes
   const handleChange = (e) => {
@@ -62,6 +86,16 @@ const UserAddPet = () => {
       ...formData,
       [name]: type === 'checkbox' ? checked : value
     });
+    
+    // If pet type changes, fetch breeds and reset breed selection
+    if (name === 'type') {
+      fetchBreeds(value);
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+        breed: '' // Reset breed when type changes
+      }));
+    }
   };
 
   // Handle allergy checkbox changes
@@ -235,7 +269,7 @@ const UserAddPet = () => {
     }
   };
 
-  // Pet type options with icons
+  // Pet type options with icons - only cat, dog, and other
   const petTypes = [
     { value: 'dog', label: 'Dog', icon: <FaDog /> },
     { value: 'cat', label: 'Cat', icon: <FaCat /> },
@@ -457,6 +491,7 @@ const UserAddPet = () => {
                     Pet Type*
                   </label>
                   <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     {petTypes.map((type) => (
                       <label 
                         key={type.value}
@@ -517,6 +552,23 @@ const UserAddPet = () => {
                   {breedsError && (
                     <p className="text-xs text-red-600 mt-1">{breedsError}</p>
                   )}
+                  <select
+                    id="breed"
+                    name="breed"
+                    value={formData.breed}
+                    onChange={handleChange}
+                    disabled={loadingBreeds || !formData.type}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  >
+                    <option value="">
+                      {loadingBreeds ? 'Loading breeds...' : formData.type ? 'Select breed' : 'Select pet type first'}
+                    </option>
+                    {breeds.map((breed) => (
+                      <option key={breed} value={breed}>
+                        {breed}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 
                 <div>
