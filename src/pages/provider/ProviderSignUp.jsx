@@ -210,7 +210,9 @@ const ProviderSignUp = () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ phoneNumber: formData.phoneNumber })
         });
-      } catch (_) {}
+      } catch (_) {
+        // Intentionally ignored: OTP send failure will be handled on verification page
+      }
 
       // Pass the registration data to the OTP verification page for later account creation
       navigate('/provider/otp-verification', {
