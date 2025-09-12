@@ -7,6 +7,7 @@ const ProviderOTPVerification = () => {
   const navigate = useNavigate();
   const initialPhone = location?.state?.phoneNumber || '';
   const successMsg = location?.state?.message || '';
+  const registrationData = location?.state?.registrationData || null;
 
   const [phoneNumber, setPhoneNumber] = useState(initialPhone);
   const [code, setCode] = useState('');
@@ -38,6 +39,7 @@ const ProviderOTPVerification = () => {
     }
     setStatus({ loading: true, message: '', error: '' });
     try {
+      // Verify OTP first
       const resp = await fetch(`${API_URL}/provider/auth/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -47,7 +49,21 @@ const ProviderOTPVerification = () => {
       if (!resp.ok) {
         throw new Error(data?.error || 'Verification failed');
       }
-      setStatus({ loading: false, message: 'Phone verified successfully. You can now sign in.', error: '' });
+
+      // If registration data is present, create the provider account now
+      if (registrationData) {
+        const regResp = await fetch(`${API_URL}/provider/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(registrationData)
+        });
+        const regData = await regResp.json().catch(() => ({}));
+        if (!regResp.ok) {
+          throw new Error(regData?.message || 'Account creation failed after OTP verification');
+        }
+      }
+
+      setStatus({ loading: false, message: 'Phone verified and account created successfully. You can now sign in.', error: '' });
       setTimeout(() => navigate('/provider/login'), 1000);
     } catch (e) {
       setStatus({ loading: false, message: '', error: e.message || 'Verification failed' });

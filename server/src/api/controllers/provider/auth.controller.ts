@@ -180,7 +180,7 @@ export const providerAuthController = {
     const result = await twilioService.sendOTP(formattedPhone, 'sms');
     return res.json({ success: true, sid: result.sid, status: result.status });
   }),
-  // Verify OTP and activate provider
+  // Verify OTP (no activation, account will be created after verification)
   verifyOTP: catchAsync(async (req: Request, res: Response) => {
     const { phoneNumber, code } = req.body as { phoneNumber: string; code: string };
     if (!phoneNumber || !code) {
@@ -191,22 +191,7 @@ export const providerAuthController = {
     if (!result.valid) {
       return res.status(httpStatus.BAD_REQUEST).json({ error: 'Invalid OTP code', status: result.status });
     }
-    // Activate provider account associated with this phone
-    const { data: provider } = await db
-      .from('PIQ_Service_Provider')
-      .select('*')
-      .eq('serv_provider_contact_nbr', formattedPhone)
-      .single();
-    if (!provider) {
-      return res.status(httpStatus.NOT_FOUND).json({ error: 'Provider not found for this phone' });
-    }
-    const { error: updErr } = await db
-      .from('PIQ_Service_Provider')
-      .update({ serv_provider_status: 'active', last_updated_dtm: new Date() })
-      .eq('service_provider_id', provider.service_provider_id);
-    if (updErr) {
-      return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ error: 'Failed to activate provider' });
-    }
+    // OTP is valid; client will handle account creation
     return res.json({ success: true });
   }),
 };

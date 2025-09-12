@@ -194,6 +194,7 @@ const ProviderSignUp = () => {
         services_offered: formData.providerType,
         provider_type: formData.providerType,
         provider_src: 'email',
+      how_hear_about_us: formData.referralSource,
         // Optional fields (left blank unless you add inputs later)
         provider_desc: '',
         provider_experience_years: '',
@@ -202,9 +203,7 @@ const ProviderSignUp = () => {
         provider_fb: '',
       };
 
-      await providerRegister(registrationData);
-
-      // After successful registration, trigger OTP to phone and navigate to OTP verification
+      // Send OTP to the provided phone number and navigate to verification page.
       try {
         await fetch(`${import.meta.env.VITE_API_URL || '/api/v1'}/provider/auth/send-otp`, {
           method: 'POST',
@@ -213,11 +212,12 @@ const ProviderSignUp = () => {
         });
       } catch (_) {}
 
+      // Pass the registration data to the OTP verification page for later account creation
       navigate('/provider/otp-verification', {
         state: {
           phoneNumber: formData.phoneNumber,
-          email: formData.email,
-          message: 'Account created successfully. Please verify your phone number to activate your account.'
+          registrationData,
+          message: 'OTP sent successfully. Please verify your phone number to create your account.'
         }
       });
     } catch (error) {

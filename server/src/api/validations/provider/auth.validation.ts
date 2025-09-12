@@ -25,6 +25,7 @@ export const providerAuthValidation = {
       provider_certificates: Joi.string().allow('', null),
       provider_insta: Joi.string().allow('', null),
       provider_fb: Joi.string().allow('', null),
+      how_hear_about_us: Joi.string().allow('', null),
       is_provider_bgchecked: Joi.boolean().optional(),
     }),
   },
