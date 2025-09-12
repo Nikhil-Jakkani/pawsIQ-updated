@@ -232,7 +232,7 @@ const ProviderSignUp = () => {
   };
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-500 to-purple-600 flex flex-col justify-start pt-8 pb-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-white flex flex-col justify-start pt-8 pb-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md mb-6">
         <div className="flex justify-center">
           <div className="bg-white p-3 rounded-full shadow-lg">
