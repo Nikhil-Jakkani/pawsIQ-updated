@@ -73,7 +73,7 @@ const register = async (providerBody: any) => {
     serv_provider_contact_nbr:
       providerBody.provider_contact_number || providerBody.serv_provider_contact_nbr || null,
     serv_provider_desc: providerBody.provider_desc || providerBody.serv_provider_desc || null,
-    serv_provider_status: 'active',
+    serv_provider_status: 'pending_verification',
     serv_provider_exp_years:
       providerBody.provider_experience_years || providerBody.serv_provider_exp_years || null,
     serv_provider_certificates:
@@ -82,6 +82,14 @@ const register = async (providerBody: any) => {
       providerBody.provider_insta || providerBody.serv_provider_insta_acct_dtls || null,
     serv_provider_fb_acct_dtls:
       providerBody.provider_fb || providerBody.serv_provider_fb_acct_dtls || null,
+    serv_provider_type:
+      providerBody.serv_provider_type || providerBody.provider_type || providerBody.services_offered || null,
+    provider_src: providerBody.provider_src || null,
+    is_provider_bgchecked:
+      typeof providerBody.is_provider_bgchecked === 'boolean'
+        ? providerBody.is_provider_bgchecked
+        : null,
+    last_updated_dtm: new Date(),
   };
 
   const { data: newProvider, error } = await db
@@ -91,7 +99,13 @@ const register = async (providerBody: any) => {
     .single();
 
   if (error || !newProvider) {
-    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Could not create provider');
+    if (error) {
+      console.error('Provider insert error:', error);
+    }
+    throw new ApiError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      `Could not create provider${error?.message ? `: ${error.message}` : ''}`
+    );
   }
 
   return newProvider;

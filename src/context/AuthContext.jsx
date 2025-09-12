@@ -343,6 +343,38 @@ export const AuthProvider = ({ children }) => {
     return { success: false };
   };
 
+  const providerRegister = async (registrationData) => {
+    setError('');
+    try {
+      const response = await fetch(`${API_URL}/provider/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(registrationData),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data?.message || 'Provider registration failed');
+      }
+      return data?.provider || true;
+    } catch (err) {
+      setError(err.message || 'Provider registration failed');
+      throw err;
+    }
+  };
+
+  const providerForgotPassword = async (email) => {
+    try {
+      const response = await fetch(`${API_URL}/provider/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      return response.ok;
+    } catch (err) {
+      return false;
+    }
+  };
+
   useEffect(() => {
     const initializeAuth = async () => {
       try {
@@ -405,6 +437,8 @@ export const AuthProvider = ({ children }) => {
     tokens,
     login,
     providerLogin,
+    providerRegister,
+    providerForgotPassword,
     logout,
     setCurrentUserData,
     setAuthTokens,

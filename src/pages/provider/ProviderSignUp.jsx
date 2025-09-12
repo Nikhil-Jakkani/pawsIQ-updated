@@ -187,17 +187,39 @@ const ProviderSignUp = () => {
     
     try {
       const registrationData = {
-        provider_name: `${formData.firstName} ${formData.lastName}`,
+        provider_name: `${formData.firstName} ${formData.lastName}`.trim(),
         provider_email: formData.email,
         provider_password: formData.password,
         provider_contact_number: formData.phoneNumber,
         services_offered: formData.providerType,
+        provider_type: formData.providerType,
+        provider_src: 'email',
+        // Optional fields (left blank unless you add inputs later)
+        provider_desc: '',
+        provider_experience_years: '',
+        provider_certificates: '',
+        provider_insta: '',
+        provider_fb: '',
       };
 
       await providerRegister(registrationData);
 
-      // Navigate to the next step upon successful registration
-      navigate('/provider/login');
+      // After successful registration, trigger OTP to phone and navigate to OTP verification
+      try {
+        await fetch(`${import.meta.env.VITE_API_URL || '/api/v1'}/provider/auth/send-otp`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phoneNumber: formData.phoneNumber })
+        });
+      } catch (_) {}
+
+      navigate('/provider/otp-verification', {
+        state: {
+          phoneNumber: formData.phoneNumber,
+          email: formData.email,
+          message: 'Account created successfully. Please verify your phone number to activate your account.'
+        }
+      });
     } catch (error) {
       console.error('Registration error:', error);
       setErrors(prev => ({
@@ -210,7 +232,7 @@ const ProviderSignUp = () => {
   };
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-500 to-purple-600 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-500 to-purple-600 flex flex-col justify-start pt-8 pb-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md mb-6">
         <div className="flex justify-center">
           <div className="bg-white p-3 rounded-full shadow-lg">
@@ -226,17 +248,7 @@ const ProviderSignUp = () => {
       </div>
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow-xl sm:rounded-lg sm:px-10 max-h-[75vh] overflow-y-auto">
-          {/* Progress indicator */}
-          <div className="mb-6">
-            <div className="flex items-center justify-between">
-              <div className="text-xs text-indigo-600 font-medium">Step 1 of 8</div>
-              <div className="text-xs text-gray-500">Registration</div>
-            </div>
-            <div className="mt-2 w-full bg-gray-200 rounded-full h-2.5">
-              <div className="bg-indigo-600 h-2.5 rounded-full" style={{ width: '12.5%' }}></div>
-            </div>
-          </div>
+        <div className="bg-white py-8 px-4 shadow-xl sm:rounded-lg sm:px-10">
           
           {/* Form error message */}
           {errors.form && (
