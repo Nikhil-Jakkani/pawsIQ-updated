@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import httpStatus from 'http-status';
 import { db } from '../../../config/db.js';
+import { twilioService } from '../twilio.service.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { tokenService } from '../user/token.service.js';
 
@@ -46,9 +47,18 @@ const login = async (email: string, password: string) => {
 };
 
 const register = async (providerBody: any) => {
+  // Validate required fields
   const email = (providerBody.provider_email || providerBody.serv_provider_email || '').toLowerCase().trim();
+  let phone = providerBody.provider_contact_number || providerBody.serv_provider_contact_nbr;
+    // Store phone in the same format Twilio uses for OTP verification
+    if (phone) {
+      phone = twilioService.formatPhoneNumber(phone);
+    }
   if (!email) {
     throw new ApiError(httpStatus.BAD_REQUEST, 'Provider email is required');
+  }
+  if (!phone) {
+    throw new ApiError(httpStatus.BAD_REQUEST, 'Provider phone number is required for verification');
   }
 
   const { data: existingProvider } = await db
@@ -70,10 +80,9 @@ const register = async (providerBody: any) => {
     serv_provider_name: providerBody.provider_name || providerBody.serv_provider_name || null,
     serv_provider_email: email,
     serv_provider_password: hashedPassword,
-    serv_provider_contact_nbr:
-      providerBody.provider_contact_number || providerBody.serv_provider_contact_nbr || null,
+    serv_provider_contact_nbr: phone,
     serv_provider_desc: providerBody.provider_desc || providerBody.serv_provider_desc || null,
-    serv_provider_status: 'pending_verification',
+    serv_provider_status: 'active',
     serv_provider_exp_years:
       providerBody.provider_experience_years || providerBody.serv_provider_exp_years || null,
     serv_provider_certificates:
@@ -84,6 +93,7 @@ const register = async (providerBody: any) => {
       providerBody.provider_fb || providerBody.serv_provider_fb_acct_dtls || null,
     serv_provider_type:
       providerBody.serv_provider_type || providerBody.provider_type || providerBody.services_offered || null,
+    how_hear_about_us: providerBody.how_hear_about_us || null,
     provider_src: providerBody.provider_src || null,
     is_provider_bgchecked:
       typeof providerBody.is_provider_bgchecked === 'boolean'
