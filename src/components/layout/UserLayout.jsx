@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import UserSidebar from './UserSidebar';
-import { FaBell, FaSearch, FaUser, FaShoppingCart, FaSun, FaCloud, FaCloudRain, FaSnowflake, FaClock, FaCalendarAlt } from 'react-icons/fa';
+import { FaBell, FaSearch, FaUser, FaShoppingCart, FaSun, FaCloud, FaCloudRain, FaSnowflake, FaClock, FaCalendarAlt, FaSignOutAlt } from 'react-icons/fa';
 
 const UserLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -148,16 +149,26 @@ const UserLayout = ({ children }) => {
               </span>
             </button>
             <div className="flex items-center gap-2 max-w-[40vw] sm:max-w-none">
-              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <FaUser className="text-[#145ae6]" />
-              </div>
-              <span className="text-sm font-medium text-gray-700">
-                {currentUser?.user_full_name
-                  || currentUser?.name
-                  || [currentUser?.first_name, currentUser?.last_name].filter(Boolean).join(' ')
-                  || (currentUser?.email ? currentUser.email.split('@')[0] : '')
-                  || 'User'}
-              </span>
+              <Link to="/user/settings" className="flex items-center gap-2 hover:opacity-90">
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <FaUser className="text-[#145ae6]" />
+                </div>
+                <span className="text-sm font-medium text-gray-700">
+                  {currentUser?.user_full_name
+                    || currentUser?.name
+                    || [currentUser?.first_name, currentUser?.last_name].filter(Boolean).join(' ')
+                    || (currentUser?.email ? currentUser.email.split('@')[0] : '')
+                    || 'User'}
+                </span>
+              </Link>
+              <button
+                onClick={() => { logout(); window.location.href = '/'; }}
+                className="ml-2 inline-flex items-center gap-1 text-xs text-gray-600 hover:text-red-600"
+                title="Log out"
+              >
+                <FaSignOutAlt />
+                Logout
+              </button>
             </div>
           </div>
         </header>

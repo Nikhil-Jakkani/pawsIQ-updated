@@ -132,12 +132,12 @@ const UserSidebar = ({ isOpen, toggleSidebar }) => {
     },
     {
       id: 'settings',
-      icon: <FaCog />,
-      label: 'Settings',
+      icon: <FaUser />,
+      label: 'Profile',
       path: '/user/settings',
       items: [
-        { path: '/user/settings/profile', icon: <FaUser />, label: 'Profile Settings' },
-        { path: '/user/settings/notifications', icon: <FaBell />, label: 'Notification Settings' },
+        { path: '/user/settings/profile', icon: <FaUser />, label: 'Profile' },
+        { path: '/user/settings/notifications', icon: <FaBell />, label: 'Notifications' },
         { path: '/user/settings/security', icon: <FaLock />, label: 'Security' }
       ]
     },
