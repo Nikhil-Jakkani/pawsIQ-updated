@@ -454,7 +454,9 @@ export const AuthProvider = ({ children }) => {
               }
             }
           } catch (e) {
-            console.log('whoami check failed:', e);
+            if (process.env.NODE_ENV !== 'production') {
+              console.warn('[PawsIQ] whoami check failed:', e);
+            }
           }
 
           try {
@@ -466,7 +468,9 @@ export const AuthProvider = ({ children }) => {
               return;
             }
           } catch (error) {
-            console.log('User auth check failed:', error);
+            if (process.env.NODE_ENV !== 'production') {
+              console.warn('[PawsIQ] User auth check failed:', error);
+            }
           }
 
           try {
@@ -478,7 +482,9 @@ export const AuthProvider = ({ children }) => {
               return;
             }
           } catch (error) {
-            console.log('Provider auth check failed:', error);
+            if (process.env.NODE_ENV !== 'production') {
+              console.warn('[PawsIQ] Provider auth check failed:', error);
+            }
           }
 
           try {
@@ -491,11 +497,15 @@ export const AuthProvider = ({ children }) => {
               return;
             }
           } catch (error) {
-            console.log('Admin auth check failed:', error);
+            if (process.env.NODE_ENV !== 'production') {
+              console.warn('[PawsIQ] Admin auth check failed:', error);
+            }
           }
         }
 
-        console.log('All auth checks failed, logging out');
+        if (process.env.NODE_ENV !== 'production') {
+          console.warn('[PawsIQ] All auth checks failed, logging out');
+        }
       } catch (error) {
         console.error('Auth initialization error:', error);
         logout();
