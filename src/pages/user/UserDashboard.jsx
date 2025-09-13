@@ -152,38 +152,47 @@ const UserDashboard = () => {
           payload = await fetchUserDashboard();
           if (payload) setDashboardData(payload);
         } catch (_) {}
-        let data = null;
-        if (!payload) {
-          const res = await authFetch(`${API_URL}/user/profile`);
-          data = await res.json().catch(() => ({}));
-          if (!res.ok) throw new Error(data?.message || 'Failed to load pets');
+        let rawPets = [];
+        if (payload?.pets) {
+          rawPets = payload.pets;
+        } else {
+          const userId = Number(currentUser?.user_id ?? currentUser?.id);
+          if (!userId) throw new Error('Missing user id');
+          const res = await authFetch(`${API_URL}/pets/user/${userId}`);
+          const arr = await res.json().catch(() => ([]));
+          if (!res.ok) throw new Error((arr && arr.message) || 'Failed to load pets');
+          rawPets = Array.isArray(arr) ? arr : (arr?.pets || []);
         }
-        
+
         // Phase 1: map pet data synchronously using cached image URLs (if present)
-        let rawPets = ((payload?.pets) || (data?.pets) || []).map((p) => {
-          const imagePath = p.pet_image || '';
+        rawPets = rawPets.map((p) => {
+          const imagePath = p.pet_image || p.imagePath || '';
           const cachedUrl = getCachedUrlIfFresh(imagePath);
+          const ageText = p.pet_birth_dtm
+            ? (() => {
+                const dob = new Date(p.pet_birth_dtm);
+                const now = new Date();
+                const years = Math.max(0, Math.floor((now.getTime() - dob.getTime()) / (1000 * 60 * 60 * 24 * 365.25)));
+                return `${years} years`;
+              })()
+            : (typeof p.age === 'number' ? `${p.age} years` : (p.pet_age != null ? `${p.pet_age} years` : 'Unknown'));
           return {
-            id: Number(p.pet_id),
-            name: p.pet_name || 'Pet',
-            type: (p.pet_type || '').toLowerCase(),
-            breed: p.pet_breed || '',
-            age: p.pet_birth_dtm ? (() => {
-              const dob = new Date(p.pet_birth_dtm);
-              const now = new Date();
-              const ageYears = Math.max(0, Math.floor((now.getTime() - dob.getTime()) / (1000 * 60 * 60 * 24 * 365.25)));
-              return `${ageYears} years`;
-            })() : (p.pet_age != null ? `${p.pet_age} years` : '0 years'),
-            weight: p.pet_weight != null ? `${p.pet_weight} lbs` : '0 lbs',
-            gender: p.pet_gender || '',
-            birthday: p.pet_birth_dtm || p.pet_birthday || new Date().toISOString().slice(0, 10),
-            createdAt: p.created_at || null,
+            id: Number(p.id || p.pet_id),
+            name: p.name || p.pet_name || 'Pet',
+            type: (p.type || p.pet_type || '').toString().toLowerCase(),
+            breed: p.breed || p.pet_breed || '',
+            age: ageText,
+            weight: (p.weight || (p.pet_weight != null ? `${p.pet_weight} lbs` : 'Unknown')),
+            gender: (p.gender || p.pet_gender || ''),
+            birthday: p.birthday || p.pet_birth_dtm || p.pet_birthday || null,
+            createdAt: p.createdAt || p.created_at || null,
             imagePath,
-            image: cachedUrl || 'https://placehold.co/600x400?text=Pet',
-            lastCheckup: p.last_checkup || new Date().toISOString().slice(0, 10),
+            image: cachedUrl || p.image || p.profileImage || 'https://placehold.co/600x400?text=Pet',
+            lastCheckup: p.lastCheckup || p.last_checkup || new Date().toISOString().slice(0, 10),
             vaccinations: p.vaccinations || 'Unknown',
           };
         });
+        
         // Enforce oldest-first ordering to avoid jumps
         rawPets = rawPets.sort((a, b) => {
           const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
