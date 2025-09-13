@@ -316,55 +316,82 @@ const UserEditPet = () => {
 
   return (
     <UserLayout>
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <button 
-            onClick={() => navigate('/user/pets')}
-            className="p-2 bg-white rounded-full shadow-sm border border-gray-200 text-gray-500 hover:text-pink-600 transition-colors"
-          >
-            <FaArrowLeft />
-          </button>
-          <div>
-            <div className="flex items-center gap-3">
-              <div className="bg-pink-100 p-2 rounded-lg">
-                <FaPaw className="text-pink-600 text-2xl" />
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50">
+        <div className="space-y-8">
+          {/* Enhanced Header Section */}
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={() => navigate('/user/pets')}
+                className="p-3 bg-gradient-to-r from-pink-500 to-purple-600 rounded-xl shadow-md text-white hover:from-pink-600 hover:to-purple-700 transition-all duration-200 transform hover:scale-105"
+              >
+                <FaArrowLeft className="text-lg" />
+              </button>
+              <div className="flex-1">
+                <div className="flex items-center gap-4">
+                  <div className="bg-gradient-to-r from-pink-500 to-purple-600 p-3 rounded-2xl shadow-lg">
+                    <FaPaw className="text-white text-3xl" />
+                  </div>
+                  <div>
+                    <h1 className="text-3xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
+                      Edit Pet Profile
+                    </h1>
+                    <p className="text-gray-600 mt-1 text-lg">Update your pet's information and keep their profile current</p>
+                  </div>
+                </div>
               </div>
-              <h1 className="text-2xl font-bold text-gray-800">Edit Pet Profile</h1>
             </div>
-            <p className="text-gray-500 mt-1">Update your pet's information</p>
           </div>
-        </div>
         
-        <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="p-6 space-y-6">
-            {/* Pet Photo Upload */}
-            <div className="flex flex-col items-center justify-center">
-              <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center relative">
-                {previewImage ? (
-                  <img src={previewImage} alt="Pet preview" className="w-full h-full object-cover" />
-                ) : (
-                  <FaPaw className="text-gray-400 text-4xl" />
-                )}
-                <input 
-                  type="file" 
-                  id="pet-photo" 
-                  accept="image/*" 
-                  className="opacity-0 absolute inset-0 cursor-pointer" 
-                  onChange={handleImageChange}
-                />
+        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+          <div className="p-8 space-y-8">
+            {/* Enhanced Pet Photo Upload */}
+            <div className="flex flex-col items-center justify-center py-8">
+              <div className="relative group">
+                <div className="w-40 h-40 rounded-3xl overflow-hidden bg-gradient-to-br from-pink-100 to-purple-100 border-4 border-dashed border-pink-300 flex items-center justify-center relative transition-all duration-300 group-hover:border-pink-400 group-hover:shadow-lg">
+                  {previewImage ? (
+                    <img src={previewImage} alt="Pet preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="text-center">
+                      <FaPaw className="text-pink-400 text-5xl mx-auto mb-2" />
+                      <p className="text-pink-500 text-sm font-medium">Add Photo</p>
+                    </div>
+                  )}
+                  <input 
+                    type="file" 
+                    id="pet-photo" 
+                    accept="image/*" 
+                    className="opacity-0 absolute inset-0 cursor-pointer" 
+                    onChange={handleImageChange}
+                  />
+                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-300 rounded-3xl flex items-center justify-center">
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <FaUpload className="text-white text-2xl" />
+                    </div>
+                  </div>
+                </div>
+                <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-pink-500 to-purple-600 p-2 rounded-full shadow-lg">
+                  <FaUpload className="text-white text-sm" />
+                </div>
               </div>
-              <label htmlFor="pet-photo" className="mt-2 flex items-center gap-1 text-sm text-pink-600 cursor-pointer">
-                <FaUpload />
-                Upload Photo
+              <label htmlFor="pet-photo" className="mt-6 flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-xl cursor-pointer hover:from-pink-600 hover:to-purple-700 transition-all duration-200 transform hover:scale-105 shadow-lg">
+                <FaUpload className="text-lg" />
+                <span className="font-medium">Upload Pet Photo</span>
               </label>
+              <p className="text-gray-500 text-sm mt-2">Click to upload a photo of your pet</p>
             </div>
             
             {/* Basic Information */}
-            <div>
-              <h2 className="text-lg font-semibold text-gray-800 mb-4">Basic Information</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-gradient-to-r from-pink-50 to-purple-50 rounded-2xl p-6 border border-pink-100">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="bg-gradient-to-r from-pink-500 to-purple-600 p-2 rounded-xl">
+                  <FaPaw className="text-white text-xl" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-800">Basic Information</h2>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="name" className="block text-sm font-semibold text-gray-700 mb-2">
                     Pet Name*
                   </label>
                   <input
@@ -374,28 +401,28 @@ const UserEditPet = () => {
                     value={formData.name}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
                     placeholder="Enter pet name"
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-semibold text-gray-700 mb-3">
                     Pet Type*
                   </label>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-3 gap-3">
                     {petTypes.map((type) => (
                       <label 
                         key={type.value}
-                        className={`flex flex-col items-center justify-center p-2 border rounded-lg cursor-pointer transition-colors
+                        className={`flex flex-col items-center justify-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 transform hover:scale-105
                           ${formData.type === type.value 
-                            ? 'bg-pink-50 border-pink-500 text-pink-700' 
-                            : 'border-gray-300 hover:bg-gray-50'}`}
+                            ? 'bg-gradient-to-r from-pink-500 to-purple-600 border-pink-500 text-white shadow-lg' 
+                            : 'border-gray-200 hover:bg-pink-50 hover:border-pink-300 text-gray-700'}`}
                       >
-                        <div className="text-xl mb-1">
+                        <div className="text-2xl mb-2">
                           {type.icon}
                         </div>
-                        <span className="text-xs">{type.label}</span>
+                        <span className="text-sm font-medium">{type.label}</span>
                         <input
                           type="radio"
                           name="type"
@@ -411,7 +438,7 @@ const UserEditPet = () => {
                 </div>
                 
                 <div>
-                  <label htmlFor="breed" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="breed" className="block text-sm font-semibold text-gray-700 mb-2">
                     Breed
                   </label>
                   <select
@@ -420,7 +447,7 @@ const UserEditPet = () => {
                     value={formData.breed}
                     onChange={handleChange}
                     disabled={loadingBreeds || !formData.type}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 disabled:bg-gray-100 disabled:cursor-not-allowed transition-all duration-200 bg-white shadow-sm hover:shadow-md"
                   >
                     <option value="">
                       {loadingBreeds ? 'Loading breeds...' : formData.type ? 'Select breed' : 'Select pet type first'}
@@ -434,7 +461,7 @@ const UserEditPet = () => {
                 </div>
                 
                 <div>
-                  <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="gender" className="block text-sm font-semibold text-gray-700 mb-2">
                     Gender
                   </label>
                   <select
@@ -442,7 +469,7 @@ const UserEditPet = () => {
                     name="gender"
                     value={formData.gender}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
                   >
                     <option value="">Select gender</option>
                     <option value="male">Male</option>
@@ -452,12 +479,12 @@ const UserEditPet = () => {
                 </div>
                 
                 <div>
-                  <label htmlFor="birthdate" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="birthdate" className="block text-sm font-semibold text-gray-700 mb-2">
                     Birth Date
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <FaCalendarAlt className="text-gray-400" />
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <FaCalendarAlt className="text-pink-400 text-lg" />
                     </div>
                     <input
                       type="date"
@@ -465,13 +492,13 @@ const UserEditPet = () => {
                       name="birthdate"
                       value={formData.birthdate}
                       onChange={handleChange}
-                      className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                      className="pl-12 w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
                     />
                   </div>
                 </div>
                 
                 <div>
-                  <label htmlFor="weight" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="weight" className="block text-sm font-semibold text-gray-700 mb-2">
                     Weight (kg)
                   </label>
                   <input
@@ -482,13 +509,13 @@ const UserEditPet = () => {
                     onChange={handleChange}
                     step="0.1"
                     min="0"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
                     placeholder="Enter weight"
                   />
                 </div>
                 
                 <div>
-                  <label htmlFor="color" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="color" className="block text-sm font-semibold text-gray-700 mb-2">
                     Color
                   </label>
                   <input
@@ -497,7 +524,7 @@ const UserEditPet = () => {
                     name="color"
                     value={formData.color}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
                     placeholder="Enter color"
                   />
                 </div>
@@ -505,26 +532,31 @@ const UserEditPet = () => {
             </div>
             
             {/* Health Information */}
-            <div>
-              <h2 className="text-lg font-semibold text-gray-800 mb-4">Health Information</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-center">
+            <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-2xl p-6 border border-green-100">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="bg-gradient-to-r from-green-500 to-blue-600 p-2 rounded-xl">
+                  <FaShieldAlt className="text-white text-xl" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-800">Health Information</h2>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="flex items-center p-4 bg-white rounded-xl border-2 border-gray-100 hover:border-green-300 transition-all duration-200">
                   <input
                     type="checkbox"
                     id="microchipped"
                     name="microchipped"
                     checked={formData.microchipped}
                     onChange={handleChange}
-                    className="h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded"
+                    className="h-5 w-5 text-green-600 focus:ring-green-500 border-gray-300 rounded-lg"
                   />
-                  <label htmlFor="microchipped" className="ml-2 block text-sm text-gray-700">
+                  <label htmlFor="microchipped" className="ml-3 block text-sm font-semibold text-gray-700">
                     Microchipped
                   </label>
                 </div>
                 
                 {formData.microchipped && (
                   <div>
-                    <label htmlFor="microchipNumber" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="microchipNumber" className="block text-sm font-semibold text-gray-700 mb-2">
                       Microchip Number
                     </label>
                     <input
@@ -533,48 +565,48 @@ const UserEditPet = () => {
                       name="microchipNumber"
                       value={formData.microchipNumber}
                       onChange={handleChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
                       placeholder="Enter microchip number"
                     />
                   </div>
                 )}
                 
-                <div className="flex items-center">
+                <div className="flex items-center p-4 bg-white rounded-xl border-2 border-gray-100 hover:border-green-300 transition-all duration-200">
                   <input
                     type="checkbox"
                     id="neutered"
                     name="neutered"
                     checked={formData.neutered}
                     onChange={handleChange}
-                    className="h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded"
+                    className="h-5 w-5 text-green-600 focus:ring-green-500 border-gray-300 rounded-lg"
                   />
-                  <label htmlFor="neutered" className="ml-2 block text-sm text-gray-700">
+                  <label htmlFor="neutered" className="ml-3 block text-sm font-semibold text-gray-700">
                     Spayed/Neutered
                   </label>
                 </div>
                 
                 {/* Allergies Section */}
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                  <label className="block text-lg font-semibold text-gray-700 mb-4">
                     Allergies
                   </label>
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <p className="text-sm text-gray-600 mb-3">Select any allergies that apply to your pet:</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                  <div className="bg-white p-6 rounded-2xl border-2 border-gray-100 shadow-sm">
+                    <p className="text-sm text-gray-600 mb-4">Select any allergies that apply to your pet:</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-48 overflow-y-auto pr-2">
                       {commonAllergies.map((allergy, index) => (
-                        <label key={index} className="flex items-start gap-2 text-sm">
+                        <label key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl hover:bg-green-50 hover:border-green-200 border border-transparent transition-all duration-200 cursor-pointer">
                           <input
                             type="checkbox"
                             checked={formData.allergies.includes(allergy)}
                             onChange={(e) => handleAllergyChange(allergy, e.target.checked)}
-                            className="h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded mt-0.5 flex-shrink-0"
+                            className="h-5 w-5 text-green-600 focus:ring-green-500 border-gray-300 rounded-lg mt-0.5 flex-shrink-0"
                           />
-                          <span className="text-gray-700">{allergy}</span>
+                          <span className="text-sm text-gray-700 font-medium">{allergy}</span>
                         </label>
                       ))}
                     </div>
-                    <div className="mt-3 pt-3 border-t border-gray-200">
-                      <label htmlFor="customAllergies" className="block text-sm font-medium text-gray-700 mb-1">
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <label htmlFor="customAllergies" className="block text-sm font-semibold text-gray-700 mb-2">
                         Other allergies (please specify):
                       </label>
                       <input
@@ -583,7 +615,7 @@ const UserEditPet = () => {
                         name="customAllergies"
                         value={formData.customAllergies}
                         onChange={handleChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
                         placeholder="Enter any other allergies not listed above"
                       />
                     </div>
@@ -592,26 +624,26 @@ const UserEditPet = () => {
                 
                 {/* Medical Conditions Section */}
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                  <label className="block text-lg font-semibold text-gray-700 mb-4">
                     Medical Conditions
                   </label>
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <p className="text-sm text-gray-600 mb-3">Select any medical conditions that apply to your pet:</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                  <div className="bg-white p-6 rounded-2xl border-2 border-gray-100 shadow-sm">
+                    <p className="text-sm text-gray-600 mb-4">Select any medical conditions that apply to your pet:</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-48 overflow-y-auto pr-2">
                       {commonMedicalConditions.map((condition, index) => (
-                        <label key={index} className="flex items-start gap-2 text-sm">
+                        <label key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl hover:bg-blue-50 hover:border-blue-200 border border-transparent transition-all duration-200 cursor-pointer">
                           <input
                             type="checkbox"
                             checked={formData.medicalConditions.includes(condition)}
                             onChange={(e) => handleMedicalConditionChange(condition, e.target.checked)}
-                            className="h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded mt-0.5 flex-shrink-0"
+                            className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded-lg mt-0.5 flex-shrink-0"
                           />
-                          <span className="text-gray-700">{condition}</span>
+                          <span className="text-sm text-gray-700 font-medium">{condition}</span>
                         </label>
                       ))}
                     </div>
-                    <div className="mt-3 pt-3 border-t border-gray-200">
-                      <label htmlFor="customMedicalConditions" className="block text-sm font-medium text-gray-700 mb-1">
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <label htmlFor="customMedicalConditions" className="block text-sm font-semibold text-gray-700 mb-2">
                         Other medical conditions (please specify):
                       </label>
                       <textarea
@@ -620,7 +652,7 @@ const UserEditPet = () => {
                         value={formData.customMedicalConditions}
                         onChange={handleChange}
                         rows="2"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
                         placeholder="Enter any other medical conditions not listed above"
                       />
                     </div>
@@ -628,7 +660,7 @@ const UserEditPet = () => {
                 </div>
                 
                 <div className="md:col-span-2">
-                  <label htmlFor="medications" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="medications" className="block text-sm font-semibold text-gray-700 mb-2">
                     Current Medications
                   </label>
                   <textarea
@@ -636,14 +668,14 @@ const UserEditPet = () => {
                     name="medications"
                     value={formData.medications}
                     onChange={handleChange}
-                    rows="2"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                    rows="3"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
                     placeholder="List any current medications"
                   />
                 </div>
                 
                 <div className="md:col-span-2">
-                  <label htmlFor="dietaryNeeds" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="dietaryNeeds" className="block text-sm font-semibold text-gray-700 mb-2">
                     Dietary Needs
                   </label>
                   <textarea
@@ -651,8 +683,8 @@ const UserEditPet = () => {
                     name="dietaryNeeds"
                     value={formData.dietaryNeeds}
                     onChange={handleChange}
-                    rows="2"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                    rows="3"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
                     placeholder="Special dietary requirements"
                   />
                 </div>
@@ -660,11 +692,16 @@ const UserEditPet = () => {
             </div>
             
             {/* Veterinarian Information */}
-            <div>
-              <h2 className="text-lg font-semibold text-gray-800 mb-4">Veterinarian Information</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-2 rounded-xl">
+                  <FaSyringe className="text-white text-xl" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-800">Veterinarian Information</h2>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label htmlFor="vetName" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="vetName" className="block text-sm font-semibold text-gray-700 mb-2">
                     Veterinarian Name
                   </label>
                   <input
@@ -673,13 +710,13 @@ const UserEditPet = () => {
                     name="vetName"
                     value={formData.vetName}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
                     placeholder="Enter veterinarian name"
                   />
                 </div>
                 
                 <div>
-                  <label htmlFor="vetPhone" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="vetPhone" className="block text-sm font-semibold text-gray-700 mb-2">
                     Veterinarian Phone
                   </label>
                   <input
@@ -688,7 +725,7 @@ const UserEditPet = () => {
                     name="vetPhone"
                     value={formData.vetPhone}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
                     placeholder="Enter veterinarian phone"
                   />
                 </div>
@@ -696,53 +733,64 @@ const UserEditPet = () => {
             </div>
             
             {/* Additional Notes */}
-            <div>
-              <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
-                Additional Notes
+            <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-100">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="bg-gradient-to-r from-purple-500 to-pink-600 p-2 rounded-xl">
+                  <FaPaw className="text-white text-xl" />
+                </div>
+                <h2 className="text-xl font-bold text-gray-800">Additional Notes</h2>
+              </div>
+              <label htmlFor="notes" className="block text-sm font-semibold text-gray-700 mb-2">
+                Additional Information
               </label>
               <textarea
                 id="notes"
                 name="notes"
                 value={formData.notes}
                 onChange={handleChange}
-                rows="3"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                rows="4"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
                 placeholder="Any additional information about your pet"
               />
             </div>
           </div>
           
-          {/* Form Actions */}
-          <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={() => navigate('/user/pets')}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className={`px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 flex items-center gap-2 ${
-                isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
-              }`}
-            >
-              {isSubmitting ? (
-                <>
-                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  <span>Updating...</span>
-                </>
-              ) : (
-                <>
-                  <FaPaw />
-                  <span>Update Pet Profile</span>
-                </>
-              )}
-            </button>
+          {/* Enhanced Form Actions */}
+          <div className="px-8 py-6 bg-gradient-to-r from-gray-50 to-gray-100 border-t border-gray-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="text-sm text-gray-600">
+              <span className="font-medium">*</span> Required fields
+            </div>
+            <div className="flex gap-4">
+              <button
+                type="button"
+                onClick={() => navigate('/user/pets')}
+                className="px-6 py-3 border-2 border-gray-300 rounded-xl text-gray-700 bg-white hover:bg-gray-50 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all duration-200 font-semibold"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className={`px-8 py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-xl hover:from-pink-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 flex items-center gap-3 font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 ${
+                  isSubmitting ? 'opacity-70 cursor-not-allowed transform-none' : ''
+                }`}
+              >
+                {isSubmitting ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Updating...</span>
+                  </>
+                ) : (
+                  <>
+                    <FaPaw className="text-lg" />
+                    <span>Update Pet Profile</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </form>
       </div>

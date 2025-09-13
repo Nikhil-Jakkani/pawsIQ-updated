@@ -53,8 +53,37 @@ export const getDashboard = async (req: any, res: Response) => {
       JSON.stringify(obj, (_k, v) => (typeof v === 'bigint' ? v.toString() : v))
     );
 
+    // Transform pets data to match frontend expectations
+    const transformedPets = pets.map((pet: any) => {
+      let ageYears: number | null = null;
+      if (pet?.pet_birth_dtm) {
+        const dob = new Date(pet.pet_birth_dtm);
+        const now = new Date();
+        ageYears = Math.max(0, Math.floor((now.getTime() - dob.getTime()) / (1000 * 60 * 60 * 24 * 365.25)));
+      }
+      
+      return {
+        pet_id: pet.pet_id,
+        id: pet.pet_id, // Add id field for compatibility
+        name: pet.pet_name,
+        type: pet.pet_type || 'other',
+        breed: pet.pet_breed || '',
+        gender: pet.pet_gender || 'Unknown',
+        age: ageYears ? `${ageYears} years` : 'Unknown',
+        weight: pet.pet_weight ? `${pet.pet_weight} kg` : 'Unknown',
+        image: pet.pet_image || `https://source.unsplash.com/random/400x300?${encodeURIComponent(pet.pet_type || 'pet')}`,
+        imagePath: pet.pet_image, // Keep original path for signed URL generation
+        status: pet.pet_status || 'active',
+        microchipped: pet.microchipped || false,
+        neutered: pet.neutered || false,
+        vaccinated: pet.vaccinated || false,
+        createdAt: pet.created_at,
+        lastUpdated: pet.last_updated_dtm,
+      };
+    });
+
     const payload = {
-      pets: normalizeBigInt(pets),
+      pets: normalizeBigInt(transformedPets),
       appointments: {
         total: totalAppointments,
         recent: normalizeBigInt(recentAppointments),
