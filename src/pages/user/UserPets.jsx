@@ -45,7 +45,12 @@ const UserPets = () => {
       if (raw) {
         const cachedPets = JSON.parse(raw);
         if (Array.isArray(cachedPets) && cachedPets.length) {
-          setPets(cachedPets);
+          const sorted = [...cachedPets].sort((a, b) => {
+            const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+            return da - db;
+          });
+          setPets(sorted);
         }
       }
     } catch (e) {
@@ -143,7 +148,7 @@ const UserPets = () => {
         if (!res.ok) throw new Error(data?.message || 'Failed to load pets');
 
         // Phase 1: map pet data using cached image URLs for instant paint
-        const rawPets = (data?.pets || []).map((p) => {
+        let rawPets = (data?.pets || []).map((p) => {
           const imagePath = p.pet_image || '';
           const cachedUrl = getCachedUrlIfFresh(imagePath);
           return {
@@ -151,20 +156,27 @@ const UserPets = () => {
             name: p.pet_name || 'Pet',
             type: (p.pet_type || '').toLowerCase(),
             breed: p.pet_breed || '',
-            age: p.pet_age != null ? `${p.pet_age} years` : (p.pet_birthday ? (() => {
-              const dob = new Date(p.pet_birthday);
+            age: p.pet_birth_dtm ? (() => {
+              const dob = new Date(p.pet_birth_dtm);
               const now = new Date();
               const ageYears = Math.max(0, Math.floor((now.getTime() - dob.getTime()) / (1000 * 60 * 60 * 24 * 365.25)));
               return `${ageYears} years`;
-            })() : '0 years'),
+            })() : (p.pet_age != null ? `${p.pet_age} years` : '0 years'),
             weight: p.pet_weight != null ? `${p.pet_weight} lbs` : '0 lbs',
             gender: p.pet_gender || '',
-            birthday: p.pet_birthday || new Date().toISOString().slice(0, 10),
+            birthday: p.pet_birth_dtm || p.pet_birthday || new Date().toISOString().slice(0, 10),
+            createdAt: p.created_at || null,
             imagePath,
             image: cachedUrl || 'https://placehold.co/600x400?text=Pet',
             lastCheckup: p.last_checkup || new Date().toISOString().slice(0, 10),
             vaccinations: p.vaccinations || 'Unknown',
           };
+        });
+        // Enforce oldest-first order
+        rawPets = rawPets.sort((a, b) => {
+          const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return da - db;
         });
 
         // Paint immediately with cached/placeholder images

@@ -32,11 +32,12 @@ const UserDashboard = () => {
   const [activeService, setActiveService] = useState('suggestions');
   const [showAllTips, setShowAllTips] = useState(false);
   const [selectedPetForAI, setSelectedPetForAI] = useState(null);
-  const { currentUser, tokens, authFetch, loading: authLoading } = useAuth();
+  const { currentUser, tokens, authFetch, loading: authLoading, fetchUserDashboard } = useAuth();
 
   const accessToken = tokens?.access?.token;
 
   const [pets, setPets] = useState([]);
+  const [dashboardData, setDashboardData] = useState(null);
   const careRemRef = useRef(null);
 
   // In-memory cache for signed image URLs with persistence to localStorage
@@ -145,13 +146,21 @@ const UserDashboard = () => {
     
     const loadPets = async () => {
       try {
-        // Fetch pet data
-        const res = await authFetch(`${API_URL}/user/profile`);
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data?.message || 'Failed to load pets');
+        // Prefer aggregated dashboard data (single round-trip)
+        let payload = null;
+        try {
+          payload = await fetchUserDashboard();
+          if (payload) setDashboardData(payload);
+        } catch (_) {}
+        let data = null;
+        if (!payload) {
+          const res = await authFetch(`${API_URL}/user/profile`);
+          data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(data?.message || 'Failed to load pets');
+        }
         
         // Phase 1: map pet data synchronously using cached image URLs (if present)
-        const rawPets = (data?.pets || []).map((p) => {
+        let rawPets = ((payload?.pets) || (data?.pets) || []).map((p) => {
           const imagePath = p.pet_image || '';
           const cachedUrl = getCachedUrlIfFresh(imagePath);
           return {
@@ -159,15 +168,27 @@ const UserDashboard = () => {
             name: p.pet_name || 'Pet',
             type: (p.pet_type || '').toLowerCase(),
             breed: p.pet_breed || '',
-            age: p.pet_age != null ? `${p.pet_age} years` : '0 years',
+            age: p.pet_birth_dtm ? (() => {
+              const dob = new Date(p.pet_birth_dtm);
+              const now = new Date();
+              const ageYears = Math.max(0, Math.floor((now.getTime() - dob.getTime()) / (1000 * 60 * 60 * 24 * 365.25)));
+              return `${ageYears} years`;
+            })() : (p.pet_age != null ? `${p.pet_age} years` : '0 years'),
             weight: p.pet_weight != null ? `${p.pet_weight} lbs` : '0 lbs',
             gender: p.pet_gender || '',
-            birthday: p.pet_birthday || new Date().toISOString().slice(0, 10),
+            birthday: p.pet_birth_dtm || p.pet_birthday || new Date().toISOString().slice(0, 10),
+            createdAt: p.created_at || null,
             imagePath,
             image: cachedUrl || 'https://placehold.co/600x400?text=Pet',
             lastCheckup: p.last_checkup || new Date().toISOString().slice(0, 10),
             vaccinations: p.vaccinations || 'Unknown',
           };
+        });
+        // Enforce oldest-first ordering to avoid jumps
+        rawPets = rawPets.sort((a, b) => {
+          const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return da - db;
         });
 
         
@@ -178,7 +199,9 @@ const UserDashboard = () => {
         // Persist for instant paint on next load
         if (petsCacheKey) {
           try {
-            localStorage.setItem(petsCacheKey, JSON.stringify(rawPets));
+            const sortedPets = rawPets.map(pet => ({ ...pet, createdAt: pet.createdAt || new Date().toISOString() }));
+            sortedPets.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+            localStorage.setItem(petsCacheKey, JSON.stringify(sortedPets));
           } catch {}
         }
         if (rawPets.length > 0 && !selectedPetForAI) {
@@ -599,7 +622,7 @@ const UserDashboard = () => {
                   </button>
                 </div>
               </h2>
-              <CareReminders ref={careRemRef} pets={pets} />
+              <CareReminders ref={careRemRef} pets={pets} initialItems={dashboardData?.reminders || null} />
             </div>
 
           </div>

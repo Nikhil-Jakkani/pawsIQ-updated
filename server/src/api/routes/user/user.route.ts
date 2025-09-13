@@ -4,6 +4,7 @@ import { auth } from '../../../middlewares/auth.js';
 import { userAuth } from '../../middlewares/user.auth.js';
 import { validate } from '../../../middlewares/validate.js';
 import { userValidation } from '../../validations/user/user.validation.js';
+import dashboardController from '../../controllers/user/dashboard.controller.js';
 
 const router = express.Router();
 
@@ -12,6 +13,9 @@ router
   .route('/profile')
   .get(userAuth, userController.getProfile)
   .patch(userAuth, validate(userValidation.updateProfile), userController.updateProfile);
+
+// Aggregated dashboard data for the current user
+router.get('/dashboard', userAuth, dashboardController.getDashboard);
 
 // User management routes (admin only)
 router.use(auth('admin'));

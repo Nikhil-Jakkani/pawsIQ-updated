@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 const UpcomingSchedule = ({ pets = [], accessToken }) => {
   const navigate = useNavigate();
   const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
-  const { authFetch, loading: authLoading, currentUser } = useAuth();
+  const { authFetch, loading: authLoading, currentUser, fetchUserDashboard } = useAuth();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -34,12 +34,23 @@ const UpcomingSchedule = ({ pets = [], accessToken }) => {
         // Only load appointments if we have pets data
         if (!pets.length) return [];
 
-        const res = await authFetch(`${API_URL}/appointments?page=1&limit=50`);
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data?.message || 'Failed to load appointments');
+        // Prefer aggregated dashboard data
+        let appts = null;
+        try {
+          const payload = await fetchUserDashboard();
+          appts = payload?.appointments?.recent || null;
+        } catch (_) {}
+
+        let itemsSrc = appts;
+        if (!itemsSrc) {
+          const res = await authFetch(`${API_URL}/appointments?page=1&limit=50`);
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(data?.message || 'Failed to load appointments');
+          itemsSrc = data?.items || [];
+        }
 
         // Process appointments in a single pass
-        const mapped = (data?.items || [])
+        const mapped = (itemsSrc || [])
           .map((a) => {
             const dt = new Date(a.appointment_date);
             if (isNaN(dt.getTime())) return null;

@@ -79,26 +79,25 @@ const createHealthRecord = async (petId: number, recordData: RecordData, fileDat
 };
 
 const getPetHealthRecords = async (petId: number, userId: number): Promise<HealthRecord[]> => {
-  // First verify the pet belongs to the user
-  const pet = await prisma.pIQ_Pets.findFirst({
-    where: {
-      pet_id: petId,
-      user_id: userId,
-    },
-  });
-
-  if (!pet) {
-    throw new ApiError(httpStatus.NOT_FOUND, 'Pet not found or access denied');
-  }
-
-  // Get all health records for the pet using raw query
+  // Single query that both verifies ownership and fetches records
   const records = await prisma.$queryRaw<HealthRecord[]>`
-    SELECT * FROM "PIQ_Health_Records"
-    WHERE pet_id = ${petId}
-    ORDER BY record_date DESC
+    SELECT hr.*
+    FROM "PIQ_Health_Records" hr
+    JOIN "PIQ_Pets" p ON p.pet_id = hr.pet_id
+    WHERE hr.pet_id = ${petId} AND p.user_id = ${userId}
+    ORDER BY hr.record_date DESC
   `;
 
-  // Generate signed URLs for each file
+  if (!records || records.length === 0) {
+    // If no rows returned, either pet doesn't belong to user or has no records
+    // Check ownership explicitly to return proper status code
+    const own = await prisma.pIQ_Pets.findFirst({ where: { pet_id: petId, user_id: userId } });
+    if (!own) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Pet not found or access denied');
+    }
+  }
+
+  // Generate signed URLs for each file (6 days expiry to reduce refresh churn)
   const recordsWithUrls = await Promise.all(
     records.map(async (record: HealthRecord) => {
       if (!record.file_path) return { ...record, fileUrl: null };
@@ -106,7 +105,7 @@ const getPetHealthRecords = async (petId: number, userId: number): Promise<Healt
       try {
         const { data, error } = await db.storage
           .from('health-records')
-          .createSignedUrl(record.file_path, 3600); // 1 hour expiry
+          .createSignedUrl(record.file_path, 518400); // 6 days expiry
 
         if (error) {
           console.error('Error generating signed URL:', error);

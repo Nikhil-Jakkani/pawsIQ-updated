@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useImperativeHandle } from 're
 import { useAuth } from '../../context/AuthContext';
 import { FaCut, FaSyringe, FaStethoscope, FaBone, FaBath, FaCalendarCheck, FaTrash } from 'react-icons/fa';
 
-const CareReminders = React.forwardRef(({ pets }, ref) => {
+const CareReminders = React.forwardRef(({ pets, initialItems = null }, ref) => {
   const { authFetch, loading, currentUser } = useAuth();
   const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
 
@@ -20,6 +20,53 @@ const CareReminders = React.forwardRef(({ pets }, ref) => {
     due_date: '',
     priority: 'normal',
     notes: '',
+  };
+
+  // Map raw reminders to UI format
+  const mapToUI = (list = []) => {
+    return list
+      .filter(r => (r.source === 'custom' || r.reminder_type === 'custom'))
+      .map((r) => {
+        const petIdNum = Number(r.pet_id);
+        const pet = (pets || []).find((p) => Number(p.id) === petIdNum) || {};
+        const dueInDays = r?.due_in_days != null
+          ? Number(r.due_in_days)
+          : (r.due_date ? Math.ceil((new Date(r.due_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null);
+        const type = r.reminder_type || r.source || 'custom';
+        const meta = getTypeMeta(type);
+        const idStr = r.id || r.reminder_id || `custom-${r.pet_id || 'na'}-${r.title || 'untitled'}-${r.due_date || 'na'}`;
+        const delId = (r.source === 'custom')
+          ? String((idStr && String(idStr).startsWith('custom-')) ? String(idStr).slice(7) : (r.reminder_id || ''))
+          : '';
+        return {
+          id: idStr,
+          title: r.title || 'Reminder',
+          value: dueInDays != null ? String(dueInDays) : '',
+          subtitle: r.subtitle || (dueInDays != null ? 'days left' : (r.due_date ? new Date(r.due_date).toLocaleDateString() : '')),
+          pet: {
+            id: pet.id,
+            name: pet.name || 'Pet',
+            image: pet.image,
+            imagePath: pet.imagePath,
+          },
+          icon: meta.icon,
+          color: meta.color,
+          bgColor: meta.bgColor,
+          textColor: meta.textColor,
+          priority: (r.priority || 'normal').toLowerCase() === 'high' ? 'high' : 'normal',
+          source: 'custom',
+          canDelete: !!delId,
+          deleteId: delId,
+          originalData: r
+        };
+      })
+      .sort((a, b) => {
+        if (a.priority === 'high' && b.priority !== 'high') return -1;
+        if (b.priority === 'high' && a.priority !== 'high') return 1;
+        const av = parseInt(a.value || '9999', 10);
+        const bv = parseInt(b.value || '9999', 10);
+        return av - bv;
+      });
   };
 
   const [form, setForm] = useState(initialFormState);
@@ -108,54 +155,8 @@ const CareReminders = React.forwardRef(({ pets }, ref) => {
     const res = await authFetch(`${API_URL}/reminders`);
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data?.message || 'Failed to load reminders');
-
     const list = Array.isArray(data) ? data : (data?.items || []);
-    const mapped = list
-      .filter(r => (r.source === 'custom' || r.reminder_type === 'custom'))
-      .map((r) => {
-        const petIdNum = Number(r.pet_id);
-        const pet = (pets || []).find((p) => Number(p.id) === petIdNum) || {};
-        const dueInDays = r?.due_in_days != null
-          ? Number(r.due_in_days)
-          : (r.due_date ? Math.ceil((new Date(r.due_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null);
-        
-        const type = r.reminder_type || r.source || 'custom';
-        const meta = getTypeMeta(type);
-        const idStr = r.id || r.reminder_id || `custom-${r.pet_id || 'na'}-${r.title || 'untitled'}-${r.due_date || 'na'}`;
-        const delId = (r.source === 'custom')
-          ? String((idStr && String(idStr).startsWith('custom-')) ? String(idStr).slice(7) : (r.reminder_id || ''))
-          : '';
-        
-        return {
-          id: idStr,
-          title: r.title || 'Reminder',
-          value: dueInDays != null ? String(dueInDays) : '',
-          subtitle: r.subtitle || (dueInDays != null ? 'days left' : (r.due_date ? new Date(r.due_date).toLocaleDateString() : '')),
-          pet: {
-            id: pet.id,
-            name: pet.name || 'Pet',
-            image: pet.image,
-            imagePath: pet.imagePath,
-          },
-          icon: meta.icon,
-          color: meta.color,
-          bgColor: meta.bgColor,
-          textColor: meta.textColor,
-          priority: (r.priority || 'normal').toLowerCase() === 'high' ? 'high' : 'normal',
-          source: 'custom',
-          canDelete: !!delId,
-          deleteId: delId,
-          originalData: r
-        };
-      })
-      .sort((a, b) => {
-        if (a.priority === 'high' && b.priority !== 'high') return -1;
-        if (b.priority === 'high' && a.priority !== 'high') return 1;
-        const av = parseInt(a.value || '9999', 10);
-        const bv = parseInt(b.value || '9999', 10);
-        return av - bv;
-      });
-
+    const mapped = mapToUI(list);
     setReminders(mapped);
   }, [authFetch, API_URL, pets, loading, currentUser]);
 
@@ -164,7 +165,12 @@ const CareReminders = React.forwardRef(({ pets }, ref) => {
     (async () => {
       try {
         if (!loading && currentUser) {
-          await loadReminders();
+          if (initialItems && Array.isArray(initialItems) && initialItems.length) {
+            const mapped = mapToUI(initialItems);
+            if (!cancelled) setReminders(mapped);
+          } else {
+            await loadReminders();
+          }
         } else if (!cancelled) {
           setReminders([]);
         }
@@ -173,7 +179,7 @@ const CareReminders = React.forwardRef(({ pets }, ref) => {
       }
     })();
     return () => { cancelled = true; };
-  }, [loadReminders, loading, currentUser]);
+  }, [loadReminders, loading, currentUser, initialItems]);
 
   const submitNewReminder = async (e) => {
     e?.preventDefault?.();

@@ -22,6 +22,24 @@ const generateTokens = async (userId: number, role: string = 'user') => {
   };
 };
 
+// Lightweight role discovery without role guard
+export const whoAmI = async (req: Request, res: Response) => {
+  try {
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+    if (!token) return res.status(401).json({ error: 'Please authenticate' });
+
+    try {
+      const payload: any = jwt.verify(token, (await import('../../config/config.js')).default.jwtSecret);
+      return res.json({ sub: payload.sub, role: payload.role || null, type: payload.type || null });
+    } catch (e) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+  } catch (error) {
+    return res.status(500).json({ error: 'Failed to determine identity' });
+  }
+};
+
 // Unified credentials login: tries admin first, then user
 export const login = async (req: Request, res: Response) => {
   try {

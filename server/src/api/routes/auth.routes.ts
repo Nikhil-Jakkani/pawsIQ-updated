@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { googleLogin, facebookLogin, refreshToken, login, sendOTP, verifyOTP } from '../controllers/auth.controller.js';
+import { googleLogin, facebookLogin, refreshToken, login, sendOTP, verifyOTP, whoAmI } from '../controllers/auth.controller.js';
 
 const router = Router();
 
@@ -20,5 +20,8 @@ router.post('/auth/send-otp', sendOTP);
 
 // Verify OTP and authenticate
 router.post('/auth/verify-otp', verifyOTP);
+
+// Identify current subject and role from token
+router.get('/auth/whoami', whoAmI);
 
 export default router;
