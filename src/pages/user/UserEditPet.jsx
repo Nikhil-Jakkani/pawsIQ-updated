@@ -793,6 +793,7 @@ const UserEditPet = () => {
             </div>
           </div>
         </form>
+        </div>
       </div>
     </UserLayout>
   );
