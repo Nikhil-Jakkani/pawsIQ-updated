@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { FaRunning, FaBone, FaPlay, FaChartLine, FaChevronLeft, FaChevronRight, FaPaw, FaPlus, FaTimes, FaWater, FaBed, FaCheck, FaHeart, FaSmile } from 'react-icons/fa';
 
-const PetActivityTracker = () => {
-  const [selectedPet, setSelectedPet] = useState('Max');
+// Accept pets and optional realtime fetcher via props
+const PetActivityTracker = ({ pets: petsProp = [], fetchActivities }) => {
   const [currentPetIndex, setCurrentPetIndex] = useState(0);
   const [showPopup, setShowPopup] = useState(false);
-  const [activityType, setActivityType] = useState('exercise');
+  const [activityType, setActivityType] = useState('walking'); // renamed from exercise
   const [activityValue, setActivityValue] = useState('');
   const [activityNote, setActivityNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -13,62 +13,73 @@ const PetActivityTracker = () => {
   const [foodImage, setFoodImage] = useState(null); // { base64, preview }
   const [nutrition, setNutrition] = useState(null);
   const [analyzing, setAnalyzing] = useState(false);
-  
-  const pets = [
-    { 
-      name: 'Max', 
-      breed: 'Golden Retriever', 
-      type: 'dog',
-      image: 'https://images.unsplash.com/photo-1552053831-71594a27632d?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=60',
-      color: 'from-amber-500 to-orange-600'
-    },
-    { 
-      name: 'Luna', 
-      breed: 'Siamese Cat', 
-      type: 'cat',
-      image: 'https://images.unsplash.com/photo-1592194996308-7b43878e84a6?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=60',
-      color: 'from-purple-500 to-blue-600'
-    }
-  ];
-  
-  const activities = {
-    Max: {
+
+  // Map incoming pets to minimal structure this component needs
+  const pets = useMemo(() => {
+    const fallback = [
+      { 
+        name: 'Max', 
+        breed: 'Golden Retriever', 
+        type: 'dog',
+        image: 'https://images.unsplash.com/photo-1552053831-71594a27632d?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=60',
+        color: 'from-amber-500 to-orange-600'
+      },
+      { 
+        name: 'Luna', 
+        breed: 'Siamese Cat', 
+        type: 'cat',
+        image: 'https://images.unsplash.com/photo-1592194996308-7b43878e84a6?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=60',
+        color: 'from-purple-500 to-blue-600'
+      }
+    ];
+    const list = (Array.isArray(petsProp) && petsProp.length ? petsProp : fallback).map((p, idx) => ({
+      name: p.name || `Pet ${idx + 1}`,
+      breed: p.breed || '',
+      type: (p.type || '').toLowerCase(),
+      image: p.image || p.imagePath || 'https://placehold.co/100x100?text=Pet',
+      color: p.color || (idx % 2 ? 'from-purple-500 to-blue-600' : 'from-amber-500 to-orange-600')
+    }));
+    return list;
+  }, [petsProp]);
+
+  // Local simulated activity store keyed by pet name
+  const [activities, setActivities] = useState(() => ({
+    [pets[0]?.name || 'Max']: {
       today: {
-        exercise: { value: 45, goal: 60, unit: 'min' },
-        food: { value: 2, goal: 3, unit: 'meals' },
+        walking: { value: 45, goal: 60, unit: 'min' },
+        food: { value: 2, goal: 3, unit: 'portions' },
         play: { value: 30, goal: 45, unit: 'min' }
       },
       week: [
-        { day: 'Mon', exercise: 60, food: 3, play: 45 },
-        { day: 'Tue', exercise: 45, food: 3, play: 30 },
-        { day: 'Wed', exercise: 55, food: 2, play: 40 },
-        { day: 'Thu', exercise: 40, food: 3, play: 35 },
-        { day: 'Fri', exercise: 50, food: 3, play: 50 },
-        { day: 'Sat', exercise: 70, food: 3, play: 60 },
-        { day: 'Sun', exercise: 45, food: 2, play: 30 }
-      ]
-    },
-    Luna: {
-      today: {
-        exercise: { value: 20, goal: 30, unit: 'min' },
-        food: { value: 2, goal: 2, unit: 'meals' },
-        play: { value: 25, goal: 30, unit: 'min' }
-      },
-      week: [
-        { day: 'Mon', exercise: 30, food: 2, play: 30 },
-        { day: 'Tue', exercise: 25, food: 2, play: 25 },
-        { day: 'Wed', exercise: 35, food: 2, play: 35 },
-        { day: 'Thu', exercise: 20, food: 2, play: 20 },
-        { day: 'Fri', exercise: 30, food: 2, play: 40 },
-        { day: 'Sat', exercise: 40, food: 2, play: 45 },
-        { day: 'Sun', exercise: 20, food: 2, play: 25 }
+        { day: 'Mon', walking: 60, food: 3, play: 45 },
+        { day: 'Tue', walking: 45, food: 3, play: 30 },
+        { day: 'Wed', walking: 55, food: 2, play: 40 },
+        { day: 'Thu', walking: 40, food: 3, play: 35 },
+        { day: 'Fri', walking: 50, food: 3, play: 50 },
+        { day: 'Sat', walking: 70, food: 3, play: 60 },
+        { day: 'Sun', walking: 45, food: 2, play: 30 }
       ]
     }
-  };
+  }));
+
+  // Optional realtime polling hook (every 20s) if fetchActivities provided
+  useEffect(() => {
+    if (!fetchActivities) return;
+    let mounted = true;
+    const load = async () => {
+      try {
+        const data = await fetchActivities(); // expected shape should match setActivities
+        if (mounted && data) setActivities(data);
+      } catch {}
+    };
+    load();
+    const id = setInterval(load, 20000);
+    return () => { mounted = false; clearInterval(id); };
+  }, [fetchActivities]);
 
   const getActivityIcon = (type) => {
     switch (type) {
-      case 'exercise': return FaRunning;
+      case 'walking': return FaRunning;
       case 'food': return FaBone;
       case 'play': return FaPlay;
       case 'water': return FaWater;
@@ -79,7 +90,7 @@ const PetActivityTracker = () => {
 
   const getActivityColor = (type) => {
     switch (type) {
-      case 'exercise': return 'text-red-600 bg-red-100';
+      case 'walking': return 'text-red-600 bg-red-100';
       case 'food': return 'text-orange-600 bg-orange-100';
       case 'water': return 'text-blue-600 bg-blue-100';
       case 'sleep': return 'text-purple-600 bg-purple-100';
@@ -90,8 +101,8 @@ const PetActivityTracker = () => {
   
   const getActivityUnit = (type) => {
     switch (type) {
-      case 'exercise': return 'min';
-      case 'food': return 'meals';
+      case 'walking': return 'min';
+      case 'food': return 'portions';
       case 'water': return 'cups';
       case 'sleep': return 'hours';
       case 'play': return 'min';
@@ -122,20 +133,26 @@ const PetActivityTracker = () => {
         }
       }
 
-      // Local UI update simulation
-      const currentActivity = activities[currentPetName].today[activityType];
-      if (currentActivity) {
-        currentActivity.value = Math.min(
-          parseInt(currentActivity.value) + parseInt(activityValue || 0),
-          currentActivity.goal * 1.5
-        );
-      } else {
-        activities[currentPetName].today[activityType] = {
-          value: parseInt(activityValue || 0),
-          goal: parseInt(activityValue || 0) * 1.2,
-          unit: getActivityUnit(activityType)
-        };
-      }
+      // Local UI update simulation (keeps UI in sync immediately)
+      setActivities((prev) => {
+        const copy = { ...(prev || {}) };
+        copy[currentPetName] = copy[currentPetName] || { today: {}, week: [] };
+        const today = copy[currentPetName].today;
+        const currentActivity = today[activityType];
+        if (currentActivity) {
+          currentActivity.value = Math.min(
+            parseInt(currentActivity.value) + parseInt(activityValue || 0),
+            (currentActivity.goal || 0) * 1.5 || 9999
+          );
+        } else {
+          today[activityType] = {
+            value: parseInt(activityValue || 0),
+            goal: Math.max(10, parseInt(activityValue || 0) * 1.2),
+            unit: getActivityUnit(activityType)
+          };
+        }
+        return { ...copy };
+      });
 
       setShowPopup(false);
       setShowSuccess(true);
@@ -159,23 +176,20 @@ const PetActivityTracker = () => {
   };
 
   const currentPet = pets[currentPetIndex];
-  const currentPetData = activities[currentPet.name];
+  const currentPetData = activities[currentPet?.name] || { today: {}, week: [] };
 
   const nextPet = () => {
     const nextIndex = (currentPetIndex + 1) % pets.length;
     setCurrentPetIndex(nextIndex);
-    setSelectedPet(pets[nextIndex].name);
   };
 
   const prevPet = () => {
     const prevIndex = currentPetIndex === 0 ? pets.length - 1 : currentPetIndex - 1;
     setCurrentPetIndex(prevIndex);
-    setSelectedPet(pets[prevIndex].name);
   };
 
   const selectPet = (index) => {
     setCurrentPetIndex(index);
-    setSelectedPet(pets[index].name);
   };
 
   return (
@@ -217,7 +231,7 @@ const PetActivityTracker = () => {
               <div className="mb-5">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Activity Type</label>
                 <div className="grid grid-cols-5 gap-2">
-                  {['exercise', 'food', 'water', 'play', 'sleep'].map((type) => {
+                  {['walking', 'food', 'water', 'play', 'sleep'].map((type) => {
                     const IconComponent = getActivityIcon(type);
                     return (
                       <button
@@ -238,10 +252,10 @@ const PetActivityTracker = () => {
                 </div>
               </div>
               
-              {/* Amount input */}
+              {/* Amount/Portion input */}
               <div className="mb-5">
                 <label htmlFor="activityValue" className="block text-sm font-medium text-gray-700 mb-2">
-                  Amount ({getActivityUnit(activityType)})
+                  {activityType === 'food' ? 'Portion of meal' : 'Amount'} ({getActivityUnit(activityType)})
                 </label>
                 <input
                   type="number"
@@ -251,7 +265,7 @@ const PetActivityTracker = () => {
                   min="1"
                   required
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  placeholder={`Enter ${activityType} amount`}
+                  placeholder={activityType === 'food' ? 'Enter portion count' : `Enter ${activityType} amount`}
                 />
               </div>
               

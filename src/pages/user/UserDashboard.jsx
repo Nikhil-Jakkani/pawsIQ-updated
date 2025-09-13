@@ -263,18 +263,18 @@ const UserDashboard = () => {
       const petAge = parseInt(pet.age);
       const petWeight = parseInt(pet.weight);
       
-      // Exercise & Activity Tips
+      // Walking & Activity Tips
       if (pet.type === 'dog') {
-        const exerciseTime = pet.breed === 'Golden Retriever' ? '90-120' : 
+        const walkingTime = pet.breed === 'Golden Retriever' ? '90-120' : 
                            pet.breed === 'Labrador' ? '60-90' : '45-60';
         tips.push({
-          id: `exercise-${pet.id}`,
+          id: `walking-${pet.id}`,
           petName: pet.name,
           petType: pet.type,
           icon: FaRunning,
           color: 'blue',
-          title: `${pet.name}'s Daily Exercise Plan`,
-          tip: `${pet.breed}s like ${pet.name} (${pet.age}) need ${exerciseTime} minutes of exercise daily. ${currentSeason === 'summer' ? 'Exercise during cooler morning/evening hours to prevent overheating.' : currentSeason === 'winter' ? 'Indoor activities and shorter outdoor walks are recommended.' : 'Perfect weather for outdoor activities!'}`,
+          title: `${pet.name}'s Daily Walking Plan`,
+          tip: `${pet.breed}s like ${pet.name} (${pet.age}) need ${walkingTime} minutes of walking daily. ${currentSeason === 'summer' ? 'Walk during cooler morning/evening hours to prevent overheating.' : currentSeason === 'winter' ? 'Indoor activities and shorter outdoor walks are recommended.' : 'Perfect weather for outdoor activities!'}`,
           aiGenerated: true
         });
       } else if (pet.type === 'cat') {
@@ -630,7 +630,7 @@ const UserDashboard = () => {
           {/* Right Column - AI Pet Care Tips */}
           <div className="lg:col-span-1 space-y-4">
             {/* Enhanced Pet Activity Tracker with Carousel */}
-            <PetActivityTracker />
+            <PetActivityTracker pets={pets} />
 
             {/* AI Pet Care Tips Section */}
             <div className="bg-gradient-to-br from-orange-50 via-yellow-50 to-pink-50 rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all duration-500 border border-orange-100">
