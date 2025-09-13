@@ -3,8 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
 const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
-// Mock auth is disabled by default. Enable explicitly via VITE_ENABLE_MOCK_AUTH="true" for local demos only.
-const ENABLE_MOCK_AUTH = import.meta?.env?.VITE_ENABLE_MOCK_AUTH === 'true';
 
 const AuthContext = createContext(null);
 
