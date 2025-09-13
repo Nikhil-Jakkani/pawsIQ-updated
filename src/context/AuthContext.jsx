@@ -208,37 +208,6 @@ export const AuthProvider = ({ children }) => {
       console.warn('API authentication failed');
     }
 
-    if (ENABLE_MOCK_AUTH) {
-      try {
-        const user = USERS.find(u => u.email === email && u.password === password);
-        if (user) {
-          const userData = { ...user, token: 'mock-token-' + Date.now() };
-          setCurrentUser(userData);
-          setTokens({ access: { token: userData.token } });
-          localStorage.setItem('user', JSON.stringify(userData));
-          localStorage.setItem('authTokens', JSON.stringify({ access: { token: userData.token } }));
-          setLoading(false);
-          return { success: true, userType: user.role };
-        }
-
-        const provider = PROVIDERS.find(p => p.email === email && p.password === password);
-        if (provider) {
-          const userData = { ...provider, token: 'mock-token-' + Date.now() };
-          setCurrentUser(userData);
-          setTokens({ access: { token: userData.token } });
-          localStorage.setItem('user', JSON.stringify(userData));
-          localStorage.setItem('authTokens', JSON.stringify({ access: { token: userData.token } }));
-          setLoading(false);
-          return { success: true, userType: userData.role };
-        }
-
-        throw new Error('Invalid email or password');
-      } catch (error) {
-        setError(error.message || 'An error occurred during login');
-        setLoading(false);
-        return { success: false };
-      }
-    }
 
     setError('Login failed. Please check your credentials.');
     setLoading(false);
@@ -324,31 +293,7 @@ export const AuthProvider = ({ children }) => {
       console.warn('Provider API authentication failed');
     }
 
-    // Fallback to mock authentication
-    if (ENABLE_MOCK_AUTH) {
-      try {
-        // Check in PROVIDERS array
-        const provider = PROVIDERS.find(p => p.email === email && p.password === password);
-        if (provider) {
-          const userData = { ...provider, token: 'mock-token-' + Date.now() };
-          setCurrentUser(userData);
-          setTokens({ access: { token: userData.token } });
-          localStorage.setItem('user', JSON.stringify(userData));
-          localStorage.setItem('authTokens', JSON.stringify({ access: { token: userData.token } }));
-          setLoading(false);
-          return { success: true, userType: 'provider' };
-        }
 
-        // No provider found
-        throw new Error('Invalid email or password');
-      } catch (error) {
-        setError(error.message || 'An error occurred during login');
-        setLoading(false);
-        return { success: false };
-      }
-    }
-
-    // If mock auth is disabled, surface failure
     setError('Login failed. Please check your credentials.');
     setLoading(false);
     return { success: false };
