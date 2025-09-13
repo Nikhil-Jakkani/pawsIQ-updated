@@ -22,7 +22,8 @@ export const userService = {
     const { data: pets, error: petsError } = await db
       .from('PIQ_Pets')
       .select('*')
-      .eq('user_id', user.user_id);
+      .eq('user_id', user.user_id)
+      .order('created_at', { ascending: true });
 
     if (petsError) {
       // Log the error but don't fail the request

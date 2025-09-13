@@ -21,13 +21,14 @@ export const errorHandler = (err: ApiError, req: Request, res: Response, next: N
 
   res.locals.errorMessage = err.message;
 
+  const isServerError = statusCode >= 500;
   const response = {
     code: statusCode,
     message,
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+    ...(process.env.NODE_ENV === 'development' && isServerError ? { stack: err.stack } : {}),
   };
 
-  if (process.env.NODE_ENV === 'development') {
+  if (process.env.NODE_ENV === 'development' && isServerError) {
     console.error(err);
   }
 

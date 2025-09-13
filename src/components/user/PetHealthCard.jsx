@@ -239,7 +239,7 @@ const PetHealthCard = ({ pet }) => {
           Book Checkup
         </button>
         <button 
-          onClick={() => navigate(`/pets/${pet.id}`)}
+          onClick={() => navigate(`/user/pets/${pet.id}`)}
           className="flex-1 text-white text-xs font-medium py-2 px-3 rounded-lg transition-colors hover:bg-blue-600" 
           style={{backgroundColor: '#145ae6'}}
         >

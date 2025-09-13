@@ -83,17 +83,19 @@ try {
   const root = ReactDOM.createRoot(rootElement);
   
   // Render the app with proper routing
-  root.render(
-    <React.StrictMode>
-      <Router>
-        <ErrorBoundary>
-          <AuthProvider>
-            <App />
-          </AuthProvider>
-        </ErrorBoundary>
-      </Router>
-    </React.StrictMode>
+  const AppTree = (
+    <Router>
+      <ErrorBoundary>
+        <AuthProvider>
+          <App />
+        </AuthProvider>
+      </ErrorBoundary>
+    </Router>
   );
+
+  // In development, avoid StrictMode to prevent double effects (duplicate API calls)
+  const withStrict = import.meta?.env?.MODE === 'production';
+  root.render(withStrict ? <React.StrictMode>{AppTree}</React.StrictMode> : AppTree);
   
   // Hide loading screen after React has started rendering
   setTimeout(hideLoadingScreen, 800);
