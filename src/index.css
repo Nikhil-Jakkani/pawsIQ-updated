@@ -186,7 +186,7 @@
   }
   
   .pet-card-buttons {
-    @apply mt-auto flex flex-col sm:flex-row gap-2.5;
+    @apply mt-6 flex flex-col sm:flex-row gap-2.5;
     margin-top: auto;
   }
   
