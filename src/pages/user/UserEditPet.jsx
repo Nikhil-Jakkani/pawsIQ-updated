@@ -316,26 +316,22 @@ const UserEditPet = () => {
 
   return (
     <UserLayout>
-      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50">
+      <div className="min-h-screen bg-white">
         <div className="space-y-8">
           {/* Enhanced Header Section */}
           <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
             <div className="flex items-center gap-4">
-              <button 
+              <button
                 onClick={() => navigate('/user/pets')}
-                className="p-3 bg-gradient-to-r from-pink-500 to-purple-600 rounded-xl shadow-md text-white hover:from-pink-600 hover:to-purple-700 transition-all duration-200 transform hover:scale-105"
+                className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700"
               >
-                <FaArrowLeft className="text-lg" />
+                <FaArrowLeft /> Back
               </button>
               <div className="flex-1">
                 <div className="flex items-center gap-4">
-                  <div className="bg-gradient-to-r from-pink-500 to-purple-600 p-3 rounded-2xl shadow-lg">
-                    <FaPaw className="text-white text-3xl" />
-                  </div>
+                  <img src="/7.png" alt="PawsIQ Logo" className="w-10 h-10 rounded-full object-cover" />
                   <div>
-                    <h1 className="text-3xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
-                      Edit Pet Profile
-                    </h1>
+                    <h1 className="text-3xl font-bold text-gray-900">Edit Pet Profile</h1>
                     <p className="text-gray-600 mt-1 text-lg">Update your pet's information and keep their profile current</p>
                   </div>
                 </div>
@@ -348,13 +344,13 @@ const UserEditPet = () => {
             {/* Enhanced Pet Photo Upload */}
             <div className="flex flex-col items-center justify-center py-8">
               <div className="relative group">
-                <div className="w-40 h-40 rounded-3xl overflow-hidden bg-gradient-to-br from-pink-100 to-purple-100 border-4 border-dashed border-pink-300 flex items-center justify-center relative transition-all duration-300 group-hover:border-pink-400 group-hover:shadow-lg">
+                <div className="w-40 h-40 rounded-3xl overflow-hidden bg-gray-50 border-4 border-dashed border-gray-300 flex items-center justify-center relative transition-all duration-300 group-hover:border-gray-400 group-hover:shadow">
                   {previewImage ? (
                     <img src={previewImage} alt="Pet preview" className="w-full h-full object-cover" />
                   ) : (
                     <div className="text-center">
-                      <FaPaw className="text-pink-400 text-5xl mx-auto mb-2" />
-                      <p className="text-pink-500 text-sm font-medium">Add Photo</p>
+                      <FaPaw className="text-gray-400 text-5xl mx-auto mb-2" />
+                      <p className="text-gray-500 text-sm font-medium">Add Photo</p>
                     </div>
                   )}
                   <input 
@@ -370,11 +366,11 @@ const UserEditPet = () => {
                     </div>
                   </div>
                 </div>
-                <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-pink-500 to-purple-600 p-2 rounded-full shadow-lg">
+                <div className="absolute -bottom-2 -right-2 bg-gray-800 p-2 rounded-full shadow">
                   <FaUpload className="text-white text-sm" />
                 </div>
               </div>
-              <label htmlFor="pet-photo" className="mt-6 flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-xl cursor-pointer hover:from-pink-600 hover:to-purple-700 transition-all duration-200 transform hover:scale-105 shadow-lg">
+              <label htmlFor="pet-photo" className="mt-6 flex items-center gap-2 px-6 py-3 bg-gray-800 text-white rounded-xl cursor-pointer hover:bg-gray-900 transition-all duration-200 shadow">
                 <FaUpload className="text-lg" />
                 <span className="font-medium">Upload Pet Photo</span>
               </label>
@@ -382,9 +378,9 @@ const UserEditPet = () => {
             </div>
             
             {/* Basic Information */}
-            <div className="bg-gradient-to-r from-pink-50 to-purple-50 rounded-2xl p-6 border border-pink-100">
+            <div className="bg-white rounded-2xl p-6 border border-gray-200">
               <div className="flex items-center gap-3 mb-6">
-                <div className="bg-gradient-to-r from-pink-500 to-purple-600 p-2 rounded-xl">
+                <div className="bg-gray-800 p-2 rounded-xl">
                   <FaPaw className="text-white text-xl" />
                 </div>
                 <h2 className="text-2xl font-bold text-gray-800">Basic Information</h2>
@@ -414,15 +410,17 @@ const UserEditPet = () => {
                     {petTypes.map((type) => (
                       <label 
                         key={type.value}
-                        className={`flex flex-col items-center justify-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 transform hover:scale-105
+                        className={`flex flex-col items-center justify-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200
                           ${formData.type === type.value 
-                            ? 'bg-gradient-to-r from-pink-500 to-purple-600 border-pink-500 text-white shadow-lg' 
-                            : 'border-gray-200 hover:bg-pink-50 hover:border-pink-300 text-gray-700'}`}
+                            ? 'bg-gray-900 border-gray-900 text-white shadow' 
+                            : 'border-gray-200 hover:bg-gray-50 hover:border-gray-300 text-gray-700'}`
                       >
-                        <div className="text-2xl mb-2">
-                          {type.icon}
+                        <div>
+                          <div className="text-2xl mb-2">
+                            {type.icon}
+                          </div>
+                          <span className="text-sm font-medium">{type.label}</span>
                         </div>
-                        <span className="text-sm font-medium">{type.label}</span>
                         <input
                           type="radio"
                           name="type"
@@ -433,10 +431,10 @@ const UserEditPet = () => {
                           required
                         />
                       </label>
-                    ))}
+                    ))
                   </div>
                 </div>
-                
+                  
                 <div>
                   <label htmlFor="breed" className="block text-sm font-semibold text-gray-700 mb-2">
                     Breed
@@ -532,9 +530,9 @@ const UserEditPet = () => {
             </div>
             
             {/* Health Information */}
-            <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-2xl p-6 border border-green-100">
+            <div className="bg-white rounded-2xl p-6 border border-gray-200">
               <div className="flex items-center gap-3 mb-6">
-                <div className="bg-gradient-to-r from-green-500 to-blue-600 p-2 rounded-xl">
+                <div className="bg-gray-800 p-2 rounded-xl">
                   <FaShieldAlt className="text-white text-xl" />
                 </div>
                 <h2 className="text-2xl font-bold text-gray-800">Health Information</h2>
@@ -692,9 +690,9 @@ const UserEditPet = () => {
             </div>
             
             {/* Veterinarian Information */}
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100">
+            <div className="bg-white rounded-2xl p-6 border border-gray-200">
               <div className="flex items-center gap-3 mb-6">
-                <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-2 rounded-xl">
+                <div className="bg-gray-800 p-2 rounded-xl">
                   <FaSyringe className="text-white text-xl" />
                 </div>
                 <h2 className="text-2xl font-bold text-gray-800">Veterinarian Information</h2>
@@ -733,9 +731,9 @@ const UserEditPet = () => {
             </div>
             
             {/* Additional Notes */}
-            <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-100">
+            <div className="bg-white rounded-2xl p-6 border border-gray-200">
               <div className="flex items-center gap-3 mb-4">
-                <div className="bg-gradient-to-r from-purple-500 to-pink-600 p-2 rounded-xl">
+                <div className="bg-gray-800 p-2 rounded-xl">
                   <FaPaw className="text-white text-xl" />
                 </div>
                 <h2 className="text-xl font-bold text-gray-800">Additional Notes</h2>
@@ -756,7 +754,7 @@ const UserEditPet = () => {
           </div>
           
           {/* Enhanced Form Actions */}
-          <div className="px-8 py-6 bg-gradient-to-r from-gray-50 to-gray-100 border-t border-gray-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="px-8 py-6 bg-white border-t border-gray-200 flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="text-sm text-gray-600">
               <span className="font-medium">*</span> Required fields
             </div>
@@ -771,8 +769,8 @@ const UserEditPet = () => {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className={`px-8 py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-xl hover:from-pink-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 flex items-center gap-3 font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 ${
-                  isSubmitting ? 'opacity-70 cursor-not-allowed transform-none' : ''
+                className={`px-8 py-3 bg-gray-900 text-white rounded-xl hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 flex items-center gap-3 font-semibold shadow transition-all duration-150 ${
+                  isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
                 }`}
               >
                 {isSubmitting ? (
