@@ -18,17 +18,14 @@ const HealthRecords = () => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    recordType: 'vaccination',
+    recordType: 'test_result',
     recordDate: new Date().toISOString().split('T')[0],
     nextDueDate: '',
   });
 
   const recordTypes = [
-    { value: 'vaccination', label: 'Vaccination' },
     { value: 'test_result', label: 'Test Result' },
     { value: 'prescription', label: 'Prescription' },
-    { value: 'surgery', label: 'Surgery' },
-    { value: 'other', label: 'Other' },
   ];
 
   const fetchPetAndRecords = async () => {
@@ -247,7 +244,7 @@ const HealthRecords = () => {
       setFormData({
         title: '',
         description: '',
-        recordType: 'vaccination',
+        recordType: 'test_result',
         recordDate: new Date().toISOString().split('T')[0],
         nextDueDate: '',
       });
@@ -416,7 +413,7 @@ const HealthRecords = () => {
       setFormData({
         title: '',
         description: '',
-        recordType: 'vaccination',
+        recordType: 'test_result',
         recordDate: new Date().toISOString().split('T')[0],
         nextDueDate: '',
       });

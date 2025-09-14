@@ -56,25 +56,33 @@ const UserAddPet = () => {
   const [loadingBreeds, setLoadingBreeds] = useState(false);
   const [breedsError, setBreedsError] = useState('');
 
-  // Fetch breeds based on pet type
+  // Fetch breeds based on pet type (ensure alphabetical sorting)
   const fetchBreeds = async (petType) => {
+    // Fallback/defaults for unknown/other types
+    const defaultBreeds = ['Mixed Breed', 'Unknown', 'Crossbreed'].sort((a, b) => a.localeCompare(b));
+
     if (!petType || petType === 'other') {
-      setBreeds(['Mixed Breed', 'Unknown', 'Crossbreed']);
+      setBreeds(defaultBreeds);
       return;
     }
-    
+
     setLoadingBreeds(true);
     try {
       const response = await fetch(`${API_URL}/pets/breeds/${petType}`);
       const data = await response.json();
-      if (response.ok && data.breeds) {
-        setBreeds(data.breeds);
+      if (response.ok && Array.isArray(data.breeds)) {
+        const sorted = data.breeds
+          .filter(Boolean)
+          .map(String)
+          .sort((a, b) => a.localeCompare(b));
+        setBreeds(sorted);
       } else {
-        setBreeds(['Mixed Breed', 'Unknown', 'Crossbreed']);
+        setBreeds(defaultBreeds);
       }
     } catch (error) {
       console.error('Error fetching breeds:', error);
       setBreedsError('Failed to load breeds');
+      setBreeds(defaultBreeds);
     } finally {
       setLoadingBreeds(false);
     }
