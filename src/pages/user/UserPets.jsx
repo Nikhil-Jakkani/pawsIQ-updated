@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FaPaw, FaPlus, FaSearch, FaFilter, FaEdit, FaTrash, FaHeart, FaCalendarAlt, FaUser, FaClipboardList, FaFileMedical, FaSyringe } from 'react-icons/fa';
+import { FaPaw, FaPlus, FaSearch, FaFilter, FaEdit, FaTrash, FaHeart, FaCalendarAlt, FaUser, FaClipboardList, FaFileMedical, FaSyringe, FaBirthdayCake, FaWeight, FaMars, FaVenus, FaCamera, FaEye, FaCalendarPlus } from 'react-icons/fa';
 import UserLayout from '../../components/layout/UserLayout';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabaseClient';
 import MedicalRecordsPopup from '../../components/user/MedicalRecordsPopup';
 import VaccinationRecordsPopup from '../../components/user/VaccinationRecordsPopup';
+import { PetIcon } from '../../components/layout/PetIcons';
 const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
 
 const UserPets = () => {
@@ -604,122 +605,138 @@ const UserPets = () => {
           </div>
         ) : filteredPets.length > 0 ? (
           <div className="pet-grid grid">
-            {filteredPets.map((pet) => (
-              <div key={pet.id} className="pet-card">
-                <div className="pet-card-image">
-                  <img
-                    src={pet.image}
-                    alt={pet.name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      if (e.currentTarget.dataset.refreshed) return;
-                      e.currentTarget.dataset.refreshed = '1';
-                      refreshImage(pet.id, pet.imagePath);
-                    }}
-                  />
-
-                  <div className="absolute bottom-2 right-2">
-                    <input
-                      id={`pet-upload-${pet.id}`}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files && e.target.files[0];
-                        if (file) uploadPetImage(pet.id, file);
-                        // reset input so selecting same file again still triggers change
-                        e.target.value = '';
+            {filteredPets.map((pet) => {
+              // Determine health status for styling
+              const healthStatus = pet.healthStatus === 'Healthy' ? 'healthy' : 
+                                 pet.healthStatus === 'Needs Attention' ? 'needs-attention' : 'critical';
+              
+              return (
+                <div key={pet.id} className="pet-card group">
+                  <div className="pet-card-image">
+                    <img
+                      src={pet.image}
+                      alt={pet.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        if (e.currentTarget.dataset.refreshed) return;
+                        e.currentTarget.dataset.refreshed = '1';
+                        refreshImage(pet.id, pet.imagePath);
                       }}
                     />
-                    <label
-                      htmlFor={`pet-upload-${pet.id}`}
-                      className="cursor-pointer bg-white/90 hover:bg-white text-xs font-medium px-2 py-1 rounded shadow"
-                      style={{ color: '#145ae6' }}
-                    >
-                      Change Photo
-                    </label>
-                  </div>
-                  <div className="absolute top-0 right-0 bg-white bg-opacity-90 m-2 px-2 py-1 rounded-lg text-sm font-medium text-gray-700">
-                    {pet.type.charAt(0).toUpperCase() + pet.type.slice(1)}
-                  </div>
-                </div>
-                <div className="pet-card-content">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="pet-name">{pet.name}</h3>
-                      <p className="pet-breed">{pet.breed}</p>
-                      <p className="text-gray-500 text-sm">{pet.age}</p>
+
+                    {/* Health Status Indicator */}
+                    <div className={`pet-status-indicator pet-status-${healthStatus}`}>
+                      <FaHeart className="inline mr-1" />
+                      {pet.healthStatus}
                     </div>
-                    <div className="flex flex-col gap-2 ml-2">
+
+                    {/* Pet Type Badge */}
+                    <div className={`pet-type-badge pet-type-${pet.type}`}>
+                      <PetIcon type={pet.type} className="inline mr-1" />
+                      {pet.type.charAt(0).toUpperCase() + pet.type.slice(1)}
+                    </div>
+
+                    {/* Quick Action Buttons */}
+                    <div className="pet-quick-actions">
                       <button
                         onClick={() => navigate(`/user/pets/edit/${pet.id}`)}
-                        className="p-2 text-gray-500 transition-colors text-xs"
-                        style={{ '--hover-color': '#145ae6' }}
-                        onMouseEnter={(e) => e.target.style.color = '#145ae6'}
-                        onMouseLeave={(e) => e.target.style.color = '#6b7280'}
+                        className="pet-quick-btn pet-quick-btn-edit"
                         title="Edit Pet Profile"
                       >
-                        <FaEdit className="inline mr-1" /> Edit Profile
+                        <FaEdit className="text-sm" />
                       </button>
                       <button
                         onClick={() => navigate(`/user/pets/${pet.id}/health-records`)}
-                        className="p-2 text-gray-500 transition-colors text-xs"
-                        style={{ '--hover-color': '#145ae6' }}
-                        onMouseEnter={(e) => e.target.style.color = '#145ae6'}
-                        onMouseLeave={(e) => e.target.style.color = '#6b7280'}
-                        title="Show Medical Records"
+                        className="pet-quick-btn pet-quick-btn-medical"
+                        title="Medical Records"
                       >
-                        <FaFileMedical className="inline mr-1" /> Show Medical Records
+                        <FaFileMedical className="text-sm" />
                       </button>
                       <button
                         onClick={() => handleDeletePet(pet.id)}
-                        className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors text-xs"
+                        className="pet-quick-btn pet-quick-btn-delete"
+                        title="Delete Pet"
                       >
-                        <FaTrash className="inline mr-1" /> Delete
+                        <FaTrash className="text-sm" />
                       </button>
+                    </div>
+
+                    {/* Change Photo Button */}
+                    <div className="absolute bottom-3 left-3">
+                      <input
+                        id={`pet-upload-${pet.id}`}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files && e.target.files[0];
+                          if (file) uploadPetImage(pet.id, file);
+                          e.target.value = '';
+                        }}
+                      />
+                      <label
+                        htmlFor={`pet-upload-${pet.id}`}
+                        className="cursor-pointer bg-white/90 hover:bg-white text-xs font-medium px-3 py-2 rounded-full shadow-lg backdrop-filter backdrop-blur-sm transition-all duration-200 hover:scale-105"
+                        style={{ color: '#145ae6' }}
+                      >
+                        <FaCamera className="inline mr-1" /> Change Photo
+                      </label>
                     </div>
                   </div>
 
-                  <div className="mt-4 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <FaHeart className={pet.healthStatus === 'Healthy' ? 'text-green-500' : 'text-yellow-500'} />
-                      <span className="pet-info-text">{pet.healthStatus}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <FaCalendarAlt style={{ color: '#145ae6' }} />
-                      <span className="pet-info-text">Last checkup: {new Date(pet.lastCheckup).toLocaleDateString()}</span>
+                  <div className="pet-card-content">
+                  <div className="flex justify-between items-start mb-5">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="pet-name">{pet.name}</h3>
+                      <p className="pet-breed">{pet.breed}</p>
+                      <p className="pet-age mt-1">{pet.age}</p>
                     </div>
                   </div>
-                  
-                  <div className="pet-card-buttons">
-                    <button 
-                      onClick={() => navigate(`/user/pets/${pet.id}`)}
-                      className="flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-                      style={{ 
-                        backgroundColor: '#e3f2fd', 
-                        color: '#145ae6' 
-                      }}
-                      onMouseEnter={(e) => e.target.style.backgroundColor = '#bbdefb'}
-                      onMouseLeave={(e) => e.target.style.backgroundColor = '#e3f2fd'}
-                    >
-                      View Profile
-                    </button>
-                    <button 
-                      onClick={() => handleOpenMedicalRecords(pet)}
-                      className="flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-                      style={{ 
-                        backgroundColor: '#e3f2fd', 
-                        color: '#145ae6' 
-                      }}
-                      onMouseEnter={(e) => e.target.style.backgroundColor = '#bbdefb'}
-                      onMouseLeave={(e) => e.target.style.backgroundColor = '#e3f2fd'}
-                    >
-                      Add Medical Record
-                    </button>
+
+                    {/* Enhanced Info Grid */}
+                    <div className="pet-info-grid">
+                      <div className="pet-info-item">
+                        <FaBirthdayCake className="pet-info-icon" />
+                        <span>{pet.age}</span>
+                      </div>
+                      <div className="pet-info-item">
+                        <FaWeight className="pet-info-icon" />
+                        <span>{pet.weight}</span>
+                      </div>
+                      <div className="pet-info-item">
+                        {pet.gender === 'male' ? (
+                          <FaMars className="pet-info-icon" />
+                        ) : (
+                          <FaVenus className="pet-info-icon" />
+                        )}
+                        <span>{pet.gender.charAt(0).toUpperCase() + pet.gender.slice(1)}</span>
+                      </div>
+                      <div className="pet-info-item">
+                        <FaCalendarAlt className="pet-info-icon" />
+                        <span className="truncate">{new Date(pet.lastCheckup).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="pet-card-buttons">
+                      <button 
+                        onClick={() => navigate(`/user/pets/${pet.id}`)}
+                        className="flex-1 px-3 py-2.5 rounded-lg text-xs font-medium transition-all duration-200 bg-slate-700 text-white hover:bg-slate-800 hover:shadow-md hover:scale-105"
+                      >
+                        <FaEye className="inline mr-1.5" />
+                        View Profile
+                      </button>
+                      <button 
+                        onClick={() => handleOpenMedicalRecords(pet)}
+                        className="flex-1 px-3 py-2.5 rounded-lg text-xs font-medium transition-all duration-200 bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-md hover:scale-105"
+                      >
+                        <FaCalendarPlus className="inline mr-1.5" />
+                        Add Medical Record
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="bg-white rounded-lg p-8 text-center" style={{ border: '1px solid #145ae6' }}>

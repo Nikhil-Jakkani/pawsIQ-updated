@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { FaPaw, FaPlus, FaArrowRight, FaCalendarAlt, FaWeight, FaBirthdayCake, FaVenus, FaMars } from 'react-icons/fa';
+import { FaPaw, FaPlus, FaArrowRight, FaCalendarAlt, FaWeight, FaBirthdayCake, FaVenus, FaMars, FaHeart, FaEye, FaCalendarPlus } from 'react-icons/fa';
 import { PetIcon } from '../layout/PetIcons';
 import { useAuth } from '../../context/AuthContext';
 const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
@@ -105,76 +105,95 @@ const PetProfiles = () => {
       </div>
       
       <div className="pet-grid grid">
-        {pets.map((pet) => (
-          <div 
-            key={pet.id}
-            className="pet-card"
-          >
-            <div className="pet-card-image">
-              <img 
-                src={pet.image} 
-                alt={pet.name} 
-                className="w-full h-full object-cover"
-                onError={async (e) => {
-                  const newUrl = await refreshImageUrl(pet.id, pet.imagePath);
-                  if (newUrl) {
-                    setPets((prev) => prev.map((p) => (p.id === pet.id ? { ...p, image: newUrl } : p)));
-                  }
-                }}
-              />
-            </div>
-            
-            <div className="pet-card-content">
-              <div className="flex justify-between items-start">
-                <div className="flex-1 min-w-0">
-                  <h3 className="pet-name text-lg">{pet.name}</h3>
-                  <p className="pet-breed text-sm">{pet.breed}</p>
+        {pets.map((pet) => {
+          // Determine health status for styling
+          const healthStatus = pet.healthStatus === 'Healthy' ? 'healthy' : 
+                             pet.healthStatus === 'Needs Attention' ? 'needs-attention' : 'critical';
+          
+          return (
+            <div 
+              key={pet.id}
+              className="pet-card group"
+            >
+              <div className="pet-card-image">
+                <img 
+                  src={pet.image} 
+                  alt={pet.name} 
+                  className="w-full h-full object-cover"
+                  onError={async (e) => {
+                    const newUrl = await refreshImageUrl(pet.id, pet.imagePath);
+                    if (newUrl) {
+                      setPets((prev) => prev.map((p) => (p.id === pet.id ? { ...p, image: newUrl } : p)));
+                    }
+                  }}
+                />
+
+                {/* Health Status Indicator */}
+                <div className={`pet-status-indicator pet-status-${healthStatus}`}>
+                  <FaHeart className="inline mr-1" />
+                  {pet.healthStatus || 'Healthy'}
                 </div>
-                <div className={`rounded-full p-2 ${pet.type === 'cat' ? 'bg-purple-100' : 'bg-pink-100'}`}>
-                  <PetIcon type={pet.type} className={pet.type === 'cat' ? 'text-purple-600' : 'text-pink-600'} />
-                </div>
-              </div>
-              
-              <div className="mt-4 grid grid-cols-2 gap-3">
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <FaBirthdayCake className="text-pink-500" />
-                  <span>{pet.age}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <FaWeight className="text-pink-500" />
-                  <span>{pet.weight}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  {pet.gender === 'male' ? (
-                    <FaMars className="text-pink-500" />
-                  ) : (
-                    <FaVenus className="text-pink-500" />
-                  )}
-                  <span>{pet.gender.charAt(0).toUpperCase() + pet.gender.slice(1)}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <FaCalendarAlt className="text-pink-500" />
-                  <span className="pet-info-text">Last checkup: {new Date(pet.lastCheckup).toLocaleDateString()}</span>
+
+                {/* Pet Type Badge */}
+                <div className={`pet-type-badge pet-type-${pet.type}`}>
+                  <PetIcon type={pet.type} className="inline mr-1" />
+                  {pet.type.charAt(0).toUpperCase() + pet.type.slice(1)}
                 </div>
               </div>
               
-              <div className="pet-card-buttons">
-                <Link 
-                  to={`/user/pets/${pet.id}`}
-                  className="text-sm font-medium px-3 py-1 bg-pink-100 text-pink-700 rounded-full hover:bg-pink-200 transition-colors"
-                >
-                  View Profile
-                </Link>
-                <Link 
-                  to={`/user/appointments/new?petId=${pet.id}`}
-                  className="text-sm font-medium px-3 py-1 bg-purple-100 text-purple-700 rounded-full hover:bg-purple-200 transition-colors"
-                >
-                  Book Appointment
-                </Link>
+              <div className="pet-card-content">
+                <div className="flex justify-between items-start mb-5">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="pet-name">{pet.name}</h3>
+                    <p className="pet-breed">{pet.breed}</p>
+                    <p className="pet-age mt-1">{pet.age}</p>
+                  </div>
+                </div>
+                
+                {/* Enhanced Info Grid */}
+                <div className="pet-info-grid">
+                  <div className="pet-info-item">
+                    <FaBirthdayCake className="pet-info-icon" />
+                    <span>{pet.age}</span>
+                  </div>
+                  <div className="pet-info-item">
+                    <FaWeight className="pet-info-icon" />
+                    <span>{pet.weight}</span>
+                  </div>
+                  <div className="pet-info-item">
+                    {pet.gender === 'male' ? (
+                      <FaMars className="pet-info-icon" />
+                    ) : (
+                      <FaVenus className="pet-info-icon" />
+                    )}
+                    <span>{pet.gender.charAt(0).toUpperCase() + pet.gender.slice(1)}</span>
+                  </div>
+                  <div className="pet-info-item">
+                    <FaCalendarAlt className="pet-info-icon" />
+                    <span className="truncate">{new Date(pet.lastCheckup).toLocaleDateString()}</span>
+                  </div>
+                </div>
+                
+                <div className="pet-card-buttons">
+                  <Link 
+                    to={`/user/pets/${pet.id}`}
+                    className="flex-1 px-3 py-2.5 rounded-lg text-xs font-medium transition-all duration-200 bg-slate-700 text-white hover:bg-slate-800 hover:shadow-md hover:scale-105 text-center"
+                  >
+                    <FaEye className="inline mr-1.5" />
+                    View Profile
+                  </Link>
+                  <Link 
+                    to={`/user/appointments/new?petId=${pet.id}`}
+                    className="flex-1 px-3 py-2.5 rounded-lg text-xs font-medium transition-all duration-200 bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-md hover:scale-105 text-center"
+                  >
+                    <FaCalendarPlus className="inline mr-1.5" />
+                    Book Appointment
+                  </Link>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
         
         {/* Add Pet Card */}
         <Link 
