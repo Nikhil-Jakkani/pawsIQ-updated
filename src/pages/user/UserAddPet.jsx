@@ -205,6 +205,31 @@ const UserAddPet = () => {
     e.preventDefault();
     setIsSubmitting(true);
     
+    // Validate required fields
+    if (!formData.name.trim()) {
+      alert('Please enter your pet\'s name.');
+      setIsSubmitting(false);
+      return;
+    }
+    
+    if (!formData.type) {
+      alert('Please select your pet\'s type.');
+      setIsSubmitting(false);
+      return;
+    }
+    
+    if (!formData.breed) {
+      alert('Please select your pet\'s breed.');
+      setIsSubmitting(false);
+      return;
+    }
+    
+    if (!formData.gender) {
+      alert('Please select your pet\'s gender.');
+      setIsSubmitting(false);
+      return;
+    }
+    
     // Ensure we have the latest vaccine data
     const currentVaccinations = Object.values(selectedVaccines).map(vaccine => ({
       ...vaccine,
@@ -230,9 +255,9 @@ const UserAddPet = () => {
 
       const payload = {
         name: formData.name.trim(),
-        type: formData.type || undefined,
-        breed: formData.breed || undefined,
-        gender: formData.gender || undefined,
+        type: formData.type,
+        breed: formData.breed,
+        gender: formData.gender,
         birthdate: formData.birthdate || undefined,
         color: formData.color || undefined,
         ageGroup: formData.ageGroup || undefined,
@@ -427,43 +452,53 @@ const UserAddPet = () => {
             </div>
             
             {/* Basic Information */}
-            <div>
-              <h2 className="text-lg font-semibold text-gray-800 mb-4">Basic Information</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                    Pet Name*
+            <div className="bg-gradient-to-r from-pink-50 to-purple-50 rounded-2xl p-6 border border-pink-100">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="bg-gradient-to-r from-pink-500 to-purple-600 p-2 rounded-xl">
+                  <FaPaw className="text-white text-xl" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-800">Basic Information</h2>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label htmlFor="name" className="block text-sm font-semibold text-gray-700 mb-2">
+                    Pet Name <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
-                    placeholder="Enter pet name"
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      id="name"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleChange}
+                      required
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
+                      placeholder="Enter your pet's name"
+                    />
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                      <FaPaw className="text-gray-400" />
+                    </div>
+                  </div>
                 </div>
                 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Pet Type*
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Pet Type <span className="text-red-500">*</span>
                   </label>
-                  <div className="grid grid-cols-3 gap-2">
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-3 gap-3">
                     {petTypes.map((type) => (
                       <label 
                         key={type.value}
-                        className={`flex flex-col items-center justify-center p-2 border rounded-lg cursor-pointer transition-colors
+                        className={`flex flex-col items-center justify-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 transform hover:scale-105
                           ${formData.type === type.value 
-                            ? 'bg-pink-50 border-pink-500 text-pink-700' 
-                            : 'border-gray-300 hover:bg-gray-50'}`}
+                            ? 'bg-gradient-to-r from-pink-500 to-purple-600 border-pink-500 text-white shadow-lg' 
+                            : 'border-gray-200 hover:bg-gray-50 hover:border-pink-300 bg-white shadow-sm'}`}
                       >
-                        <div className="text-xl mb-1">
+                        <div className="text-2xl mb-2">
                           {type.icon}
                         </div>
-                        <span className="text-xs">{type.label}</span>
+                        <span className="text-sm font-medium">{type.label}</span>
                         <input
                           type="radio"
                           name="type"
@@ -478,52 +513,73 @@ const UserAddPet = () => {
                   </div>
                 </div>
                 
-                <div>
-                  <label htmlFor="breed" className="block text-sm font-medium text-gray-700 mb-1">
-                    Breed
+                <div className="space-y-2">
+                  <label htmlFor="breed" className="block text-sm font-semibold text-gray-700 mb-2">
+                    Breed <span className="text-red-500">*</span>
                   </label>
-                  <select
-                    id="breed"
-                    name="breed"
-                    value={formData.breed}
-                    onChange={handleChange}
-                    disabled={loadingBreeds || !formData.type}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                  >
-                    <option value="">
-                      {loadingBreeds ? 'Loading breeds...' : formData.type ? 'Select breed' : 'Select pet type first'}
-                    </option>
-                    {breeds.map((breed) => (
-                      <option key={breed} value={breed}>
-                        {breed}
+                  <div className="relative">
+                    <select
+                      id="breed"
+                      name="breed"
+                      value={formData.breed}
+                      onChange={handleChange}
+                      disabled={loadingBreeds || !formData.type}
+                      required
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 disabled:bg-gray-100 disabled:cursor-not-allowed transition-all duration-200 bg-white shadow-sm hover:shadow-md appearance-none"
+                    >
+                      <option value="">
+                        {loadingBreeds ? 'Loading breeds...' : formData.type ? 'Select breed' : 'Select pet type first'}
                       </option>
-                    ))}
-                  </select>
+                      {breeds.map((breed) => (
+                        <option key={breed} value={breed}>
+                          {breed}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
                   {breedsError && (
-                    <p className="text-xs text-red-600 mt-1">{breedsError}</p>
+                    <p className="text-sm text-red-600 mt-1 flex items-center gap-1">
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      {breedsError}
+                    </p>
                   )}
                 </div>
                 
-                <div>
-                  <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-1">
-                    Gender
+                <div className="space-y-2">
+                  <label htmlFor="gender" className="block text-sm font-semibold text-gray-700 mb-2">
+                    Gender <span className="text-red-500">*</span>
                   </label>
-                  <select
-                    id="gender"
-                    name="gender"
-                    value={formData.gender}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
-                  >
-                    <option value="">Select gender</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="unknown">Unknown</option>
-                  </select>
+                  <div className="relative">
+                    <select
+                      id="gender"
+                      name="gender"
+                      value={formData.gender}
+                      onChange={handleChange}
+                      required
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md appearance-none"
+                    >
+                      <option value="">Select gender</option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="unknown">Unknown</option>
+                    </select>
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
                 
-                <div>
-                  <label htmlFor="birthdate" className="block text-sm font-medium text-gray-700 mb-1">
+                <div className="space-y-2">
+                  <label htmlFor="birthdate" className="block text-sm font-semibold text-gray-700 mb-2">
                     Birth Date
                   </label>
                   <div className="relative">
@@ -536,41 +592,69 @@ const UserAddPet = () => {
                       name="birthdate"
                       value={formData.birthdate}
                       onChange={handleChange}
-                      className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                      className="pl-10 w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
                     />
                   </div>
                 </div>
                 
-                <div>
-                  <label htmlFor="weight" className="block text-sm font-medium text-gray-700 mb-1">
+                <div className="space-y-2">
+                  <label htmlFor="weight" className="block text-sm font-semibold text-gray-700 mb-2">
                     Weight (kg)
                   </label>
-                  <input
-                    type="number"
-                    id="weight"
-                    name="weight"
-                    value={formData.weight}
-                    onChange={handleChange}
-                    step="0.1"
-                    min="0"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
-                    placeholder="Enter weight"
-                  />
+                  <div className="relative">
+                    <input
+                      type="number"
+                      id="weight"
+                      name="weight"
+                      value={formData.weight}
+                      onChange={handleChange}
+                      step="0.1"
+                      min="0"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
+                      placeholder="Enter weight in kg"
+                    />
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                      <span className="text-gray-400 text-sm">kg</span>
+                    </div>
+                  </div>
                 </div>
                 
-                <div>
-                  <label htmlFor="color" className="block text-sm font-medium text-gray-700 mb-1">
+                <div className="space-y-2">
+                  <label htmlFor="color" className="block text-sm font-semibold text-gray-700 mb-2">
                     Color
                   </label>
-                  <input
-                    type="text"
-                    id="color"
-                    name="color"
-                    value={formData.color}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
-                    placeholder="Enter color"
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      id="color"
+                      name="color"
+                      value={formData.color}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
+                      placeholder="Enter color description"
+                    />
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                      <div className="w-4 h-4 rounded-full bg-gradient-to-r from-pink-400 to-purple-400"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Required fields indicator */}
+              <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                <div className="flex items-start gap-2">
+                  <div className="flex-shrink-0">
+                    <svg className="w-5 h-5 text-blue-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-blue-800">Required Information</h4>
+                    <p className="text-sm text-blue-700 mt-1">
+                      Fields marked with <span className="text-red-500 font-semibold">*</span> are required to create your pet's profile. 
+                      This helps us provide better care recommendations and services.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1239,8 +1323,7 @@ const UserAddPet = () => {
               )}
             </button>
           </div>
-        </div>
-      </form>
+        </form>
       </div>
     </UserLayout>
   );
