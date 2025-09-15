@@ -230,12 +230,11 @@ const HealthRecords = () => {
         fileSize: file.size,
       };
 
-      const createRecordResponse = await fetch(
+      const createRecordResponse = await authFetch(
         `${API_URL}/pets/${petId}/health-records`,
         {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(recordData),
@@ -272,12 +271,8 @@ const HealthRecords = () => {
     }
 
     try {
-      const accessToken = currentUser?.tokens?.access?.token || currentUser?.token;
-      const response = await fetch(`${API_URL}/health-records/${recordId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-        },
+      const response = await authFetch(`${API_URL}/health-records/${recordId}`, {
+        method: 'DELETE'
       });
 
       if (!response.ok) {
@@ -317,17 +312,12 @@ const HealthRecords = () => {
     if (!record.file_path) return '#';
     
     try {
-      const accessToken = currentUser?.tokens?.access?.token || currentUser?.token;
       const qs = new URLSearchParams({
         path: record.file_path,
         bucket: 'health-records',
       });
 
-      const response = await fetch(`${API_URL}/media/signed-url?${qs}`, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-        },
-      });
+      const response = await authFetch(`${API_URL}/media/signed-url?${qs}`);
       
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
@@ -361,28 +351,29 @@ const HealthRecords = () => {
     setError('');
 
     try {
-      // First, get a signed URL for file upload
-      const response = await fetch(`${API_URL}/media/upload-url`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${tokens?.access?.token}`,
-        },
-        body: JSON.stringify({
-          filename: file.name,
-          contentType: file.type,
-          bucket: 'health-records',
-        }),
-      });
+      // 1. Get signed upload URL
+      const uploadUrlResponse = await authFetch(
+        `${API_URL}/pets/${petId}/health-records/upload-url`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            fileName: file.name,
+            fileType: file.type,
+          }),
+        }
+      );
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+      if (!uploadUrlResponse.ok) {
+        const errorData = await uploadUrlResponse.json();
         throw new Error(errorData.message || 'Failed to get upload URL');
       }
 
-      const { signedUrl, path } = await response.json();
+      const { signedUrl, path } = await uploadUrlResponse.json();
 
-      // Upload the file to the signed URL
+      // 2. Upload file to storage using the signed URL
       const uploadResponse = await fetch(signedUrl, {
         method: 'PUT',
         body: file,
@@ -392,27 +383,31 @@ const HealthRecords = () => {
       });
 
       if (!uploadResponse.ok) {
-        throw new Error('Failed to upload file');
+        throw new Error('File upload failed');
       }
 
-      // Create the health record with the file path
-      const recordResponse = await fetch(`${API_URL}/pets/${petId}/health-records`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${tokens?.access?.token}`,
-        },
-        body: JSON.stringify({
-          ...formData,
-          filePath: path,
-          fileName: file.name,
-          fileType: file.type,
-          fileSize: file.size,
-        }),
-      });
+      // 3. Create health record with file details
+      const recordData = {
+        ...formData,
+        filePath: path,
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+      };
+
+      const recordResponse = await authFetch(
+        `${API_URL}/pets/${petId}/health-records`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(recordData),
+        }
+      );
 
       if (!recordResponse.ok) {
-        const errorData = await recordResponse.json().catch(() => ({}));
+        const errorData = await recordResponse.json();
         throw new Error(errorData.message || 'Failed to create health record');
       }
 

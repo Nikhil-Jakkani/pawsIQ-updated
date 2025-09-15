@@ -11,11 +11,11 @@ const serializeBigInt = <T>(data: T): T => {
   ) as T;
 };
 
-export type AppointmentStatus = 'Scheduled' | 'Cancelled' | 'Completed';
+export type AppointmentStatus = 'Awaiting Approval' | 'Scheduled' | 'Cancelled' | 'Completed';
 export type AppointmentType = 'Checkup' | 'Vaccination' | 'Grooming' | 'Training' | 'Others';
 
 const assertStatus = (status: string): AppointmentStatus => {
-  const allowed: AppointmentStatus[] = ['Scheduled', 'Cancelled', 'Completed'];
+  const allowed: AppointmentStatus[] = ['Awaiting Approval', 'Scheduled', 'Cancelled', 'Completed'];
   if (!allowed.includes(status as AppointmentStatus)) {
     throw new ApiError(httpStatus.BAD_REQUEST, `Invalid status. Allowed: ${allowed.join(', ')}`);
   }
@@ -50,7 +50,7 @@ const createAppointment = async (
   await ensurePetBelongsToUser(userId, pet_id);
 
   const type = assertType(body.appointment_type);
-  const status: AppointmentStatus = body.appointment_status ? assertStatus(body.appointment_status) : 'Scheduled';
+  const status: AppointmentStatus = body.appointment_status ? assertStatus(body.appointment_status) : 'Awaiting Approval';
 
   const dt = new Date(body.appointment_date);
   if (isNaN(dt.getTime())) throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid appointment_date');
@@ -82,12 +82,17 @@ const getUserAppointments = async (
       orderBy: { appointment_date: 'desc' },
       skip,
       take: limit,
+      include: { PIQ_Pets: { select: { pet_name: true, pet_type: true } } },
     }),
     prisma.pIQ_Appointments.count({ where: { PIQ_Pets: { user_id: userId } } }),
   ]);
 
   return {
-    items: items.map(serializeBigInt),
+    items: items.map((it) => serializeBigInt({
+      ...it,
+      pet_name: it.PIQ_Pets?.pet_name ?? null,
+      pet_type: it.PIQ_Pets?.pet_type ?? null,
+    })),
     page,
     limit,
     total,

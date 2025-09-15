@@ -111,13 +111,13 @@ const UserEditPet = () => {
     
     setLoadingBreeds(true);
     try {
-      const response = await fetch(`${API_URL}/pets/breeds/${petType}`);
+      const response = await authFetch(`${API_URL}/pets/breeds/${petType}`);
       const data = await response.json();
       if (response.ok && Array.isArray(data.breeds)) {
-        const sorted = data.breeds
-          .filter(Boolean)
-          .map(String)
-          .sort((a, b) => a.localeCompare(b));
+        const sorted = [...new Set([
+          ...defaultBreeds,
+          ...data.breeds.filter(Boolean).map(String)
+        ])].sort((a, b) => a.localeCompare(b));
         setBreeds(sorted);
       } else {
         setBreeds(defaultBreeds);
