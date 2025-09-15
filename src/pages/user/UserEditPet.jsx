@@ -344,8 +344,8 @@ const UserEditPet = () => {
               </div>
             </div>
           </div>
-        
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+          
+          <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
           <div className="p-8 space-y-8">
             {/* Enhanced Pet Photo Upload */}
             <div className="flex flex-col items-center justify-center py-8">
@@ -414,30 +414,31 @@ const UserEditPet = () => {
                   </label>
                   <div className="grid grid-cols-3 gap-3">
                     {petTypes.map((type) => (
-                      <label 
-                        key={type.value}
-                        className={`flex flex-col items-center justify-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200
-                          ${formData.type === type.value 
-                            ? 'bg-gray-900 border-gray-900 text-white shadow' 
-                            : 'border-gray-200 hover:bg-gray-50 hover:border-gray-300 text-gray-700'}`
-                      >
-                        <div>
-                          <div className="text-2xl mb-2">
-                            {type.icon}
+                      <div key={type.value}>
+                        <label 
+                          className={`flex flex-col items-center justify-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200
+                            ${formData.type === type.value 
+                              ? 'bg-gray-900 border-gray-900 text-white shadow' 
+                              : 'border-gray-200 hover:bg-gray-50 hover:border-gray-300 text-gray-700'}`}
+                        >
+                          <div>
+                            <div className="text-2xl mb-2">
+                              {type.icon}
+                            </div>
+                            <span className="text-sm font-medium">{type.label}</span>
                           </div>
-                          <span className="text-sm font-medium">{type.label}</span>
-                        </div>
-                        <input
-                          type="radio"
-                          name="type"
-                          value={type.value}
-                          checked={formData.type === type.value}
-                          onChange={handleChange}
-                          className="sr-only"
-                          required
-                        />
-                      </label>
-                    ))
+                          <input
+                            type="radio"
+                            name="type"
+                            value={type.value}
+                            checked={formData.type === type.value}
+                            onChange={handleChange}
+                            className="sr-only"
+                            required
+                          />
+                        </label>
+                      </div>
+                    ))}
                   </div>
                 </div>
                   
@@ -796,7 +797,7 @@ const UserEditPet = () => {
               </button>
             </div>
           </div>
-        </form>
+          </form>
         </div>
       </div>
     </UserLayout>
