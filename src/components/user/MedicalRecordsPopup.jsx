@@ -36,7 +36,7 @@ const MedicalRecordsPopup = ({
     title: '',
     recordDate: new Date().toISOString().split('T')[0],
     description: '',
-    recordType: 'test_result',
+    recordType: 'vaccination',
     selectedConditions: [],
     customConditions: [],
     files: []
@@ -444,8 +444,18 @@ const MedicalRecordsPopup = ({
                   onChange={(e) => setFormData({...formData, recordType: e.target.value})}
                   disabled={isSubmitting}
                 >
-                  <option value="test_result">Test Result</option>
+                  <option value="vaccination">Vaccination</option>
+                  <option value="general">General</option>
+                  <option value="deworming">Deworming</option>
+                  <option value="checkup">Checkup</option>
+                  <option value="lab_test">Lab Test</option>
                   <option value="prescription">Prescription</option>
+                  <option value="surgery">Surgery</option>
+                  <option value="allergy">Allergy</option>
+                  <option value="imaging">Imaging</option>
+                  <option value="invoice">Invoice</option>
+                  <option value="insurance">Insurance</option>
+                  <option value="other">Other</option>
                 </select>
               </div>
 

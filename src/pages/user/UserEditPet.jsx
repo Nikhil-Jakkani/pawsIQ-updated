@@ -325,7 +325,7 @@ const UserEditPet = () => {
       <div className="min-h-screen bg-white">
         <div className="space-y-8">
           {/* Enhanced Header Section */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+          <div className="bg-white rounded-lg shadow border border-gray-200 p-4">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => navigate('/user/pets')}
@@ -335,18 +335,18 @@ const UserEditPet = () => {
               </button>
               <div className="flex-1">
                 <div className="flex items-center gap-4">
-                  <img src="/7.png" alt="PawsIQ Logo" className="w-10 h-10 rounded-full object-cover" />
-                  <div>
-                    <h1 className="text-3xl font-bold text-gray-900">Edit Pet Profile</h1>
-                    <p className="text-gray-600 mt-1 text-lg">Update your pet's information and keep their profile current</p>
+                  <img src="/7.png" alt="PawsIQ Logo" className="w-8 h-8 rounded-full object-cover" />
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h1 className="text-xl font-semibold text-gray-900">Edit Pet Profile</h1>
+                    <span className="text-gray-500 text-sm">— Update your pet's information and keep their profile current</span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
           
-          <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-          <div className="p-8 space-y-8">
+          <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+          <div className="p-6 space-y-6">
             {/* Enhanced Pet Photo Upload */}
             <div className="flex flex-col items-center justify-center py-8">
               <div className="relative group">

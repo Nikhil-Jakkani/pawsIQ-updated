@@ -18,14 +18,24 @@ const HealthRecords = () => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    recordType: 'test_result',
+    recordType: 'vaccination',
     recordDate: new Date().toISOString().split('T')[0],
     nextDueDate: '',
   });
 
   const recordTypes = [
-    { value: 'test_result', label: 'Test Result' },
+    { value: 'vaccination', label: 'Vaccination' },
+    { value: 'general', label: 'General' },
+    { value: 'deworming', label: 'Deworming' },
+    { value: 'checkup', label: 'Checkup' },
+    { value: 'lab_test', label: 'Lab Test' },
     { value: 'prescription', label: 'Prescription' },
+    { value: 'surgery', label: 'Surgery' },
+    { value: 'allergy', label: 'Allergy' },
+    { value: 'imaging', label: 'Imaging' },
+    { value: 'invoice', label: 'Invoice' },
+    { value: 'insurance', label: 'Insurance' },
+    { value: 'other', label: 'Other' },
   ];
 
   const fetchPetAndRecords = async () => {
@@ -244,7 +254,7 @@ const HealthRecords = () => {
       setFormData({
         title: '',
         description: '',
-        recordType: 'test_result',
+        recordType: 'vaccination',
         recordDate: new Date().toISOString().split('T')[0],
         nextDueDate: '',
       });
@@ -530,14 +540,22 @@ const HealthRecords = () => {
                       <p className="mt-1 text-sm text-gray-500">
                         {record.description}
                       </p>
-                      <div className="mt-2 flex items-center text-sm text-gray-500">
-                        <span>
-                          {new Date(record.recordDate).toLocaleDateString()}
-                        </span>
-                        <span className="mx-2">•</span>
-                        <span>{formatFileSize(record.fileSize)}</span>
-                        <span className="mx-2">•</span>
-                        <span>{record.fileType}</span>
+                      <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-sm text-gray-600">
+                        <div>
+                          <span className="text-gray-500">Record date:</span> {record.recordDate ? new Date(record.recordDate).toLocaleDateString() : '-'}
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Next due:</span> {record.nextDueDate ? new Date(record.nextDueDate).toLocaleDateString() : '-'}
+                        </div>
+                        <div>
+                          <span className="text-gray-500">File name:</span> {record.fileName || '-'}
+                        </div>
+                        <div>
+                          <span className="text-gray-500">File type:</span> {record.fileType || '-'}
+                        </div>
+                        <div>
+                          <span className="text-gray-500">File size:</span> {formatFileSize(record.fileSize || 0)}
+                        </div>
                       </div>
                     </div>
                   </div>
