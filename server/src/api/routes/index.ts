@@ -16,6 +16,10 @@ import petRoutes from './pet/pet.route.js';
 import healthRecordRoutes from './healthRecord.route.js';
 import reminderRoutes from './reminder/reminder.route.js';
 import userActivityRoutes from './user/activity.route.js';
+import bookingRoutes from './booking/booking.route.js';
+import serviceBizEntityRoutes from './service/bizEntity.route.js';
+import serviceMasterRoutes from './service/serviceMaster.route.js';
+import providerBookingRoutes from './provider/booking.route.js';
 
 const router = Router();
 
@@ -35,10 +39,14 @@ router.use('/user', userRoutes);
 router.use('/provider/auth', providerAuthRoutes);
 router.use('/provider', providerRoutes);
 router.use('/provider/appointments', providerAppointmentRoutes);
+router.use('/provider/bookings', providerBookingRoutes);
 router.use('/appointments', appointmentRoutes);
 router.use('/media', mediaRoutes);
 router.use('/pets', petRoutes);
-router.use('', healthRecordRoutes); // Health record routes
+router.use('', healthRecordRoutes);
 router.use('/reminders', reminderRoutes);
+router.use('/bookings', bookingRoutes);
+router.use('', serviceBizEntityRoutes);
+router.use('', serviceMasterRoutes);
 
 export default router;

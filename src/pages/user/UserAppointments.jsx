@@ -7,7 +7,7 @@ const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
 
 const UserAppointments = () => {
   const navigate = useNavigate();
-  const { currentUser, tokens } = useAuth();
+  const { currentUser, tokens, authFetch } = useAuth();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -41,15 +41,14 @@ const UserAppointments = () => {
 
   const fetchPets = async () => {
     try {
-      const res = await fetch(`${API_URL}/user/profile`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
+      const res = await authFetch(`${API_URL}/user/profile`);
       if (!res.ok) return;
       const data = await res.json();
 
       const map = {};
       (data?.pets || []).forEach((p) => {
-        map[String(p.pet_id)] = { name: p.pet_name || 'Pet', type: p.pet_type || '' };
+        const id = String(p.pet_id ?? p.id);
+        map[id] = { name: p.pet_name || p.name || 'Pet', type: (p.pet_type || p.type || '').toLowerCase() };
       });
       setPetsById(map);
     } catch (e) {
@@ -61,9 +60,7 @@ const UserAppointments = () => {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`${API_URL}/appointments?limit=50`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
+      const res = await authFetch(`${API_URL}/appointments?limit=50`);
       const payload = await res.json().catch(() => ({}));
 
       // If unauthorized/invalid token, suppress error and show empty state
@@ -72,13 +69,14 @@ const UserAppointments = () => {
         return;
       }
       if (!res.ok) throw new Error(payload?.message || 'Failed to load appointments');
-      const items = (payload?.items || []).map((a) => {
+      const apptItems = (payload?.items || []).map((a) => {
         const pet = petsById[String(a.pet_id)] || {};
         const { date, time } = formatDateTime(a.appointment_date);
+        const ts = new Date(a.appointment_date).getTime() || 0;
         return {
           id: a.appointment_id,
-          petName: pet.name || 'Pet',
-          petType: pet.type || '',
+          petName: pet.name || a.pet_name || 'Pet',
+          petType: pet.type || (a.pet_type ? String(a.pet_type).toLowerCase() : ''),
           serviceType: a.appointment_type,
           date,
           time,
@@ -86,9 +84,41 @@ const UserAppointments = () => {
           notes: a.appointment_comments || '',
           location: '—',
           address: '—',
+          sortTs: ts,
         };
       });
-      setAppointments(items);
+      const bRes = await authFetch(`${API_URL}/bookings?limit=50`);
+      const bPayload = await bRes.json().catch(() => ({}));
+      let bookingItems = [];
+      if (bRes.ok) {
+        bookingItems = (bPayload?.items || []).map((b) => {
+          const pet = petsById[String(b.pet_id)] || {};
+          const { date, time } = formatDateTime(b.booked_dtm);
+          const ts = new Date(b.booked_dtm).getTime() || 0;
+          const statusMap = {
+            Pending: 'upcoming',
+            Confirmed: 'upcoming',
+            Cancelled: 'cancelled',
+            Completed: 'completed',
+          };
+          return {
+            id: b.booking_id,
+            petName: pet.name || 'Pet',
+            petType: pet.type || '',
+            serviceType: b.PIQ_Service_Master?.service_title || b.service_title || 'Service',
+            date,
+            time,
+            status: statusMap[b.booking_status] || 'upcoming',
+            notes: b.booking_comments || '',
+            location: '—',
+            address: '—',
+            isBooking: true,
+            isPendingApproval: b.booking_status === 'Pending',
+            sortTs: ts,
+          };
+        });
+      }
+      setAppointments([...bookingItems, ...apptItems].sort((a, b) => (b.sortTs || 0) - (a.sortTs || 0)));
     } catch (e) {
       setError(e.message);
     } finally {
@@ -123,11 +153,10 @@ const UserAppointments = () => {
     if (!accessToken) return;
     if (!window.confirm('Are you sure you want to cancel this appointment?')) return;
     try {
-      const res = await fetch(`${API_URL}/appointments/${id}`, {
+      const res = await authFetch(`${API_URL}/appointments/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({ appointment_status: 'Cancelled' }),
       });
@@ -272,6 +301,11 @@ const UserAppointments = () => {
                             <span className="font-medium">{appointment.petName}</span>
                             <span className="text-gray-400">•</span>
                             <span className="capitalize">{appointment.petType}</span>
+                            {appointment.isPendingApproval && (
+                              <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 border border-yellow-200">
+                                Awaiting Approval
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>

@@ -27,18 +27,43 @@ const AIPetCare = () => {
           throw new Error('Authentication required. Please log in again.');
         }
 
-        const response = await authFetch(`${API_URL}/user/profile`);
-        if (!response.ok) {
-          const data = await response.json().catch(() => ({}));
-          throw new Error(data?.message || 'Failed to fetch user profile.');
-        }
+        const res = await authFetch(`${API_URL}/user/profile`);
+        const payload = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(payload?.message || 'Failed to fetch user profile.');
 
-        const userData = await response.json();
-        const userPets = userData.pets || [];
-        setPets(userPets);
+        const rawPets = Array.isArray(payload?.pets) ? payload.pets : [];
+        // Normalize for PetSelector and resolve signed image URLs (6 days)
+        const normalized = rawPets.map((p) => ({
+          pet_id: Number(p.pet_id ?? p.id),
+          name: p.pet_name ?? p.name ?? 'Pet',
+          type: String(p.pet_type ?? p.type ?? '').toLowerCase(),
+          breed: p.pet_breed ?? p.breed ?? '',
+          age: p.pet_age ? `${p.pet_age} years` : (p.pet_birthday || p.birthdate || ''),
+          weight: p.pet_weight ? `${p.pet_weight} kg` : (p.weight ? `${p.weight} kg` : ''),
+          imagePath: p.pet_image ?? p.imagePath ?? '',
+          image: 'https://placehold.co/200x200?text=Pet',
+        }));
 
-        if (userPets.length > 0 && !selectedPetForAI) {
-          setSelectedPetForAI(userPets[0]);
+        const withUrls = await Promise.all(
+          normalized.map(async (pet) => {
+            if (!pet.imagePath) return pet;
+            try {
+              const qs = new URLSearchParams({
+                bucket: 'pets-photos',
+                path: pet.imagePath,
+                expiresIn: String(60 * 60 * 24 * 6),
+              }).toString();
+              const urlRes = await authFetch(`${API_URL}/media/signed-url?${qs}`);
+              const urlPayload = await urlRes.json().catch(() => ({}));
+              if (urlRes.ok && urlPayload?.url) return { ...pet, image: urlPayload.url };
+            } catch {}
+            return pet;
+          })
+        );
+
+        setPets(withUrls);
+        if (withUrls.length > 0 && !selectedPetForAI) {
+          setSelectedPetForAI(withUrls[0]);
         }
       } catch (err) {
         setError(err.message);

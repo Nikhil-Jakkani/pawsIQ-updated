@@ -44,6 +44,7 @@ model PIQ_Pets {
   pet_image          String?
   pet_colour         String?
   PIQ_Appointments   PIQ_Appointments[]
+  PIQ_Bookings       PIQ_Bookings[]
   PIQ_Health_Records PIQ_Health_Records[]
   PIQ_User           PIQ_User?            @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
   PIQ_Pets_Photo     PIQ_Pets_Photo[]
@@ -64,39 +65,47 @@ model PIQ_Pets_Photo {
 }
 
 model PIQ_Service_Master {
-  services_id         Int       @id @default(autoincrement())
-  service_type        String    @db.VarChar
-  service_sub_type    String    @db.VarChar
-  service_title       String    @db.VarChar
-  service_description String    @db.VarChar
-  service_price_amt   Int
-  service_duration    Int       @db.SmallInt
-  created_at          DateTime  @default(now()) @db.Timestamptz(6)
-  last_updated_dtm    DateTime? @db.Timestamp(6)
-  is_record_valid     Boolean?
-  pet_type            String?   @db.VarChar
+  services_id                   Int                             @id @default(autoincrement())
+  service_type                  String                          @db.VarChar
+  service_sub_type              String                          @db.VarChar
+  service_title                 String                          @db.VarChar
+  service_description           String                          @db.VarChar
+  service_price_amt             Int
+  service_duration              Int                             @db.SmallInt
+  created_at                    DateTime                        @default(now()) @db.Timestamptz(6)
+  last_updated_dtm              DateTime?                       @db.Timestamp(6)
+  is_record_valid               Boolean?
+  pet_type                      String?                         @db.VarChar
+  PIQ_Bookings                  PIQ_Bookings[]
+  PIQ_Service_BizEntity_Details PIQ_Service_BizEntity_Details[]
 }
 
 model PIQ_Service_Provider {
-  service_provider_id           Int       @id @default(autoincrement())
-  serv_provider_name            String?   @db.VarChar
-  serv_provider_email           String?   @db.VarChar
-  serv_provider_contact_nbr     String?   @db.VarChar
-  serv_provider_password        String?   @db.VarChar
-  serv_provider_exp_years       String?   @db.VarChar
-  serv_provider_certificates    String?   @db.VarChar
+  service_provider_id           Int            @id @default(autoincrement())
+  serv_provider_name            String?        @db.VarChar
+  serv_provider_email           String?        @db.VarChar
+  serv_provider_contact_nbr     String?        @db.VarChar
+  serv_provider_password        String?        @db.VarChar
+  serv_provider_exp_years       String?        @db.VarChar
+  serv_provider_certificates    String?        @db.VarChar
   serv_provider_photo           Bytes?
-  serv_provider_desc            String?   @db.VarChar
-  serv_provider_status          String?   @db.VarChar
-  serv_provider_request_dtm     DateTime? @default(now()) @db.Timestamp(6)
-  serv_provider_approval_dtm    DateTime? @db.Timestamp(6)
-  provider_src                  String?   @db.VarChar
+  serv_provider_desc            String?        @db.VarChar
+  serv_provider_status          String?        @db.VarChar
+  serv_provider_request_dtm     DateTime?      @default(now()) @db.Timestamp(6)
+  serv_provider_approval_dtm    DateTime?      @db.Timestamp(6)
+  provider_src                  String?        @db.VarChar
   is_provider_bgchecked         Boolean?
-  serv_provider_insta_acct_dtls String?   @db.VarChar
-  serv_provider_fb_acct_dtls    String?   @db.VarChar
+  serv_provider_insta_acct_dtls String?        @db.VarChar
+  serv_provider_fb_acct_dtls    String?        @db.VarChar
   is_record_valid               Boolean?
-  last_updated_dtm              DateTime? @db.Timestamp(6)
-  created_at                    DateTime  @default(now()) @db.Timestamptz(6)
+  last_updated_dtm              DateTime?      @db.Timestamp(6)
+  created_at                    DateTime       @default(now()) @db.Timestamptz(6)
+  serv_provider_type            String?
+  how_hear_about_us             String?        @db.VarChar
+  PIQ_Bookings                  PIQ_Bookings[]
+
+  @@index([serv_provider_email], map: "idx_provider_email")
+  @@index([serv_provider_status], map: "idx_provider_status")
 }
 
 model PIQ_User {
@@ -110,6 +119,7 @@ model PIQ_User {
   last_updated_dtm         DateTime              @default(now()) @db.Timestamp(6)
   created_at               DateTime              @default(now()) @db.Timestamptz(6)
   paid_user                Boolean?              @default(false)
+  PIQ_Bookings             PIQ_Bookings[]
   PIQ_Pets                 PIQ_Pets[]
   PIQ_Reminders            PIQ_Reminders[]
   password_reset_otps      password_reset_otps[]
@@ -127,15 +137,6 @@ model PIQ_pets_profile {
   created_at         DateTime  @default(now()) @db.Timestamptz(6)
   last_updated_dtm   DateTime? @default(now()) @db.Timestamp(6)
   PIQ_Pets           PIQ_Pets  @relation(fields: [pet_id], references: [pet_id], onDelete: Cascade, onUpdate: NoAction)
-}
-
-model admins {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name       String
-  email      String   @unique
-  password   String
-  role       String   @default("admin")
-  created_at DateTime @default(now()) @db.Timestamptz(6)
 }
 
 model tokens {
@@ -312,4 +313,57 @@ model password_reset_otps {
   @@index([expires_at], map: "idx_otp_expires_at")
   @@index([used_at], map: "idx_otp_used_at")
   @@index([user_id], map: "idx_otp_user_id")
+}
+
+model PIQ_Admins {
+  name       String
+  email      String   @unique(map: "admins_email_key")
+  password   String
+  role       String   @default("admin")
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  admin_id   BigInt   @id
+}
+
+model PIQ_Bookings {
+  booking_id                    Int                            @id @default(autoincrement())
+  pet_id                        BigInt
+  services_id                   Int
+  service_provider_id           Int?
+  biz_dtls_id                   Int?
+  user_id                       BigInt
+  booked_dtm                    DateTime                       @db.Timestamptz(6)
+  booking_status                String                         @db.VarChar(20)
+  booking_comments              String?                        @db.VarChar(1000)
+  created_dtm                   DateTime                       @default(now()) @db.Timestamptz(6)
+  last_updated_dtm              DateTime?                      @default(now()) @db.Timestamp(6)
+  PIQ_Service_BizEntity_Details PIQ_Service_BizEntity_Details? @relation(fields: [biz_dtls_id], references: [biz_dtls_id], onUpdate: NoAction, map: "fk_booking_biz_entity")
+  PIQ_Pets                      PIQ_Pets                       @relation(fields: [pet_id], references: [pet_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_booking_pet")
+  PIQ_Service_Master            PIQ_Service_Master             @relation(fields: [services_id], references: [services_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_booking_service_master")
+  PIQ_Service_Provider          PIQ_Service_Provider?          @relation(fields: [service_provider_id], references: [service_provider_id], onUpdate: NoAction, map: "fk_booking_service_provider")
+  PIQ_User                      PIQ_User                       @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_booking_user")
+
+  @@index([pet_id], map: "idx_bookings_pet_id")
+  @@index([services_id], map: "idx_bookings_service_id")
+  @@index([booking_status], map: "idx_bookings_status")
+  @@index([user_id], map: "idx_bookings_user_id")
+}
+
+model PIQ_Service_BizEntity_Details {
+  biz_dtls_id                    Int                @id @default(autoincrement())
+  services_id                    Int
+  provider_biz_name              String             @db.VarChar(100)
+  provider_biz_email             String             @db.VarChar(255)
+  provider_biz_login_name        String             @db.VarChar(255)
+  provider_biz_pwd               String             @db.VarChar(50)
+  provider_biz_contact_number    String             @db.VarChar(10)
+  provider_biz_address           String             @db.VarChar(500)
+  provider_biz_certificates      String?            @db.VarChar(500)
+  provider_biz_gst_number        String?            @db.VarChar(75)
+  is_provider_bizentity_verified Boolean            @default(false)
+  created_at                     DateTime           @default(now()) @db.Timestamptz(6)
+  last_updated_dtm               DateTime?          @default(now()) @db.Timestamp(6)
+  PIQ_Bookings                   PIQ_Bookings[]
+  PIQ_Service_Master             PIQ_Service_Master @relation(fields: [services_id], references: [services_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_bizentity_service_master")
+
+  @@index([services_id], map: "idx_bizentity_service_id")
 }

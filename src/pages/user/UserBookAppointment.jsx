@@ -23,11 +23,16 @@ const UserBookAppointment = () => {
   });
 
   // Auth and pets from backend
-  const { currentUser, tokens } = useAuth();
+  const { currentUser, tokens, authFetch } = useAuth();
   const accessToken = tokens?.access?.token;
   const [pets, setPets] = useState([]);
   const [loadingPets, setLoadingPets] = useState(false);
   const [error, setError] = useState('');
+  // dynamic services/providers
+  const [allServices, setAllServices] = useState([]);
+  const [loadingServices, setLoadingServices] = useState(false);
+  const [providers, setProviders] = useState([]);
+  const [loadingProviders, setLoadingProviders] = useState(false);
 
   useEffect(() => {
     const fetchPets = async () => {
@@ -50,17 +55,15 @@ const UserBookAppointment = () => {
 
       setLoadingPets(true);
       try {
-        const res = await fetch(`${API_URL}/user/profile`, {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        });
+        const res = await authFetch(`${API_URL}/user/profile`);
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data?.message || 'Failed to load pets');
         const mapped = (data?.pets || []).map((p) => ({
-          id: Number(p.pet_id),
-          name: p.pet_name || 'Pet',
-          type: (p.pet_type || '').toLowerCase(),
-          breed: p.pet_breed || '',
-          imagePath: p.pet_image || '',
+          id: Number(p.pet_id ?? p.id),
+          name: p.pet_name || p.name || 'Pet',
+          type: (p.pet_type || p.type || '').toLowerCase(),
+          breed: p.pet_breed || p.breed || '',
+          imagePath: p.pet_image || p.imagePath || '',
           image: 'https://placehold.co/600x400?text=Pet',
         }));
         // resolve signed image URLs (6 days)
@@ -69,9 +72,7 @@ const UserBookAppointment = () => {
             if (!pet.imagePath) return pet;
             try {
               const qs = new URLSearchParams({ bucket: 'pets-photos', path: pet.imagePath, expiresIn: String(60 * 60 * 24 * 6) }).toString();
-              const urlRes = await fetch(`${API_URL}/media/signed-url?${qs}`, {
-                headers: { Authorization: `Bearer ${accessToken}` },
-              });
+              const urlRes = await authFetch(`${API_URL}/media/signed-url?${qs}`);
               const urlPayload = await urlRes.json().catch(() => ({}));
               if (urlRes.ok && urlPayload?.url) return { ...pet, image: urlPayload.url };
             } catch {
@@ -102,86 +103,63 @@ const UserBookAppointment = () => {
     fetchPets();
   }, [accessToken]);
 
-  const serviceTypes = [
-    { id: 'vet', name: 'Veterinary Care', icon: FaUserMd, description: 'Health checkups, vaccinations, and medical treatments' },
-    { id: 'grooming', name: 'Grooming', icon: FaCut, description: 'Bathing, haircuts, nail trimming, and more' },
-    { id: 'training', name: 'Training', icon: FaDog, description: 'Obedience training, behavior modification, and socialization' },
-    { id: 'boarding', name: 'Boarding', icon: FaHome, description: 'Overnight pet care in a safe and comfortable environment' },
-    { id: 'daycare', name: 'Daycare', icon: FaPaw, description: 'Supervised play and care during the day' },
-    { id: 'walking', name: 'Dog Walking', icon: FaWalking, description: 'Regular exercise and bathroom breaks for your dog' }
-  ];
+  // Load services from backend
+  useEffect(() => {
+    const fetchServices = async () => {
+      if (!accessToken) return;
+      try {
+        setLoadingServices(true);
+        const res = await authFetch(`${API_URL}/services`);
+        const data = await res.json().catch(() => ({}));
+        const items = Array.isArray(data?.items) ? data.items : [];
+        setAllServices(items);
+      } finally {
+        setLoadingServices(false);
+      }
+    };
+    fetchServices();
+  }, [accessToken]);
 
-  const services = {
-    vet: [
-      { id: 'vet1', name: 'Routine Checkup', price: 50, duration: '30 min' },
-      { id: 'vet2', name: 'Vaccination', price: 35, duration: '20 min' },
-      { id: 'vet3', name: 'Dental Cleaning', price: 120, duration: '60 min' },
-      { id: 'vet4', name: 'Spay/Neuter', price: 200, duration: '90 min' }
-    ],
-    grooming: [
-      { id: 'groom1', name: 'Basic Bath & Brush', price: 40, duration: '45 min' },
-      { id: 'groom2', name: 'Full Grooming', price: 70, duration: '90 min' },
-      { id: 'groom3', name: 'Nail Trimming', price: 15, duration: '15 min' },
-      { id: 'groom4', name: 'De-shedding Treatment', price: 55, duration: '60 min' }
-    ],
-    training: [
-      { id: 'train1', name: 'Basic Obedience', price: 60, duration: '45 min' },
-      { id: 'train2', name: 'Advanced Training', price: 80, duration: '60 min' },
-      { id: 'train3', name: 'Puppy Socialization', price: 50, duration: '45 min' },
-      { id: 'train4', name: 'Behavior Modification', price: 90, duration: '60 min' }
-    ],
-    boarding: [
-      { id: 'board1', name: 'Standard Boarding', price: 45, duration: '24 hours' },
-      { id: 'board2', name: 'Luxury Suite', price: 75, duration: '24 hours' },
-      { id: 'board3', name: 'Extended Stay (3+ days)', price: 40, duration: '24 hours' }
-    ],
-    daycare: [
-      { id: 'day1', name: 'Full Day Care', price: 35, duration: '8 hours' },
-      { id: 'day2', name: 'Half Day Care', price: 20, duration: '4 hours' },
-      { id: 'day3', name: 'Weekly Package', price: 150, duration: '5 days' }
-    ],
-    walking: [
-      { id: 'walk1', name: '30-Minute Walk', price: 20, duration: '30 min' },
-      { id: 'walk2', name: '60-Minute Walk', price: 35, duration: '60 min' },
-      { id: 'walk3', name: 'Group Walk', price: 15, duration: '45 min' }
-    ]
+  const iconByType = (type) => {
+    const t = String(type || '').toLowerCase();
+    if (t.includes('vet')) return FaUserMd;
+    if (t.includes('groom')) return FaCut;
+    if (t.includes('train')) return FaDog;
+    if (t.includes('board')) return FaHome;
+    if (t.includes('day')) return FaPaw;
+    if (t.includes('walk')) return FaWalking;
+    return FaPaw;
   };
 
-  const providers = [
-    { 
-      id: 1, 
-      name: 'Dr. Sarah Johnson', 
-      title: 'Veterinarian',
-      image: 'https://randomuser.me/api/portraits/women/44.jpg',
-      location: 'Happy Paws Veterinary Clinic',
-      address: '123 Pet Care Lane, Pawsville',
-      rating: 4.9,
-      reviewCount: 128,
-      services: ['vet1', 'vet2', 'vet3', 'vet4']
-    },
-    { 
-      id: 2, 
-      name: 'Fluffy Paws Grooming', 
-      title: 'Professional Groomer',
-      image: 'https://randomuser.me/api/portraits/men/32.jpg',
-      location: 'Fluffy Paws Pet Salon',
-      address: '456 Grooming Street, Pawsville',
-      rating: 4.7,
-      reviewCount: 95,
-      services: ['groom1', 'groom2', 'groom3', 'groom4']
-    },
-    { 
-      id: 3, 
-      name: 'John Smith', 
-      title: 'Certified Dog Trainer',
-      image: 'https://randomuser.me/api/portraits/men/22.jpg',
-      location: 'Obedient Paws Training Center',
-      address: '789 Training Road, Pawsville',
-      rating: 4.8,
-      reviewCount: 76,
-      services: ['train1', 'train2', 'train3', 'train4']
+  const serviceTypes = React.useMemo(() => {
+    const uniq = new Map();
+    for (const s of allServices) {
+      const key = (s.service_type || 'Other').trim();
+      if (!uniq.has(key)) uniq.set(key, { id: key.toLowerCase(), name: key, icon: iconByType(key), description: s.service_description || '' });
     }
-  ];
+    return Array.from(uniq.values());
+  }, [allServices]);
+
+  const filteredServices = React.useMemo(() => {
+    if (!formData.serviceType) return allServices;
+    const key = formData.serviceType.toLowerCase();
+    return allServices.filter((s) => String(s.service_type || '').toLowerCase() === key);
+  }, [allServices, formData.serviceType]);
+
+  // When a service type is selected, auto-select the first specific service and load providers
+  useEffect(() => {
+    if (!formData.serviceType) return;
+    if (!filteredServices || filteredServices.length === 0) return;
+    // If no serviceId chosen yet or the chosen one isn't in the filtered list, pick the first
+    const first = filteredServices[0];
+    if (!formData.serviceId || !filteredServices.some(s => s.services_id === Number(formData.serviceId))) {
+      (async () => {
+        await handleServiceSelect(first.services_id);
+      })();
+    }
+  }, [formData.serviceType, filteredServices]);
+
+  // providers are loaded dynamically based on selected serviceId
 
   const availableDates = React.useMemo(() => {
     const dates = [];
@@ -232,11 +210,36 @@ const UserBookAppointment = () => {
   };
 
   // Handle specific service selection
-  const handleServiceSelect = (serviceId) => {
+  const handleServiceSelect = async (serviceId) => {
     setFormData({
       ...formData,
       serviceId
     });
+    // load providers for this service
+    if (!serviceId) return;
+    try {
+      setLoadingProviders(true);
+      const res = await authFetch(`${API_URL}/services/${serviceId}/providers`);
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        const items = Array.isArray(data?.items) ? data.items : [];
+        // normalize for UI
+        setProviders(items.map(p => ({
+          id: p.service_provider_id,
+          name: p.serv_provider_name || 'Provider',
+          title: p.serv_provider_type || 'Service Provider',
+          image: 'https://placehold.co/128x128?text=Provider',
+          location: p.provider_src || '—',
+          address: p.serv_provider_desc || '—',
+          rating: 4.8,
+          reviewCount: 0,
+        })));
+      } else {
+        setProviders([]);
+      }
+    } finally {
+      setLoadingProviders(false);
+    }
   };
 
   // Handle provider selection
@@ -306,24 +309,26 @@ const UserBookAppointment = () => {
     if (!accessToken) return;
     setIsSubmitting(true);
     try {
-      const appointment_date = combineDateTime(formData.date, formData.timeSlot);
+      const booked_dtm = combineDateTime(formData.date, formData.timeSlot);
+      const dt = new Date(booked_dtm);
+      if (!booked_dtm || Number.isNaN(dt.getTime()) || dt.getTime() <= Date.now()) {
+        throw new Error('Date for booking needs to be a future date/time');
+      }
       const payload = {
         pet_id: Number(formData.petId),
-        appointment_type: mapToAppointmentType(),
-        appointment_date,
-        appointment_comments: formData.notes?.trim() || undefined,
+        services_id: Number(formData.serviceId),
+        service_provider_id: formData.providerId ? Number(formData.providerId) : undefined,
+        booked_dtm,
+        booking_comments: formData.notes?.trim() || undefined,
       };
-      const res = await fetch(`${API_URL}/appointments`, {
+      const res = await authFetch(`${API_URL}/bookings`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data?.message || 'Failed to create appointment');
+      if (!res.ok) throw new Error(data?.message || 'Failed to create booking');
       navigate('/user/appointments');
     } catch (err) {
       alert(err.message || 'Failed to create appointment');
@@ -335,20 +340,22 @@ const UserBookAppointment = () => {
   // Get selected service details
   const getSelectedService = () => {
     if (!formData.serviceType || !formData.serviceId) return null;
-    return services[formData.serviceType].find(service => service.id === formData.serviceId);
+    const id = Number(formData.serviceId);
+    return filteredServices.find(service => service.services_id === id) || null;
   };
-  
+
   // Get selected provider details
   const getSelectedProvider = () => {
     if (!formData.providerId) return null;
     return providers.find(provider => provider.id === parseInt(formData.providerId));
   };
-  
+
   // Get selected pet details
   const getSelectedPet = () => {
     if (!formData.petId) return null;
     return pets.find(pet => pet.id === parseInt(formData.petId));
   };
+
   // Render step content
   const renderStepContent = () => {
     switch(currentStep) {
@@ -401,7 +408,7 @@ const UserBookAppointment = () => {
                               setPets((prev) => prev.map((p) => (p.id === pet.id ? { ...p, image: urlPayload.url } : p)));
                             }
                           } catch {
-                          // Ignore errors when resolving signed image URLs
+                            // Ignore errors when resolving signed image URLs
                           }       
                         })();
                       }}
@@ -511,27 +518,27 @@ const UserBookAppointment = () => {
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-gray-800">Select Specific Service</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {services[formData.serviceType].map(service => (
+                    {filteredServices.map(service => (
                       <div
-                        key={service.id}
-                        onClick={() => handleServiceSelect(service.id)}
-                        className={`bg-white rounded-lg p-4 border cursor-pointer transition-all ${formData.serviceId === service.id ? 'border-purple-500 ring-2 ring-purple-200 shadow-sm' : 'border-gray-200 hover:border-purple-300'}`}
+                        key={service.services_id}
+                        onClick={() => handleServiceSelect(service.services_id)}
+                        className={`bg-white rounded-lg p-4 border cursor-pointer transition-all ${formData.serviceId === service.services_id ? 'border-purple-500 ring-2 ring-purple-200 shadow-sm' : 'border-gray-200 hover:border-purple-300'}`}
                       >
                         <div className="flex justify-between items-start">
                           <div>
-                            <h4 className="font-medium text-gray-800">{service.name}</h4>
+                            <h4 className="font-medium text-gray-800">{service.service_title}</h4>
                             <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
                               <div className="flex items-center gap-1">
                                 <FaClock />
-                                <span>{service.duration}</span>
+                                <span>{service.service_duration} min</span>
                               </div>
                               <div className="flex items-center gap-1">
                                 <FaMoneyBillWave />
-                                <span>${service.price}</span>
+                                <span>${service.service_price_amt}</span>
                               </div>
                             </div>
                           </div>
-                          {formData.serviceId === service.id && (
+                          {Number(formData.serviceId) === service.services_id && (
                             <div className="text-purple-600">
                               <FaCheck />
                             </div>
@@ -554,7 +561,8 @@ const UserBookAppointment = () => {
               <button
                 onClick={nextStep}
                 disabled={!formData.serviceId}
-                className={`px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 flex items-center gap-2 ${!formData.serviceId ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 flex items-center gap-2
+                  ${!formData.serviceId ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <span>Continue</span>
                 <FaChevronRight />
@@ -570,9 +578,15 @@ const UserBookAppointment = () => {
             <p className="text-gray-600">Choose a service provider for your appointment</p>
             
             <div className="space-y-4">
-              {providers
-                .filter(provider => provider.services.includes(formData.serviceId))
-                .map(provider => (
+              {loadingProviders && (
+                <div className="text-sm text-gray-500">Loading providers...</div>
+              )}
+              {!loadingProviders && providers.length === 0 && (
+                <div className="p-4 border border-yellow-200 bg-yellow-50 rounded-lg text-yellow-800 text-sm">
+                  No providers found for this service yet. Try another service type or try again later.
+                </div>
+              )}
+              {!loadingProviders && providers.map(provider => (
                   <div 
                     key={provider.id}
                     onClick={() => handleProviderSelect(provider.id)}
@@ -778,15 +792,15 @@ const UserBookAppointment = () => {
                       <h4 className="text-sm font-medium text-gray-500 mb-1">Service</h4>
                       {selectedService && (
                         <div>
-                          <p className="font-medium text-gray-800">{selectedService.name}</p>
+                          <p className="font-medium text-gray-800">{selectedService.service_title}</p>
                           <div className="flex items-center gap-4 mt-1 text-sm text-gray-600">
                             <div className="flex items-center gap-1">
                               <FaClock />
-                              <span>{selectedService.duration}</span>
+                              <span>{selectedService.service_duration} min</span>
                             </div>
                             <div className="flex items-center gap-1">
                               <FaMoneyBillWave />
-                              <span>${selectedService.price}</span>
+                              <span>${selectedService.service_price_amt}</span>
                             </div>
                           </div>
                         </div>
@@ -856,15 +870,15 @@ const UserBookAppointment = () => {
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Service Fee</span>
-                      <span className="font-medium text-gray-800">${selectedService?.price || 0}</span>
+                      <span className="font-medium text-gray-800">${selectedService?.service_price_amt || 0}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Tax</span>
-                      <span className="font-medium text-gray-800">${Math.round((selectedService?.price || 0) * 0.08 * 100) / 100}</span>
+                      <span className="font-medium text-gray-800">${Math.round((selectedService?.service_price_amt || 0) * 0.08 * 100) / 100}</span>
                     </div>
                     <div className="border-t border-purple-200 my-2 pt-2 flex justify-between">
                       <span className="font-medium text-gray-800">Total</span>
-                      <span className="font-bold text-purple-800">${Math.round((selectedService?.price || 0) * 1.08 * 100) / 100}</span>
+                      <span className="font-bold text-purple-800">${Math.round((selectedService?.service_price_amt || 0) * 1.08 * 100) / 100}</span>
                     </div>
                   </div>
                 </div>
