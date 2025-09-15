@@ -32,7 +32,6 @@ const AIPetCare = () => {
         if (!res.ok) throw new Error(payload?.message || 'Failed to fetch user profile.');
 
         const rawPets = Array.isArray(payload?.pets) ? payload.pets : [];
-        // Normalize for PetSelector and resolve signed image URLs (6 days)
         const normalized = rawPets.map((p) => ({
           pet_id: Number(p.pet_id ?? p.id),
           name: p.pet_name ?? p.name ?? 'Pet',

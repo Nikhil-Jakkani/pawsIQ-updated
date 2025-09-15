@@ -40,7 +40,6 @@ const HealthRecords = () => {
       if (petResponse.ok) {
         petData = await petResponse.json();
       } else {
-        // If direct fetch fails, try getting from user's profile
         const profileRes = await authFetch(`${API_URL}/user/profile`);
         const profilePayload = await profileRes.json().catch(() => ({}));
         if (profileRes.ok) {

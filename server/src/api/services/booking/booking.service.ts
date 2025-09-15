@@ -30,7 +30,7 @@ const createBooking = async (
     services_id: number;
     biz_dtls_id?: number | null;
     service_provider_id?: number | null;
-    booked_dtm: string; // ISO
+    booked_dtm: string;
     booking_comments?: string | null;
   }
 ) => {

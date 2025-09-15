@@ -63,7 +63,6 @@ const UserAppointments = () => {
       const res = await authFetch(`${API_URL}/appointments?limit=50`);
       const payload = await res.json().catch(() => ({}));
 
-      // If unauthorized/invalid token, suppress error and show empty state
       if (res.status === 401) {
         setAppointments([]);
         return;
