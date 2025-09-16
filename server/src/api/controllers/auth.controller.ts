@@ -4,7 +4,7 @@ import axios from 'axios';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import moment from 'moment';
-import { db } from '../../config/db.js';
+import prisma from '../../lib/prisma.js';
 import { tokenService } from '../services/user/token.service.js';
 import { tokenTypes } from '../../config/tokens.js';
 import { authService as adminAuthService } from '../services/admin/auth.service.js';
@@ -105,44 +105,22 @@ export const googleLogin = async (req: Request, res: Response) => {
     }
     
     const email = payload.email.toLowerCase();
-    let { data: existingUser, error: userError } = await db
-      .from('PIQ_User')
-      .select('*')
-      .eq('user_email_id', email)
-      .single();
-    
-    if (userError && userError.code !== 'PGRST116') {
-      console.error('Database error:', userError);
-      return res.status(500).json({ error: 'Database error' });
-    }
-
+    let existingUser = await prisma.pIQ_User.findUnique({ where: { user_email_id: email } });
     if (!existingUser) {
       const randomPassword = await bcrypt.hash(`oauth-${Date.now()}-${Math.random()}`, 10);
-      const insertResult = await db
-        .from('PIQ_User')
-        .insert([
-          {
-            user_full_name: payload.name || 'User',
-            user_email_id: email,
-            user_password: randomPassword,
-            user_phone_number: '',
-            user_status: 'active',
-            created_at: new Date(),
-            last_updated_dtm: new Date(),
-          },
-        ])
-        .select()
-        .single();
-
-      if (insertResult.error) {
-        console.error('Supabase insert error:', insertResult.error);
-        return res.status(500).json({ error: 'Failed to create user' });
-      }
-      existingUser = insertResult.data as any;
+      existingUser = await prisma.pIQ_User.create({
+        data: {
+          user_full_name: payload.name || 'User',
+          user_email_id: email,
+          user_password: randomPassword,
+          user_phone_number: '',
+          user_status: 'active',
+        },
+      });
     }
 
     try {
-      const { accessToken, refreshToken } = await generateTokens(existingUser.user_id, 'user');
+      const { accessToken, refreshToken } = await generateTokens(Number(existingUser.user_id), 'user');
       
       res.json({
         accessToken,
@@ -183,38 +161,22 @@ export const facebookLogin = async (req: Request, res: Response) => {
     }
     
     const userEmail = (email || `${userID}@facebook.com`).toLowerCase();
-    let { data: existingUser } = await db
-      .from('PIQ_User')
-      .select('*')
-      .eq('user_email_id', userEmail)
-      .single();
+    let existingUser = await prisma.pIQ_User.findUnique({ where: { user_email_id: userEmail } });
 
     if (!existingUser) {
       const randomPassword = await bcrypt.hash(`oauth-${Date.now()}-${Math.random()}`, 10);
-      const insertResult = await db
-        .from('PIQ_User')
-        .insert([
-          {
-            user_full_name: name || 'Facebook User',
-            user_email_id: userEmail,
-            user_password: randomPassword,
-            user_phone_number: '',
-            user_status: 'active',
-            created_at: new Date(),
-            last_updated_dtm: new Date(),
-          },
-        ])
-        .select()
-        .single();
-
-      if (insertResult.error) {
-        console.error('Supabase insert error:', insertResult.error);
-        return res.status(500).json({ error: 'Failed to create user' });
-      }
-      existingUser = insertResult.data as any;
+      existingUser = await prisma.pIQ_User.create({
+        data: {
+          user_full_name: name || 'Facebook User',
+          user_email_id: userEmail,
+          user_password: randomPassword,
+          user_phone_number: '',
+          user_status: 'active',
+        },
+      });
     }
 
-    const tokens = await tokenService.generateAuthTokens(existingUser.user_id, 'user');
+    const tokens = await tokenService.generateAuthTokens(Number(existingUser.user_id), 'user');
     
     res.json({
       accessToken: tokens.access.token,
@@ -316,36 +278,20 @@ export const verifyOTP = async (req: Request, res: Response) => {
     }
     
     // Check if user exists with this phone number
-    let { data: existingUser, error: userError } = await db
-      .from('PIQ_User')
-      .select('*')
-      .eq('user_phone_number', formattedPhone)
-      .single();
+    let existingUser = await prisma.pIQ_User.findFirst({ where: { user_phone_number: formattedPhone } });
     
     // If user doesn't exist, create a new one
     if (!existingUser) {
       const randomPassword = await bcrypt.hash(`otp-${Date.now()}-${Math.random()}`, 10);
-      const insertResult = await db
-        .from('PIQ_User')
-        .insert([
-          {
-            user_full_name: 'OTP User',
-            user_email_id: `user-${formattedPhone.replace('+', '')}@otp.pawsiq.com`,
-            user_password: randomPassword,
-            user_phone_number: formattedPhone,
-            user_status: 'active',
-            created_at: new Date(),
-            last_updated_dtm: new Date(),
-          },
-        ])
-        .select()
-        .single();
-
-      if (insertResult.error) {
-        console.error('Supabase insert error:', insertResult.error);
-        return res.status(500).json({ error: 'Failed to create user' });
-      }
-      existingUser = insertResult.data as any;
+      existingUser = await prisma.pIQ_User.create({
+        data: {
+          user_full_name: 'OTP User',
+          user_email_id: `user-${formattedPhone.replace('+', '')}@otp.pawsiq.com`,
+          user_password: randomPassword,
+          user_phone_number: formattedPhone,
+          user_status: 'active',
+        },
+      });
     }
     
     // Generate authentication tokens

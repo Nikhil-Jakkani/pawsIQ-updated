@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import moment from 'moment';
 import httpStatus from 'http-status';
-import { db } from '../../../config/db.js';
+import prisma from '../../../lib/prisma.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { tokenTypes, tokenExpiration } from '../../../config/tokens.js';
 import config from '../../../config/config.js';
@@ -24,39 +24,25 @@ const generateToken = (
 };
 
 const saveToken = async (token: string, userId: number, expires: moment.Moment, type: string, blacklisted = false) => {
-  const { data, error } = await db
-    .from('tokens')
-    .insert([
-      {
-        token,
-        user_id: userId,
-        expires: expires.toDate(),
-        type,
-        blacklisted,
-      },
-    ])
-    .select();
-
-  if (error) {
-    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Error saving token');
-  }
-
-  return data[0];
+  const saved = await prisma.tokens.create({
+    data: {
+      token,
+      user_id: userId,
+      expires: expires.toDate(),
+      type,
+      blacklisted,
+    },
+  });
+  return saved;
 };
 
 
 const verifyToken = async (token: string, type: string) => {
   const payload = jwt.verify(token, config.jwtSecret);
   
-  const { data: tokenDoc, error } = await db
-    .from('tokens')
-    .select('*')
-    .eq('token', token)
-    .eq('type', type)
-    .eq('blacklisted', false)
-    .single();
+  const tokenDoc = await prisma.tokens.findFirst({ where: { token, type, blacklisted: false } });
 
-  if (error || !tokenDoc) {
+  if (!tokenDoc) {
     throw new Error('Token not found');
   }
 
@@ -97,24 +83,20 @@ const refreshAuth = async (refreshToken: string) => {
 
     let subjectExists = false;
     if (role === 'admin') {
-      const { data } = await db.from('PIQ_Admins').select('admin_id').eq('admin_id', sub).single();
-      subjectExists = !!data;
+      const admin = await prisma.pIQ_Admins.findUnique({ where: { admin_id: BigInt(sub) } });
+      subjectExists = !!admin;
     } else if (role === 'user') {
-      const { data } = await db.from('PIQ_User').select('user_id').eq('user_id', sub).single();
-      subjectExists = !!data;
+      const user = await prisma.pIQ_User.findUnique({ where: { user_id: BigInt(sub) } });
+      subjectExists = !!user;
     } else if (role === 'provider') {
-      const { data } = await db
-        .from('PIQ_Service_Provider')
-        .select('service_provider_id')
-        .eq('service_provider_id', sub)
-        .single();
-      subjectExists = !!data;
+      const provider = await prisma.pIQ_Service_Provider.findUnique({ where: { service_provider_id: Number(sub) } });
+      subjectExists = !!provider;
     }
     if (!subjectExists) {
       throw new Error('Subject not found');
     }
 
-    await db.from('tokens').delete().eq('token', refreshToken);
+    await prisma.tokens.deleteMany({ where: { token: refreshToken } });
 
     return await generateAuthTokens(sub, role);
   } catch (error) {

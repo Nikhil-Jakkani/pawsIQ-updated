@@ -1,21 +1,14 @@
 import httpStatus from 'http-status';
-import { db } from '../../../config/db.js';
+import prisma from '../../../lib/prisma.js';
 import { catchAsync } from '../../utils/catchAsync.js';
 
 export const getStats = catchAsync(async (_req, res) => {
-  // Counts for dashboard
-  const [usersRes, petsRes, apptsRes, providersRes] = await Promise.all([
-    db.from('PIQ_User').select('user_id', { count: 'exact', head: true }),
-    db.from('PIQ_Pets').select('pet_id', { count: 'exact', head: true }),
-    db.from('PIQ_Appointments').select('appointment_id', { count: 'exact', head: true }),
-    db.from('PIQ_Service_Provider').select('service_provider_id', { count: 'exact', head: true }),
-  ] as any);
-
-  const users = (usersRes?.count as number) || 0;
-  const pets = (petsRes?.count as number) || 0;
-  const appointments = (apptsRes?.count as number) || 0;
-  const providers = (providersRes?.count as number) || 0;
-
+  const [users, pets, appointments, providers] = await Promise.all([
+    prisma.pIQ_User.count(),
+    prisma.pIQ_Pets.count(),
+    prisma.pIQ_Appointments.count(),
+    prisma.pIQ_Service_Provider.count(),
+  ]);
   res.status(httpStatus.OK).send({ users, pets, appointments, providers });
 });
 
@@ -24,29 +17,39 @@ export const getUsers = catchAsync(async (req, res) => {
   const limit = Math.max(1, Math.min(100, Number(req.query.limit) || 20));
   const search = String(req.query.search || '').trim();
   const status = String(req.query.status || '').trim();
-  const offset = (page - 1) * limit;
+  const skip = (page - 1) * limit;
 
-  let query = db
-    .from('PIQ_User')
-    .select('user_id, user_full_name, user_email_id, user_phone_number, created_at, last_updated_dtm, user_status', { count: 'exact' })
-    .neq('user_status', 'deleted');
-
+  const where: any = { NOT: { user_status: 'deleted' } };
+  if (status) where.user_status = status;
   if (search) {
-    query = query.or(
-      `user_full_name.ilike.%${search}%,user_email_id.ilike.%${search}%,user_phone_number.ilike.%${search}%`
-    );
-  }
-  if (status) {
-    query = query.eq('user_status', status);
+    where.OR = [
+      { user_full_name: { contains: search, mode: 'insensitive' } },
+      { user_email_id: { contains: search, mode: 'insensitive' } },
+      { user_phone_number: { contains: search, mode: 'insensitive' } },
+    ];
   }
 
-  query = query.order('created_at', { ascending: false }).range(offset, offset + limit - 1);
-
-  const { data, error, count } = await query;
-  if (error) return res.status(httpStatus.INTERNAL_SERVER_ERROR).send({ message: error.message });
+  const [items, count] = await Promise.all([
+    prisma.pIQ_User.findMany({
+      where,
+      orderBy: { created_at: 'desc' },
+      skip,
+      take: limit,
+      select: {
+        user_id: true,
+        user_full_name: true,
+        user_email_id: true,
+        user_phone_number: true,
+        created_at: true,
+        last_updated_dtm: true,
+        user_status: true,
+      },
+    }),
+    prisma.pIQ_User.count({ where }),
+  ]);
 
   res.status(httpStatus.OK).send({
-    results: data || [],
+    results: items,
     page,
     limit,
     totalPages: Math.ceil((count || 0) / limit),
@@ -58,32 +61,29 @@ export const getPets = catchAsync(async (req, res) => {
   const page = Math.max(1, Number(req.query.page) || 1);
   const limit = Math.max(1, Math.min(100, Number(req.query.limit) || 24));
   const search = String(req.query.search || '').trim();
-  const offset = (page - 1) * limit;
+  const skip = (page - 1) * limit;
 
-  let petsQuery = db.from('PIQ_Pets').select('*', { count: 'exact' });
+  const where: any = {};
   if (search) {
-    petsQuery = petsQuery.or(
-      `pet_name.ilike.%${search}%,pet_breed.ilike.%${search}%,pet_type.ilike.%${search}%`
-    );
+    where.OR = [
+      { pet_name: { contains: search, mode: 'insensitive' } },
+      { pet_breed: { contains: search, mode: 'insensitive' } },
+      { pet_type: { contains: search, mode: 'insensitive' } },
+    ];
   }
-  petsQuery = petsQuery.order('last_updated_dtm', { ascending: false }).range(offset, offset + limit - 1);
 
-  const { data: pets, error: petsErr, count } = await petsQuery;
-  if (petsErr) return res.status(httpStatus.INTERNAL_SERVER_ERROR).send({ message: petsErr.message });
-
-  const userIds = Array.from(new Set((pets || []).map((p: any) => Number(p.user_id)).filter(Boolean)));
-  let usersById: Record<number, any> = {};
-  if (userIds.length) {
-    const { data: owners, error: ownersErr } = await db
-      .from('PIQ_User')
-      .select('user_id, user_full_name, user_email_id, user_phone_number')
-      .in('user_id', userIds);
-    if (ownersErr) return res.status(httpStatus.INTERNAL_SERVER_ERROR).send({ message: ownersErr.message });
-    usersById = Object.fromEntries((owners || []).map((u: any) => [Number(u.user_id), u]));
-  }
+  const [pets, count] = await Promise.all([
+    prisma.pIQ_Pets.findMany({
+      where,
+      orderBy: { last_updated_dtm: 'desc' },
+      skip,
+      take: limit,
+      include: { PIQ_User: { select: { user_full_name: true, user_email_id: true, user_phone_number: true } } },
+    }),
+    prisma.pIQ_Pets.count({ where }),
+  ]);
 
   const enriched = (pets || []).map((p: any) => {
-    const user = usersById[Number(p.user_id)] || {};
     let ageYears: number | null = null;
     if (p?.pet_birth_dtm) {
       const dob = new Date(p.pet_birth_dtm);
@@ -93,19 +93,19 @@ export const getPets = catchAsync(async (req, res) => {
     return {
       id: p.pet_id,
       name: p.pet_name,
-      species: p.pet_species ?? p.pet_type ?? '',
+      species: (p as any).pet_species ?? p.pet_type ?? '',
       breed: p.pet_breed ?? '',
       gender: p.pet_gender ?? 'Unknown',
       age: ageYears ?? undefined,
       profileImage: p.pet_image ?? `https://source.unsplash.com/random/400x300?${encodeURIComponent(p.pet_type || 'pet')}`,
       status: p.pet_status ?? 'active',
-      microchipped: p.microchipped ?? false,
-      neutered: p.neutered ?? false,
-      vaccinated: p.vaccinated ?? false,
+      microchipped: (p as any).microchipped ?? false,
+      neutered: (p as any).neutered ?? false,
+      vaccinated: (p as any).vaccinated ?? false,
       lastUpdated: p.last_updated_dtm ?? undefined,
-      ownerName: user?.user_full_name || undefined,
-      ownerEmail: user?.user_email_id || undefined,
-      ownerPhone: user?.user_phone_number || undefined,
+      ownerName: p.PIQ_User?.user_full_name || undefined,
+      ownerEmail: p.PIQ_User?.user_email_id || undefined,
+      ownerPhone: p.PIQ_User?.user_phone_number || undefined,
     };
   });
 
@@ -119,11 +119,11 @@ export const getPets = catchAsync(async (req, res) => {
 });
 
 export const getRoles = catchAsync(async (_req, res) => {
-  const [{ count: adminCount }, { count: userCount }, { count: providerCount }] = await Promise.all([
-    db.from('PIQ_Admins').select('admin_id', { count: 'exact', head: true }) as any,
-    db.from('PIQ_User').select('user_id', { count: 'exact', head: true }) as any,
-    db.from('PIQ_Service_Provider').select('service_provider_id', { count: 'exact', head: true }) as any,
-  ] as any);
+  const [adminCount, userCount, providerCount] = await Promise.all([
+    prisma.pIQ_Admins.count(),
+    prisma.pIQ_User.count(),
+    prisma.pIQ_Service_Provider.count(),
+  ]);
 
   const roles = [
     {
