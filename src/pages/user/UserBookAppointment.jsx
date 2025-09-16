@@ -753,167 +753,168 @@ const UserBookAppointment = () => {
         const appointmentDate = formData.date ? new Date(formData.date) : null;
         
         return (
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-gray-800">Review & Confirm</h2>
-            <p className="text-gray-600">Please review your appointment details before confirming</p>
-            
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              <div className="p-6 space-y-6">
-                <div className="flex items-center gap-4">
-                  <div className="bg-purple-100 p-3 rounded-full">
-                    <FaCalendarCheck className="text-purple-600 text-xl" />
-                  </div>
+          <div className="max-w-3xl mx-auto space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-purple-50">
+                <FaCalendarCheck className="text-purple-600" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-gray-800">Review & Confirm</h2>
+                <p className="text-sm text-gray-500">Check details before confirming</p>
+              </div>
+            </div>
+
+            {/* Minimal summary, aligned with app cards */}
+            <div className="divide-y divide-gray-100 rounded-lg border border-gray-200">
+              <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-4">
+                  {/* Pet */}
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-800">Appointment Summary</h3>
-                    <p className="text-gray-600 text-sm">Please review the details below</p>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-500 mb-1">Pet</h4>
-                      {selectedPet && (
-                        <div className="flex items-center gap-3">
-                          <img 
-                            src={selectedPet.image} 
-                            alt={selectedPet.name} 
-                            className="w-10 h-10 rounded-full object-cover"
-                          />
-                          <div>
-                            <p className="font-medium text-gray-800">{selectedPet.name}</p>
-                            <p className="text-sm text-gray-600">{selectedPet.breed}</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-500 mb-1">Service</h4>
-                      {selectedService && (
+                    <h4 className="text-xs font-medium text-gray-500 mb-1">Pet</h4>
+                    {selectedPet ? (
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={selectedPet.image}
+                          alt={selectedPet.name}
+                          className="w-9 h-9 rounded-full object-cover"
+                        />
                         <div>
-                          <p className="font-medium text-gray-800">{selectedService.service_title}</p>
-                          <div className="flex items-center gap-4 mt-1 text-sm text-gray-600">
-                            <div className="flex items-center gap-1">
-                              <FaClock />
-                              <span>{selectedService.service_duration} min</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <FaMoneyBillWave />
-                              <span>${selectedService.service_price_amt}</span>
-                            </div>
-                          </div>
+                          <p className="text-sm font-medium text-gray-800">{selectedPet.name}</p>
+                          {selectedPet.breed ? (
+                            <p className="text-xs text-gray-600">{selectedPet.breed}</p>
+                          ) : null}
                         </div>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-500 mb-1">Provider</h4>
-                      {selectedProvider && (
-                        <div className="flex items-center gap-3">
-                          <img 
-                            src={selectedProvider.image} 
-                            alt={selectedProvider.name} 
-                            className="w-10 h-10 rounded-full object-cover"
-                          />
-                          <div>
-                            <p className="font-medium text-gray-800">{selectedProvider.name}</p>
-                            <p className="text-sm text-gray-600">{selectedProvider.title}</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-500 mb-1">Date & Time</h4>
-                      {appointmentDate && (
-                        <div>
-                          <p className="font-medium text-gray-800">
-                            {appointmentDate.toLocaleDateString('en-US', { 
-                              weekday: 'long', 
-                              month: 'long', 
-                              day: 'numeric',
-                              year: 'numeric'
-                            })}
-                          </p>
-                          <p className="text-sm text-gray-600">{formData.timeSlot}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                
-                <div>
-                  <h4 className="text-sm font-medium text-gray-500 mb-1">Location</h4>
-                  {selectedProvider && (
-                    <div className="flex items-start gap-2">
-                      <FaMapMarkerAlt className="text-gray-500 mt-1" />
-                      <div>
-                        <p className="font-medium text-gray-800">{selectedProvider.location}</p>
-                        <p className="text-sm text-gray-600">{selectedProvider.address}</p>
                       </div>
-                    </div>
-                  )}
-                </div>
-                
-                {formData.notes && (
+                    ) : (
+                      <p className="text-sm text-gray-600">—</p>
+                    )}
+                  </div>
+
+                  {/* Service */}
                   <div>
-                    <h4 className="text-sm font-medium text-gray-500 mb-1">Additional Notes</h4>
-                    <p className="text-gray-700 bg-gray-50 p-3 rounded-lg">{formData.notes}</p>
+                    <h4 className="text-xs font-medium text-gray-500 mb-1">Service</h4>
+                    {selectedService ? (
+                      <div>
+                        <p className="text-sm font-medium text-gray-800">{selectedService.service_title}</p>
+                        <div className="mt-1 flex items-center gap-4 text-xs text-gray-600">
+                          <span className="inline-flex items-center gap-1"><FaClock />{selectedService.service_duration} min</span>
+                          <span className="inline-flex items-center gap-1"><FaMoneyBillWave />${Number(selectedService.service_price_amt || 0).toFixed(2)}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-600">—</p>
+                    )}
                   </div>
-                )}
-                
-                <div className="bg-purple-50 p-4 rounded-lg border border-purple-100">
-                  <h4 className="font-medium text-purple-800 mb-2">Payment Summary</h4>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Service Fee</span>
-                      <span className="font-medium text-gray-800">${selectedService?.service_price_amt || 0}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Tax</span>
-                      <span className="font-medium text-gray-800">${Math.round((selectedService?.service_price_amt || 0) * 0.08 * 100) / 100}</span>
-                    </div>
-                    <div className="border-t border-purple-200 my-2 pt-2 flex justify-between">
-                      <span className="font-medium text-gray-800">Total</span>
-                      <span className="font-bold text-purple-800">${Math.round((selectedService?.service_price_amt || 0) * 1.08 * 100) / 100}</span>
-                    </div>
+                </div>
+
+                <div className="space-y-4">
+                  {/* Provider */}
+                  <div>
+                    <h4 className="text-xs font-medium text-gray-500 mb-1">Provider</h4>
+                    {selectedProvider ? (
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={selectedProvider.image}
+                          alt={selectedProvider.name}
+                          className="w-9 h-9 rounded-full object-cover"
+                        />
+                        <div>
+                          <p className="text-sm font-medium text-gray-800">{selectedProvider.name}</p>
+                          {selectedProvider.title ? (
+                            <p className="text-xs text-gray-600">{selectedProvider.title}</p>
+                          ) : null}
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-600">Any available provider</p>
+                    )}
+                  </div>
+
+                  {/* Date & Time */}
+                  <div>
+                    <h4 className="text-xs font-medium text-gray-500 mb-1">Date & Time</h4>
+                    {appointmentDate ? (
+                      <div>
+                        <p className="text-sm font-medium text-gray-800">
+                          {appointmentDate.toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            month: 'long',
+                            day: 'numeric',
+                            year: 'numeric',
+                          })}
+                        </p>
+                        <p className="text-xs text-gray-600">{formData.timeSlot}</p>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-600">—</p>
+                    )}
                   </div>
                 </div>
               </div>
-              
-              <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-between">
-                <button
-                  onClick={prevStep}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
-                >
-                  Back
-                </button>
-                <button
-                  onClick={handleSubmit}
-                  disabled={isSubmitting}
-                  className={`px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 flex items-center gap-2 ${
-                    isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
-                  }`}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      <span>Confirming...</span>
-                    </>
-                  ) : (
-                    <>
-                      <FaCheck />
-                      <span>Confirm Appointment</span>
-                    </>
-                  )}
-                </button>
+
+              {/* Location */}
+              {selectedProvider ? (
+                <div className="p-4">
+                  <h4 className="text-xs font-medium text-gray-500 mb-1">Location</h4>
+                  <div className="flex items-start gap-2 text-sm">
+                    <FaMapMarkerAlt className="text-gray-500 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-gray-800">{selectedProvider.location}</p>
+                      <p className="text-gray-600 text-xs">{selectedProvider.address}</p>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Notes */}
+              {formData.notes ? (
+                <div className="p-4">
+                  <h4 className="text-xs font-medium text-gray-500 mb-1">Additional Notes</h4>
+                  <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">{formData.notes}</p>
+                </div>
+              ) : null}
+
+              {/* Payment */}
+              <div className="p-4">
+                <h4 className="text-xs font-medium text-gray-500 mb-2">Payment Summary</h4>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between"><span className="text-gray-600">Service Fee</span><span className="font-medium text-gray-800">${Number(selectedService?.service_price_amt || 0).toFixed(2)}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-600">Tax</span><span className="font-medium text-gray-800">${(Number(selectedService?.service_price_amt || 0) * 0.08).toFixed(2)}</span></div>
+                  <div className="border-t border-gray-200 my-2 pt-2 flex justify-between"><span className="font-medium text-gray-800">Total</span><span className="font-bold text-purple-700">${(Number(selectedService?.service_price_amt || 0) * 1.08).toFixed(2)}</span></div>
+                </div>
               </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-between">
+              <button
+                onClick={prevStep}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+              >
+                Back
+              </button>
+              <button
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+                className={`px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 flex items-center gap-2 ${
+                  isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
+                }`}
+              >
+                {isSubmitting ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Confirming...</span>
+                  </>
+                ) : (
+                  <>
+                    <FaCheck />
+                    <span>Confirm Appointment</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
         );
