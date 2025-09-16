@@ -717,20 +717,13 @@ const UserPets = () => {
                       </div>
                     </div>
                     
-                    <div className="pet-card-buttons">
+                    <div className="pet-card-buttons flex justify-center">
                       <button 
                         onClick={() => navigate(`/user/pets/${pet.id}`)}
-                        className="flex-1 px-3 py-2.5 rounded-lg text-xs font-medium transition-all duration-200 bg-slate-700 text-white hover:bg-slate-800 hover:shadow-md hover:scale-105"
+                        className="px-4 py-2.5 rounded-lg text-xs font-medium transition-all duration-200 bg-slate-700 text-white hover:bg-slate-800 hover:shadow-md"
                       >
                         <FaEye className="inline mr-1.5" />
                         View Profile
-                      </button>
-                      <button 
-                        onClick={() => handleOpenMedicalRecords(pet)}
-                        className="flex-1 px-3 py-2.5 rounded-lg text-xs font-medium transition-all duration-200 bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-md hover:scale-105"
-                      >
-                        <FaCalendarPlus className="inline mr-1.5" />
-                        Add Medical Record
                       </button>
                     </div>
                   </div>

@@ -35,7 +35,7 @@ interface HealthRecord {
   last_updated_dtm: Date | null;
 }
 
-const createHealthRecord = async (petId: number, recordData: RecordData, fileData: FileData): Promise<HealthRecord> => {
+const createHealthRecord = async (petId: number, recordData: RecordData, fileData?: FileData): Promise<HealthRecord> => {
   return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     // Verify pet exists and belongs to user
     const pet = await tx.pIQ_Pets.findUnique({
@@ -45,6 +45,8 @@ const createHealthRecord = async (petId: number, recordData: RecordData, fileDat
     if (!pet) {
       throw new ApiError(httpStatus.NOT_FOUND, 'Pet not found');
     }
+
+    const hasFile = Boolean(fileData && fileData.path);
 
     // Create health record using raw query
     const result = await tx.$queryRaw<HealthRecord[]>`
@@ -63,13 +65,13 @@ const createHealthRecord = async (petId: number, recordData: RecordData, fileDat
         ${petId},
         ${recordData.recordType},
         ${recordData.title},
-        ${recordData.description || null},
-        ${new Date(recordData.recordDate)}::date,
-        ${recordData.nextDueDate ? new Date(recordData.nextDueDate) : null}::date,
-        ${fileData.path},
-        ${fileData.originalName},
-        ${fileData.mimeType},
-        ${fileData.size}
+        ${recordData.description ?? null},
+        ${new Date(recordData.recordDate)},
+        ${recordData.nextDueDate ? new Date(recordData.nextDueDate) : null},
+        ${hasFile ? fileData!.path : ''},
+        ${hasFile ? fileData!.originalName : ''},
+        ${hasFile ? fileData!.mimeType : ''},
+        ${hasFile ? fileData!.size : 0}
       )
       RETURNING *
     `;

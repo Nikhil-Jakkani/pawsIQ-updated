@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import httpStatus from 'http-status';
 import { catchAsync } from '../utils/catchAsync.js';
-import { healthRecordService } from '../services/healthRecord.service.js';
+import * as healthRecordService from '../services/healthRecord.service.js';
 import { ApiError } from '../utils/ApiError.js';
 import { db } from '../../config/db.js';
 
@@ -18,10 +18,10 @@ interface HealthRecordBody {
   description?: string;
   recordDate: string;
   nextDueDate?: string;
-  filePath: string;
-  fileName: string;
-  fileType: string;
-  fileSize: number;
+  filePath?: string;
+  fileName?: string;
+  fileType?: string;
+  fileSize?: number;
 }
 
 export const createHealthRecord = catchAsync(async (req: AuthenticatedRequest, res: Response) => {
@@ -42,21 +42,29 @@ export const createHealthRecord = catchAsync(async (req: AuthenticatedRequest, r
     throw new ApiError(httpStatus.UNAUTHORIZED, 'User not authenticated');
   }
 
+  const hasFile = Boolean(filePath && fileName);
+
+  const recordData = {
+    recordType,
+    title,
+    description,
+    recordDate,
+    nextDueDate,
+  };
+
+  const fileData = hasFile
+    ? {
+        path: filePath as string,
+        originalName: fileName as string,
+        mimeType: fileType || '',
+        size: Number(fileSize || 0),
+      }
+    : undefined;
+
   const healthRecord = await healthRecordService.createHealthRecord(
     parseInt(petId, 10),
-    { 
-      recordType, 
-      title, 
-      description, 
-      recordDate, 
-      nextDueDate 
-    },
-    {
-      path: filePath,
-      originalName: fileName,
-      mimeType: fileType,
-      size: Number(fileSize),
-    }
+    recordData,
+    fileData
   );
 
   res.status(httpStatus.CREATED).send(healthRecord);
