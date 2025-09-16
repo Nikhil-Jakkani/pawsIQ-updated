@@ -182,6 +182,10 @@ const UserBookAppointment = () => {
     '4:00 PM',
   ];
 
+  // Currency formatter for INR
+  const formatINR = (value) =>
+    new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(Number(value || 0));
+
   // Handle form input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -767,7 +771,7 @@ const UserBookAppointment = () => {
             {/* Minimal summary, aligned with app cards */}
             <div className="divide-y divide-gray-100 rounded-lg border border-gray-200">
               <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-4">
+                <div className="space-y-4 text-left">
                   {/* Pet */}
                   <div>
                     <h4 className="text-xs font-medium text-gray-500 mb-1">Pet</h4>
@@ -798,7 +802,7 @@ const UserBookAppointment = () => {
                         <p className="text-sm font-medium text-gray-800">{selectedService.service_title}</p>
                         <div className="mt-1 flex items-center gap-4 text-xs text-gray-600">
                           <span className="inline-flex items-center gap-1"><FaClock />{selectedService.service_duration} min</span>
-                          <span className="inline-flex items-center gap-1"><FaMoneyBillWave />${Number(selectedService.service_price_amt || 0).toFixed(2)}</span>
+                          <span className="inline-flex items-center gap-1"><FaMoneyBillWave />{formatINR(selectedService.service_price_amt)}</span>
                         </div>
                       </div>
                     ) : (
@@ -807,7 +811,7 @@ const UserBookAppointment = () => {
                   </div>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-4 text-left">
                   {/* Provider */}
                   <div>
                     <h4 className="text-xs font-medium text-gray-500 mb-1">Provider</h4>
@@ -878,9 +882,9 @@ const UserBookAppointment = () => {
               <div className="p-4">
                 <h4 className="text-xs font-medium text-gray-500 mb-2">Payment Summary</h4>
                 <div className="space-y-1 text-sm">
-                  <div className="flex justify-between"><span className="text-gray-600">Service Fee</span><span className="font-medium text-gray-800">${Number(selectedService?.service_price_amt || 0).toFixed(2)}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-600">Tax</span><span className="font-medium text-gray-800">${(Number(selectedService?.service_price_amt || 0) * 0.08).toFixed(2)}</span></div>
-                  <div className="border-t border-gray-200 my-2 pt-2 flex justify-between"><span className="font-medium text-gray-800">Total</span><span className="font-bold text-purple-700">${(Number(selectedService?.service_price_amt || 0) * 1.08).toFixed(2)}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-600">Service Fee</span><span className="font-medium text-gray-800">{formatINR(selectedService?.service_price_amt || 0)}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-600">Tax (8%)</span><span className="font-medium text-gray-800">{formatINR(Number(selectedService?.service_price_amt || 0) * 0.08)}</span></div>
+                  <div className="border-t border-gray-200 my-2 pt-2 flex justify-between"><span className="font-medium text-gray-800">Total</span><span className="font-bold text-purple-700">{formatINR(Number(selectedService?.service_price_amt || 0) * 1.08)}</span></div>
                 </div>
               </div>
             </div>
