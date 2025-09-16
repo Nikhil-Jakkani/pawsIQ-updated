@@ -1,17 +1,13 @@
-import { supabase } from '@config/supabase.js';
 import bcrypt from 'bcryptjs';
 import { ApiError } from '../../utils/ApiError.js';
 import httpStatus from 'http-status';
 import { tokenService } from '../user/token.service.js';
+import prisma from '../../../lib/prisma.js';
 
 const login = async (email: string, password: string): Promise<any> => {
-  const { data, error: supabaseError } = await supabase
-    .from('PIQ_Admins')
-    .select('*')
-    .eq('email', email)
-    .single();
+  const data = await prisma.pIQ_Admins.findUnique({ where: { email } });
 
-  if (supabaseError || !data) {
+  if (!data) {
     throw new ApiError(httpStatus.UNAUTHORIZED, 'Incorrect email or password');
   }
 
