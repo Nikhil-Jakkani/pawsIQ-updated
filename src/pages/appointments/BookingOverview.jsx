@@ -297,6 +297,9 @@ const BookingOverview = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">#{booking.id}</div>
                       <div className="text-sm text-gray-500">{booking.date} at {booking.time}</div>
+                      <div className="mt-1 inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-indigo-50 text-indigo-700">
+                        🐾 For: {booking.petName}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">{booking.customerName}</div>

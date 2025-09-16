@@ -648,7 +648,7 @@ const Appointments = () => {
                       {getStatusBadge(booking.status)}
                     </div>
                     
-                    {/* Urgency Badge */}
+                    {/* Urgency Badge + Pet */}
                     <div className="flex items-center justify-between">
                       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                         booking.urgency === 'Emergency' ? 'bg-red-100 text-red-800' :
@@ -657,6 +657,9 @@ const Appointments = () => {
                         'bg-green-100 text-green-800'
                       }`}>
                         {booking.urgency === 'Emergency' && '🚨'} {booking.urgency}
+                      </span>
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700">
+                        🐾 For: {booking.petName}
                       </span>
                     </div>
                   </div>

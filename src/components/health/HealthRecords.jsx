@@ -171,95 +171,133 @@ const HealthRecords = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!file) {
-      setError('Please select a file to upload');
-      return;
-    }
 
     try {
       setUploading(true);
       setError('');
       const accessToken = currentUser?.tokens?.access?.token || tokens?.access?.token;
 
-      // 1. Get signed upload URL
-      const uploadUrlResponse = await fetch(
-        `${API_URL}/pets/${petId}/health-records/upload-url`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            fileName: file.name,
-            fileType: file.type,
-          }),
+      // 1. Get signed upload URL if a file is selected
+      if (file) {
+        const uploadUrlResponse = await fetch(
+          `${API_URL}/pets/${petId}/health-records/upload-url`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              fileName: file.name,
+              fileType: file.type,
+            }),
+          }
+        );
+
+        if (!uploadUrlResponse.ok) {
+          const errorData = await uploadUrlResponse.json();
+          throw new Error(errorData.message || 'Failed to get upload URL');
         }
-      );
 
-      if (!uploadUrlResponse.ok) {
-        const errorData = await uploadUrlResponse.json();
-        throw new Error(errorData.message || 'Failed to get upload URL');
-      }
+        const { signedUrl, path } = await uploadUrlResponse.json();
 
-      const { signedUrl, path, publicUrl } = await uploadUrlResponse.json();
-
-      // 2. Upload file to storage using the signed URL
-      const uploadResponse = await fetch(signedUrl, {
-        method: 'PUT',
-        body: file,
-        headers: {
-          'Content-Type': file.type,
-        },
-      });
-
-      if (!uploadResponse.ok) {
-        throw new Error('File upload failed');
-      }
-
-      // 3. Create health record with file details
-      const recordData = {
-        recordType: formData.recordType,
-        title: formData.title,
-        description: formData.description,
-        recordDate: formData.recordDate,
-        nextDueDate: formData.nextDueDate || null,
-        filePath: path,
-        fileName: file.name,
-        fileType: file.type,
-        fileSize: file.size,
-      };
-
-      const createRecordResponse = await authFetch(
-        `${API_URL}/pets/${petId}/health-records`,
-        {
-          method: 'POST',
+        // 2. Upload file to storage using the signed URL
+        const uploadResponse = await fetch(signedUrl, {
+          method: 'PUT',
+          body: file,
           headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': file.type,
           },
-          body: JSON.stringify(recordData),
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error('File upload failed');
         }
-      );
 
-      if (!createRecordResponse.ok) {
-        const errorData = await createRecordResponse.json();
-        throw new Error(errorData.message || 'Failed to create health record');
+        // 3. Create health record with file details
+        const recordData = {
+          recordType: formData.recordType,
+          title: formData.title,
+          description: formData.description,
+          recordDate: formData.recordDate,
+          nextDueDate: formData.nextDueDate || null,
+          filePath: path,
+          fileName: file.name,
+          fileType: file.type,
+          fileSize: file.size,
+        };
+
+        const createRecordResponse = await authFetch(
+          `${API_URL}/pets/${petId}/health-records`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(recordData),
+          }
+        );
+
+        if (!createRecordResponse.ok) {
+          const errorData = await createRecordResponse.json();
+          throw new Error(errorData.message || 'Failed to create health record');
+        }
+
+        // Refresh records
+        await fetchPetAndRecords();
+        setShowUploadModal(false);
+        setFile(null);
+        setFormData({
+          title: '',
+          description: '',
+          recordType: 'vaccination',
+          recordDate: new Date().toISOString().split('T')[0],
+          nextDueDate: '',
+        });
+      } else {
+        // No file provided: create record without file fields
+        const recordData = {
+          recordType: formData.recordType,
+          title: formData.title,
+          description: formData.description,
+          recordDate: formData.recordDate,
+          nextDueDate: formData.nextDueDate || null,
+          filePath: '',
+          fileName: '',
+          fileType: '',
+          fileSize: 0,
+        };
+
+        const createRecordResponse = await authFetch(
+          `${API_URL}/pets/${petId}/health-records`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(recordData),
+          }
+        );
+
+        if (!createRecordResponse.ok) {
+          const errorData = await createRecordResponse.json();
+          throw new Error(errorData.message || 'Failed to create health record');
+        }
+
+        await fetchPetAndRecords();
+        setShowUploadModal(false);
+        setFile(null);
+        setFormData({
+          title: '',
+          description: '',
+          recordType: 'vaccination',
+          recordDate: new Date().toISOString().split('T')[0],
+          nextDueDate: '',
+        });
       }
-
-      // Refresh records
-      await fetchPetAndRecords();
-      setShowUploadModal(false);
-      setFile(null);
-      setFormData({
-        title: '',
-        description: '',
-        recordType: 'vaccination',
-        recordDate: new Date().toISOString().split('T')[0],
-        nextDueDate: '',
-      });
     } catch (err) {
-      console.error('Error uploading health record:', err);
-      setError(err.message || 'Failed to upload health record');
+      console.error('Error saving health record:', err);
+      setError(err.message || 'Failed to save health record');
     } finally {
       setUploading(false);
     }
@@ -688,7 +726,7 @@ const HealthRecords = () => {
                               >
                                 <path
                                   d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                                  strokeWidth={2}
+          strokeWidth={2}
                                   strokeLinecap="round"
                                   strokeLinejoin="round"
                                 />
@@ -696,7 +734,7 @@ const HealthRecords = () => {
                               <div className="flex text-sm text-gray-600">
                                 <label
                                   htmlFor="file-upload"
-                                  className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
+           className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
                                 >
                                   <span>Upload a file</span>
                                   <input
@@ -706,7 +744,6 @@ const HealthRecords = () => {
                                     className="sr-only"
                                     onChange={handleFileChange}
                                     accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                                    required
                                   />
                                 </label>
                                 <p className="pl-1">or drag and drop</p>

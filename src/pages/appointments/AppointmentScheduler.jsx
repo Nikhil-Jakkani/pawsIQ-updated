@@ -304,7 +304,7 @@ const AppointmentScheduler = () => {
                                   <div className="p-1 text-xs">
                                     <div className="bg-indigo-600 text-white px-2 py-1 rounded text-center">
                                       <div className="font-medium">{timeSlot}</div>
-                                      <div className="truncate">{appointment[0].petName}</div>
+                                      <div className="truncate">For: {appointment[0].petName}</div>
                                     </div>
                                   </div>
                                 )}
