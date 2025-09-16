@@ -295,7 +295,7 @@ export const verifyOTP = async (req: Request, res: Response) => {
     }
     
     // Generate authentication tokens
-    const { accessToken, refreshToken } = await generateTokens(existingUser.user_id, 'user');
+    const { accessToken, refreshToken } = await generateTokens(Number(existingUser.user_id), 'user');
     
     res.json({
       success: true,

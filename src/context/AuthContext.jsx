@@ -201,6 +201,8 @@ export const AuthProvider = ({ children }) => {
         setTokens(tokens);
         localStorage.setItem('user', JSON.stringify(user));
         localStorage.setItem('authTokens', JSON.stringify(tokens));
+        // Clear any explicit logout flag
+        localStorage.removeItem('loggedOut');
         setLoading(false);
         return { success: true, userType: role };
       }
@@ -233,6 +235,11 @@ export const AuthProvider = ({ children }) => {
       setTokens(null);
       localStorage.removeItem('user');
       localStorage.removeItem('authTokens');
+      // Remove any legacy keys that may be used by older code paths
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      // Set a flag to prevent silent re-login via refresh until user explicitly logs in
+      localStorage.setItem('loggedOut', '1');
       navigate('/login');
     }
   };
@@ -249,6 +256,8 @@ export const AuthProvider = ({ children }) => {
     try {
       setTokens(nextTokens);
       localStorage.setItem('authTokens', JSON.stringify(nextTokens));
+      // Clear explicit logout barrier when tokens are set programmatically
+      localStorage.removeItem('loggedOut');
     } catch (_) {}
   };
 
@@ -365,6 +374,17 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
+        // If user explicitly logged out, do not attempt silent refresh
+        if (localStorage.getItem('loggedOut') === '1') {
+          return;
+        }
+        if (!tokens?.access?.token && tokens?.refresh?.token) {
+          const newTok = await refreshToken();
+          if (newTok) {
+            return;
+          }
+        }
+
         if (tokens?.access?.token) {
           let userData = null;
           
@@ -458,7 +478,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     initializeAuth();
-  }, [authFetch, tokens?.access?.token]);
+  }, [authFetch, tokens?.access?.token, tokens?.refresh?.token, refreshToken]);
 
   const value = {
     currentUser,

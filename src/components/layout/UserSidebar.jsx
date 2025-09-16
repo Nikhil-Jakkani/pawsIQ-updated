@@ -309,10 +309,7 @@ const UserSidebar = ({ isOpen, toggleSidebar }) => {
                   <FaUser className="text-white" />
                 </div>
                 <button 
-                  onClick={() => {
-                    logout();
-                    window.location.href = '/';
-                  }}
+                  onClick={async () => { try { await logout(); } catch (_) {} }}
                   className="text-xs text-white hover:text-blue-200 transition-colors mt-2"
                   title="Logout"
                 >
@@ -333,10 +330,7 @@ const UserSidebar = ({ isOpen, toggleSidebar }) => {
                       || 'User'}
                   </p>
                   <button 
-                    onClick={() => {
-                      logout();
-                      window.location.href = '/';
-                    }}
+                    onClick={async () => { try { await logout(); } catch (_) {} }}
                     className="text-xs text-white hover:text-pink-200 transition-colors flex items-center gap-1 mt-1"
                   >
                     <FaSignOutAlt size={14} /> Logout
