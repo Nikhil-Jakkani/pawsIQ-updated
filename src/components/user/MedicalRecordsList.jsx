@@ -3,7 +3,7 @@ import { FaFilePdf, FaFileImage, FaFileWord, FaFileAlt, FaDownload, FaTrash } fr
 import { healthRecordService } from '../../services/healthRecordService';
 import { useAuth } from '../../context/AuthContext';
 
-const MedicalRecordsList = ({ petId }) => {
+const MedicalRecordsList = ({ petId, recordType }) => {
   const { currentUser, tokens } = useAuth();
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -16,7 +16,23 @@ const MedicalRecordsList = ({ petId }) => {
       if (!accessToken) throw new Error('Not authenticated');
       
       const recordsData = await healthRecordService.getPetHealthRecords(petId, accessToken);
-      setRecords(recordsData);
+      const list = Array.isArray(recordsData) ? recordsData : (recordsData?.records || []);
+      const normalized = list.map((r) => ({
+        health_record_id: r.health_record_id ?? r.healthRecordId ?? r.id,
+        pet_id: r.pet_id ?? r.petId,
+        recordType: (r.record_type ?? r.recordType ?? '').toLowerCase(),
+        title: r.title,
+        description: r.description,
+        recordDate: r.record_date ?? r.recordDate,
+        nextDueDate: r.next_due_date ?? r.nextDueDate,
+        file_path: r.file_path ?? r.filePath,
+        fileName: r.file_name ?? r.fileName,
+        fileType: r.file_type ?? r.fileType,
+        fileSize: Number(r.file_size ?? r.fileSize ?? 0),
+        fileUrl: r.fileUrl ?? null,
+      }));
+      const filtered = recordType ? normalized.filter(r => r.recordType === String(recordType).toLowerCase()) : normalized;
+      setRecords(filtered);
     } catch (err) {
       console.error('Error fetching records:', err);
       setError('Failed to load medical records. Please try again.');

@@ -391,6 +391,12 @@ const UserPetProfile = () => {
                       >
                         <FaFileMedical className="mr-1 inline" /> Health Records
                       </button>
+                      <button
+                        onClick={() => navigate(`/user/pets/${pet.id}/health-records?type=prescription`)}
+                        className="rounded-lg bg-pink-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-pink-700"
+                      >
+                        <FaFileMedical className="mr-1 inline" /> Prescriptions
+                      </button>
                     </div>
                   </div>
 
