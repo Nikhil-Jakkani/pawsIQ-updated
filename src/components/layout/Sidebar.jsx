@@ -374,9 +374,8 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                   <FaUser className="text-indigo-300" />
                 </div>
                 <button 
-                  onClick={() => {
-                    logout();
-                    window.location.href = '/';
+                  onClick={async () => {
+                    try { await logout(); } catch (_) {}
                   }}
                   className="text-xs text-indigo-300 hover:text-white transition-colors mt-2"
                   title="Logout"
@@ -394,9 +393,8 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                     {currentUser?.email || 'Admin User'}
                   </p>
                   <button 
-                    onClick={() => {
-                      logout();
-                      window.location.href = '/';
+                    onClick={async () => {
+                      try { await logout(); } catch (_) {}
                     }}
                     className="text-xs text-indigo-300 hover:text-white transition-colors flex items-center gap-1 mt-1"
                   >
@@ -407,7 +405,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
             )}
             {!minimized && (
               <div className="px-4 pb-4 text-xs">
-                <p>© 2025 PawsIQ Admin</p>
+                <p> 2025 PawsIQ Admin</p>
                 <p className="mt-1">Version 1.0.0</p>
               </div>
             )}

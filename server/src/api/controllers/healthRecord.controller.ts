@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import httpStatus from 'http-status';
 import { catchAsync } from '../utils/catchAsync.js';
-import * as healthRecordService from '../services/healthRecord.service.js';
+import { healthRecordService } from '../services/healthRecord.service.js';
 import { ApiError } from '../utils/ApiError.js';
 import { db } from '../../config/db.js';
 

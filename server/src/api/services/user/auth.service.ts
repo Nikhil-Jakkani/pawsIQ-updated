@@ -108,27 +108,9 @@ const getCurrentUser = async (userId: number) => {
 
 const refreshAuth = async (refreshToken: string) => {
   try {
-    const refreshTokenDoc = await tokenService.verifyToken(refreshToken, tokenTypes.REFRESH);
-    
-    // Get user from database
-    const { data: user, error } = await db
-      .from('PIQ_User')
-      .select('*')
-      .eq('user_id', refreshTokenDoc.sub)
-      .single();
-
-    if (error || !user) {
-      throw new Error('User not found');
-    }
-
-    // Delete the old refresh token
-    await db
-      .from('tokens')
-      .delete()
-      .eq('token', refreshToken);
-
-    // Generate new tokens
-    return await tokenService.generateAuthTokens(user.user_id, user.role || 'user');
+    // Delegate to tokenService which verifies, decodes JWT (to get sub/role),
+    // checks subject existence, revokes old token, and rotates new tokens.
+    return await tokenService.refreshAuth(refreshToken);
   } catch (error) {
     throw new ApiError(httpStatus.UNAUTHORIZED, 'Invalid refresh token');
   }

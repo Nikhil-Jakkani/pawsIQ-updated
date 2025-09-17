@@ -137,6 +137,22 @@ const UserProtectedRoute = ({ children }) => {
 };
 
 
+// Landing route: if authenticated, redirect to appropriate dashboard; else show Home
+const Landing = () => {
+  const { currentUser, tokens, loading } = useAuth();
+  if (loading) return null;
+  if (currentUser && tokens?.access?.token) {
+    const dest = currentUser.role === 'admin'
+      ? '/dashboard'
+      : currentUser.role === 'provider'
+      ? '/provider/vet/dashboard'
+      : '/user/dashboard';
+    return <Navigate to={dest} replace />;
+  }
+  return <Home />;
+};
+
+
 function App() {
   return (
     <>
@@ -158,10 +174,8 @@ function App() {
         <OfflineStatus />
           <Routes>
             {/* Main Routes */}
-            <Route path="/" element={
-              <Home />
-            } />
-            <Route path="/home" element={<Home />} />
+            <Route path="/" element={<Landing />} />
+            <Route path="/home" element={<Landing />} />
             <Route path="/login" element={<Login />} />
             
 

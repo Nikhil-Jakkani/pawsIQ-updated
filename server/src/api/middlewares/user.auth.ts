@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import httpStatus from 'http-status';
 import { ApiError } from '../utils/ApiError.js';
-import { supabase } from '../../config/supabase.js';
+import prisma from '../../lib/prisma.js';
 import config from '../../config/config.js';
 
 interface JwtPayload {
@@ -19,13 +19,8 @@ export const userAuth = async (req: Request, res: Response, next: NextFunction) 
 
     const decoded = jwt.verify(token, config.jwtSecret) as JwtPayload;
 
-    const { data: user, error } = await supabase
-      .from('PIQ_User')
-      .select('*')
-      .eq('user_id', parseInt(decoded.sub, 10))
-      .single();
-
-    if (error || !user) {
+    const user = await prisma.pIQ_User.findUnique({ where: { user_id: BigInt(parseInt(decoded.sub, 10)) } });
+    if (!user) {
       throw new ApiError(httpStatus.UNAUTHORIZED, 'Please authenticate');
     }
 

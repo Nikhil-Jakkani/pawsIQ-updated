@@ -29,9 +29,10 @@ const VetLayout = ({ title = 'Vet', children }) => {
     }
   }, [currentUser, navigate]);
 
-  const handleLogout = () => {
-    logout();
-    navigate('/');
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (_) {}
   };
 
   return (

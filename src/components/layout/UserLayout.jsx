@@ -162,7 +162,7 @@ const UserLayout = ({ children }) => {
                 </span>
               </Link>
               <button
-                onClick={() => { logout(); window.location.href = '/'; }}
+                onClick={async () => { try { await logout(); } catch (_) {} }}
                 className="ml-2 inline-flex items-center gap-1 text-xs text-gray-600 hover:text-red-600"
                 title="Log out"
               >
