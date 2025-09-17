@@ -426,7 +426,7 @@ const UserAddPet = () => {
           </button>
           <div>
             <div className="flex items-center gap-3">
-              <div className="bg-pink-100 p-2 rounded-lg">
+              <div className="bg-gray-100 p-2 rounded-lg">
                 <FaPaw className="text-pink-600 text-2xl" />
               </div>
               <h1 className="text-2xl font-bold text-gray-800">Add a New Pet</h1>
@@ -460,7 +460,7 @@ const UserAddPet = () => {
             </div>
             
             {/* Basic Information */}
-            <div className="bg-gradient-to-r from-pink-50 to-purple-50 rounded-2xl p-6 border border-pink-100">
+            <div className="bg-white rounded-2xl p-6 border border-gray-200">
               <div className="flex items-center gap-3 mb-6">
                 <div className="bg-gradient-to-r from-pink-500 to-purple-600 p-2 rounded-xl">
                   <FaPaw className="text-white text-xl" />
@@ -650,19 +650,15 @@ const UserAddPet = () => {
               
               {/* Required fields indicator */}
               <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                <div className="flex items-start gap-2">
+                <div className="flex items-center gap-2 overflow-x-auto">
                   <div className="flex-shrink-0">
-                    <svg className="w-5 h-5 text-blue-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                     </svg>
                   </div>
-                  <div>
-                    <h4 className="text-sm font-semibold text-blue-800">Required Information</h4>
-                    <p className="text-sm text-blue-700 mt-1">
-                      Fields marked with <span className="text-red-500 font-semibold">*</span> are required to create your pet's profile. 
-                      This helps us provide better care recommendations and services.
-                    </p>
-                  </div>
+                  <p className="text-sm text-blue-700 whitespace-nowrap">
+                    <span className="font-semibold text-blue-800">Required Information:</span> Fields marked with <span className="text-red-500 font-semibold">*</span> are required to create your pet's profile. This helps us provide better care recommendations and services.
+                  </p>
                 </div>
               </div>
             </div>
