@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { FaMobileAlt } from 'react-icons/fa';
+import { signInWithPhoneNumber } from 'firebase/auth';
+import { auth, setupRecaptcha } from '../../firebaseClient';
+import { toast } from 'react-toastify';
+import { useAuth } from '../../context/AuthContext';
 
 const ProviderOTPVerification = () => {
   const location = useLocation();
@@ -8,6 +12,7 @@ const ProviderOTPVerification = () => {
   const initialPhone = location?.state?.phoneNumber || '';
   const successMsg = location?.state?.message || '';
   const registrationData = location?.state?.registrationData || null;
+  const { providerLogin } = useAuth();
 
   const [phoneNumber, setPhoneNumber] = useState(initialPhone);
   const [code, setCode] = useState('');
@@ -19,12 +24,12 @@ const ProviderOTPVerification = () => {
     if (!phoneNumber) return;
     setStatus({ loading: true, message: '', error: '' });
     try {
-      const resp = await fetch(`${API_URL}/provider/auth/send-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phoneNumber })
-      });
-      if (!resp.ok) throw new Error('Failed to send OTP');
+      // Resend via Firebase
+      setupRecaptcha('recaptcha-container');
+      const verifier = window.recaptchaVerifier;
+      const e164 = `+91${String(phoneNumber).replace(/\D/g, '')}`;
+      const confirmation = await signInWithPhoneNumber(auth, e164, verifier);
+      window.confirmationResult = confirmation;
       setStatus({ loading: false, message: 'OTP sent successfully.', error: '' });
     } catch (e) {
       setStatus({ loading: false, message: '', error: 'Failed to resend OTP. Try again.' });
@@ -39,16 +44,10 @@ const ProviderOTPVerification = () => {
     }
     setStatus({ loading: true, message: '', error: '' });
     try {
-      // Verify OTP first
-      const resp = await fetch(`${API_URL}/provider/auth/verify-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phoneNumber, code })
-      });
-      const data = await resp.json().catch(() => ({}));
-      if (!resp.ok) {
-        throw new Error(data?.error || 'Verification failed');
-      }
+      // Verify via Firebase
+      const confirmation = window.confirmationResult;
+      if (!confirmation) throw new Error('No OTP session found. Please resend OTP.');
+      await confirmation.confirm(code);
 
       // If registration data is present, create the provider account now
       if (registrationData) {
@@ -61,10 +60,23 @@ const ProviderOTPVerification = () => {
         if (!regResp.ok) {
           throw new Error(regData?.message || 'Account creation failed after OTP verification');
         }
+
+        // Auto-login provider using the same credentials
+        const email = registrationData.provider_email || registrationData.email;
+        const password = registrationData.provider_password || registrationData.password;
+        if (email && password) {
+          const result = await providerLogin(email, password);
+          if (result?.success) {
+            toast.success('Account created! You are now logged in.');
+            setStatus({ loading: false, message: '', error: '' });
+            return navigate('/provider/vet/dashboard');
+          }
+        }
       }
 
-      setStatus({ loading: false, message: 'Phone verified and account created successfully. You can now sign in.', error: '' });
-      setTimeout(() => navigate('/provider/login'), 1000);
+      // If no registration or auto-login failed, just show success
+      toast.success('Phone verified successfully.');
+      setStatus({ loading: false, message: '', error: '' });
     } catch (e) {
       setStatus({ loading: false, message: '', error: e.message || 'Verification failed' });
     }
@@ -82,6 +94,8 @@ const ProviderOTPVerification = () => {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          {/* Recaptcha container for Firebase Phone Auth */}
+          <div id="recaptcha-container" />
           {status.error && (
             <div className="mb-4 bg-red-50 border-l-4 border-red-400 p-4 text-sm text-red-700">{status.error}</div>
           )}

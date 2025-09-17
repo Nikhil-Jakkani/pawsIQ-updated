@@ -1,7 +1,6 @@
 import bcrypt from 'bcryptjs';
 import httpStatus from 'http-status';
 import { db } from '../../../config/db.js';
-import { twilioService } from '../twilio.service.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { tokenService } from '../user/token.service.js';
 
@@ -50,10 +49,9 @@ const register = async (providerBody: any) => {
   // Validate required fields
   const email = (providerBody.provider_email || providerBody.serv_provider_email || '').toLowerCase().trim();
   let phone = providerBody.provider_contact_number || providerBody.serv_provider_contact_nbr;
-    // Store phone in the same format Twilio uses for OTP verification
-    if (phone) {
-      phone = twilioService.formatPhoneNumber(phone);
-    }
+  if (typeof phone === 'string') {
+    phone = phone.trim();
+  }
   if (!email) {
     throw new ApiError(httpStatus.BAD_REQUEST, 'Provider email is required');
   }

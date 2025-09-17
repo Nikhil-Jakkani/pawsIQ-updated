@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { toast } from 'react-toastify';
+import { useAuth } from '../context/AuthContext';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api/v1';
 
@@ -8,6 +9,7 @@ const API_URL = import.meta.env.VITE_API_URL || '/api/v1';
  * @returns {Object} Methods for making API requests
  */
 const useApi = () => {
+  const { tokens, setAuthTokens, logout } = useAuth();
   /**
    * Make an authenticated API request with automatic token refresh
    * @param {string} endpoint - API endpoint (without base URL)
@@ -15,17 +17,16 @@ const useApi = () => {
    * @param {boolean} requiresAuth - Whether the request requires authentication
    * @returns {Promise<Object>} Response data
    */
-  // Request interceptor
-  const requestInterceptor = useCallback((config) => {
+  // Interceptors are defined with let so we can reassign/wrap them later
+  let requestInterceptor = (config) => {
     // Add any request headers or modifications here
     return config;
-  }, []);
+  };
 
-  // Response interceptor
-  const responseInterceptor = useCallback((response) => {
+  let responseInterceptor = (response) => {
     // Add any response handling here
     return response;
-  }, []);
+  };
 
   const fetchApi = useCallback(async (endpoint, options = {}, requiresAuth = true) => {
     // Apply request interceptor
@@ -38,16 +39,13 @@ const useApi = () => {
     });
 
     const url = `${API_URL}${endpoint}`;
-    
-    // Get auth tokens from localStorage
-    const authTokens = JSON.parse(localStorage.getItem('authTokens') || '{}');
-    
+
     // Add auth header if required
     if (requiresAuth) {
-      if (!authTokens?.access?.token) {
+      if (!tokens?.access?.token) {
         throw new Error('No authentication token found. Please log in again.');
       }
-      interceptedOptions.headers['Authorization'] = `Bearer ${authTokens.access.token}`;
+      interceptedOptions.headers['Authorization'] = `Bearer ${tokens.access.token}`;
     }
 
     try {
@@ -58,13 +56,13 @@ const useApi = () => {
       response = responseInterceptor(response);
 
       // If token is expired, try to refresh it and retry the request
-      if (response.status === 401 && requiresAuth && authTokens.refresh?.token) {
+      if (response.status === 401 && requiresAuth && tokens?.refresh?.token) {
         try {
           // Try unified refresh endpoint first
           let refreshResponse = await fetch(`${API_URL}/auth/refresh-token`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ refreshToken: authTokens.refresh.token }),
+            body: JSON.stringify({ refreshToken: tokens.refresh.token }),
           });
 
           // Fallback to legacy user endpoint if needed
@@ -72,20 +70,20 @@ const useApi = () => {
             refreshResponse = await fetch(`${API_URL}/user/auth/refresh-tokens`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ refreshToken: authTokens.refresh.token }),
+              body: JSON.stringify({ refreshToken: tokens.refresh.token }),
             });
           }
 
           if (refreshResponse.ok) {
             const newTokens = await refreshResponse.json();
             // Support both shapes: { accessToken } or { access: { token }, refresh: {...} }
-            let mergedTokens = { ...authTokens };
+            let mergedTokens = { ...tokens };
             if (newTokens?.accessToken) {
-              mergedTokens = { ...authTokens, access: { ...(authTokens.access || {}), token: newTokens.accessToken } };
+              mergedTokens = { ...tokens, access: { ...(tokens.access || {}), token: newTokens.accessToken } };
             } else if (newTokens?.access?.token) {
               mergedTokens = newTokens;
             }
-            localStorage.setItem('authTokens', JSON.stringify(mergedTokens));
+            setAuthTokens(mergedTokens);
             
             // Build updated headers with the new access token
             const retryHeaders = {
@@ -101,16 +99,12 @@ const useApi = () => {
             });
           } else {
             // If refresh fails, log the user out
-            localStorage.removeItem('authTokens');
-            localStorage.removeItem('user');
-            window.location.href = '/login';
+            logout();
             throw new Error('Session expired. Please log in again.');
           }
         } catch (error) {
           console.error('Token refresh failed:', error);
-          localStorage.removeItem('authTokens');
-          localStorage.removeItem('user');
-          window.location.href = '/login';
+          logout();
           throw new Error('Session expired. Please log in again.');
         }
       }

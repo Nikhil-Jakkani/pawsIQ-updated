@@ -1,5 +1,6 @@
 import express from 'express';
 import { userAuthController } from '../../controllers/user/auth.controller.js';
+import { verifyFirebasePhone } from '../../controllers/auth.controller.js';
 import { auth } from '../../../middlewares/auth.js';
 
 const router = express.Router();
@@ -13,9 +14,8 @@ router.post('/reset-password', userAuthController.resetPassword);
 router.post('/verify-email', userAuthController.verifyEmail);
 router.post('/verify-otp', userAuthController.verifyOTP);
 
-// Mobile OTP routes
-router.post('/send-mobile-otp', userAuthController.sendMobileOTP);
-router.post('/verify-mobile-otp', userAuthController.verifyMobileOTP);
+// Firebase Phone verification route for users
+router.post('/phone/verify', verifyFirebasePhone);
 
 // Protected routes (user-only)
 router.get('/me', auth('user'), userAuthController.me);

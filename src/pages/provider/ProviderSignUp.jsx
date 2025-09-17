@@ -15,6 +15,8 @@ import {
   FaPaw
 } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
+import { signInWithPhoneNumber } from 'firebase/auth';
+import { auth, setupRecaptcha } from '../../firebaseClient';
 
 // Cute pet-themed logo
 const logoImage = "/7.png";
@@ -194,7 +196,7 @@ const ProviderSignUp = () => {
         services_offered: formData.providerType,
         provider_type: formData.providerType,
         provider_src: 'email',
-      how_hear_about_us: formData.referralSource,
+        how_hear_about_us: formData.referralSource,
         // Optional fields (left blank unless you add inputs later)
         provider_desc: '',
         provider_experience_years: '',
@@ -203,15 +205,16 @@ const ProviderSignUp = () => {
         provider_fb: '',
       };
 
-      // Send OTP to the provided phone number and navigate to verification page.
+      // Send OTP via Firebase before navigating
       try {
-        await fetch(`${import.meta.env.VITE_API_URL || '/api/v1'}/provider/auth/send-otp`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phoneNumber: formData.phoneNumber })
-        });
-      } catch (_) {
-        // Intentionally ignored: OTP send failure will be handled on verification page
+        setupRecaptcha('recaptcha-container');
+        const verifier = window.recaptchaVerifier;
+        const e164 = `+91${String(formData.phoneNumber).replace(/\D/g, '')}`; // assume Indian numbers as per validation
+        const confirmation = await signInWithPhoneNumber(auth, e164, verifier);
+        window.confirmationResult = confirmation;
+      } catch (e) {
+        // Show a soft warning but still navigate to allow user to retry
+        console.warn('Failed to send OTP via Firebase:', e);
       }
 
       // Pass the registration data to the OTP verification page for later account creation
@@ -235,6 +238,9 @@ const ProviderSignUp = () => {
   
   return (
     <div className="min-h-screen bg-white flex flex-col justify-start pt-8 pb-12 sm:px-6 lg:px-8">
+      {/* Recaptcha container for Firebase Phone Auth */}
+      <div id="recaptcha-container" />
+
       <div className="sm:mx-auto sm:w-full sm:max-w-md mb-6">
         <div className="flex justify-center">
           <div className="bg-white p-3 rounded-full shadow-lg">

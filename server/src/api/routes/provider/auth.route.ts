@@ -12,8 +12,7 @@ router.post('/google/login', providerAuthController.googleLogin);
 router.post('/facebook/login', providerAuthController.facebookLogin);
 // Forgot password (placeholder implementation)
 router.post('/forgot-password', providerAuthController.forgotPassword);
-// OTP endpoints
-router.post('/send-otp', providerAuthController.sendOTP);
-router.post('/verify-otp', providerAuthController.verifyOTP);
+// Firebase Phone verification endpoint
+router.post('/phone/verify', providerAuthController.verifyFirebasePhone);
 
 export default router;

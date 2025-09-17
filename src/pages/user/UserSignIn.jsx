@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { FaUser, FaEnvelope, FaPhone, FaLock, FaFlag, FaPaw } from 'react-icons/fa';
 import { toast } from 'react-toastify';
+import { signInWithPhoneNumber } from 'firebase/auth';
+import { auth, setupRecaptcha } from '../../firebaseClient';
+import { useAuth } from '../../context/AuthContext';
 
 const logoImage = "/7.png";
 const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
@@ -14,6 +17,8 @@ const COUNTRY_CODES = [
 ];
 
 const UserSignIn = () => {
+  const navigate = useNavigate();
+  const { login } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [countryCode, setCountryCode] = useState('+91');
@@ -33,15 +38,11 @@ const UserSignIn = () => {
     }
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_URL}/auth/send-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phoneNumber: fullPhone })
-      });
-      const data = await res.json().catch(() => ({ success: false }));
-      if (!res.ok || data?.success !== true) {
-        throw new Error(data?.error || data?.message || 'Failed to send OTP');
-      }
+      // Firebase client flow
+      setupRecaptcha('recaptcha-container');
+      const verifier = window.recaptchaVerifier;
+      const confirmation = await signInWithPhoneNumber(auth, fullPhone, verifier);
+      window.confirmationResult = confirmation;
       toast.success('OTP sent to your mobile');
       setOtpSent(true);
     } catch (err) {
@@ -74,27 +75,10 @@ const UserSignIn = () => {
       return false;
     }
     try {
-      // Remove any non-digit characters from phone number except the leading +
-      const cleanPhone = fullPhone.replace(/[^\d+]/g, '');
-      
-      const res = await fetch(`${API_URL}/auth/verify-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          phoneNumber: cleanPhone,
-          code: otpCode 
-        })
-      });
-
-      const data = await res.json().catch(() => ({
-        success: false,
-        message: 'Invalid response from server'
-      }));
-      
-      if (!res.ok || data?.success !== true) {
-        throw new Error(data?.error || data?.message || `OTP verification failed (${res.status})`);
-      }
-      
+      // Confirm OTP via Firebase
+      const confirmation = window.confirmationResult;
+      if (!confirmation) throw new Error('No OTP session found. Please resend OTP.');
+      await confirmation.confirm(otpCode);
       return true;
     } catch (err) {
       console.error('OTP verification error:', err);
@@ -128,8 +112,15 @@ const UserSignIn = () => {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.message || 'Registration failed');
       }
-      toast.success('Account created! You can now log in.');
-      navigate('/user/login');
+      toast.success('Account created! Logging you in...');
+      // Auto-login with the same credentials
+      const result = await login(email, password);
+      if (result?.success) {
+        navigate('/user/dashboard');
+      } else {
+        // Fallback: go to login page
+        navigate('/user/login');
+      }
     } catch (err) {
       toast.error(err.message || 'Error during registration');
     } finally {
@@ -153,6 +144,9 @@ const UserSignIn = () => {
     <div className="min-h-screen w-full bg-gradient-to-br from-blue-500 to-[#145ae6] flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl overflow-hidden max-w-md w-full">
         <div className="p-8">
+          {/* Recaptcha container for Firebase Phone Auth */}
+          <div id="recaptcha-container" />
+
           <div className="flex justify-center mb-6">
             <div className="bg-blue-100 p-3 rounded-full">
               <img src={logoImage} alt="PawsIQ Logo" className="w-12 h-12" />

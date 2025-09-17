@@ -50,7 +50,8 @@ const verifyEmailConnection = async () => {
   }
 };
 
-if (process.env.NODE_ENV !== 'production') {
+// Only verify on startup if explicitly enabled
+if (process.env.EMAIL_VERIFY_ON_START === 'true') {
   verifyEmailConnection();
 }
 

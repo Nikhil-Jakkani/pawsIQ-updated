@@ -9,7 +9,7 @@ import { tokenService } from '../services/user/token.service.js';
 import { tokenTypes } from '../../config/tokens.js';
 import { authService as adminAuthService } from '../services/admin/auth.service.js';
 import { userAuthService } from '../services/user/auth.service.js';
-import { twilioService } from '../services/twilio.service.js';
+import { adminAuth } from '../../config/firebaseAdmin.js';
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID;
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
@@ -219,85 +219,39 @@ export const refreshToken = async (req: Request, res: Response) => {
 };
 
 // Send OTP to phone number
-export const sendOTP = async (req: Request, res: Response) => {
+export const verifyFirebasePhone = async (req: Request, res: Response) => {
   try {
-    const { phoneNumber } = req.body as { phoneNumber: string };
-    
-    if (!phoneNumber) {
-      return res.status(400).json({ error: 'Phone number is required' });
+    const { idToken } = req.body as { idToken: string };
+    if (!idToken) {
+      return res.status(400).json({ error: 'idToken is required' });
     }
-    
-    // Format and validate phone number
-    const formattedPhone = twilioService.formatPhoneNumber(phoneNumber);
-    
-    if (!twilioService.validatePhoneNumber(formattedPhone)) {
-      return res.status(400).json({ error: 'Invalid phone number format' });
-    }
-    
-    // Send OTP via Twilio
-    const result = await twilioService.sendOTP(formattedPhone, 'sms');
-    
-    res.json({
-      success: true,
-      message: 'OTP sent successfully',
-      sid: result.sid,
-      status: result.status
-    });
-    
-  } catch (error) {
-    console.error('Send OTP error:', error);
-    res.status(500).json({ 
-      error: 'Failed to send OTP',
-      message: error instanceof Error ? error.message : 'Unknown error' 
-    });
-  }
-};
 
-// Verify OTP and authenticate user
-export const verifyOTP = async (req: Request, res: Response) => {
-  try {
-    const { phoneNumber, code } = req.body as { phoneNumber: string; code: string };
-    
-    if (!phoneNumber || !code) {
-      return res.status(400).json({ 
-        error: 'Phone number and code are required' 
-      });
+    const decoded = await adminAuth.verifyIdToken(idToken);
+    const phone = decoded.phone_number;
+    if (!phone) {
+      return res.status(400).json({ error: 'Phone number not present in Firebase token' });
     }
-    
-    // Format phone number
-    const formattedPhone = twilioService.formatPhoneNumber(phoneNumber);
-    
-    // Verify OTP via Twilio
-    const result = await twilioService.verifyOTP(formattedPhone, code);
-    
-    if (!result.valid) {
-      return res.status(400).json({ 
-        error: 'Invalid OTP code',
-        status: result.status 
-      });
-    }
-    
+
     // Check if user exists with this phone number
-    let existingUser = await prisma.pIQ_User.findFirst({ where: { user_phone_number: formattedPhone } });
-    
+    let existingUser = await prisma.pIQ_User.findFirst({ where: { user_phone_number: phone } });
+
     // If user doesn't exist, create a new one
     if (!existingUser) {
       const randomPassword = await bcrypt.hash(`otp-${Date.now()}-${Math.random()}`, 10);
+      const syntheticEmail = `user-${phone.replace('+', '')}@firebase.pawsiq.com`;
       existingUser = await prisma.pIQ_User.create({
         data: {
-          user_full_name: 'OTP User',
-          user_email_id: `user-${formattedPhone.replace('+', '')}@otp.pawsiq.com`,
+          user_full_name: 'Phone User',
+          user_email_id: syntheticEmail,
           user_password: randomPassword,
-          user_phone_number: formattedPhone,
+          user_phone_number: phone,
           user_status: 'active',
         },
       });
     }
-    
-    // Generate authentication tokens
+
     const { accessToken, refreshToken } = await generateTokens(Number(existingUser.user_id), 'user');
-    
-    res.json({
+    return res.json({
       success: true,
       accessToken,
       refreshToken,
@@ -309,12 +263,8 @@ export const verifyOTP = async (req: Request, res: Response) => {
         role: 'user',
       },
     });
-    
   } catch (error) {
-    console.error('Verify OTP error:', error);
-    res.status(500).json({ 
-      error: 'Failed to verify OTP',
-      message: error instanceof Error ? error.message : 'Unknown error' 
-    });
+    console.error('Firebase phone verify error:', error);
+    return res.status(500).json({ error: 'Failed to verify Firebase phone token' });
   }
 };
