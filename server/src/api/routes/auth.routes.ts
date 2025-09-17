@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { googleLogin, facebookLogin, refreshToken, login, sendOTP, verifyOTP, whoAmI } from '../controllers/auth.controller.js';
+import { googleLogin, facebookLogin, refreshToken, login, verifyFirebasePhone, whoAmI } from '../controllers/auth.controller.js';
 
 const router = Router();
 
@@ -15,11 +15,8 @@ router.post('/auth/login', login);
 // Refresh access token
 router.post('/auth/refresh-token', refreshToken);
 
-// Send OTP to phone number
-router.post('/auth/send-otp', sendOTP);
-
-// Verify OTP and authenticate
-router.post('/auth/verify-otp', verifyOTP);
+// Verify phone via Firebase ID token
+router.post('/auth/phone/verify', verifyFirebasePhone);
 
 // Identify current subject and role from token
 router.get('/auth/whoami', whoAmI);

@@ -6,8 +6,8 @@ import bcrypt from 'bcryptjs';
 import { db } from '../../../config/db.js';
 import { tokenService } from '../../services/user/token.service.js';
 import { catchAsync } from '../../utils/catchAsync.js';
-import { twilioService } from '../../services/twilio.service.js';
 import { providerAuthService } from '../../services/provider/auth.service.js';
+import { adminAuth } from '../../../config/firebaseAdmin.js';
 
 const register = catchAsync(async (req: Request, res: Response) => {
   const provider = await providerAuthService.register(req.body);
@@ -168,30 +168,59 @@ export const providerAuthController = {
     return res.status(httpStatus.OK).json({ success: true, message: 'If an account exists, a reset link will be sent.' });
   }),
   // Send OTP to provider phone
-  sendOTP: catchAsync(async (req: Request, res: Response) => {
-    const { phoneNumber } = req.body as { phoneNumber: string };
-    if (!phoneNumber) {
-      return res.status(httpStatus.BAD_REQUEST).json({ error: 'Phone number is required' });
+  verifyFirebasePhone: catchAsync(async (req: Request, res: Response) => {
+    const { idToken } = req.body as { idToken: string };
+    if (!idToken) {
+      return res.status(httpStatus.BAD_REQUEST).json({ error: 'idToken is required' });
     }
-    const formattedPhone = twilioService.formatPhoneNumber(phoneNumber);
-    if (!twilioService.validatePhoneNumber(formattedPhone)) {
-      return res.status(httpStatus.BAD_REQUEST).json({ error: 'Invalid phone number format' });
+
+    const decoded = await adminAuth.verifyIdToken(idToken);
+    const phone = decoded.phone_number;
+    if (!phone) {
+      return res.status(httpStatus.BAD_REQUEST).json({ error: 'Phone number not present in Firebase token' });
     }
-    const result = await twilioService.sendOTP(formattedPhone, 'sms');
-    return res.json({ success: true, sid: result.sid, status: result.status });
-  }),
-  // Verify OTP (no activation, account will be created after verification)
-  verifyOTP: catchAsync(async (req: Request, res: Response) => {
-    const { phoneNumber, code } = req.body as { phoneNumber: string; code: string };
-    if (!phoneNumber || !code) {
-      return res.status(httpStatus.BAD_REQUEST).json({ error: 'Phone number and code are required' });
+
+    // Find or create provider by phone
+    let { data: provider } = await db
+      .from('PIQ_Service_Provider')
+      .select('*')
+      .eq('serv_provider_contact_nbr', phone)
+      .single();
+
+    if (!provider) {
+      const randomPassword = await bcrypt.hash(`otp-${Date.now()}-${Math.random()}`, 10);
+      const syntheticEmail = `provider-${phone.replace('+', '')}@firebase.pawsiq.com`;
+      const insertResult = await db
+        .from('PIQ_Service_Provider')
+        .insert([
+          {
+            serv_provider_name: 'Phone Provider',
+            serv_provider_email: syntheticEmail,
+            serv_provider_password: randomPassword,
+            serv_provider_contact_nbr: phone,
+            serv_provider_status: 'active',
+            created_at: new Date(),
+            last_updated_dtm: new Date(),
+            provider_src: 'firebase',
+          },
+        ])
+        .select()
+        .single();
+
+      if (insertResult.error) {
+        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ error: 'Failed to create provider' });
+      }
+      provider = insertResult.data as any;
     }
-    const formattedPhone = twilioService.formatPhoneNumber(phoneNumber);
-    const result = await twilioService.verifyOTP(formattedPhone, code);
-    if (!result.valid) {
-      return res.status(httpStatus.BAD_REQUEST).json({ error: 'Invalid OTP code', status: result.status });
-    }
-    // OTP is valid; client will handle account creation
-    return res.json({ success: true });
+
+    const tokens = await tokenService.generateAuthTokens(provider.service_provider_id, 'provider');
+    const user = {
+      id: provider.service_provider_id,
+      email: provider.serv_provider_email,
+      name: provider.serv_provider_name,
+      phone: provider.serv_provider_contact_nbr,
+      role: 'provider' as const,
+    };
+    return res.json({ user, tokens });
   }),
 };
