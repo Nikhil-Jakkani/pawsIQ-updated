@@ -6,21 +6,43 @@ const emailConfig = {
   service: 'gmail',
   host: process.env.EMAIL_HOST || 'smtp.gmail.com',
   port: parseInt(process.env.EMAIL_PORT || '587'),
-  secure: process.env.EMAIL_SECURE === 'true',
+  secure: process.env.EMAIL_SECURE === 'true' || parseInt(process.env.EMAIL_PORT || '587') === 465,
   auth: {
     user: process.env.EMAIL_USERNAME || 'contactpawsiq@gmail.com',
     pass: process.env.EMAIL_PASSWORD
   },
+  connectionTimeout: parseInt(process.env.EMAIL_CONNECTION_TIMEOUT || '10000'), // 10s
+  greetingTimeout: parseInt(process.env.EMAIL_GREETING_TIMEOUT || '10000'), // 10s
+  socketTimeout: parseInt(process.env.EMAIL_SOCKET_TIMEOUT || '10000'), // 10s
+  pool: process.env.EMAIL_POOL === 'true',
   tls: {
-    rejectUnauthorized: process.env.NODE_ENV === 'production'
+    rejectUnauthorized: process.env.EMAIL_TLS_REJECT_UNAUTHORIZED
+      ? process.env.EMAIL_TLS_REJECT_UNAUTHORIZED === 'true'
+      : process.env.NODE_ENV === 'production'
   }
 };
 
-const transporter = nodemailer.createTransport(emailConfig);
+// Only enable email if credentials are configured and not explicitly disabled
+const EMAIL_DISABLED = process.env.EMAIL_DISABLED === 'true';
+const EMAIL_READY = !!(process.env.EMAIL_USERNAME && process.env.EMAIL_PASSWORD) && !EMAIL_DISABLED;
+
+let transporter: nodemailer.Transporter | null = null;
+const getTransporter = () => {
+  if (!EMAIL_READY) return null;
+  if (!transporter) {
+    transporter = nodemailer.createTransport(emailConfig);
+  }
+  return transporter;
+};
 
 const verifyEmailConnection = async () => {
+  const tx = getTransporter();
+  if (!tx) {
+    console.warn('Email disabled or not configured. Skipping SMTP verify.');
+    return false;
+  }
   try {
-    await transporter.verify();
+    await tx.verify();
     return true;
   } catch (error) {
     console.error('SMTP Connection Error:', error);
@@ -28,17 +50,21 @@ const verifyEmailConnection = async () => {
   }
 };
 
-verifyEmailConnection();
+if (process.env.NODE_ENV !== 'production') {
+  verifyEmailConnection();
+}
 
 export const sendEmail = async (to: string, subject: string, html: string) => {
-  if (!process.env.EMAIL_USERNAME || !process.env.EMAIL_PASSWORD) {
+  if (!EMAIL_READY) {
     console.warn('Email credentials not configured. Email not sent.');
     return null;
   }
 
   try {
-    const info = await transporter.sendMail({
-      from: `"PawsIQ" <${process.env.EMAIL_FROM || 'noreply@pawsiq.com'}>`,
+    const tx = getTransporter();
+    if (!tx) return null;
+    const info = await tx.sendMail({
+      from: `"PawsIQ" <${process.env.EMAIL_FROM || process.env.EMAIL_USERNAME || 'noreply@pawsiq.com'}>`,
       to,
       subject,
       html,
