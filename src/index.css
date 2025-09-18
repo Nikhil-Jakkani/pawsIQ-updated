@@ -131,7 +131,7 @@
   
   /* Pet card improvements - Modern Design System */
   .pet-card {
-    @apply bg-white overflow-hidden transition-all duration-300;
+    @apply bg-white overflow-hidden;
     border-radius: 16px;
     border: 1px solid rgba(226, 232, 240, 0.8);
     min-height: 400px;
@@ -143,7 +143,6 @@
   }
   
   .pet-card:hover {
-    transform: translateY(-4px);
     border-color: rgba(99, 102, 241, 0.2);
     box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   }
@@ -178,12 +177,9 @@
   .pet-card-image img {
     position: relative;
     z-index: 2;
-    transition: transform 0.5s ease;
   }
   
-  .pet-card:hover .pet-card-image img {
-    transform: scale(1.1);
-  }
+
   
   .pet-card-buttons {
     @apply mt-6 flex flex-col sm:flex-row gap-2.5;
@@ -294,13 +290,10 @@
   
   .pet-info-item {
     @apply flex items-center gap-2.5 text-sm text-slate-600 bg-slate-50 rounded-lg px-3 py-2.5;
-    transition: all 0.2s ease;
     border: 1px solid rgba(226, 232, 240, 0.5);
   }
   
-  .pet-info-item:hover {
-    @apply bg-slate-100 text-slate-800 border-slate-200;
-  }
+
   
   .pet-info-icon {
     @apply text-slate-500 flex-shrink-0;

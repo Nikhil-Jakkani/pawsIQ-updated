@@ -420,14 +420,14 @@ const UserAddPet = () => {
         <div className="flex items-center gap-4">
           <button 
             onClick={() => navigate('/user/pets')}
-            className="p-2 bg-white rounded-full shadow-sm border border-gray-200 text-gray-500 hover:text-pink-600 transition-colors"
+            className="p-2 bg-white rounded-full shadow-sm border border-gray-200 text-gray-500 hover:text-[#145ae6] transition-colors"
           >
             <FaArrowLeft />
           </button>
           <div>
             <div className="flex items-center gap-3">
               <div className="bg-gray-100 p-2 rounded-lg">
-                <FaPaw className="text-pink-600 text-2xl" />
+                <FaPaw className="text-[#145ae6] text-2xl" />
               </div>
               <h1 className="text-2xl font-bold text-gray-800">Add a New Pet</h1>
             </div>
@@ -453,7 +453,7 @@ const UserAddPet = () => {
                   onChange={handleImageChange}
                 />
               </div>
-              <label htmlFor="pet-photo" className="mt-2 flex items-center gap-1 text-sm text-pink-600 cursor-pointer">
+              <label htmlFor="pet-photo" className="mt-2 flex items-center gap-1 text-sm text-[#145ae6] cursor-pointer">
                 <FaUpload />
                 Upload Photo
               </label>
@@ -478,7 +478,7 @@ const UserAddPet = () => {
                       value={formData.name}
                       onChange={handleChange}
                       required
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#145ae6] focus:border-[#145ae6] transition-all duration-200 bg-white shadow-sm hover:shadow-md"
                       placeholder="Enter your pet's name"
                     />
                     <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
@@ -1304,7 +1304,7 @@ const UserAddPet = () => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className={`px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 flex items-center gap-2 ${
+              className={`px-4 py-2 bg-[#145ae6] text-white rounded-lg hover:bg-[#145ae6] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#145ae6] flex items-center gap-2 ${
                 isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
               }`}
             >

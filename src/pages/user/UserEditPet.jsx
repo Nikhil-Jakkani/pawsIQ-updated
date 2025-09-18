@@ -312,7 +312,7 @@ const UserEditPet = () => {
       <UserLayout>
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-600 mx-auto"></div>
             <p className="mt-4 text-gray-600">Loading pet data...</p>
           </div>
         </div>
@@ -403,7 +403,7 @@ const UserEditPet = () => {
                     value={formData.name}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
                     placeholder="Enter pet name"
                   />
                 </div>
@@ -418,7 +418,7 @@ const UserEditPet = () => {
                         <label 
                           className={`flex flex-col items-center justify-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200
                             ${formData.type === type.value 
-                              ? 'bg-gray-900 border-gray-900 text-white shadow' 
+                              ? 'bg-blue-800 border-blue-800 text-white shadow'
                               : 'border-gray-200 hover:bg-gray-50 hover:border-gray-300 text-gray-700'}`}
                         >
                           <div>
@@ -452,7 +452,7 @@ const UserEditPet = () => {
                     value={formData.breed}
                     onChange={handleChange}
                     disabled={loadingBreeds || !formData.type}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 disabled:bg-gray-100 disabled:cursor-not-allowed transition-all duration-200 bg-white shadow-sm hover:shadow-md"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed transition-all duration-200 bg-white shadow-sm hover:shadow-md"
                   >
                     <option value="">
                       {loadingBreeds ? 'Loading breeds...' : formData.type ? 'Select breed' : 'Select pet type first'}
@@ -489,7 +489,7 @@ const UserEditPet = () => {
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                      <FaCalendarAlt className="text-pink-400 text-lg" />
+                      <FaCalendarAlt className="text-[#145ae6] text-lg" />
                     </div>
                     <input
                       type="date"
@@ -497,7 +497,7 @@ const UserEditPet = () => {
                       name="birthdate"
                       value={formData.birthdate}
                       onChange={handleChange}
-                      className="pl-12 w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
+                      className="pl-12 w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
                     />
                   </div>
                 </div>
