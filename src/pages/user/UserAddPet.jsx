@@ -497,7 +497,7 @@ const UserAddPet = () => {
                         key={type.value}
                         className={`flex flex-col items-center justify-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 transform hover:scale-105
                           ${formData.type === type.value 
-                            ? 'bg-gradient-to-r from-pink-500 to-purple-600 border-pink-500 text-white shadow-lg' 
+                            ? 'border-pink-500 text-white shadow-lg'
                             : 'border-gray-200 hover:bg-gray-50 hover:border-pink-300 bg-white shadow-sm'}`}
                       >
                         <div className="text-2xl mb-2">

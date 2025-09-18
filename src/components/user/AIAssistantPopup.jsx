@@ -181,7 +181,7 @@ const AIAssistantPopup = ({ isOpen, onClose, pets, initialActiveService = 'sugge
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="bg-gradient-to-r from-pink-500 to-purple-600 p-6 text-white">
+        <div className="p-6 text-white">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="bg-white bg-opacity-20 p-2 rounded-xl">
