@@ -121,7 +121,7 @@ const AIAssistantPopup = ({ isOpen, onClose, pets, initialActiveService = 'sugge
       title: `${selectedPet.name}'s Grooming`,
       tip: `${selectedPet.breed}s require ${groomingFreq} brushing. ${selectedPet.type === 'dog' ? 'Check ears weekly and trim nails monthly.' : 'Daily brushing prevents matting.'} ${currentSeason === 'spring' ? 'Shedding season - brush more frequently!' : 'Regular grooming maintains healthy coat.'}`,
       category: 'Grooming',
-      color: 'bg-pink-50 border-pink-200 text-pink-800'
+      color: 'bg-blue-50 border-blue-200 text-blue-800'
     });
 
     // Health Monitoring
@@ -195,7 +195,7 @@ const AIAssistantPopup = ({ isOpen, onClose, pets, initialActiveService = 'sugge
                 <h2 className="text-2xl font-bold">
                   {activeService === 'suggestions' ? 'AI Pet Care' : 'Pet Symptom Checker'}
                 </h2>
-                <p className="text-pink-100">
+                <p className="text-blue-100">
                   {activeService === 'suggestions' 
                     ? 'Smart care suggestions for your furry friends' 
                     : 'AI-powered health analysis for your pets'
@@ -220,7 +220,7 @@ const AIAssistantPopup = ({ isOpen, onClose, pets, initialActiveService = 'sugge
                 onClick={() => setActiveService('suggestions')}
                 className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
                   activeService === 'suggestions'
-                    ? 'bg-pink-50 text-pink-700 border-b-2 border-pink-500'
+                    ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-500'
                     : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                 }`}
               >
@@ -257,8 +257,8 @@ const AIAssistantPopup = ({ isOpen, onClose, pets, initialActiveService = 'sugge
                     onClick={() => setSelectedPet(pet)}
                     className={`p-4 rounded-xl border-2 transition-all ${
                       selectedPet?.id === pet.id
-                        ? 'border-pink-500 bg-pink-50'
-                        : 'border-gray-200 hover:border-pink-300 hover:bg-pink-25'
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-blue-300 hover:bg-blue-25'
                     }`}
                   >
                     <div className="flex items-center gap-3">
@@ -281,7 +281,7 @@ const AIAssistantPopup = ({ isOpen, onClose, pets, initialActiveService = 'sugge
             {activeService === 'suggestions' && selectedPet && (
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                  <FaPaw className="text-pink-600" />
+                  <FaPaw className="text-blue-600" />
                   Personalized Care Tips for {selectedPet.name}
                 </h3>
                 <div className="grid gap-4">
@@ -401,7 +401,7 @@ const AIAssistantPopup = ({ isOpen, onClose, pets, initialActiveService = 'sugge
                     {/* Analysis Results */}
                     {analysis && (
                       <div className="space-y-4">
-                        <div className="bg-gradient-to-r from-red-50 to-pink-50 rounded-xl p-4 border border-red-200">
+                        <div className="bg-gradient-to-r from-red-50 to-blue-50 rounded-xl p-4 border border-red-200">
                           <h3 className="font-semibold text-red-800 mb-2 capitalize">
                             {analysis.urgencyLevel} Priority
                           </h3>

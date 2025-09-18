@@ -82,22 +82,22 @@ const PetProfiles = () => {
   }, [accessToken]);
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-6 border border-pink-100">
+    <div className="bg-white rounded-xl shadow-sm p-6 border border-blue-100">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-          <FaPaw className="text-pink-600" />
+          <FaPaw className="text-blue-600" />
           My Pets
         </h2>
         <div className="flex gap-2">
           <Link 
             to="/user/pets/add"
-            className="text-sm font-medium text-pink-600 hover:text-pink-700 flex items-center gap-1 px-3 py-1 bg-pink-50 rounded-full"
+            className="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1 px-3 py-1 bg-blue-50 rounded-full"
           >
             <FaPlus size={12} /> Add Pet
           </Link>
           <Link 
             to="/user/pets"
-            className="text-sm font-medium text-pink-600 hover:text-pink-700 flex items-center gap-1"
+            className="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1"
           >
             View All <FaArrowRight size={12} />
           </Link>
@@ -198,10 +198,10 @@ const PetProfiles = () => {
         {/* Add Pet Card */}
         <Link 
           to="/user/pets/add"
-          className="border border-dashed border-pink-300 rounded-lg flex flex-col items-center justify-center p-6 hover:bg-pink-50 transition-colors h-full"
+          className="border border-dashed border-blue-300 rounded-lg flex flex-col items-center justify-center p-6 hover:bg-blue-50 transition-colors h-full"
         >
-          <div className="bg-pink-100 rounded-full p-4 mb-4">
-            <FaPlus className="text-pink-600 text-xl" />
+          <div className="bg-blue-100 rounded-full p-4 mb-4">
+            <FaPlus className="text-blue-600 text-xl" />
           </div>
           <h3 className="font-semibold text-gray-800 text-lg">Add a New Pet</h3>
           <p className="text-sm text-gray-600 text-center mt-2">

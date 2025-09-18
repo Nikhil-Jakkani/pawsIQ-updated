@@ -497,8 +497,8 @@ const UserAddPet = () => {
                         key={type.value}
                         className={`flex flex-col items-center justify-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 transform hover:scale-105
                           ${formData.type === type.value 
-                            ? 'border-pink-500 text-white shadow-lg'
-                            : 'border-gray-200 hover:bg-gray-50 hover:border-pink-300 bg-white shadow-sm'}`}
+                            ? 'border-blue-500 text-white shadow-lg'
+                            : 'border-gray-200 hover:bg-gray-50 hover:border-blue-300 bg-white shadow-sm'}`}
                       >
                         <div className="text-2xl mb-2">
                           {type.icon}
@@ -530,7 +530,7 @@ const UserAddPet = () => {
                       onChange={handleChange}
                       disabled={loadingBreeds || !formData.type}
                       required
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 disabled:bg-gray-100 disabled:cursor-not-allowed transition-all duration-200 bg-white shadow-sm hover:shadow-md appearance-none"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed transition-all duration-200 bg-white shadow-sm hover:shadow-md appearance-none"
                     >
                       <option value="">
                         {loadingBreeds ? 'Loading breeds...' : formData.type ? 'Select breed' : 'Select pet type first'}
@@ -568,7 +568,7 @@ const UserAddPet = () => {
                       value={formData.gender}
                       onChange={handleChange}
                       required
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md appearance-none"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md appearance-none"
                     >
                       <option value="">Select gender</option>
                       <option value="male">Male</option>
@@ -597,7 +597,7 @@ const UserAddPet = () => {
                       name="birthdate"
                       value={formData.birthdate}
                       onChange={handleChange}
-                      className="pl-10 w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
+                      className="pl-10 w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
                     />
                   </div>
                 </div>
@@ -615,7 +615,7 @@ const UserAddPet = () => {
                       onChange={handleChange}
                       step="0.1"
                       min="0"
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
                       placeholder="Enter weight in kg"
                     />
                     <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
@@ -635,11 +635,11 @@ const UserAddPet = () => {
                       name="color"
                       value={formData.color}
                       onChange={handleChange}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
                       placeholder="Enter color description"
                     />
                     <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                      <div className="w-4 h-4 rounded-full bg-gradient-to-r from-pink-400 to-purple-400"></div>
+                      <div className="w-4 h-4 rounded-full bg-gradient-to-r from-blue-400 to-purple-400"></div>
                     </div>
                   </div>
                 </div>
@@ -671,7 +671,7 @@ const UserAddPet = () => {
                     name="microchipped"
                     checked={formData.microchipped}
                     onChange={handleChange}
-                    className="h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                   />
                   <label htmlFor="microchipped" className="ml-2 block text-sm text-gray-700">
                     Microchipped
@@ -689,7 +689,7 @@ const UserAddPet = () => {
                       name="microchipNumber"
                       value={formData.microchipNumber}
                       onChange={handleChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       placeholder="Enter microchip number"
                     />
                   </div>
@@ -702,7 +702,7 @@ const UserAddPet = () => {
                     name="neutered"
                     checked={formData.neutered}
                     onChange={handleChange}
-                    className="h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                   />
                   <label htmlFor="neutered" className="ml-2 block text-sm text-gray-700">
                     Spayed/Neutered
@@ -723,7 +723,7 @@ const UserAddPet = () => {
                             type="checkbox"
                             checked={formData.allergies.includes(allergy)}
                             onChange={(e) => handleAllergyChange(allergy, e.target.checked)}
-                            className="h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded mt-0.5 flex-shrink-0"
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-0.5 flex-shrink-0"
                           />
                           <span className="text-gray-700">{allergy}</span>
                         </label>
@@ -739,7 +739,7 @@ const UserAddPet = () => {
                         name="customAllergies"
                         value={formData.customAllergies}
                         onChange={handleChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         placeholder="Enter any other allergies not listed above"
                       />
                     </div>
@@ -760,7 +760,7 @@ const UserAddPet = () => {
                             type="checkbox"
                             checked={formData.medicalConditions.includes(condition)}
                             onChange={(e) => handleMedicalConditionChange(condition, e.target.checked)}
-                            className="h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded mt-0.5 flex-shrink-0"
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-0.5 flex-shrink-0"
                           />
                           <span className="text-gray-700">{condition}</span>
                         </label>
@@ -776,7 +776,7 @@ const UserAddPet = () => {
                         value={formData.customMedicalConditions}
                         onChange={handleChange}
                         rows="2"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         placeholder="Enter any other medical conditions not listed above"
                       />
                     </div>
@@ -793,7 +793,7 @@ const UserAddPet = () => {
                     value={formData.medications}
                     onChange={handleChange}
                     rows="2"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="List any current medications"
                   />
                 </div>
@@ -808,7 +808,7 @@ const UserAddPet = () => {
                     value={formData.dietaryNeeds}
                     onChange={handleChange}
                     rows="2"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Special dietary requirements"
                   />
                 </div>
@@ -818,7 +818,7 @@ const UserAddPet = () => {
             {/* Vaccination Information */}
             <div>
               <h2 className="text-lg font-semibold text-gray-800 mb-2 flex items-center gap-2">
-                <FaSyringe className="text-pink-500" />
+                <FaSyringe className="text-blue-500" />
                 Vaccination Information (Indian Standards)
               </h2>
               <div className="mb-4 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
@@ -837,7 +837,7 @@ const UserAddPet = () => {
                   name="ageGroup"
                   value={formData.ageGroup}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   {ageGroups.map(group => (
                     <option key={group.value} value={group.value}>
@@ -939,7 +939,7 @@ const UserAddPet = () => {
                                         e.stopPropagation();
                                         handleVaccineChange(`${vaccine.vaccine}-${index}`, e.target.checked, vaccine);
                                       }}
-                                      className="h-5 w-5 text-pink-600 focus:ring-pink-500 border-gray-300 rounded"
+                                      className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                                       onClick={(e) => e.stopPropagation()}
                                     />
                                   </div>
@@ -960,7 +960,7 @@ const UserAddPet = () => {
                     {/* Add Custom Vaccine */}
                     <div className="mt-4 border border-gray-200 rounded-lg p-4">
                       <h3 className="text-md font-medium text-gray-800 mb-3 flex items-center gap-2">
-                        <FaPlus className="text-pink-500" />
+                        <FaPlus className="text-blue-500" />
                         Add Custom Vaccine
                       </h3>
                       <p className="text-sm text-gray-500 mb-4">
@@ -975,7 +975,7 @@ const UserAddPet = () => {
                           <input
                             type="text"
                             id="custom-vaccine-name"
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             placeholder="Enter vaccine name"
                             value={formData.customVaccineName || ''}
                             onChange={(e) => setFormData({...formData, customVaccineName: e.target.value})}
@@ -989,7 +989,7 @@ const UserAddPet = () => {
                           <input
                             type="text"
                             id="custom-vaccine-purpose"
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             placeholder="What is this vaccine for?"
                             value={formData.customVaccinePurpose || ''}
                             onChange={(e) => setFormData({...formData, customVaccinePurpose: e.target.value})}
@@ -1007,7 +1007,7 @@ const UserAddPet = () => {
                             <input
                               type="date"
                               id="custom-vaccine-date"
-                              className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                              className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                               value={formData.customVaccineDate || ''}
                               onChange={(e) => setFormData({...formData, customVaccineDate: e.target.value})}
                             />
@@ -1025,7 +1025,7 @@ const UserAddPet = () => {
                             <input
                               type="date"
                               id="custom-vaccine-next"
-                              className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                              className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                               value={formData.customVaccineNext || ''}
                               onChange={(e) => setFormData({...formData, customVaccineNext: e.target.value})}
                             />
@@ -1069,7 +1069,7 @@ const UserAddPet = () => {
                               customVaccineNext: ''
                             });
                           }}
-                          className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 flex items-center gap-2"
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center gap-2"
                         >
                           <FaPlus />
                           Add Custom Vaccine
@@ -1081,7 +1081,7 @@ const UserAddPet = () => {
                     {Object.keys(selectedVaccines).length > 0 && (
                       <div className="mt-6">
                         <h3 className="text-md font-medium text-gray-800 mb-3 flex items-center gap-2">
-                          <FaSyringe className="text-pink-500" />
+                          <FaSyringe className="text-blue-500" />
                           Selected Vaccines Details
                         </h3>
                         <div className="space-y-4">
@@ -1089,7 +1089,7 @@ const UserAddPet = () => {
                             <div key={id} className="border border-gray-200 rounded-lg p-4">
                               <div className="flex justify-between items-start mb-3">
                                 <div className="flex items-center gap-2">
-                                  <FaSyringe className="text-pink-500" />
+                                  <FaSyringe className="text-blue-500" />
                                   <span className="font-medium">{vaccine.vaccine}</span>
                                   {vaccine.is_core && (
                                     <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
@@ -1112,7 +1112,7 @@ const UserAddPet = () => {
                                   id={`vaccine-administered-${id}`}
                                   checked={vaccine.administered || false}
                                   onChange={(e) => handleVaccineDetailChange(id, 'administered', e.target.checked)}
-                                  className="h-5 w-5 text-pink-600 focus:ring-pink-500 border-gray-300 rounded"
+                                  className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                                 />
                                 <label htmlFor={`vaccine-administered-${id}`} className="ml-2 block text-sm font-medium text-gray-700">
                                   This vaccine has already been administered to my pet
@@ -1133,7 +1133,7 @@ const UserAddPet = () => {
                                       id={`vaccine-date-${id}`}
                                       value={vaccine.date || ''}
                                       onChange={(e) => handleVaccineDetailChange(id, 'date', e.target.value)}
-                                      className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                                      className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     />
                                   </div>
                                 </div>
@@ -1151,7 +1151,7 @@ const UserAddPet = () => {
                                       id={`vaccine-next-${id}`}
                                       value={vaccine.nextDue || ''}
                                       onChange={(e) => handleVaccineDetailChange(id, 'nextDue', e.target.value)}
-                                      className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                                      className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     />
                                   </div>
                                   <p className="text-xs text-gray-500 mt-1">Based on {vaccine.frequency}</p>
@@ -1168,7 +1168,7 @@ const UserAddPet = () => {
                                         id={`vaccine-batch-${id}`}
                                         value={vaccine.batch_number || ''}
                                         onChange={(e) => handleVaccineDetailChange(id, 'batch_number', e.target.value)}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                         placeholder="Enter vaccine batch number"
                                       />
                                     </div>
@@ -1182,7 +1182,7 @@ const UserAddPet = () => {
                                         id={`vaccine-by-${id}`}
                                         value={vaccine.administered_by || ''}
                                         onChange={(e) => handleVaccineDetailChange(id, 'administered_by', e.target.value)}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                         placeholder="Veterinarian name"
                                       />
                                     </div>
@@ -1196,7 +1196,7 @@ const UserAddPet = () => {
                                         id={`vaccine-clinic-${id}`}
                                         value={vaccine.clinic_name || ''}
                                         onChange={(e) => handleVaccineDetailChange(id, 'clinic_name', e.target.value)}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                         placeholder="Enter clinic name"
                                       />
                                     </div>
@@ -1212,7 +1212,7 @@ const UserAddPet = () => {
                                     value={vaccine.notes || ''}
                                     onChange={(e) => handleVaccineDetailChange(id, 'notes', e.target.value)}
                                     rows="2"
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     placeholder="Any additional information about this vaccination"
                                   />
                                 </div>
@@ -1253,7 +1253,7 @@ const UserAddPet = () => {
                     name="vetName"
                     value={formData.vetName}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Enter veterinarian name"
                   />
                 </div>
@@ -1268,7 +1268,7 @@ const UserAddPet = () => {
                     name="vetPhone"
                     value={formData.vetPhone}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Enter veterinarian phone"
                   />
                 </div>
@@ -1286,7 +1286,7 @@ const UserAddPet = () => {
                 value={formData.notes}
                 onChange={handleChange}
                 rows="3"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Any additional information about your pet"
               />
             </div>
@@ -1297,7 +1297,7 @@ const UserAddPet = () => {
             <button
               type="button"
               onClick={() => navigate('/user/pets')}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
+              className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               Cancel
             </button>

@@ -100,17 +100,17 @@ const PetCareReminders = () => {
   const completedReminders = reminders.filter(r => r.completed);
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-6 border border-pink-100">
+    <div className="bg-white rounded-xl shadow-sm p-6 border border-blue-100">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-          <FaBell className="text-pink-600" />
+          <FaBell className="text-blue-600" />
           Care Reminders
         </h2>
         <div className="flex items-center gap-2">
-          <span className="text-xs bg-pink-100 text-pink-800 px-2 py-1 rounded-full font-medium">
+          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">
             {activeReminders.length} active
           </span>
-          <button className="text-sm bg-pink-500 hover:bg-pink-600 text-white px-3 py-1 rounded-lg font-medium transition-colors flex items-center gap-1">
+          <button className="text-sm bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-lg font-medium transition-colors flex items-center gap-1">
             <FaPlus className="text-xs" />
             Add Reminder
           </button>
@@ -129,10 +129,10 @@ const PetCareReminders = () => {
             >
               <div className="flex items-start gap-3">
                 <div className={`rounded-full p-2 ${
-                  reminder.petType === 'cat' ? 'bg-purple-100' : 'bg-pink-100'
+                  reminder.petType === 'cat' ? 'bg-purple-100' : 'bg-blue-100'
                 }`}>
                   <IconComponent className={`text-sm ${
-                    reminder.petType === 'cat' ? 'text-purple-600' : 'text-pink-600'
+                    reminder.petType === 'cat' ? 'text-purple-600' : 'text-blue-600'
                   }`} />
                 </div>
 
@@ -152,7 +152,7 @@ const PetCareReminders = () => {
 
                   <div className="flex items-center gap-2 mb-2">
                     <PetIcon type={reminder.petType} className={`text-sm ${
-                      reminder.petType === 'cat' ? 'text-purple-600' : 'text-pink-600'
+                      reminder.petType === 'cat' ? 'text-purple-600' : 'text-blue-600'
                     }`} />
                     <span className="text-sm text-gray-600">{reminder.petName}</span>
                   </div>

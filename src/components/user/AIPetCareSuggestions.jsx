@@ -343,7 +343,7 @@ const AIPetCareSuggestions = ({ selectedPet }) => {
 
   if (!selectedPet) {
     return (
-      <div className="bg-white rounded-xl shadow-sm p-6 border border-pink-100">
+      <div className="bg-white rounded-xl shadow-sm p-6 border border-blue-100">
         <div className="text-center py-8">
           <FaRobot className="text-gray-400 text-4xl mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-gray-600 mb-2">Select a Pet</h3>
@@ -354,13 +354,13 @@ const AIPetCareSuggestions = ({ selectedPet }) => {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-pink-100 overflow-hidden">
+    <div className="bg-white rounded-xl shadow-sm border border-blue-100 overflow-hidden">
       {/* Header */}
-      <div className="bg-gradient-to-r from-pink-50 to-purple-50 px-6 py-4 border-b border-pink-100">
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 px-6 py-4 border-b border-blue-100">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="bg-pink-100 p-2 rounded-lg">
-              <FaRobot className="text-pink-600 text-xl" />
+            <div className="bg-blue-100 p-2 rounded-lg">
+              <FaRobot className="text-blue-600 text-xl" />
             </div>
             <div>
               <h2 className="text-lg font-semibold text-gray-800">
@@ -374,7 +374,7 @@ const AIPetCareSuggestions = ({ selectedPet }) => {
           <button
             onClick={fetchSuggestions}
             disabled={loading}
-            className="flex items-center gap-2 px-3 py-2 bg-pink-100 text-pink-700 rounded-lg hover:bg-pink-200 transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors disabled:opacity-50"
           >
             <FaSyncAlt className={loading ? 'animate-spin' : ''} />
             Refresh
@@ -386,7 +386,7 @@ const AIPetCareSuggestions = ({ selectedPet }) => {
       <div className="p-6">
         {loading && (
           <div className="text-center py-8">
-            <FaSpinner className="text-pink-600 text-3xl mx-auto mb-4 animate-spin" />
+            <FaSpinner className="text-blue-600 text-3xl mx-auto mb-4 animate-spin" />
             <h3 className="text-lg font-semibold text-gray-700 mb-2">Generating Recommendations</h3>
             <p className="text-gray-500">Our AI is analyzing {(selectedPet.pet_name || selectedPet.name)}'s profile...</p>
           </div>

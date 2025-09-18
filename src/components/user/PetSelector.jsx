@@ -4,10 +4,10 @@ import { PetIcon } from '../layout/PetIcons';
 
 const PetSelector = ({ pets, selectedPet, onPetSelect }) => {
   return (
-    <div className="bg-white rounded-xl shadow-sm p-4 border border-pink-100 mb-6">
+    <div className="bg-white rounded-xl shadow-sm p-4 border border-blue-100 mb-6">
       <div className="flex items-center gap-3 mb-4">
-        <div className="bg-pink-100 p-2 rounded-lg">
-          <FaPaw className="text-pink-600" />
+        <div className="bg-blue-100 p-2 rounded-lg">
+          <FaPaw className="text-blue-600" />
         </div>
         <h3 className="text-lg font-semibold text-gray-800">Select Pet for AI Recommendations</h3>
       </div>
@@ -19,8 +19,8 @@ const PetSelector = ({ pets, selectedPet, onPetSelect }) => {
             onClick={() => onPetSelect(pet)}
             className={`p-4 rounded-lg border-2 transition-all duration-200 text-left ${
               selectedPet?.pet_id === pet.pet_id
-                ? 'border-pink-500 bg-pink-50 shadow-md'
-                : 'border-gray-200 hover:border-pink-300 hover:bg-pink-25'
+                ? 'border-blue-500 bg-blue-50 shadow-md'
+                : 'border-gray-200 hover:border-blue-300 hover:bg-blue-25'
             }`}
           >
             <div className="flex items-center gap-3">
@@ -36,14 +36,14 @@ const PetSelector = ({ pets, selectedPet, onPetSelect }) => {
                   <h4 className="font-semibold text-gray-800 truncate">{pet.name}</h4>
                   <PetIcon 
                     type={pet.type} 
-                    className={`text-sm ${pet.type === 'cat' ? 'text-purple-600' : 'text-pink-600'}`} 
+                    className={`text-sm ${pet.type === 'cat' ? 'text-purple-600' : 'text-blue-600'}`} 
                   />
                 </div>
                 <p className="text-sm text-gray-600 truncate">{pet.breed}</p>
                 <p className="text-xs text-gray-500">{pet.age} • {pet.weight}</p>
               </div>
               {selectedPet?.pet_id === pet.pet_id && (
-                <div className="text-pink-600">
+                <div className="text-blue-600">
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>

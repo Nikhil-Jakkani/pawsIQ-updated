@@ -389,8 +389,8 @@ const UserBookAppointment = () => {
                   onClick={() => handlePetSelect(pet.id)}
                   className={`bg-white rounded-xl overflow-hidden border cursor-pointer transition-all
                     ${formData.petId === pet.id 
-                      ? 'border-purple-500 ring-2 ring-purple-200 shadow-md' 
-                      : 'border-gray-200 hover:border-purple-300 hover:shadow-sm'}`}
+                      ? 'border-blue-500 ring-2 ring-blue-200 shadow-md' 
+                      : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'}`}
                 >
                   <div className="h-40 overflow-hidden">
                     <img 
@@ -424,7 +424,7 @@ const UserBookAppointment = () => {
                     <p className="text-gray-500 text-sm capitalize">{pet.type}</p>
                     
                     {formData.petId === pet.id && (
-                      <div className="mt-2 text-purple-600 flex items-center gap-1">
+                      <div className="mt-2 text-blue-600 flex items-center gap-1">
                         <FaCheck />
                         <span className="text-sm font-medium">Selected</span>
                       </div>
@@ -437,8 +437,8 @@ const UserBookAppointment = () => {
                 onClick={() => navigate('/user/pets/add')}
                 className="bg-gray-50 rounded-xl border border-dashed border-gray-300 flex flex-col items-center justify-center p-6 cursor-pointer hover:bg-gray-100 transition-colors"
               >
-                <div className="bg-purple-100 w-16 h-16 rounded-full flex items-center justify-center mb-3">
-                  <FaPaw className="text-purple-600 text-xl" />
+                <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mb-3">
+                  <FaPaw className="text-blue-600 text-xl" />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-800">Add a New Pet</h3>
                 <p className="text-gray-500 text-sm text-center mt-1">
@@ -451,7 +451,7 @@ const UserBookAppointment = () => {
               <button
                 onClick={nextStep}
                 disabled={!formData.petId}
-                className={`px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 flex items-center gap-2
+                className={`px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center gap-2
                   ${!formData.petId ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <span>Continue</span>
@@ -475,7 +475,7 @@ const UserBookAppointment = () => {
                   <input
                     type="text"
                     placeholder="Search services (e.g., vaccination, grooming, training)"
-                    className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     onChange={(e) => {
                       const q = e.target.value.toLowerCase();
                       // if user types, soft-select the first matching type
@@ -491,7 +491,7 @@ const UserBookAppointment = () => {
                   <select
                     value={formData.serviceType}
                     onChange={(e) => handleServiceTypeSelect(e.target.value)}
-                    className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="">All Types</option>
                     {serviceTypes.map(type => (
@@ -508,9 +508,9 @@ const UserBookAppointment = () => {
                     key={type.id}
                     type="button"
                     onClick={() => handleServiceTypeSelect(type.id)}
-                    className={`text-left p-3 rounded-lg border transition-all hover:shadow-sm ${formData.serviceType === type.id ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-purple-300'}`}
+                    className={`text-left p-3 rounded-lg border transition-all hover:shadow-sm ${formData.serviceType === type.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}
                   >
-                    <div className="text-xl text-purple-600"><type.icon /></div>
+                    <div className="text-xl text-blue-600"><type.icon /></div>
                     <div className="text-sm font-medium mt-1">{type.name}</div>
                     <div className="text-xs text-gray-500 line-clamp-2">{type.description}</div>
                   </button>
@@ -526,7 +526,7 @@ const UserBookAppointment = () => {
                       <div
                         key={service.services_id}
                         onClick={() => handleServiceSelect(service.services_id)}
-                        className={`bg-white rounded-lg p-4 border cursor-pointer transition-all ${formData.serviceId === service.services_id ? 'border-purple-500 ring-2 ring-purple-200 shadow-sm' : 'border-gray-200 hover:border-purple-300'}`}
+                        className={`bg-white rounded-lg p-4 border cursor-pointer transition-all ${formData.serviceId === service.services_id ? 'border-blue-500 ring-2 ring-blue-200 shadow-sm' : 'border-gray-200 hover:border-blue-300'}`}
                       >
                         <div className="flex justify-between items-start">
                           <div>
@@ -543,7 +543,7 @@ const UserBookAppointment = () => {
                             </div>
                           </div>
                           {Number(formData.serviceId) === service.services_id && (
-                            <div className="text-purple-600">
+                            <div className="text-blue-600">
                               <FaCheck />
                             </div>
                           )}
@@ -558,14 +558,14 @@ const UserBookAppointment = () => {
             <div className="flex justify-between">
               <button
                 onClick={prevStep}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
                 Back
               </button>
               <button
                 onClick={nextStep}
                 disabled={!formData.serviceId}
-                className={`px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 flex items-center gap-2
+                className={`px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center gap-2
                   ${!formData.serviceId ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <span>Continue</span>
@@ -596,8 +596,8 @@ const UserBookAppointment = () => {
                     onClick={() => handleProviderSelect(provider.id)}
                     className={`bg-white rounded-xl p-4 border cursor-pointer transition-all
                       ${formData.providerId === provider.id 
-                        ? 'border-purple-500 ring-2 ring-purple-200 shadow-md' 
-                        : 'border-gray-200 hover:border-purple-300 hover:shadow-sm'}`}
+                        ? 'border-blue-500 ring-2 ring-blue-200 shadow-md' 
+                        : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'}`}
                   >
                     <div className="flex items-center gap-4">
                       <div className="flex-shrink-0">
@@ -623,7 +623,7 @@ const UserBookAppointment = () => {
                       </div>
                       
                       {formData.providerId === provider.id && (
-                        <div className="text-purple-600">
+                        <div className="text-blue-600">
                           <FaCheck size={20} />
                         </div>
                       )}
@@ -643,14 +643,14 @@ const UserBookAppointment = () => {
             <div className="flex justify-between">
               <button
                 onClick={prevStep}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
                 Back
               </button>
               <button
                 onClick={nextStep}
                 disabled={!formData.providerId}
-                className={`px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 flex items-center gap-2
+                className={`px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center gap-2
                   ${!formData.providerId ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <span>Continue</span>
@@ -684,8 +684,8 @@ const UserBookAppointment = () => {
                         onClick={() => handleDateSelect(date)}
                         className={`p-3 border rounded-lg text-center cursor-pointer transition-colors
                           ${formData.date === date 
-                            ? 'bg-purple-100 border-purple-500 text-purple-700' 
-                            : 'border-gray-200 hover:border-purple-300'}`}
+                            ? 'bg-blue-100 border-blue-500 text-blue-700' 
+                            : 'border-gray-200 hover:border-blue-300'}`}
                       >
                         <p className="text-sm font-medium">{formattedDate}</p>
                       </div>
@@ -704,8 +704,8 @@ const UserBookAppointment = () => {
                         onClick={() => handleTimeSlotSelect(time)}
                         className={`p-3 border rounded-lg text-center cursor-pointer transition-colors
                           ${formData.timeSlot === time 
-                            ? 'bg-purple-100 border-purple-500 text-purple-700' 
-                            : 'border-gray-200 hover:border-purple-300'}`}
+                            ? 'bg-blue-100 border-blue-500 text-blue-700' 
+                            : 'border-gray-200 hover:border-blue-300'}`}
                       >
                         <p className="text-sm font-medium">{time}</p>
                       </div>
@@ -725,7 +725,7 @@ const UserBookAppointment = () => {
                 value={formData.notes}
                 onChange={handleChange}
                 rows="3"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Any special instructions or information for the provider"
               />
             </div>
@@ -733,14 +733,14 @@ const UserBookAppointment = () => {
             <div className="flex justify-between">
               <button
                 onClick={prevStep}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
                 Back
               </button>
               <button
                 onClick={nextStep}
                 disabled={!formData.date || !formData.timeSlot}
-                className={`px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 flex items-center gap-2
+                className={`px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center gap-2
                   ${(!formData.date || !formData.timeSlot) ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <span>Review & Confirm</span>
@@ -759,8 +759,8 @@ const UserBookAppointment = () => {
         return (
           <div className="max-w-3xl mx-auto space-y-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-purple-50">
-                <FaCalendarCheck className="text-purple-600" />
+              <div className="p-2 rounded-lg bg-blue-50">
+                <FaCalendarCheck className="text-blue-600" />
               </div>
               <div>
                 <h2 className="text-lg font-bold text-gray-800">Review & Confirm</h2>
@@ -884,7 +884,7 @@ const UserBookAppointment = () => {
                 <div className="space-y-1 text-sm">
                   <div className="flex justify-between"><span className="text-gray-600">Service Fee</span><span className="font-medium text-gray-800">{formatINR(selectedService?.service_price_amt || 0)}</span></div>
                   <div className="flex justify-between"><span className="text-gray-600">Tax (8%)</span><span className="font-medium text-gray-800">{formatINR(Number(selectedService?.service_price_amt || 0) * 0.08)}</span></div>
-                  <div className="border-t border-gray-200 my-2 pt-2 flex justify-between"><span className="font-medium text-gray-800">Total</span><span className="font-bold text-purple-700">{formatINR(Number(selectedService?.service_price_amt || 0) * 1.08)}</span></div>
+                  <div className="border-t border-gray-200 my-2 pt-2 flex justify-between"><span className="font-medium text-gray-800">Total</span><span className="font-bold text-blue-700">{formatINR(Number(selectedService?.service_price_amt || 0) * 1.08)}</span></div>
                 </div>
               </div>
             </div>
@@ -893,14 +893,14 @@ const UserBookAppointment = () => {
             <div className="flex justify-between">
               <button
                 onClick={prevStep}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
                 Back
               </button>
               <button
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className={`px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 flex items-center gap-2 ${
+                className={`px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center gap-2 ${
                   isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
                 }`}
               >
@@ -934,14 +934,14 @@ const UserBookAppointment = () => {
         <div className="flex items-center gap-4">
           <button 
             onClick={() => navigate('/user/appointments')}
-            className="p-2 bg-white rounded-full shadow-sm border border-gray-200 text-gray-500 hover:text-purple-600 transition-colors"
+            className="p-2 bg-white rounded-full shadow-sm border border-gray-200 text-gray-500 hover:text-blue-600 transition-colors"
           >
             <FaArrowLeft />
           </button>
           <div>
             <div className="flex items-center gap-3">
-              <div className="bg-purple-100 p-2 rounded-lg">
-                <FaCalendarAlt className="text-purple-600 text-2xl" />
+              <div className="bg-blue-100 p-2 rounded-lg">
+                <FaCalendarAlt className="text-blue-600 text-2xl" />
               </div>
               <h1 className="text-2xl font-bold text-gray-800">Book an Appointment</h1>
             </div>
@@ -962,14 +962,14 @@ const UserBookAppointment = () => {
                   <div 
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium
                       ${isActive 
-                        ? 'bg-purple-600 text-white' 
+                        ? 'bg-blue-600 text-white' 
                         : isCompleted 
                           ? 'bg-green-500 text-white' 
                           : 'bg-gray-200 text-gray-600'}`}
                   >
                     {isCompleted ? <FaCheck size={12} /> : stepNumber}
                   </div>
-                  <span className={`text-xs mt-1 ${isActive ? 'text-purple-600 font-medium' : 'text-gray-500'}`}>
+                  <span className={`text-xs mt-1 ${isActive ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>
                     {step}
                   </span>
                 </div>
@@ -979,7 +979,7 @@ const UserBookAppointment = () => {
           <div className="relative mt-2">
             <div className="absolute top-0 left-0 h-1 bg-gray-200 w-full rounded-full"></div>
             <div 
-              className="absolute top-0 left-0 h-1 bg-purple-600 rounded-full transition-all duration-300"
+              className="absolute top-0 left-0 h-1 bg-blue-600 rounded-full transition-all duration-300"
               style={{ width: `${(currentStep - 1) * 25}%` }}
             ></div>
           </div>
