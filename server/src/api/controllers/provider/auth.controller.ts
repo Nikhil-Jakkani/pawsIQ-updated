@@ -31,6 +31,9 @@ const login = catchAsync(async (req: Request, res: Response) => {
 // Social logins for providers
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID;
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
+const FB_GRAPH_VERSION = process.env.FACEBOOK_GRAPH_API_VERSION || 'v19.0';
+const FACEBOOK_APP_ID = process.env.FACEBOOK_APP_ID || process.env.VITE_FACEBOOK_APP_ID;
+const FACEBOOK_APP_SECRET = process.env.FACEBOOK_APP_SECRET;
 
 const googleLogin = catchAsync(async (req: Request, res: Response) => {
   const { credential } = req.body as { credential: string };
@@ -102,8 +105,32 @@ const facebookLogin = catchAsync(async (req: Request, res: Response) => {
     return res.status(httpStatus.BAD_REQUEST).json({ error: 'Invalid Facebook token' });
   }
 
+  // Optional server-side token introspection using debug_token if App ID and Secret are configured
+  if (FACEBOOK_APP_ID && FACEBOOK_APP_SECRET) {
+    try {
+      const appAccessToken = `${FACEBOOK_APP_ID}|${FACEBOOK_APP_SECRET}`;
+      const debugResp = await axios.get(
+        `https://graph.facebook.com/${FB_GRAPH_VERSION}/debug_token`,
+        { params: { input_token: accessToken, access_token: appAccessToken } }
+      );
+      const debugData = debugResp.data && debugResp.data.data ? debugResp.data.data : null;
+      if (!debugData || !debugData.is_valid) {
+        return res.status(httpStatus.UNAUTHORIZED).json({ error: 'Facebook token is not valid' });
+      }
+      if (debugData.app_id && FACEBOOK_APP_ID && debugData.app_id !== FACEBOOK_APP_ID) {
+        return res.status(httpStatus.UNAUTHORIZED).json({ error: 'Facebook token issued for a different app' });
+      }
+      if (debugData.user_id && userID && debugData.user_id !== userID) {
+        return res.status(httpStatus.UNAUTHORIZED).json({ error: 'Facebook token does not match the provided user' });
+      }
+    } catch (err: any) {
+      console.error('Provider Facebook debug_token validation failed:', err?.response?.data || err);
+      return res.status(httpStatus.UNAUTHORIZED).json({ error: 'Failed Facebook token validation' });
+    }
+  }
+
   const { data } = await axios.get(
-    `https://graph.facebook.com/v13.0/me?fields=id,name,email,picture&access_token=${accessToken}`
+    `https://graph.facebook.com/${FB_GRAPH_VERSION}/me?fields=id,name,email,picture&access_token=${accessToken}`
   );
   if (data.id !== userID) {
     return res.status(httpStatus.BAD_REQUEST).json({ error: 'Invalid Facebook user' });
