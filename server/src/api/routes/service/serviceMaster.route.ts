@@ -7,5 +7,6 @@ const router = express.Router();
 router.get('/services', auth('user'), serviceMasterController.list);
 router.get('/services/:services_id', auth('user'), serviceMasterController.get);
 router.get('/services/:services_id/providers', auth('user'), serviceMasterController.listProviders);
+router.delete('/services/:services_id', auth('admin'), serviceMasterController.remove);
 
 export default router;

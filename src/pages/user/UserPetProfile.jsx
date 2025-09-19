@@ -336,7 +336,7 @@ const UserPetProfile = () => {
         <div className="flex items-center gap-4">
           <button
             onClick={() => navigate('/user/pets')}
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-gray-700 hover:bg-gray-50"
+            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-gray-700 "
           >
             <FaArrowLeft /> Back
           </button>
@@ -380,20 +380,20 @@ const UserPetProfile = () => {
                       {!isEditing && (
                         <button
                           onClick={() => setIsEditing(true)}
-                          className="rounded-lg bg-gray-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-gray-800"
+                          className="rounded-lg bg-gray-900 px-3 py-2 text-sm font-medium text-white transition "
                         >
                           <FaEdit className="mr-1 inline" /> Edit
                         </button>
                       )}
                       <button
                         onClick={() => navigate(`/user/pets/${pet.id}/health-records`)}
-                        className="rounded-lg bg-gray-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-gray-700"
+                        className="rounded-lg bg-gray-600 px-3 py-2 text-sm font-medium text-white transition "
                       >
                         <FaFileMedical className="mr-1 inline" /> Health Records
                       </button>
                       <button
                         onClick={() => navigate(`/user/pets/${pet.id}/health-records?type=prescription`)}
-                        className="rounded-lg bg-pink-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-pink-700"
+                        className="rounded-lg bg-pink-600 px-3 py-2 text-sm font-medium text-white transition "
                       >
                         <FaFileMedical className="mr-1 inline" /> Prescriptions
                       </button>
@@ -466,7 +466,7 @@ const UserPetProfile = () => {
                                     <button
                                       type="button"
                                       onClick={() => navigator.clipboard?.writeText?.(pet.microchipNumber)}
-                                      className="rounded border border-gray-300 px-2 py-0.5 text-xs text-gray-600 hover:bg-gray-50"
+                                      className="rounded border border-gray-300 px-2 py-0.5 text-xs text-gray-600 "
                                       title="Copy"
                                     >
                                       <FaCopy />
@@ -583,7 +583,7 @@ const UserPetProfile = () => {
                             <div className="max-h-48 overflow-auto rounded-lg border border-gray-200 bg-gray-50 p-3">
                               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                                 {(loadingMeta ? fallbackAllergies : allergiesOptions).map((opt) => (
-                                  <label key={opt} className="flex cursor-pointer items-center gap-2 rounded-md bg-white px-2 py-2 shadow-sm ring-1 ring-gray-200 hover:bg-gray-50">
+                                  <label key={opt} className="flex cursor-pointer items-center gap-2 rounded-md bg-white px-2 py-2 shadow-sm ring-1 ring-gray-200 ">
                                     <input
                                       type="checkbox"
                                       className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500"
@@ -609,7 +609,7 @@ const UserPetProfile = () => {
                             <div className="max-h-48 overflow-auto rounded-lg border border-gray-200 bg-gray-50 p-3">
                               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                                 {(loadingMeta ? fallbackMedicalConditions : medicalConditionsOptions).map((opt) => (
-                                  <label key={opt} className="flex cursor-pointer items-center gap-2 rounded-md bg-white px-2 py-2 shadow-sm ring-1 ring-gray-200 hover:bg-gray-50">
+                                  <label key={opt} className="flex cursor-pointer items-center gap-2 rounded-md bg-white px-2 py-2 shadow-sm ring-1 ring-gray-200 ">
                                     <input
                                       type="checkbox"
                                       className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500"
@@ -664,14 +664,14 @@ const UserPetProfile = () => {
                   <button
                     onClick={handleCancel}
                     disabled={saving}
-                    className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+                    className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700  disabled:opacity-60"
                   >
                     <FaTimes className="mr-1 inline" /> Cancel
                   </button>
                   <button
                     onClick={handleSave}
                     disabled={saving}
-                    className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-green-700 disabled:opacity-60"
+                    className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition  disabled:opacity-60"
                   >
                     <FaSave className="mr-1 inline" /> {saving ? 'Saving...' : 'Save Changes'}
                   </button>
