@@ -107,7 +107,9 @@ const UserPetProfile = () => {
             options = data;
             break;
           }
-        } catch {}
+        } catch (e) {
+          console.error(e);
+        }
       }
       const allergiesFromApi = Array.isArray(options?.allergies) ? options.allergies : fallbackAllergies;
       const medFromApi = Array.isArray(options?.medicalConditions) ? options.medicalConditions : fallbackMedicalConditions;
@@ -367,7 +369,7 @@ const UserPetProfile = () => {
                   {pet.imagePath ? (
                     <img src={pet.imagePath} alt={pet.name} className="h-full w-full object-cover" />
                   ) : (
-                    <FaPaw className="text-4xl text-gray-400" />
+                   <img src="/7.png" alt="Default Pet" className="h-full w-full object-cover" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -421,82 +423,84 @@ const UserPetProfile = () => {
                         )}
                       </div>
 
-                      <div className="grid gap-8 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-gray-100">
-                        {/* Basic info */}
-                        <div className="pt-0 md:pt-1 md:pr-6">
-                          <div className="mb-2 flex items-center justify-between">
-                            <h3 className={sectionTitleCls}>Basic Profile</h3>
-                            <span className={sectionDescCls}>Overview</span>
-                          </div>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
-                            <Field label="Type" value={pet.type || '-'} icon={<FaPaw className="text-pink-500" />} />
-                            <Field label="Gender" value={pet.gender || '-'} icon={<FaVenusMars className="text-blue-500" />} />
-                            <Field label="Breed" value={pet.breed || '-'} icon={<FaStethoscope className="text-gray-500" />} />
-                            <Field
-                              label="Birth Date"
-                              icon={<FaBirthdayCake className="text-amber-500" />}
-                              value={
-                                <span className="inline-flex items-center gap-2">
-                                  <FaCalendarAlt className="text-gray-400" />
-                                  {pet.birthdate ? String(pet.birthdate).split('T')[0] : '-'}
-                                </span>
-                              }
-                            />
-                            <Field label="Weight" value={pet.weight ? `${pet.weight} kg` : '-'} icon={<FaWeight className="text-gray-500" />} />
-                            <Field label="Color" value={pet.color || '-'} icon={<FaPalette className="text-gray-500" />} />
-                            <Field label="Age Group" value={pet.ageGroup || '-'} icon={<FaCalendarAlt className="text-gray-500" />} />
-                          </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <h3 className="text-lg font-semibold mb-2">Basic Information</h3>
+                          <table className="min-w-full divide-y divide-gray-200">
+                            <tbody className="bg-white divide-y divide-gray-200">
+                              <tr>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-left">Type</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-left">{pet.type || '-'}</td>
+                              </tr>
+                              <tr>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-left">Gender</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-left">{pet.gender || '-'}</td>
+                              </tr>
+                              <tr>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-left">Breed</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-left">{pet.breed || '-'}</td>
+                              </tr>
+                              <tr>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-left">Birth Date</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-left">{pet.birthdate ? String(pet.birthdate).split('T')[0] : '-'}</td>
+                              </tr>
+                              <tr>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-left">Weight</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-left">{pet.weight ? `${pet.weight} kg` : '-'}</td>
+                              </tr>
+                              <tr>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-left">Color</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-left">{pet.color || '-'}</td>
+                              </tr>
+                              <tr>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-left">Age Group</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-left">{pet.ageGroup || '-'}</td>
+                              </tr>
+                            </tbody>
+                          </table>
                         </div>
-
-                        {/* Health info */}
-                        <div className="pt-6 md:pt-1 md:pl-6">
-                          <div className="mb-2 flex items-center justify-between">
-                            <h3 className={sectionTitleCls}>Health Information</h3>
-                            <span className={sectionDescCls}>Medical basics</span>
-                          </div>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
-                            <Field label="Microchipped" value={pet.microchipped ? 'Yes' : 'No'} icon={pet.microchipped ? <FaCheckCircle className="text-green-600" /> : <FaTimesCircle className="text-gray-400" />} />
-                            <Field
-                              label="Microchip Number"
-                              icon={<FaMicrochip className="text-gray-600" />}
-                              value={
-                                pet.microchipNumber ? (
-                                  <span className="inline-flex items-center gap-2 flex-wrap">
-                                    <span className="font-mono break-all">{pet.microchipNumber}</span>
-                                    <button
-                                      type="button"
-                                      onClick={() => navigator.clipboard?.writeText?.(pet.microchipNumber)}
-                                      className="rounded border border-gray-300 px-2 py-0.5 text-xs text-gray-600 "
-                                      title="Copy"
-                                    >
-                                      <FaCopy />
-                                    </button>
-                                  </span>
-                                ) : (
-                                  '-' 
-                                )
-                              }
-                            />
-                            <Field label="Neutered/Spayed" value={pet.neutered ? 'Yes' : 'No'} icon={pet.neutered ? <FaCheckCircle className="text-green-600" /> : <FaTimesCircle className="text-gray-400" />} />
-                            <div className="col-span-2">
-                              <Field label="Allergies" icon={<FaExclamationTriangle className="text-amber-500" />} value={pet.allergies ? <Chips value={pet.allergies} /> : '-'} />
-                            </div>
-                            <div className="col-span-2">
-                              <Field label="Medical Conditions" icon={<FaStethoscope className="text-blue-600" />} value={pet.medicalConditions ? <Chips value={pet.medicalConditions} /> : '-'} />
-                            </div>
-                            <div className="col-span-2">
-                              <Field label="Medications" icon={<FaPills className="text-purple-600" />} value={pet.medications || '-'} />
-                            </div>
-                            <div className="col-span-2">
-                              <Field label="Dietary Needs" icon={<FaUtensils className="text-rose-600" />} value={pet.dietaryNeeds || '-'} />
-                            </div>
-                            <div className="col-span-2">
-                              <Field label="Veterinarian" icon={<FaUserMd className="text-emerald-600" />} value={`${pet.vetName || '-'}${pet.vetPhone ? ` (${pet.vetPhone})` : ''}`} />
-                            </div>
-                            <div className="col-span-2">
-                              <Field label="Notes" icon={<FaStickyNote className="text-gray-500" />} value={pet.notes || '-'} />
-                            </div>
-                          </div>
+                        <div>
+                          <h3 className="text-lg font-semibold mb-2">Health Information</h3>
+                          <table className="min-w-full divide-y divide-gray-200">
+                            <tbody className="bg-white divide-y divide-gray-200">
+                              <tr>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-left">Microchipped</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-left">{pet.microchipped ? 'Yes' : 'No'}</td>
+                              </tr>
+                              <tr>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-left">Microchip Number</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-left">{pet.microchipNumber || '-'}</td>
+                              </tr>
+                              <tr>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-left">Neutered/Spayed</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-left">{pet.neutered ? 'Yes' : 'No'}</td>
+                              </tr>
+                              <tr>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-left">Allergies</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-left">{pet.allergies || '-'}</td>
+                              </tr>
+                              <tr>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-left">Medical Conditions</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-left">{pet.medicalConditions || '-'}</td>
+                              </tr>
+                              <tr>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-left">Medications</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-left">{pet.medications || '-'}</td>
+                              </tr>
+                              <tr>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-left">Dietary Needs</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-left">{pet.dietaryNeeds || '-'}</td>
+                              </tr>
+                              <tr>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-left">Veterinarian</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-left">{`${pet.vetName || '-'}${pet.vetPhone ? ` (${pet.vetPhone})` : ''}`}</td>
+                              </tr>
+                              <tr>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-left">Notes</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-left">{pet.notes || '-'}</td>
+                              </tr>
+                            </tbody>
+                          </table>
                         </div>
                       </div>
                     </div>
