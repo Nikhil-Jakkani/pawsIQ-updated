@@ -113,9 +113,9 @@ export default function UserRescheduleAppointment() {
               {/* Current details */}
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-5">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                  <div className="flex items-center gap-2"><FaCalendarAlt className="text-purple-600" /><span>{new Date(appt.appointment_date).toLocaleString()}</span></div>
-                  <div className="flex items-center gap-2"><FaClock className="text-purple-600" /><span>{appt.appointment_type}</span></div>
-                  <div className="flex items-center gap-2 md:col-span-2"><FaMapMarkerAlt className="text-purple-600" /><span>{appt.appointment_comments || 'No notes'}</span></div>
+                  <div className="flex items-center gap-2"><FaCalendarAlt className="text-blue-600" /><span>{new Date(appt.appointment_date).toLocaleString()}</span></div>
+                  <div className="flex items-center gap-2"><FaClock className="text-blue-600" /><span>{appt.appointment_type}</span></div>
+                  <div className="flex items-center gap-2 md:col-span-2"><FaMapMarkerAlt className="text-blue-600" /><span>{appt.appointment_comments || 'No notes'}</span></div>
                 </div>
               </div>
 

@@ -130,23 +130,23 @@ const UserAppointmentConfirmation = () => {
             </div>
           </div>
 
-          <div className="mt-6 bg-purple-50 p-4 rounded-lg border border-purple-100">
+          <div className="mt-6 bg-blue-50 p-4 rounded-lg border border-blue-100">
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Total Paid</span>
-              <span className="font-bold text-purple-800">${appointment?.total?.toFixed ? appointment.total.toFixed(2) : (appointment?.total || 0)}</span>
+              <span className="font-bold text-blue-800">${appointment?.total?.toFixed ? appointment.total.toFixed(2) : (appointment?.total || 0)}</span>
             </div>
           </div>
 
           <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
             <button
               onClick={handleGoToAppointments}
-              className="px-5 py-2.5 rounded-lg bg-purple-600 text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+              className="px-5 py-2.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               View My Appointments
             </button>
             <button
               onClick={handleBookAnother}
-              className="px-5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+              className="px-5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               Book Another Appointment
             </button>

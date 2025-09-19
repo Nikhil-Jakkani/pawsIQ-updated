@@ -64,9 +64,16 @@ export default function UserAppointmentDetails() {
         if (!cancelled) setPetsById(petMap);
 
         // Load this appointment
-        const res = await fetch(`${API_URL}/appointments/${id}`, {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        });
+        let res;
+        if (String(id).startsWith('B')) {
+          res = await fetch(`${API_URL}/bookings/${id}`, {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          });
+        } else {
+          res = await fetch(`${API_URL}/appointments/${id}`, {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          });
+        }
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data?.message || 'Failed to load appointment');
         if (!cancelled) setAppt(data);
@@ -115,8 +122,8 @@ export default function UserAppointmentDetails() {
     }
   };
 
-  const petInfo = appt ? petsById[String(appt.pet_id)] || {} : {};
-  const { date, time } = appt ? formatDateTime(appt.appointment_date) : { date: '', time: '' };
+  const petInfo = appt ? petsById[String(appt.pet_id || appt.petId)] || {} : {};
+  const { date, time } = appt ? formatDateTime(appt.appointment_date || appt.booked_dtm) : { date: '', time: '' };
 
   return (
     <UserLayout>
@@ -153,7 +160,7 @@ export default function UserAppointmentDetails() {
                     <div>
                       <h3 className="text-lg font-bold text-gray-800 mb-1">{appt.appointment_type}</h3>
                       <div className="flex items-center gap-2 text-gray-600 text-sm">
-                        <FaPaw className="text-purple-500" />
+                        <FaPaw className="text-blue-500" />
                         <span className="font-medium">{petInfo.name || 'Pet'}</span>
                         {petInfo.type ? (<><span className="text-gray-400">•</span><span className="capitalize">{petInfo.type}</span></>) : null}
                       </div>
@@ -168,8 +175,8 @@ export default function UserAppointmentDetails() {
                 {/* Date & Time */}
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                    <div className="flex items-center gap-2"><FaCalendarAlt className="text-purple-600" /><span>{date}</span></div>
-                    <div className="flex items-center gap-2"><FaClock className="text-purple-600" /><span>{time}</span></div>
+                    <div className="flex items-center gap-2"><FaCalendarAlt className="text-blue-600" /><span>{date}</span></div>
+                    <div className="flex items-center gap-2"><FaClock className="text-blue-600" /><span>{time}</span></div>
                   </div>
                 </div>
 
@@ -189,7 +196,7 @@ export default function UserAppointmentDetails() {
                 {/* Location & Notes */}
                 <div className="space-y-3 mb-6">
                   <div className="flex items-center gap-3">
-                    <FaMapMarkerAlt className="text-purple-500" />
+                    <FaMapMarkerAlt className="text-blue-500" />
                     <div>
                       <p className="text-sm font-medium text-gray-800">{appt.location || '—'}</p>
                       <p className="text-xs text-gray-500">{appt.address || '—'}</p>
