@@ -111,7 +111,7 @@ const PetProfiles = () => {
                     </p>
                   </div>
                   <div className="flex space-x-3">
-                    <button className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700">
+                    <button className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md">
                       <FaEdit className="inline mr-1" /> Edit
                     </button>
                   </div>
@@ -349,7 +349,7 @@ const PetProfiles = () => {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="flex items-center gap-3">
-            <Link to="/pets" className="text-gray-500 hover:text-indigo-600">
+            <Link to="/pets" className="text-gray-500">
               <FaArrowLeft />
             </Link>
             <div>
@@ -359,7 +359,7 @@ const PetProfiles = () => {
           </div>
           <div className="flex flex-wrap gap-3">
             <button 
-              className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md flex items-center gap-2 hover:bg-gray-50 transition-colors"
+              className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md flex items-center gap-2"
               onClick={() => {
                 // Create a CSV string from the filtered pets
                 const headers = ['ID', 'Name', 'Species', 'Breed', 'Age', 'Gender', 'Owner Name', 'Owner Email', 'Status', 'Microchipped', 'Neutered', 'Vaccinated'];
@@ -447,7 +447,7 @@ const PetProfiles = () => {
         {/* Pets Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredAndSortedPets.map((pet) => (
-            <div key={pet.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+            <div key={pet.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
               <div className="relative h-48 overflow-hidden">
                 <img 
                   src={pet.profileImage} 
@@ -488,7 +488,7 @@ const PetProfiles = () => {
                 </div>
                 <button
                   onClick={() => handleViewPet(pet)}
-                  className="w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
+                  className="w-full px-4 py-2 bg-indigo-600 text-white rounded-md flex items-center justify-center gap-2"
                 >
                   <FaEye /> View Profile
                 </button>
@@ -506,7 +506,7 @@ const PetProfiles = () => {
                   <h2 className="text-xl font-bold text-gray-800">Pet Profile: {currentPet.name}</h2>
                   <button 
                     onClick={() => setShowPetModal(false)}
-                    className="text-gray-500 hover:text-gray-700"
+                    className="text-gray-500"
                   >
                     &times;
                   </button>
@@ -695,7 +695,7 @@ const PetProfiles = () => {
                     onClick={() => {
                       setShowPetModal(false);
                     }}
-                    className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+                    className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md"
                   >
                     Close
                   </button>
@@ -728,7 +728,7 @@ const PetProfiles = () => {
                       // Close the modal
                       setShowPetModal(false);
                     }}
-                    className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors flex items-center gap-2"
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-md flex items-center gap-2"
                   >
                     <FaEdit /> Edit Profile
                   </button>

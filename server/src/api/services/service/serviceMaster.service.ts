@@ -51,8 +51,16 @@ const listProvidersForService = async (services_id: number) => {
   return fallback.map(serializeBigInt);
 };
 
+const removeService = async (services_id: number) => {
+  const existing = await prisma.pIQ_Service_Master.findUnique({ where: { services_id } });
+  if (!existing) throw new Error('Service not found');
+  await prisma.pIQ_Service_Master.delete({ where: { services_id } });
+  return { success: true };
+};
+
 export const serviceMasterService = {
   listServices,
   getService,
   listProvidersForService,
+  removeService,
 };

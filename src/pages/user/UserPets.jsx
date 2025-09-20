@@ -579,8 +579,6 @@ const UserPets = () => {
                 <option value="all">All Pets</option>
                 <option value="dog">Dogs</option>
                 <option value="cat">Cats</option>
-                <option value="bird">Birds</option>
-                <option value="rabbit">Rabbits</option>
                 <option value="other">Other</option>
               </select>
             </div>
@@ -611,7 +609,7 @@ const UserPets = () => {
                                  pet.healthStatus === 'Needs Attention' ? 'needs-attention' : 'critical';
               
               return (
-                <div key={pet.id} className="pet-card group">
+                <div key={pet.id} className="pet-card group" style={{ backgroundColor: 'white', color: 'black' }}>
                   <div className="pet-card-image">
                     <img
                       src={pet.image}
@@ -676,7 +674,7 @@ const UserPets = () => {
                       />
                       <label
                         htmlFor={`pet-upload-${pet.id}`}
-                        className="cursor-pointer bg-white/90 hover:bg-white text-xs font-medium px-3 py-2 rounded-full shadow-lg backdrop-filter backdrop-blur-sm transition-all duration-200 hover:scale-105"
+                        className=" bg-white/90  text-xs font-medium px-3 py-2 rounded-full shadow-lg backdrop-filter backdrop-blur-sm"
                         style={{ color: '#145ae6' }}
                       >
                         <FaCamera className="inline mr-1" /> Change Photo
@@ -689,7 +687,7 @@ const UserPets = () => {
                     <div className="flex-1 min-w-0">
                       <h3 className="pet-name">{pet.name}</h3>
                       <p className="pet-breed">{pet.breed}</p>
-                      <p className="pet-age mt-1">{pet.age}</p>
+                      <p className="pet-age ">{pet.age}</p>
                     </div>
                   </div>
 
@@ -720,10 +718,10 @@ const UserPets = () => {
                     <div className="pet-card-buttons flex justify-center">
                       <button 
                         onClick={() => navigate(`/user/pets/${pet.id}`)}
-                        className="px-4 py-2.5 rounded-lg text-xs font-medium transition-all duration-200 bg-slate-700 text-white hover:bg-slate-800 hover:shadow-md"
+                        className="px-4 py-2.5 rounded-lg text-xs font-medium -all duration-200 bg-white-700 text-gray " style={{ color: 'white' }}
                       >
                         <FaEye className="inline mr-1.5" />
-                        View Profile
+                         View Profile
                       </button>
                     </div>
                   </div>

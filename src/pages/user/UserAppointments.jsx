@@ -235,7 +235,7 @@ const UserAppointments = () => {
                 placeholder="Search by pet, service, or provider..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
             <div className="flex items-center gap-2">
@@ -243,7 +243,7 @@ const UserAppointments = () => {
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="all">All Appointments</option>
                 <option value="upcoming">Upcoming</option>
@@ -268,7 +268,7 @@ const UserAppointments = () => {
 
               return (
                 <div 
-                  key={appointment.id} 
+                  key={appointment.id}
                   className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
                 >
                   {/* Card Header with Status */}
@@ -296,12 +296,12 @@ const UserAppointments = () => {
                         <div>
                           <h3 className="text-lg font-bold text-gray-800 mb-1">{appointment.serviceType}</h3>
                           <div className="flex items-center gap-2 text-gray-600 text-sm">
-                            <FaPaw className="text-purple-500" />
+                            <FaPaw className="text-blue-500" />
                             <span className="font-medium">{appointment.petName}</span>
                             <span className="text-gray-400">•</span>
                             <span className="capitalize">{appointment.petType}</span>
                             {appointment.isPendingApproval && (
-                              <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 border border-yellow-200">
+                              <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-yellow-200 text-yellow-700 border border-yellow-300">
                                 Awaiting Approval
                               </span>
                             )}
@@ -319,7 +319,7 @@ const UserAppointments = () => {
                     <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 mb-4">
                       <div className="flex items-center gap-3">
                         <div className="bg-white p-2 rounded-lg shadow-sm">
-                          <FaCalendarAlt className="text-purple-600" />
+                          <FaCalendarAlt className="text-blue-600" />
                         </div>
                         <div>
                           <p className="text-sm font-bold text-gray-800">
@@ -354,7 +354,7 @@ const UserAppointments = () => {
 
                     {/* Location */}
                     <div className="flex items-center gap-3 mb-4">
-                      <FaMapMarkerAlt className="text-purple-500" />
+                      <FaMapMarkerAlt className="text-blue-500" />
                       <div>
                         <p className="text-sm font-medium text-gray-800">{appointment.location}</p>
                         <p className="text-xs text-gray-500">{appointment.address}</p>

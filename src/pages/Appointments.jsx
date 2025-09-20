@@ -473,8 +473,8 @@ const Appointments = () => {
                 <p className="text-sm font-medium text-gray-500">Disputes</p>
                 <p className="text-xl font-bold text-purple-600">{bookingStats.disputes}</p>
               </div>
-              <div className="bg-purple-100 p-2 rounded-full">
-                <FaExclamationCircle className="text-purple-600" />
+              <div className="bg-blue-100 p-2 rounded-full">
+                <FaExclamationCircle className="text-blue-600" />
               </div>
             </div>
           </div>

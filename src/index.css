@@ -142,10 +142,6 @@
     box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
   }
   
-  .pet-card:hover {
-    border-color: rgba(99, 102, 241, 0.2);
-    box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  }
   
   .pet-card-content {
     @apply p-5;
@@ -257,9 +253,6 @@
     @apply absolute bottom-3 right-3 flex gap-1.5 opacity-0 transition-all duration-300;
   }
   
-  .pet-card:hover .pet-quick-actions {
-    @apply opacity-100;
-  }
   
   .pet-quick-btn {
     @apply w-7 h-7 rounded-md flex items-center justify-center text-white shadow-md transition-all duration-200;
@@ -267,20 +260,17 @@
     backdrop-filter: blur(8px);
   }
   
-  .pet-quick-btn:hover {
-    @apply scale-105 shadow-lg;
-  }
   
   .pet-quick-btn-edit {
-    @apply bg-slate-600 hover:bg-slate-700;
+    @apply bg-slate-600;
   }
   
   .pet-quick-btn-medical {
-    @apply bg-emerald-600 hover:bg-emerald-700;
+    @apply bg-emerald-600;
   }
   
   .pet-quick-btn-delete {
-    @apply bg-rose-600 hover:bg-rose-700;
+    @apply bg-rose-600;
   }
   
   /* Modern Info Grid */
@@ -372,33 +362,14 @@
   }
   
   /* Pet card specific animations */
-  @keyframes petCardFloat {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-2px); }
-  }
   
-  @keyframes petCardGlow {
-    0%, 100% { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(20, 90, 230, 0.1); }
-    50% { box-shadow: 0 25px 50px -12px rgba(20, 90, 230, 0.3), 0 0 0 1px rgba(20, 90, 230, 0.2); }
-  }
-  
-  @keyframes petImageZoom {
-    0% { transform: scale(1); }
-    100% { transform: scale(1.1); }
-  }
   
   @keyframes petInfoSlide {
     0% { transform: translateY(10px); opacity: 0; }
     100% { transform: translateY(0); opacity: 1; }
   }
   
-  .pet-card:hover {
-    animation: petCardFloat 2s ease-in-out infinite, petCardGlow 3s ease-in-out infinite;
-  }
   
-  .pet-card:hover .pet-card-image img {
-    animation: petImageZoom 0.5s ease-out forwards;
-  }
   
   .pet-info-item {
     animation: petInfoSlide 0.3s ease-out forwards;
@@ -472,9 +443,6 @@
       @apply bg-gray-700 text-gray-200;
     }
     
-    .pet-info-item:hover {
-      @apply bg-gray-600 text-gray-100;
-    }
   }
   
   .animate-fadeInRight {

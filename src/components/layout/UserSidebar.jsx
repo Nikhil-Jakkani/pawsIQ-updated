@@ -82,11 +82,7 @@ const UserSidebar = ({ isOpen, toggleSidebar }) => {
       icon: <FaCalendarAlt />,
       label: 'Appointments',
       path: '/user/appointments',
-      items: [
-        { path: '/user/appointments/new', icon: <FaCalendarAlt />, label: 'Book Appointment' },
-        { path: '/user/appointments/upcoming', icon: <FaClipboardList />, label: 'Upcoming' },
-        { path: '/user/appointments/history', icon: <FaClipboardList />, label: 'History' }
-      ]
+      items: []
     },
 
     {

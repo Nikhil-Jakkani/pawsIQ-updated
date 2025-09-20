@@ -443,7 +443,7 @@ const UserDashboard = () => {
                   <div className="flex items-center gap-2 mt-2">
                     <div className="flex -space-x-2">
                       {pets.map((pet, index) => (
-                        <div key={pet.id} className="w-8 h-8 rounded-full border-2 border-white shadow-sm overflow-hidden transform hover:scale-110 transition-transform duration-200" style={{ zIndex: pets.length - index }}>
+                        <div key={pet.id} className="w-8 h-8 rounded-full border-2 border-white shadow-sm overflow-hidden " style={{ zIndex: pets.length - index }}>
                           <img src={pet.image} alt={pet.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                         </div>
                       ))}
@@ -457,7 +457,7 @@ const UserDashboard = () => {
                 {/* Premium Pet Food Ad */}
                 <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 border border-green-100 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group">
                   <div className="flex items-center gap-3">
-                    <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-2 rounded-lg group-hover:scale-110 transition-transform duration-200">
+                    <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-2 rounded-lg group-">
                       <FaBone className="text-white text-lg" />
                     </div>
                     <div>
@@ -470,7 +470,7 @@ const UserDashboard = () => {
                 {/* Vet Services Ad */}
                 <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-100 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group">
                   <div className="flex items-center gap-3">
-                    <div className="bg-gradient-to-br from-blue-500 to-cyan-600 p-2 rounded-lg group-hover:scale-110 transition-transform duration-200">
+                    <div className="bg-gradient-to-br from-blue-500 to-cyan-600 p-2 rounded-lg group-">
                       <FaStethoscope className="text-white text-lg" />
                     </div>
                     <div>
@@ -483,7 +483,7 @@ const UserDashboard = () => {
                 {/* Pet Toys Ad */}
                 <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group">
                   <div className="flex items-center gap-3">
-                    <div className="bg-gradient-to-br from-blue-500 to-[#145ae6] p-2 rounded-lg group-hover:scale-110 transition-transform duration-200">
+                    <div className="bg-gradient-to-br from-blue-500 to-[#145ae6] p-2 rounded-lg group-">
                       <FaStar className="text-white text-lg" />
                     </div>
                     <div>
@@ -502,9 +502,9 @@ const UserDashboard = () => {
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             <button
               onClick={() => navigate('/user/community')}
-              className="group bg-white rounded-xl p-3 text-center border border-orange-100 hover:shadow-md transition-all duration-300 hover:scale-105 hover:border-orange-200"
+              className="group bg-white rounded-xl p-3 text-center border border-orange-100 hover:shadow-md transition-all duration-300  hover:border-orange-200"
             >
-              <div className="bg-gradient-to-br from-orange-100 to-orange-200 w-10 h-10 mx-auto rounded-xl flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-200">
+              <div className="bg-gradient-to-br from-orange-100 to-orange-200 w-10 h-10 mx-auto rounded-xl flex items-center justify-center mb-2 group-">
                 <FaHeart className="text-orange-600 text-lg" />
               </div>
               <h3 className="font-bold text-gray-800 text-sm">Community</h3>
@@ -512,9 +512,9 @@ const UserDashboard = () => {
 
             <button
               onClick={() => navigate('/user/appointments/new')}
-              className="group bg-white rounded-xl p-3 text-center border border-blue-100 hover:shadow-md transition-all duration-300 hover:scale-105 hover:border-blue-200"
+              className="group bg-white rounded-xl p-3 text-center border border-blue-100 hover:shadow-md transition-all duration-300  hover:border-blue-200"
             >
-              <div className="bg-gradient-to-br from-blue-100 to-blue-200 w-10 h-10 mx-auto rounded-xl flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-200">
+              <div className="bg-gradient-to-br from-blue-100 to-blue-200 w-10 h-10 mx-auto rounded-xl flex items-center justify-center mb-2 group-">
                 <FaCalendarCheck className="text-[#145ae6] text-lg" />
               </div>
               <h3 className="font-bold text-gray-800 text-sm">Book Service</h3>
@@ -522,9 +522,9 @@ const UserDashboard = () => {
 
             <button
               onClick={() => navigate('/user/marketplace')}
-              className="group bg-white rounded-xl p-3 text-center border border-blue-100 hover:shadow-md transition-all duration-300 hover:scale-105 hover:border-blue-200"
+              className="group bg-white rounded-xl p-3 text-center border border-blue-100 hover:shadow-md transition-all duration-300  hover:border-blue-200"
             >
-              <div className="bg-gradient-to-br from-blue-100 to-blue-200 w-10 h-10 mx-auto rounded-xl flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-200">
+              <div className="bg-gradient-to-br from-blue-100 to-blue-200 w-10 h-10 mx-auto rounded-xl flex items-center justify-center mb-2 group-">
                 <FaShoppingCart className="text-blue-600 text-lg" />
               </div>
               <h3 className="font-bold text-gray-800 text-sm">Shop</h3>
@@ -536,9 +536,9 @@ const UserDashboard = () => {
                 // Set active service to suggestions when opening AI Care
                 setActiveService('suggestions');
               }}
-              className="group bg-white rounded-xl p-3 text-center border border-green-100 hover:shadow-md transition-all duration-300 hover:scale-105 hover:border-green-200"
+              className="group bg-white rounded-xl p-3 text-center border border-green-100 hover:shadow-md transition-all duration-300  hover:border-green-200"
             >
-              <div className="bg-gradient-to-br from-green-100 to-green-200 w-10 h-10 mx-auto rounded-xl flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-200">
+              <div className="bg-gradient-to-br from-green-100 to-green-200 w-10 h-10 mx-auto rounded-xl flex items-center justify-center mb-2 group-">
                 <FaHeart className="text-green-600 text-lg" />
               </div>
               <h3 className="font-bold text-gray-800 text-sm">AI Care</h3>
@@ -550,9 +550,9 @@ const UserDashboard = () => {
                 // Set active service to symptom-checker when opening Symptom Checker
                 setActiveService('symptom-checker');
               }}
-              className="group bg-white rounded-xl p-3 text-center border border-red-100 hover:shadow-md transition-all duration-300 hover:scale-105 hover:border-red-200"
+              className="group bg-white rounded-xl p-3 text-center border border-red-100 hover:shadow-md transition-all duration-300  hover:border-red-200"
             >
-              <div className="bg-gradient-to-br from-red-100 to-red-200 w-10 h-10 mx-auto rounded-xl flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-200">
+              <div className="bg-gradient-to-br from-red-100 to-red-200 w-10 h-10 mx-auto rounded-xl flex items-center justify-center mb-2 group-">
                 <FaStethoscope className="text-red-600 text-lg" />
               </div>
               <h3 className="font-bold text-gray-800 text-sm">Symptom Checker</h3>
@@ -593,7 +593,7 @@ const UserDashboard = () => {
                   return (
                     <div key={pet.id} className="group bg-white rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 border border-pink-50">
                       {/* Pet Health Card */}
-                      <div className="transform hover:scale-105 transition-transform duration-200 mb-4">
+                      <div className="transform  mb-4">
                         <PetHealthCard pet={pet} />
                       </div>
 
@@ -707,7 +707,7 @@ const UserDashboard = () => {
                   return (
                     <div key={tip.id} className={`group bg-white rounded-lg p-3 shadow-sm border border-orange-50 hover:shadow-md transition-all duration-300 ${colors.border}`}>
                       <div className="flex items-center gap-2 mb-2">
-                        <div className={`bg-gradient-to-br ${colors.bg} p-1.5 rounded-lg group-hover:scale-110 transition-transform duration-200`}>
+                        <div className={`bg-gradient-to-br ${colors.bg} p-1.5 rounded-lg group-`}>
                           <IconComponent className={`${colors.text} text-sm`} />
                         </div>
                         <div className="flex-1 min-w-0">
