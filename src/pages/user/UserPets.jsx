@@ -519,9 +519,7 @@ const UserPets = () => {
             console.error('Error uploading file:', fileError);
           }
         }
-      }
-      console.log('Medical record created successfully');
-      
+      }      
     } catch (error) {
       console.error('Error creating medical record:', error);
       throw error;

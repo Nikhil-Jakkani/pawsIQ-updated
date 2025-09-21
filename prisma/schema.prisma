@@ -167,7 +167,6 @@ model tokens {
   @@index([provider_id], map: "idx_tokens_provider_id")
 }
 
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model PIQ_FoodAvoid_Master {
   foodavoid_master_id    Int       @id @default(autoincrement())
   pet_type               String?   @db.VarChar
@@ -185,7 +184,6 @@ model PIQ_FoodAvoid_Master {
   last_updated_dtm       DateTime? @db.Timestamp(6)
 }
 
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model PIQ_Food_Master {
   food_master_id      Int       @id @default(autoincrement())
   pet_type            String?   @db.VarChar
@@ -202,7 +200,6 @@ model PIQ_Food_Master {
   last_updated_dtm    DateTime? @db.Timestamp(6)
 }
 
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model PIQ_Ideal_Weight_Master {
   pet_wght_mstr_id   Int       @id @default(autoincrement())
   pet_type           String?   @db.VarChar
@@ -217,7 +214,6 @@ model PIQ_Ideal_Weight_Master {
   last_updated_drm   DateTime? @db.Timestamp(6)
 }
 
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model PIQ_Nutrition_Master {
   nutrition_master_id   Int       @id @default(autoincrement())
   pet_type              String?   @db.VarChar
@@ -232,7 +228,6 @@ model PIQ_Nutrition_Master {
   last_updated_dtm      DateTime? @db.Timestamp(6)
 }
 
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model PIQ_Petbreed_Master {
   pet_breed_id        Int       @id @default(autoincrement())
   pet_type            String?   @db.VarChar
@@ -247,7 +242,6 @@ model PIQ_Petbreed_Master {
   created_at          DateTime  @default(now()) @db.Timestamptz(6)
 }
 
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model PIQ_PreventiveFoodCare_Master {
   preventivecare_master_id BigInt    @id @default(autoincrement())
   pet_type                 String?   @db.VarChar
@@ -261,7 +255,6 @@ model PIQ_PreventiveFoodCare_Master {
   last_updated_dtm         DateTime? @db.Timestamp(6)
 }
 
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model PIQ_Vaccine_Master {
   vaccine_mstr_id          Int       @id @default(autoincrement())
   pet_type                 String?   @db.VarChar
@@ -381,8 +374,6 @@ model PIQ_Service_BizEntity_Details {
   @@index([services_id], map: "idx_bizentity_service_id")
 }
 
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model PIQ_Pets_Vaccination {
   id                 BigInt    @id @default(autoincrement())
   pet_id             Int?
