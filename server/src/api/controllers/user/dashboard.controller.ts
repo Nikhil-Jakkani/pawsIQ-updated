@@ -18,7 +18,13 @@ export const getDashboard = async (req: any, res: Response) => {
 
     const [pets, totalAppointments, recentAppointments, reminders] = await Promise.all([
       prisma.pIQ_Pets.findMany({
-        where: { user_id: userIdBig },
+        where: {
+          user_id: userIdBig,
+          OR: [
+            { pet_status: null as any },
+            { pet_status: { not: 'Inactive' } as any },
+          ],
+        },
         orderBy: { created_at: 'asc' },
         select: {
           pet_id: true,
@@ -28,6 +34,8 @@ export const getDashboard = async (req: any, res: Response) => {
           pet_gender: true,
           pet_birth_dtm: true,
           pet_image: true,
+          pet_weight: true,
+          pet_status: true,
           created_at: true,
           last_updated_dtm: true,
         },
@@ -71,7 +79,8 @@ export const getDashboard = async (req: any, res: Response) => {
         gender: pet.pet_gender || 'Unknown',
         age: ageYears ? `${ageYears} years` : 'Unknown',
         weight: pet.pet_weight ? `${pet.pet_weight} kg` : 'Unknown',
-        image: pet.pet_image || `https://source.unsplash.com/random/400x300?${encodeURIComponent(pet.pet_type || 'pet')}`,
+        // Never expose raw storage path as an image URL; frontend will resolve signed URL from imagePath
+        image: `https://source.unsplash.com/random/400x300?${encodeURIComponent(pet.pet_type || 'pet')}`,
         imagePath: pet.pet_image, // Keep original path for signed URL generation
         status: pet.pet_status || 'active',
         microchipped: pet.microchipped || false,

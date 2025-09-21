@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { FaPaw, FaArrowLeft, FaCalendarAlt, FaEdit, FaFileMedical, FaSave, FaTimes, FaCheckCircle, FaTimesCircle, FaMicrochip, FaWeight, FaPalette, FaBirthdayCake, FaVenusMars, FaExclamationTriangle, FaStethoscope, FaPills, FaUtensils, FaUserMd, FaStickyNote, FaCopy } from 'react-icons/fa';
+import { FaPaw, FaArrowLeft, FaCalendarAlt, FaEdit, FaFileMedical, FaSave, FaTimes, FaCheckCircle, FaTimesCircle, FaMicrochip, FaWeight, FaPalette, FaBirthdayCake, FaVenusMars, FaExclamationTriangle, FaStethoscope, FaPills, FaUtensils, FaUserMd, FaStickyNote, FaCopy, FaTrash, FaCamera } from 'react-icons/fa';
 import UserLayout from '../../components/layout/UserLayout';
+import { supabase } from '../../lib/supabaseClient';
 import { useAuth } from '../../context/AuthContext';
 
 const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
@@ -20,7 +21,14 @@ const UserPetProfile = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [pet, setPet] = useState(null);
+  const [imageUrl, setImageUrl] = useState('');
   const [isEditing, setIsEditing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  // Extra lists
+  const [vaccinations, setVaccinations] = useState([]);
+  const [allergiesList, setAllergiesList] = useState([]);
+  const [conditionsList, setConditionsList] = useState([]);
 
   // Basic form state
   const [formData, setFormData] = useState({
@@ -31,6 +39,7 @@ const UserPetProfile = () => {
     birthdate: '',
     weight: '',
     color: '',
+    bloodGroup: '',
     ageGroup: 'adult',
     microchipped: false,
     microchipNumber: '',
@@ -95,26 +104,11 @@ const UserPetProfile = () => {
   ];
 
   const fetchHealthOptions = async () => {
+    // Use fallbacks directly; backend metadata endpoints are not implemented.
     setLoadingMeta(true);
     try {
-      const endpoints = [`${API_URL}/pets/options`, `${API_URL}/pets/metadata`, `${API_URL}/metadata/pets`];
-      let options = null;
-      for (const url of endpoints) {
-        try {
-          const res = await authFetch(url);
-          const data = await res.json().catch(() => ({}));
-          if (res.ok && data) {
-            options = data;
-            break;
-          }
-        } catch (e) {
-          console.error(e);
-        }
-      }
-      const allergiesFromApi = Array.isArray(options?.allergies) ? options.allergies : fallbackAllergies;
-      const medFromApi = Array.isArray(options?.medicalConditions) ? options.medicalConditions : fallbackMedicalConditions;
-      setAllergiesOptions(allergiesFromApi);
-      setMedicalConditionsOptions(medFromApi);
+      setAllergiesOptions(fallbackAllergies);
+      setMedicalConditionsOptions(fallbackMedicalConditions);
     } finally {
       setLoadingMeta(false);
     }
@@ -128,6 +122,7 @@ const UserPetProfile = () => {
       try {
         // Fetch pet data
         let res = await authFetch(`${API_URL}/pets/${petId}`);
+
         let data;
         if (res.ok) {
           data = await res.json();
@@ -150,6 +145,7 @@ const UserPetProfile = () => {
           birthdate: data.pet_birth_dtm ?? data.birthdate ?? '',
           weight: data.pet_weight ?? data.weight ?? '',
           color: data.pet_colour ?? data.color ?? '',
+          bloodGroup: data.pet_blood_grp ?? data.bloodGroup ?? '',
           imagePath: data.pet_image || '',
           ageGroup: data.age_group ?? data.ageGroup ?? 'adult',
           microchipped: !!data.microchipped,
@@ -161,13 +157,15 @@ const UserPetProfile = () => {
               : Array.isArray(data.allergies)
               ? data.allergies.join(', ')
               : '',
+          otherAllergies: data.other_allergies || '',
           medicalConditions:
             typeof data.medical_conditions === 'string'
               ? data.medical_conditions
               : Array.isArray(data.medical_conditions)
               ? data.medical_conditions.join(', ')
               : '',
-          medications: data.medications || '',
+          otherMedicalConditions: data.other_medical_conditions || '',
+          medications: data.current_medications || data.medications || '',
           dietaryNeeds: data.dietary_needs || '',
           vetName: data.vet_name || '',
           vetPhone: data.vet_phone || '',
@@ -175,6 +173,28 @@ const UserPetProfile = () => {
         };
 
         setPet(normalized);
+        // Initialize custom fields from consolidated data
+        setCustomAllergies(normalized.otherAllergies || '');
+        setCustomMedicalConditions(normalized.otherMedicalConditions || '');
+        // Try to resolve signed URL for image if path exists
+        try {
+          if (normalized.imagePath) {
+            const qs = new URLSearchParams({ bucket: 'pets-photos', path: normalized.imagePath, expiresIn: String(60 * 60 * 24 * 6) }).toString();
+            const urlRes = await authFetch(`${API_URL}/media/signed-url?${qs}`);
+            const urlPayload = await urlRes.json().catch(() => ({}));
+            if (urlRes.ok && urlPayload?.url) {
+              setImageUrl(urlPayload.url);
+            } else {
+              // if stored path is already a full URL, try using it
+              if (/^https?:\/\//i.test(normalized.imagePath)) setImageUrl(normalized.imagePath);
+              else setImageUrl('');
+            }
+          } else {
+            setImageUrl('');
+          }
+        } catch (_) {
+          setImageUrl('');
+        }
         setFormData({
           name: normalized.name,
           type: normalized.type,
@@ -183,6 +203,7 @@ const UserPetProfile = () => {
           birthdate: normalized.birthdate ? String(normalized.birthdate).split('T')[0] : '',
           weight: normalized.weight,
           color: normalized.color,
+          bloodGroup: normalized.bloodGroup || '',
           ageGroup: normalized.ageGroup || 'adult',
           microchipped: normalized.microchipped,
           microchipNumber: normalized.microchipNumber,
@@ -198,14 +219,47 @@ const UserPetProfile = () => {
         const initAllergies = normalized.allergies
           ? normalized.allergies.split(',').map((s) => s.trim()).filter(Boolean)
           : [];
+        if (normalized.otherAllergies) initAllergies.push(normalized.otherAllergies);
         const initMedical = normalized.medicalConditions
           ? normalized.medicalConditions.split(',').map((s) => s.trim()).filter(Boolean)
           : [];
+        if (normalized.otherMedicalConditions) initMedical.push(normalized.otherMedicalConditions);
         setSelectedAllergies(initAllergies);
         setSelectedMedicalConditions(initMedical);
 
         // Fetch options
         await fetchHealthOptions();
+
+        // Fetch vaccinations, allergies, conditions for this pet
+        try {
+          const [vRes, aRes, cRes] = await Promise.all([
+            authFetch(`${API_URL}/vaccines/pets/${petId}/vaccinations`).catch(() => null),
+            authFetch(`${API_URL}/pets/${petId}/allergies`).catch(() => null),
+            authFetch(`${API_URL}/pets/${petId}/conditions`).catch(() => null),
+          ]);
+          if (vRes && vRes.ok) {
+            const list = await vRes.json().catch(() => []);
+            setVaccinations(Array.isArray(list) ? list : []);
+          }
+          if (aRes && aRes.ok) {
+            const payload = await aRes.json().catch(() => ({}));
+            // Consolidated row: { selected_allergies: string[], other_allergies: string|null }
+            const list = [];
+            if (Array.isArray(payload?.selected_allergies)) list.push(...payload.selected_allergies);
+            if (payload?.other_allergies) list.push(String(payload.other_allergies));
+            setAllergiesList(list);
+          }
+          if (cRes && cRes.ok) {
+            const payload = await cRes.json().catch(() => ({}));
+            // Consolidated row: { selected_conditions: string[], other_conditions: string|null }
+            const list = [];
+            if (Array.isArray(payload?.selected_conditions)) list.push(...payload.selected_conditions);
+            if (payload?.other_conditions) list.push(String(payload.other_conditions));
+            setConditionsList(list);
+          }
+        } catch (e) {
+          console.warn('Failed to fetch health lists', e);
+        }
       } catch (e) {
         console.error('Failed to load pet profile:', e);
         setError(e.message || 'Failed to load pet');
@@ -240,7 +294,7 @@ const UserPetProfile = () => {
       const allMedical = [...selectedMedicalConditions];
       if (customMedicalConditions.trim()) allMedical.push(customMedicalConditions.trim());
 
-      // Build payload similar to UserEditPet.jsx
+      // Build payload for new consolidated health tables (keep legacy fields too)
       const payload = {
         name: formData.name?.trim(),
         type: formData.type || undefined,
@@ -248,14 +302,23 @@ const UserPetProfile = () => {
         gender: formData.gender || undefined,
         birthdate: formData.birthdate || undefined,
         color: formData.color || undefined,
+        bloodGroup: formData.bloodGroup || undefined,
         ageGroup: formData.ageGroup || undefined,
         microchipped: !!formData.microchipped,
         microchipNumber: formData.microchipNumber || undefined,
         neutered: !!formData.neutered,
+        // Legacy strings for backward-compat
         allergies: allAllergies.length > 0 ? allAllergies.join(', ') : undefined,
         medicalConditions: allMedical.length > 0 ? allMedical.join(', ') : undefined,
         medications: formData.medications || undefined,
         dietaryNeeds: formData.dietaryNeeds || undefined,
+        // New consolidated fields
+        selected_allergies: selectedAllergies,
+        other_allergies: customAllergies?.trim() || undefined,
+        selected_conditions: selectedMedicalConditions,
+        other_conditions: customMedicalConditions?.trim() || undefined,
+        current_medications: formData.medications || undefined,
+        dietary_needs: formData.dietaryNeeds || undefined,
         vetName: formData.vetName || undefined,
         vetPhone: formData.vetPhone || undefined,
         notes: formData.notes || undefined,
@@ -296,6 +359,7 @@ const UserPetProfile = () => {
         birthdate: pet.birthdate ? String(pet.birthdate).split('T')[0] : '',
         weight: pet.weight,
         color: pet.color,
+        bloodGroup: pet.bloodGroup || '',
         ageGroup: pet.ageGroup || 'adult',
         microchipped: !!pet.microchipped,
         microchipNumber: pet.microchipNumber || '',
@@ -316,6 +380,63 @@ const UserPetProfile = () => {
       setCustomMedicalConditions('');
     }
     setIsEditing(false);
+  };
+
+  const handleDelete = async () => {
+    if (!pet) return;
+    const confirmed = window.confirm('Are you sure you want to delete this pet? This will archive the pet and can affect reminders.');
+    if (!confirmed) return;
+    try {
+      setDeleting(true);
+      const res = await authFetch(`${API_URL}/pets/${pet.id}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' } });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d?.message || 'Failed to delete pet');
+      }
+      navigate('/user/pets');
+    } catch (e) {
+      setError(e.message || 'Failed to delete pet');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  // Upload/change image
+  const handleImageChange = async (e) => {
+    try {
+      if (!pet) return;
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+      if (!['jpg', 'jpeg', 'png', 'webp'].includes(ext)) {
+        alert('Please upload a JPG, PNG, or WEBP image');
+        return;
+      }
+      // 1) get signed upload
+      const up = await authFetch(`${API_URL}/media/signed-upload`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bucket: 'pets-photos', entity: 'pet', entity_id: pet.id, file_ext: ext })
+      });
+      const upJson = await up.json().catch(() => ({}));
+      if (!up.ok) throw new Error(upJson?.message || 'Failed to get signed upload');
+      const { path, token } = upJson;
+      // 2) upload file to signed URL using Supabase client
+      const { error: upErr } = await supabase.storage.from('pets-photos').uploadToSignedUrl(path, token, file);
+      if (upErr) throw upErr;
+      // 3) update pet image path on backend
+      const upd = await authFetch(`${API_URL}/pets/${pet.id}/image`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path }) });
+      const updJson = await upd.json().catch(() => ({}));
+      if (!upd.ok) throw new Error(updJson?.message || 'Failed to update pet image');
+      // 4) get signed URL for viewing
+      const qs = new URLSearchParams({ bucket: 'pets-photos', path, expiresIn: String(60 * 60 * 24 * 6) }).toString();
+      const urlRes = await authFetch(`${API_URL}/media/signed-url?${qs}`);
+      const urlPayload = await urlRes.json().catch(() => ({}));
+      if (urlRes.ok && urlPayload?.url) setImageUrl(urlPayload.url);
+    } catch (err) {
+      alert(err?.message || 'Failed to change photo');
+    } finally {
+      try { e.target.value = ''; } catch {}
+    }
   };
 
   if (loading) {
@@ -365,11 +486,24 @@ const UserPetProfile = () => {
             {/* Card header */}
             <div className="p-6">
               <div className="flex flex-col md:flex-row md:items-start gap-5">
-                <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl border border-gray-200 bg-gray-100">
-                  {pet.imagePath ? (
-                    <img src={pet.imagePath} alt={pet.name} className="h-full w-full object-cover" />
+                <div className="relative flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl border border-gray-200 bg-gray-100">
+                  {imageUrl || pet.imagePath ? (
+                    <img src={imageUrl || pet.imagePath} alt={pet.name} className="h-full w-full object-cover" />
                   ) : (
-                   <img src="/7.png" alt="Default Pet" className="h-full w-full object-cover" />
+                    <img src="/7.png" alt="Default Pet" className="h-full w-full object-cover" />
+                  )}
+                  {isEditing && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => { try { document.getElementById('petPhotoInput')?.click(); } catch (_) {} }}
+                        className="absolute bottom-1 right-1 inline-flex items-center justify-center rounded-full bg-white/90 p-2 text-gray-700 shadow ring-1 ring-gray-300 hover:bg-white"
+                        title="Change photo"
+                      >
+                        <FaEdit />
+                      </button>
+                      <input id="petPhotoInput" type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+                    </>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -387,18 +521,31 @@ const UserPetProfile = () => {
                           <FaEdit className="mr-1 inline" /> Edit
                         </button>
                       )}
-                      <button
-                        onClick={() => navigate(`/user/pets/${pet.id}/health-records`)}
-                        className="rounded-lg bg-gray-600 px-3 py-2 text-sm font-medium text-white transition "
-                      >
-                        <FaFileMedical className="mr-1 inline" /> Health Records
-                      </button>
-                      <button
-                        onClick={() => navigate(`/user/pets/${pet.id}/health-records?type=prescription`)}
-                        className="rounded-lg bg-pink-600 px-3 py-2 text-sm font-medium text-white transition "
-                      >
-                        <FaFileMedical className="mr-1 inline" /> Prescriptions
-                      </button>
+                      {!isEditing && (
+                        <button
+                          onClick={handleDelete}
+                          disabled={deleting}
+                          className="rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white transition disabled:opacity-50"
+                        >
+                          <FaTrash className="mr-1 inline" /> Delete
+                        </button>
+                      )}
+                      {!isEditing && (
+                        <>
+                          <button
+                            onClick={() => navigate(`/user/pets/${pet.id}/health-records`)}
+                            className="rounded-lg bg-gray-600 px-3 py-2 text-sm font-medium text-white transition "
+                          >
+                            <FaFileMedical className="mr-1 inline" /> Health Records
+                          </button>
+                          <button
+                            onClick={() => navigate(`/user/pets/${pet.id}/health-records?type=prescription`)}
+                            className="rounded-lg bg-pink-600 px-3 py-2 text-sm font-medium text-white transition "
+                          >
+                            <FaFileMedical className="mr-1 inline" /> Prescriptions
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
 
@@ -419,6 +566,11 @@ const UserPetProfile = () => {
                         {pet.birthdate && (
                           <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700 ring-1 ring-amber-200 whitespace-nowrap">
                             <FaCalendarAlt className="text-amber-500" /> {String(pet.birthdate).split('T')[0]}
+                          </span>
+                        )}
+                        {pet.bloodGroup && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-3 py-1 text-xs font-medium text-red-700 ring-1 ring-red-200 whitespace-nowrap">
+                            <FaStethoscope className="text-red-500" /> {pet.bloodGroup}
                           </span>
                         )}
                       </div>
@@ -451,6 +603,10 @@ const UserPetProfile = () => {
                               <tr>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-left">Color</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-left">{pet.color || '-'}</td>
+                              </tr>
+                              <tr>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-left">Blood Group</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-left">{pet.bloodGroup || '-'}</td>
                               </tr>
                               <tr>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-left">Age Group</td>
@@ -549,6 +705,10 @@ const UserPetProfile = () => {
                           <div>
                             <label className={labelCls}>Color</label>
                             <input name="color" value={formData.color} onChange={handleChange} className={inputCls} />
+                          </div>
+                          <div>
+                            <label className={labelCls}>Blood Group</label>
+                            <input name="bloodGroup" value={formData.bloodGroup} onChange={handleChange} className={inputCls} placeholder="e.g., DEA 1.1+, A, B, AB, Unknown" />
                           </div>
                           <div>
                             <label className={labelCls}>Age Group</label>
@@ -655,36 +815,96 @@ const UserPetProfile = () => {
                           </div>
                         </div>
                       </section>
+
+                      {/* Form actions at the end of the page (no sticky overlay) */}
+                      <div className="pt-4 border-t border-gray-100 flex items-center justify-end gap-3">
+                        <button
+                          type="button"
+                          onClick={handleCancel}
+                          disabled={saving}
+                          className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 bg-white transition disabled:opacity-60"
+                        >
+                          <FaTimes className="mr-1 inline" /> Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSave}
+                          disabled={saving}
+                          className="rounded-lg bg-pink-600 px-4 py-2 text-sm font-medium text-white transition disabled:opacity-60"
+                        >
+                          <FaSave className="mr-1 inline" /> {saving ? 'Saving…' : 'Save Changes'}
+                        </button>
+                      </div>
                     </form>
                   )}
                 </div>
               </div>
             </div>
 
-            {/* Sticky action bar for edit mode */}
-            {isEditing && (
-              <div className="sticky bottom-0 left-0 right-0 border-t bg-white/90 p-4 backdrop-blur supports-[backdrop-filter]:bg-white/60">
-                <div className="mx-auto flex max-w-6xl justify-end gap-3">
-                  <button
-                    onClick={handleCancel}
-                    disabled={saving}
-                    className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700  disabled:opacity-60"
-                  >
-                    <FaTimes className="mr-1 inline" /> Cancel
-                  </button>
-                  <button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition  disabled:opacity-60"
-                  >
-                    <FaSave className="mr-1 inline" /> {saving ? 'Saving...' : 'Save Changes'}
-                  </button>
-                </div>
+            {/* Vaccinations, Allergies, Conditions Sections */}
+            {!isEditing && (
+              <div className="p-6 border-t border-gray-100 space-y-8">
+                <section>
+                  <h3 className="text-lg font-semibold mb-2">Vaccination History</h3>
+                  {vaccinations.length === 0 ? (
+                    <p className="text-sm text-gray-500">No vaccinations recorded.</p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead>
+                          <tr className="bg-gray-50">
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Vaccine</th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Given</th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Next Due</th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {vaccinations.map((v, idx) => (
+                            <tr key={v.vaccination_name || idx}>
+                              <td className="px-4 py-2 text-sm text-gray-800">{v.vaccination_name}</td>
+                              <td className="px-4 py-2 text-sm text-gray-500">{v.vaccine_given_date ? String(v.vaccine_given_date).slice(0,10) : '-'}</td>
+                              <td className="px-4 py-2 text-sm text-gray-500">{v.vaccine_due_date ? String(v.vaccine_due_date).slice(0,10) : '-'}</td>
+                              <td className="px-4 py-2 text-sm text-gray-500 capitalize">{v.vaccine_status || '-'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </section>
+
+                <section>
+                  <h3 className="text-lg font-semibold mb-2">Allergies</h3>
+                  {allergiesList.length === 0 ? (
+                    <p className="text-sm text-gray-500">No allergies recorded.</p>
+                  ) : (
+                    <ul className="list-disc pl-6 text-sm text-gray-700 space-y-1">
+                      {allergiesList.map((a) => (
+                        <li key={a}>{a}</li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
+
+                <section>
+                  <h3 className="text-lg font-semibold mb-2">Medical Conditions</h3>
+                  {conditionsList.length === 0 ? (
+                    <p className="text-sm text-gray-500">No medical conditions recorded.</p>
+                  ) : (
+                    <ul className="list-disc pl-6 text-sm text-gray-700 space-y-1">
+                      {conditionsList.map((c) => (
+                        <li key={c}>{c}</li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
               </div>
             )}
           </div>
         )}
       </div>
+      
     </UserLayout>
   );
 };

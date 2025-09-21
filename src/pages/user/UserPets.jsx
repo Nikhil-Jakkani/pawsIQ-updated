@@ -46,7 +46,13 @@ const UserPets = () => {
       if (raw) {
         const cachedPets = JSON.parse(raw);
         if (Array.isArray(cachedPets) && cachedPets.length) {
-          const sorted = [...cachedPets].sort((a, b) => {
+          const sanitized = cachedPets
+            .filter((p) => (p.status || '').toLowerCase() !== 'inactive')
+            .map((p) => {
+              const badLegacy = typeof p.image === 'string' && /\/user\/\d+\/pet\/\d+\//.test(p.image);
+              return { ...p, image: badLegacy ? (p.profileImage || 'https://placehold.co/600x400?text=Pet') : p.image };
+            });
+          const sorted = [...sanitized].sort((a, b) => {
             const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
             const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
             return da - db;
@@ -152,7 +158,9 @@ const UserPets = () => {
 
         const arr = Array.isArray(payload) ? payload : (payload?.pets || []);
         // Phase 1: map pet data using cached image URLs for instant paint
-        let rawPets = arr.map((p) => {
+        let rawPets = arr
+          .filter((p) => (p.status || '').toLowerCase() !== 'inactive')
+          .map((p) => {
           const imagePath = p.pet_image || p.imagePath || '';
           const cachedUrl = getCachedUrlIfFresh(imagePath);
           const ageText = p.pet_birth_dtm
@@ -175,7 +183,7 @@ const UserPets = () => {
             birthday: p.birthday || p.pet_birth_dtm || p.pet_birthday || null,
             createdAt: p.createdAt || p.created_at || null,
             imagePath,
-            image: cachedUrl || p.image || p.profileImage || 'https://placehold.co/600x400?text=Pet',
+            image: cachedUrl || p.profileImage || p.image || 'https://placehold.co/600x400?text=Pet',
             lastCheckup: p.lastCheckup || p.last_checkup || new Date().toISOString().slice(0, 10),
             vaccinations: p.vaccinations || 'Unknown',
           };
@@ -333,14 +341,123 @@ const UserPets = () => {
     setSelectedPetForVaccination(null);
   };
 
-  // Handle submitting medical record
+  const handleSubmitVaccinations = async ({ entries, createReminder, bookAppointment }) => {
+    if (!selectedPetForVaccination || !currentUser) {
+      throw new Error('Missing pet information or authentication');
+    }
+
+    const petId = selectedPetForVaccination.id;
+
+    try {
+      const batchPayload = {
+        entries: entries.map((e) => ({
+          vaccineName: e.vaccineName,
+          recordDate: e.recordDate,
+          nextDueDate: e.nextDueDate || null,
+          notes: e.notes || '',
+        })),
+      };
+      const batchRes = await authFetch(`${API_URL}/vaccines/pets/${petId}/vaccinations/batch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(batchPayload),
+      });
+      const batchJson = await batchRes.json().catch(() => ({}));
+      if (!batchRes.ok) throw new Error(batchJson?.message || 'Failed to save vaccinations');
+    } catch (err) {
+      console.error('Vaccination batch save failed:', err);
+      throw err;
+    }
+
+    for (const entry of entries) {
+      if (!entry.file) continue;
+      try {
+        const basePayload = {
+          recordType: 'vaccination',
+          title: entry.vaccineName,
+          description: entry.notes || '',
+          recordDate: entry.recordDate,
+          nextDueDate: entry.nextDueDate || null,
+        };
+
+        const res = await authFetch(`${API_URL}/pets/${petId}/health-records`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(basePayload),
+        });
+        const created = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(created?.message || 'Failed to create vaccination health record');
+
+        const up = await authFetch(`${API_URL}/pets/${petId}/health-records/upload-url`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileName: entry.file.name, fileType: entry.file.type }),
+        });
+        const upPayload = await up.json().catch(() => ({}));
+        if (!up.ok) throw new Error(upPayload?.message || 'Failed to get upload URL');
+        const { signedUrl, path } = upPayload;
+        const put = await fetch(signedUrl, { method: 'PUT', body: entry.file, headers: { 'Content-Type': entry.file.type } });
+        if (!put.ok) throw new Error('File upload failed');
+
+        await authFetch(`${API_URL}/health-records/${created.id}/file`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            filePath: path,
+            fileName: entry.file.name,
+            fileType: entry.file.type,
+            fileSize: entry.file.size,
+          }),
+        });
+      } catch (e) {
+        console.warn('Failed to upload vaccination document:', e);
+      }
+    }
+
+    for (const entry of entries) {
+      if (!createReminder || !entry.nextDueDate) continue;
+      try {
+        const r = await authFetch(`${API_URL}/reminders`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            pet_id: petId,
+            title: `${entry.vaccineName} booster due`,
+            reminder_type: 'vaccination',
+            due_date: new Date(entry.nextDueDate).toISOString(),
+            priority: 'normal',
+            notes: entry.notes || undefined,
+          }),
+        });
+        const rj = await r.json().catch(() => ({}));
+        if (!r.ok) console.warn('Failed to create reminder', rj);
+      } catch (e) {
+        console.warn('Reminder creation failed:', e);
+      }
+    }
+
+    if (bookAppointment) {
+      navigate('/user/appointments/new', {
+        state: {
+          prefill: {
+            petId,
+            serviceType: 'vet',
+            serviceId: 'vet2',
+            reason: 'Vaccination',
+          },
+        },
+      });
+    }
+
+    handleCloseVaccination();
+  };
+
   const handleSubmitMedicalRecord = async (recordData) => {
     if (!selectedPetForMedical || !currentUser) {
       throw new Error('Missing pet information or authentication');
     }
 
     try {
-      // Create the medical record
       const response = await authFetch(`${API_URL}/pets/${selectedPetForMedical.id}/health-records`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -350,7 +467,6 @@ const UserPets = () => {
           description: recordData.description,
           recordType: 'medical_condition',
           conditions: recordData.conditions,
-          // Files will be handled separately if provided
         }),
       });
 
@@ -361,11 +477,9 @@ const UserPets = () => {
 
       const createdRecord = await response.json();
 
-      // Handle file uploads if any files were provided
       if (recordData.files && recordData.files.length > 0) {
         for (const file of recordData.files) {
           try {
-            // Get signed upload URL
             const uploadUrlResponse = await authFetch(`${API_URL}/pets/${selectedPetForMedical.id}/health-records/upload-url`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -378,7 +492,6 @@ const UserPets = () => {
             if (uploadUrlResponse.ok) {
               const { signedUrl, path } = await uploadUrlResponse.json();
               
-              // Upload file
               const uploadResponse = await fetch(signedUrl, {
                 method: 'PUT',
                 body: file,
@@ -388,7 +501,6 @@ const UserPets = () => {
               });
 
               if (uploadResponse.ok) {
-                // Update the record with file information
                 await authFetch(`${API_URL}/health-records/${createdRecord.id}/file`, {
                   method: 'PUT',
                   headers: {
@@ -405,123 +517,14 @@ const UserPets = () => {
             }
           } catch (fileError) {
             console.error('Error uploading file:', fileError);
-            // Continue with other files even if one fails
           }
         }
-      }
-
-      // Show success message or update UI as needed
-      console.log('Medical record created successfully');
-      
+      }      
     } catch (error) {
       console.error('Error creating medical record:', error);
       throw error;
     }
-  };
 
-  // Handle vaccination submission (multiple entries)
-  const handleSubmitVaccinations = async ({ entries, createReminder, bookAppointment }) => {
-    if (!selectedPetForVaccination || !currentUser) {
-      throw new Error('Missing pet information or authentication');
-    }
-
-    const petId = selectedPetForVaccination.id;
-
-    // Helper to create one vaccination record
-    const createOneRecord = async (entry) => {
-      const basePayload = {
-        recordType: 'vaccination',
-        title: entry.vaccineName,
-        description: entry.notes || '',
-        recordDate: entry.recordDate,
-        nextDueDate: entry.nextDueDate || null,
-      };
-
-      // 1) Create record without file
-      const res = await authFetch(`${API_URL}/pets/${petId}/health-records`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(basePayload),
-      });
-      const created = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(created?.message || 'Failed to create vaccination record');
-
-      // 2) If file provided, get signed URL, upload, then attach to record
-      if (entry.file) {
-        const up = await authFetch(`${API_URL}/pets/${petId}/health-records/upload-url`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ fileName: entry.file.name, fileType: entry.file.type }),
-        });
-        const upPayload = await up.json().catch(() => ({}));
-        if (!up.ok) throw new Error(upPayload?.message || 'Failed to get upload URL');
-        const { signedUrl, path } = upPayload;
-        const put = await fetch(signedUrl, { method: 'PUT', body: entry.file, headers: { 'Content-Type': entry.file.type } });
-        if (!put.ok) throw new Error('File upload failed');
-
-        // attach to record
-        await authFetch(`${API_URL}/health-records/${created.id}/file`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            filePath: path,
-            fileName: entry.file.name,
-            fileType: entry.file.type,
-            fileSize: entry.file.size,
-          }),
-        });
-      }
-
-      // 3) Optionally create reminder for nextDueDate
-      if (createReminder && entry.nextDueDate) {
-        const r = await authFetch(`${API_URL}/reminders`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            pet_id: petId,
-            title: `${entry.vaccineName} booster due`,
-            reminder_type: 'vaccination',
-            due_date: new Date(entry.nextDueDate).toISOString(),
-            priority: 'normal',
-            notes: entry.notes || undefined,
-          }),
-        });
-        const rj = await r.json().catch(() => ({}));
-        if (!r.ok) console.warn('Failed to create reminder', rj);
-      }
-
-      return created;
-    };
-
-    // Create all records sequentially (to keep logic simple and respect order)
-    for (const entry of entries) {
-      await createOneRecord(entry);
-    }
-
-    // After all saved, optionally navigate to appointment booking
-    if (bookAppointment) {
-      // Pre-fill vaccination booking for this pet
-      navigate('/user/appointments/new', {
-        state: {
-          prefill: {
-            petId,
-            serviceType: 'vet',
-            serviceId: 'vet2', // our mapping uses vet2 -> Vaccination in UserBookAppointment
-            reason: 'Vaccination',
-          },
-        },
-      });
-    }
-
-    // Close modal
     handleCloseVaccination();
   };
 
@@ -649,6 +652,13 @@ const UserPets = () => {
                         title="Medical Records"
                       >
                         <FaFileMedical className="text-sm" />
+                      </button>
+                      <button
+                        onClick={() => handleOpenVaccination(pet)}
+                        className="pet-quick-btn"
+                        title="Add Vaccination"
+                      >
+                        <FaSyringe className="text-sm" />
                       </button>
                       <button
                         onClick={() => handleDeletePet(pet.id)}

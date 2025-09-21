@@ -25,6 +25,7 @@ const UserAddPet = () => {
     birthdate: '',
     weight: '',
     color: '',
+    bloodGroup: '',
     microchipped: false,
     microchipNumber: '',
     neutered: false,
@@ -46,19 +47,19 @@ const UserAddPet = () => {
     customVaccineNext: ''
   });
   
-  // State for vaccine data
   const [vaccineData, setVaccineData] = useState([]);
   const [filteredVaccines, setFilteredVaccines] = useState([]);
   const [selectedVaccines, setSelectedVaccines] = useState({});
   
-  // State for breeds
   const [breeds, setBreeds] = useState([]);
   const [loadingBreeds, setLoadingBreeds] = useState(false);
   const [breedsError, setBreedsError] = useState('');
 
-  // Fetch breeds based on pet type (ensure alphabetical sorting)
+  const [bloodGroups, setBloodGroups] = useState([]);
+  const [loadingBloodGroups, setLoadingBloodGroups] = useState(false);
+  const [bloodGroupError, setBloodGroupError] = useState('');
+
   const fetchBreeds = async (petType) => {
-    // Fallback/defaults for unknown/other types
     const defaultBreeds = ['Mixed Breed', 'Unknown', 'Crossbreed'].sort((a, b) => a.localeCompare(b));
 
     if (!petType || petType === 'other') {
@@ -88,7 +89,27 @@ const UserAddPet = () => {
     }
   };
 
-  // Handle form input changes
+  const fetchBloodGroups = async (petType) => {
+    setLoadingBloodGroups(true);
+    setBloodGroupError('');
+    try {
+      if (!petType) {
+        setBloodGroups([]);
+        return;
+      }
+      const response = await fetch(`${API_URL}/pets/blood-groups?petType=${encodeURIComponent(petType)}`);
+      const data = await response.json().catch(() => ({}));
+      const list = Array.isArray(data?.bloodGroups) ? data.bloodGroups.filter(Boolean).map(String) : [];
+      setBloodGroups(list);
+    } catch (e) {
+      console.warn('Failed to load blood groups', e);
+      setBloodGroupError('Failed to load blood groups');
+      setBloodGroups([]);
+    } finally {
+      setLoadingBloodGroups(false);
+    }
+  };
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData({
@@ -96,18 +117,17 @@ const UserAddPet = () => {
       [name]: type === 'checkbox' ? checked : value
     });
     
-    // If pet type changes, fetch breeds and reset breed selection
     if (name === 'type') {
       fetchBreeds(value);
       setFormData(prev => ({
         ...prev,
         [name]: value,
-        breed: '' // Reset breed when type changes
+        breed: '',
+        bloodGroup: ''
       }));
     }
   };
 
-  // Handle allergy checkbox changes
   const handleAllergyChange = (allergy, isChecked) => {
     setFormData(prev => ({
       ...prev,
@@ -117,7 +137,6 @@ const UserAddPet = () => {
     }));
   };
 
-  // Handle medical condition checkbox changes
   const handleMedicalConditionChange = (condition, isChecked) => {
     setFormData(prev => ({
       ...prev,
@@ -127,7 +146,6 @@ const UserAddPet = () => {
     }));
   };
   
-  // Handle vaccine selection
   const handleVaccineChange = (vaccineId, isSelected, vaccineData) => {
     setSelectedVaccines(prev => {
       const updated = { ...prev };
@@ -169,12 +187,10 @@ const UserAddPet = () => {
         delete updated[vaccineId];
       }
       
-      // Return the updated state
       return updated;
     });
   };
   
-  // Handle vaccine detail updates
   const handleVaccineDetailChange = (vaccineId, field, value) => {
     setSelectedVaccines(prev => {
       const updated = { ...prev };
@@ -188,7 +204,6 @@ const UserAddPet = () => {
     });
   };
   
-  // Update formData with current vaccines before submission
   useEffect(() => {
     setFormData(prev => ({
       ...prev,
@@ -196,7 +211,6 @@ const UserAddPet = () => {
     }));
   }, [selectedVaccines]);
 
-  // Handle image upload
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -267,7 +281,9 @@ const UserAddPet = () => {
         breed: formData.breed,
         gender: formData.gender,
         birthdate: formData.birthdate || undefined,
+        weight: formData.weight || undefined,
         color: formData.color || undefined,
+        bloodGroup: formData.bloodGroup || undefined,
         ageGroup: formData.ageGroup || undefined,
         microchipped: formData.microchipped,
         microchipNumber: formData.microchipNumber || undefined,
@@ -359,20 +375,32 @@ const UserAddPet = () => {
     'Chronic pain'
   ];
   
-  // Load vaccine data from JSON file
+  // Load vaccine data from backend master based on current selections
   useEffect(() => {
     const fetchVaccineData = async () => {
       try {
-        const response = await fetch('/pet_vaccine_master.json');
-        const data = await response.json();
-        setVaccineData(data);
+        if (!formData.type || !formData.ageGroup) {
+          setVaccineData([]);
+          return;
+        }
+        const petType = formData.type.charAt(0).toUpperCase() + formData.type.slice(1);
+        const ageGroup = formData.ageGroup.charAt(0).toUpperCase() + formData.ageGroup.slice(1);
+        const params = new URLSearchParams();
+        params.set('petType', petType);
+        if (formData.breed) params.set('breed', formData.breed);
+        params.set('ageGroup', ageGroup);
+        const response = await fetch(`${API_URL}/vaccines/master?${params.toString()}`);
+        const payload = await response.json().catch(() => ({}));
+        const items = Array.isArray(payload?.vaccines) ? payload.vaccines : [];
+        setVaccineData(items);
       } catch (error) {
         console.error('Error loading vaccine data:', error);
+        setVaccineData([]);
       }
     };
-    
+
     fetchVaccineData();
-  }, []);
+  }, [API_URL, formData.type, formData.breed, formData.ageGroup]);
   
   // Filter vaccines based on pet type, breed, and age group
   useEffect(() => {
@@ -393,11 +421,11 @@ const UserAddPet = () => {
     
     // If breed is specified and there are breed-specific vaccines, prioritize those
     if (formData.breed) {
-      const breedSpecificVaccines = filtered.filter(vaccine => 
-        vaccine.breed.toLowerCase() === formData.breed.toLowerCase()
-      );
-      
-      // If breed-specific vaccines exist, use those; otherwise, use general vaccines for the pet type
+      const breedSpecificVaccines = filtered.filter((v) => {
+        const vBreed = (v.pet_breed || v.breed || '').toLowerCase();
+        const fBreed = (formData.breed || '').toLowerCase();
+        return vBreed && fBreed && vBreed === fBreed;
+      });
       if (breedSpecificVaccines.length > 0) {
         filtered = breedSpecificVaccines;
       }
@@ -641,6 +669,22 @@ const UserAddPet = () => {
                     <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                       <div className="w-4 h-4 rounded-full bg-gradient-to-r from-blue-400 to-purple-400"></div>
                     </div>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="bloodGroup" className="block text-sm font-semibold text-gray-700 mb-2">
+                    Blood Group
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      id="bloodGroup"
+                      name="bloodGroup"
+                      value={formData.bloodGroup}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
+                      placeholder="e.g., DEA 1.1+, A, B, AB, Unknown"
+                    />
                   </div>
                 </div>
               </div>

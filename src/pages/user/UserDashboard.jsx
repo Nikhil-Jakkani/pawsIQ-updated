@@ -77,8 +77,17 @@ const UserDashboard = () => {
       if (raw) {
         const cachedPets = JSON.parse(raw);
         if (Array.isArray(cachedPets) && cachedPets.length) {
-          setPets(cachedPets);
-          if (!selectedPetForAI) setSelectedPetForAI(cachedPets[0]);
+          const sanitized = cachedPets
+            .filter((p) => (p.status || '').toLowerCase() !== 'inactive')
+            .map((p) => {
+              const badLegacy = typeof p.image === 'string' && /\/user\/\d+\/pet\/\d+\//.test(p.image);
+              return {
+                ...p,
+                image: badLegacy ? (p.profileImage || 'https://placehold.co/600x400?text=Pet') : p.image,
+              };
+            });
+          setPets(sanitized);
+          if (!selectedPetForAI && sanitized.length) setSelectedPetForAI(sanitized[0]);
         }
       }
     } catch (e) {
@@ -165,9 +174,13 @@ const UserDashboard = () => {
         }
 
         // Phase 1: map pet data synchronously using cached image URLs (if present)
-        rawPets = rawPets.map((p) => {
+        rawPets = rawPets
+          .filter((p) => (p.status || '').toLowerCase() !== 'inactive')
+          .map((p) => {
           const imagePath = p.pet_image || p.imagePath || '';
           const cachedUrl = getCachedUrlIfFresh(imagePath);
+          const placeholder = p.profileImage || `https://source.unsplash.com/random/400x300?${encodeURIComponent(p.pet_type || p.type || 'pet')}`;
+          const legacy = typeof (p.image || '') === 'string' && /\/user\/\d+\/pet\/\d+\//.test(p.image || '');
           const ageText = p.pet_birth_dtm
             ? (() => {
                 const dob = new Date(p.pet_birth_dtm);
@@ -187,7 +200,7 @@ const UserDashboard = () => {
             birthday: p.birthday || p.pet_birth_dtm || p.pet_birthday || null,
             createdAt: p.createdAt || p.created_at || null,
             imagePath,
-            image: cachedUrl || p.image || p.profileImage || 'https://placehold.co/600x400?text=Pet',
+            image: cachedUrl || (legacy ? placeholder : (p.image || p.profileImage || 'https://placehold.co/600x400?text=Pet')),
             lastCheckup: p.lastCheckup || p.last_checkup || new Date().toISOString().slice(0, 10),
             vaccinations: p.vaccinations || 'Unknown',
           };
