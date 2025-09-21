@@ -463,11 +463,24 @@ const UserPetProfile = () => {
             {/* Card header */}
             <div className="p-6">
               <div className="flex flex-col md:flex-row md:items-start gap-5">
-                <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl border border-gray-200 bg-gray-100">
+                <div className="relative flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl border border-gray-200 bg-gray-100">
                   {imageUrl || pet.imagePath ? (
                     <img src={imageUrl || pet.imagePath} alt={pet.name} className="h-full w-full object-cover" />
                   ) : (
                     <img src="/7.png" alt="Default Pet" className="h-full w-full object-cover" />
+                  )}
+                  {isEditing && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => { try { document.getElementById('petPhotoInput')?.click(); } catch (_) {} }}
+                        className="absolute bottom-1 right-1 inline-flex items-center justify-center rounded-full bg-white/90 p-2 text-gray-700 shadow ring-1 ring-gray-300 hover:bg-white"
+                        title="Change photo"
+                      >
+                        <FaEdit />
+                      </button>
+                      <input id="petPhotoInput" type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+                    </>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -494,18 +507,22 @@ const UserPetProfile = () => {
                           <FaTrash className="mr-1 inline" /> Delete
                         </button>
                       )}
-                      <button
-                        onClick={() => navigate(`/user/pets/${pet.id}/health-records`)}
-                        className="rounded-lg bg-gray-600 px-3 py-2 text-sm font-medium text-white transition "
-                      >
-                        <FaFileMedical className="mr-1 inline" /> Health Records
-                      </button>
-                      <button
-                        onClick={() => navigate(`/user/pets/${pet.id}/health-records?type=prescription`)}
-                        className="rounded-lg bg-pink-600 px-3 py-2 text-sm font-medium text-white transition "
-                      >
-                        <FaFileMedical className="mr-1 inline" /> Prescriptions
-                      </button>
+                      {!isEditing && (
+                        <>
+                          <button
+                            onClick={() => navigate(`/user/pets/${pet.id}/health-records`)}
+                            className="rounded-lg bg-gray-600 px-3 py-2 text-sm font-medium text-white transition "
+                          >
+                            <FaFileMedical className="mr-1 inline" /> Health Records
+                          </button>
+                          <button
+                            onClick={() => navigate(`/user/pets/${pet.id}/health-records?type=prescription`)}
+                            className="rounded-lg bg-pink-600 px-3 py-2 text-sm font-medium text-white transition "
+                          >
+                            <FaFileMedical className="mr-1 inline" /> Prescriptions
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
 
@@ -628,23 +645,6 @@ const UserPetProfile = () => {
                           <h3 className={sectionTitleCls}>Basic Profile</h3>
                           <p className={sectionDescCls}>Update your pet's core information</p>
                         </header>
-                        {/* Change photo */}
-                        <div className="mb-4">
-                          <label className={labelCls}>Profile Photo</label>
-                          <div className="flex items-center gap-3">
-                            <div className="h-16 w-16 rounded-xl overflow-hidden border">
-                              {(imageUrl || pet?.imagePath) ? (
-                                <img src={imageUrl || pet.imagePath} alt="Pet" className="h-full w-full object-cover" />
-                              ) : (
-                                <img src="/7.png" alt="Default" className="h-full w-full object-cover" />
-                              )}
-                            </div>
-                            <label className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 cursor-pointer">
-                              <FaCamera /> Change Photo
-                              <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
-                            </label>
-                          </div>
-                        </div>
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                           <div>
                             <label className={labelCls}>Name</label>
@@ -792,6 +792,26 @@ const UserPetProfile = () => {
                           </div>
                         </div>
                       </section>
+
+                      {/* Form actions at the end of the page (no sticky overlay) */}
+                      <div className="pt-4 border-t border-gray-100 flex items-center justify-end gap-3">
+                        <button
+                          type="button"
+                          onClick={handleCancel}
+                          disabled={saving}
+                          className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 bg-white transition disabled:opacity-60"
+                        >
+                          <FaTimes className="mr-1 inline" /> Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSave}
+                          disabled={saving}
+                          className="rounded-lg bg-pink-600 px-4 py-2 text-sm font-medium text-white transition disabled:opacity-60"
+                        >
+                          <FaSave className="mr-1 inline" /> {saving ? 'Saving…' : 'Save Changes'}
+                        </button>
+                      </div>
                     </form>
                   )}
                 </div>
@@ -861,6 +881,7 @@ const UserPetProfile = () => {
           </div>
         )}
       </div>
+      
     </UserLayout>
   );
 };

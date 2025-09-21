@@ -46,7 +46,13 @@ const UserPets = () => {
       if (raw) {
         const cachedPets = JSON.parse(raw);
         if (Array.isArray(cachedPets) && cachedPets.length) {
-          const sorted = [...cachedPets].sort((a, b) => {
+          const sanitized = cachedPets
+            .filter((p) => (p.status || '').toLowerCase() !== 'inactive')
+            .map((p) => {
+              const badLegacy = typeof p.image === 'string' && /\/user\/\d+\/pet\/\d+\//.test(p.image);
+              return { ...p, image: badLegacy ? (p.profileImage || 'https://placehold.co/600x400?text=Pet') : p.image };
+            });
+          const sorted = [...sanitized].sort((a, b) => {
             const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
             const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
             return da - db;
@@ -152,7 +158,9 @@ const UserPets = () => {
 
         const arr = Array.isArray(payload) ? payload : (payload?.pets || []);
         // Phase 1: map pet data using cached image URLs for instant paint
-        let rawPets = arr.map((p) => {
+        let rawPets = arr
+          .filter((p) => (p.status || '').toLowerCase() !== 'inactive')
+          .map((p) => {
           const imagePath = p.pet_image || p.imagePath || '';
           const cachedUrl = getCachedUrlIfFresh(imagePath);
           const ageText = p.pet_birth_dtm
@@ -175,7 +183,7 @@ const UserPets = () => {
             birthday: p.birthday || p.pet_birth_dtm || p.pet_birthday || null,
             createdAt: p.createdAt || p.created_at || null,
             imagePath,
-            image: cachedUrl || p.image || p.profileImage || 'https://placehold.co/600x400?text=Pet',
+            image: cachedUrl || p.profileImage || p.image || 'https://placehold.co/600x400?text=Pet',
             lastCheckup: p.lastCheckup || p.last_checkup || new Date().toISOString().slice(0, 10),
             vaccinations: p.vaccinations || 'Unknown',
           };

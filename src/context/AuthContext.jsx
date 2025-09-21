@@ -95,11 +95,17 @@ export const AuthProvider = ({ children }) => {
       }
 
       const data = await response.json();
-      let nextTokens = tokens;
-      if (data?.accessToken) {
-        nextTokens = { ...tokens, access: { ...(tokens.access || {}), token: data.accessToken } };
-      } else if (data?.access?.token) {
-        nextTokens = data;
+      let nextTokens = tokens || {};
+      if (data?.access || data?.refresh) {
+        nextTokens = {
+          access: { ...(tokens?.access || {}), ...(data.access || {}) },
+          refresh: { ...(tokens?.refresh || {}), ...(data.refresh || {}) },
+        };
+      } else if (data?.accessToken || data?.refreshToken) {
+        nextTokens = {
+          access: { ...(tokens?.access || {}), token: data.accessToken || tokens?.access?.token },
+          refresh: { ...(tokens?.refresh || {}), token: data.refreshToken || tokens?.refresh?.token },
+        };
       }
       setTokens(nextTokens);
       localStorage.setItem('authTokens', JSON.stringify(nextTokens));
@@ -193,12 +199,26 @@ export const AuthProvider = ({ children }) => {
       }
 
       if (response.ok) {
-        const { user, tokens } = data;
+        const user = data?.user || null;
+        // Normalize tokens shape
+        const normalizedTokens = data?.tokens
+          ? data.tokens
+          : (data?.accessToken || data?.refreshToken)
+            ? {
+                access: { token: data.accessToken },
+                refresh: { token: data.refreshToken },
+              }
+            : null;
+
+        if (!normalizedTokens) {
+          throw new Error('Invalid token response');
+        }
+
         const role = user?.role || 'user';
         setCurrentUser(user);
-        setTokens(tokens);
+        setTokens(normalizedTokens);
         localStorage.setItem('user', JSON.stringify(user));
-        localStorage.setItem('authTokens', JSON.stringify(tokens));
+        localStorage.setItem('authTokens', JSON.stringify(normalizedTokens));
         // Clear any explicit logout flag
         localStorage.removeItem('loggedOut');
         return { success: true, userType: role };
