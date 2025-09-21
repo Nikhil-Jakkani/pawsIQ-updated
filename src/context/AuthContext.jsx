@@ -161,11 +161,9 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     setError('');
-    setLoading(true);
 
     if (!email || !password) {
       setError('Email and password are required');
-      setLoading(false);
       return { success: false };
     }
 
@@ -203,7 +201,6 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('authTokens', JSON.stringify(tokens));
         // Clear any explicit logout flag
         localStorage.removeItem('loggedOut');
-        setLoading(false);
         return { success: true, userType: role };
       }
     } catch (apiError) {
@@ -212,7 +209,6 @@ export const AuthProvider = ({ children }) => {
 
 
     setError('Login failed. Please check your credentials.');
-    setLoading(false);
     return { success: false };
   };
 
@@ -273,10 +269,8 @@ export const AuthProvider = ({ children }) => {
   };
   const providerLogin = async (email, password) => {
     setError('');
-    setLoading(true);
     if (!email || !password) {
       setError('Email and password are required');
-      setLoading(false);
       return { success: false };
     }
     
@@ -294,7 +288,6 @@ export const AuthProvider = ({ children }) => {
         setTokens(tokens);
         localStorage.setItem('user', JSON.stringify(user));
         localStorage.setItem('authTokens', JSON.stringify(tokens));
-        setLoading(false);
         return { success: true, userType: 'provider' };
       }
     } catch (apiError) {
@@ -304,7 +297,6 @@ export const AuthProvider = ({ children }) => {
 
 
     setError('Login failed. Please check your credentials.');
-    setLoading(false);
     return { success: false };
   };
 

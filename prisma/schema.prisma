@@ -30,30 +30,34 @@ model PIQ_Health_Records {
 }
 
 model PIQ_Pets {
-  pet_id             BigInt               @id @default(autoincrement())
-  user_id            BigInt?
-  pet_type           String?              @db.VarChar
-  pet_name           String?              @db.VarChar
-  pet_breed          String?              @db.VarChar
-  pet_gender         String?              @db.VarChar
-  pet_birth_dtm      DateTime?            @db.Date
-  pet_blood_grp      String?              @db.VarChar
-  pet_status         String?              @db.VarChar
-  created_at         DateTime             @default(now()) @db.Timestamptz(6)
-  last_updated_dtm   DateTime?            @default(now()) @db.Timestamp(6)
-  pet_image          String?
-  pet_colour         String?
-  microchipped       Boolean?             @default(false)
-  neutered           Boolean?             @default(false)
-  vaccinated         Boolean?             @default(false)
-  extras             Json?                @default("{}")
-  PIQ_Appointments   PIQ_Appointments[]
-  PIQ_Bookings       PIQ_Bookings[]
-  PIQ_Health_Records PIQ_Health_Records[]
-  PIQ_User           PIQ_User?            @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
-  PIQ_Pets_Photo     PIQ_Pets_Photo[]
-  PIQ_Reminders      PIQ_Reminders[]
-  PIQ_pets_profile   PIQ_pets_profile[]
+  pet_id                    BigInt                      @id @default(autoincrement())
+  user_id                   BigInt?
+  pet_type                  String?                     @db.VarChar
+  pet_name                  String?                     @db.VarChar
+  pet_breed                 String?                     @db.VarChar
+  pet_gender                String?                     @db.VarChar
+  pet_birth_dtm             DateTime?                   @db.Date
+  pet_blood_grp             String?                     @db.VarChar
+  pet_status                String?                     @db.VarChar
+  created_at                DateTime                    @default(now()) @db.Timestamptz(6)
+  last_updated_dtm          DateTime?                   @default(now()) @db.Timestamp(6)
+  pet_image                 String?
+  pet_colour                String?
+  microchipped              Boolean?                    @default(false)
+  neutered                  Boolean?                    @default(false)
+  vaccinated                Boolean?                    @default(false)
+  extras                    Json?                       @default("{}")
+  pet_weight                Int?                        @db.SmallInt
+  microchip_number          BigInt?
+  PIQ_Appointments          PIQ_Appointments[]
+  PIQ_Bookings              PIQ_Bookings[]
+  PIQ_Health_Records        PIQ_Health_Records[]
+  PIQ_Pet_Allergy           PIQ_Pet_Allergy[]
+  PIQ_User                  PIQ_User?                   @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+  PIQ_Pets_Photo            PIQ_Pets_Photo[]
+  PIQ_Reminders             PIQ_Reminders[]
+  PIQ_pets_profile          PIQ_pets_profile[]
+  pIQ_PET_MEDICAL_CONDITION pIQ_PET_MEDICAL_CONDITION[]
 
   @@index([pet_name], map: "idx_pets_name")
   @@index([user_id], map: "idx_pets_user_id")
@@ -379,7 +383,7 @@ model PIQ_Service_BizEntity_Details {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model PIQ_Pets_Vaccincation {
+model PIQ_Pets_Vaccination {
   id                 BigInt    @id @default(autoincrement())
   pet_id             Int?
   vaccine_mstr_id    Int?
@@ -390,4 +394,30 @@ model PIQ_Pets_Vaccincation {
   is_record_valid    Boolean?
   created_at         DateTime  @default(now()) @db.Timestamptz(6)
   updated_dtm        DateTime? @db.Timestamp(6)
+}
+
+model PIQ_Pet_Allergy {
+  id               BigInt    @id @default(autoincrement())
+  pet_id           BigInt
+  allergy_name     String    @db.VarChar(255)
+  severity         String?   @db.VarChar(50)
+  notes            String?   @db.VarChar(512)
+  created_at       DateTime  @default(now()) @db.Timestamptz(6)
+  last_updated_dtm DateTime? @default(now()) @db.Timestamp(6)
+  PIQ_Pets         PIQ_Pets  @relation(fields: [pet_id], references: [pet_id], onDelete: Cascade)
+
+  @@index([pet_id], map: "idx_pet_allergy_pet_id")
+}
+
+model pIQ_PET_MEDICAL_CONDITION {
+  id               BigInt    @id @default(autoincrement())
+  pet_id           BigInt
+  condition_name   String    @db.VarChar(255)
+  severity         String?   @db.VarChar(50)
+  notes            String?   @db.VarChar(512)
+  created_at       DateTime  @default(now()) @db.Timestamptz(6)
+  last_updated_dtm DateTime? @default(now()) @db.Timestamp(6)
+  PIQ_Pets         PIQ_Pets  @relation(fields: [pet_id], references: [pet_id], onDelete: Cascade)
+
+  @@index([pet_id], map: "idx_pet_condition_pet_id")
 }

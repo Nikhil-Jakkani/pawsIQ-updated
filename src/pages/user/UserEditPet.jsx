@@ -24,6 +24,7 @@ const UserEditPet = () => {
     birthdate: '',
     weight: '',
     color: '',
+    bloodGroup: '',
     microchipped: false,
     microchipNumber: '',
     neutered: false,
@@ -43,6 +44,9 @@ const UserEditPet = () => {
   // State for breeds
   const [breeds, setBreeds] = useState([]);
   const [loadingBreeds, setLoadingBreeds] = useState(false);
+  // State for blood groups
+  const [bloodGroups, setBloodGroups] = useState([]);
+  const [loadingBloodGroups, setLoadingBloodGroups] = useState(false);
 
   // Pet type options with icons - only cat, dog, and other
   const petTypes = [
@@ -130,6 +134,26 @@ const UserEditPet = () => {
     }
   };
 
+  // Fetch blood groups based on pet type
+  const fetchBloodGroups = async (petType) => {
+    setLoadingBloodGroups(true);
+    try {
+      if (!petType) {
+        setBloodGroups([]);
+        return;
+      }
+      const response = await authFetch(`${API_URL}/pets/blood-groups?petType=${encodeURIComponent(petType)}`);
+      const data = await response.json().catch(() => ({}));
+      const list = Array.isArray(data?.bloodGroups) ? data.bloodGroups.filter(Boolean).map(String) : [];
+      setBloodGroups(list);
+    } catch (e) {
+      console.warn('Failed to load blood groups', e);
+      setBloodGroups([]);
+    } finally {
+      setLoadingBloodGroups(false);
+    }
+  };
+
   // Load pet data
   useEffect(() => {
     const loadPetData = async () => {
@@ -162,6 +186,7 @@ const UserEditPet = () => {
           birthdate: (petData.pet_birth_dtm || petData.birthdate || '').split ? (petData.pet_birth_dtm || petData.birthdate || '').split('T')[0] : (petData.pet_birth_dtm || petData.birthdate || ''),
           weight: petData.pet_weight ?? petData.weight ?? '',
           color: petData.pet_colour || petData.color || '',
+          bloodGroup: petData.pet_blood_grp || petData.bloodGroup || '',
           microchipped: petData.microchipped || false,
           microchipNumber: petData.microchip_number || '',
           neutered: petData.neutered || false,
@@ -209,7 +234,8 @@ const UserEditPet = () => {
       setFormData(prev => ({
         ...prev,
         [name]: value,
-        breed: '' // Reset breed when type changes
+        breed: '', // Reset breed when type changes
+        bloodGroup: ''
       }));
     }
   };
@@ -273,6 +299,7 @@ const UserEditPet = () => {
         gender: formData.gender || undefined,
         birthdate: formData.birthdate || undefined,
         color: formData.color || undefined,
+        bloodGroup: formData.bloodGroup || undefined,
         ageGroup: formData.ageGroup || undefined,
         microchipped: formData.microchipped,
         microchipNumber: formData.microchipNumber || undefined,
@@ -531,6 +558,20 @@ const UserEditPet = () => {
                     onChange={handleChange}
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
                     placeholder="Enter color"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="bloodGroup" className="block text-sm font-semibold text-gray-700 mb-2">
+                    Blood Group
+                  </label>
+                  <input
+                    type="text"
+                    id="bloodGroup"
+                    name="bloodGroup"
+                    value={formData.bloodGroup}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
+                    placeholder="e.g., DEA 1.1+, A, B, AB, Unknown"
                   />
                 </div>
               </div>
