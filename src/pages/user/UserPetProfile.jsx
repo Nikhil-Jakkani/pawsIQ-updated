@@ -157,13 +157,15 @@ const UserPetProfile = () => {
               : Array.isArray(data.allergies)
               ? data.allergies.join(', ')
               : '',
+          otherAllergies: data.other_allergies || '',
           medicalConditions:
             typeof data.medical_conditions === 'string'
               ? data.medical_conditions
               : Array.isArray(data.medical_conditions)
               ? data.medical_conditions.join(', ')
               : '',
-          medications: data.medications || '',
+          otherMedicalConditions: data.other_medical_conditions || '',
+          medications: data.current_medications || data.medications || '',
           dietaryNeeds: data.dietary_needs || '',
           vetName: data.vet_name || '',
           vetPhone: data.vet_phone || '',
@@ -171,6 +173,9 @@ const UserPetProfile = () => {
         };
 
         setPet(normalized);
+        // Initialize custom fields from consolidated data
+        setCustomAllergies(normalized.otherAllergies || '');
+        setCustomMedicalConditions(normalized.otherMedicalConditions || '');
         // Try to resolve signed URL for image if path exists
         try {
           if (normalized.imagePath) {
@@ -214,9 +219,11 @@ const UserPetProfile = () => {
         const initAllergies = normalized.allergies
           ? normalized.allergies.split(',').map((s) => s.trim()).filter(Boolean)
           : [];
+        if (normalized.otherAllergies) initAllergies.push(normalized.otherAllergies);
         const initMedical = normalized.medicalConditions
           ? normalized.medicalConditions.split(',').map((s) => s.trim()).filter(Boolean)
           : [];
+        if (normalized.otherMedicalConditions) initMedical.push(normalized.otherMedicalConditions);
         setSelectedAllergies(initAllergies);
         setSelectedMedicalConditions(initMedical);
 
@@ -236,11 +243,19 @@ const UserPetProfile = () => {
           }
           if (aRes && aRes.ok) {
             const payload = await aRes.json().catch(() => ({}));
-            setAllergiesList(Array.isArray(payload?.allergies) ? payload.allergies : []);
+            // Consolidated row: { selected_allergies: string[], other_allergies: string|null }
+            const list = [];
+            if (Array.isArray(payload?.selected_allergies)) list.push(...payload.selected_allergies);
+            if (payload?.other_allergies) list.push(String(payload.other_allergies));
+            setAllergiesList(list);
           }
           if (cRes && cRes.ok) {
             const payload = await cRes.json().catch(() => ({}));
-            setConditionsList(Array.isArray(payload?.conditions) ? payload.conditions : []);
+            // Consolidated row: { selected_conditions: string[], other_conditions: string|null }
+            const list = [];
+            if (Array.isArray(payload?.selected_conditions)) list.push(...payload.selected_conditions);
+            if (payload?.other_conditions) list.push(String(payload.other_conditions));
+            setConditionsList(list);
           }
         } catch (e) {
           console.warn('Failed to fetch health lists', e);
@@ -279,7 +294,7 @@ const UserPetProfile = () => {
       const allMedical = [...selectedMedicalConditions];
       if (customMedicalConditions.trim()) allMedical.push(customMedicalConditions.trim());
 
-      // Build payload similar to UserEditPet.jsx
+      // Build payload for new consolidated health tables (keep legacy fields too)
       const payload = {
         name: formData.name?.trim(),
         type: formData.type || undefined,
@@ -292,10 +307,18 @@ const UserPetProfile = () => {
         microchipped: !!formData.microchipped,
         microchipNumber: formData.microchipNumber || undefined,
         neutered: !!formData.neutered,
+        // Legacy strings for backward-compat
         allergies: allAllergies.length > 0 ? allAllergies.join(', ') : undefined,
         medicalConditions: allMedical.length > 0 ? allMedical.join(', ') : undefined,
         medications: formData.medications || undefined,
         dietaryNeeds: formData.dietaryNeeds || undefined,
+        // New consolidated fields
+        selected_allergies: selectedAllergies,
+        other_allergies: customAllergies?.trim() || undefined,
+        selected_conditions: selectedMedicalConditions,
+        other_conditions: customMedicalConditions?.trim() || undefined,
+        current_medications: formData.medications || undefined,
+        dietary_needs: formData.dietaryNeeds || undefined,
         vetName: formData.vetName || undefined,
         vetPhone: formData.vetPhone || undefined,
         notes: formData.notes || undefined,
@@ -837,8 +860,8 @@ const UserPetProfile = () => {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                          {vaccinations.map((v) => (
-                            <tr key={v.id}>
+                          {vaccinations.map((v, idx) => (
+                            <tr key={v.vaccination_name || idx}>
                               <td className="px-4 py-2 text-sm text-gray-800">{v.vaccination_name}</td>
                               <td className="px-4 py-2 text-sm text-gray-500">{v.vaccine_given_date ? String(v.vaccine_given_date).slice(0,10) : '-'}</td>
                               <td className="px-4 py-2 text-sm text-gray-500">{v.vaccine_due_date ? String(v.vaccine_due_date).slice(0,10) : '-'}</td>
@@ -858,7 +881,7 @@ const UserPetProfile = () => {
                   ) : (
                     <ul className="list-disc pl-6 text-sm text-gray-700 space-y-1">
                       {allergiesList.map((a) => (
-                        <li key={a.id}>{a.allergy_name}{a.severity ? ` — ${a.severity}` : ''}{a.notes ? ` (${a.notes})` : ''}</li>
+                        <li key={a}>{a}</li>
                       ))}
                     </ul>
                   )}
@@ -871,7 +894,7 @@ const UserPetProfile = () => {
                   ) : (
                     <ul className="list-disc pl-6 text-sm text-gray-700 space-y-1">
                       {conditionsList.map((c) => (
-                        <li key={c.id}>{c.condition_name}{c.severity ? ` — ${c.severity}` : ''}{c.notes ? ` (${c.notes})` : ''}</li>
+                        <li key={c}>{c}</li>
                       ))}
                     </ul>
                   )}

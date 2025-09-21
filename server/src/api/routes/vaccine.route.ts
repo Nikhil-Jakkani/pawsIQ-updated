@@ -57,12 +57,35 @@ router.get('/pets/:petId/vaccinations', userAuth as any, async (req: any, res) =
     const petId = Number(req.params.petId);
     if (!petId) return res.status(httpStatus.BAD_REQUEST).json({ message: 'Invalid petId' });
 
-    const records = await prisma.pIQ_Pets_Vaccination.findMany({
-      where: { pet_id: petId },
-      orderBy: { vaccine_due_date: 'asc' },
-    });
+    // Read from consolidated single-row table
+    const row = await prisma.pIQ_Pet_Vaccination.findUnique({ where: { pet_id: BigInt(petId) } as any });
+    if (!row) return res.status(httpStatus.OK).json([]);
 
-    return res.status(httpStatus.OK).json(toJsonSafe(records));
+    // Synthesize array matching legacy client expectations
+    const names: string[] = Array.isArray(row.selected_vaccines) ? row.selected_vaccines : [];
+    const given: Record<string, string> = (row.vaccination_dates as any) || {};
+    const due: Record<string, string> = (row.next_due_dates as any) || {};
+    const toIsoOrNull = (val: any): string | null => {
+      try {
+        if (!val) return null;
+        const d = new Date(val);
+        return Number.isNaN(d.getTime()) ? null : d.toISOString();
+      } catch (_) {
+        return null;
+      }
+    };
+    const out = names.map((name) => {
+      const gIso = toIsoOrNull(given?.[name]);
+      const dIso = toIsoOrNull(due?.[name]);
+      return {
+        id: undefined,
+        vaccination_name: name,
+        vaccine_given_date: gIso,
+        vaccine_due_date: dIso,
+        vaccine_status: gIso ? 'given' : (dIso ? 'planned' : null),
+      };
+    });
+    return res.status(httpStatus.OK).json(toJsonSafe(out));
   } catch (e: any) {
     return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: e?.message || 'Failed to fetch pet vaccinations' });
   }
@@ -75,21 +98,35 @@ router.post('/pets/:petId/vaccinations', userAuth as any, async (req: any, res) 
     if (!petId) return res.status(httpStatus.BAD_REQUEST).json({ message: 'Invalid petId' });
 
     const body = req.body || {};
-    const data: any = {
-      pet_id: petId,
-      vaccine_mstr_id: body.vaccine_mstr_id ?? null,
-      vaccination_name: body.vaccination_name ?? body.vaccine_name ?? body.title ?? null,
-      vaccine_given_date: body.vaccine_given_date ? new Date(body.vaccine_given_date) : null,
-      vaccine_due_date: body.vaccine_due_date ? new Date(body.vaccine_due_date) : null,
-      vaccine_status: body.vaccine_status ?? null,
-      is_record_valid: body.is_record_valid ?? true,
-      updated_dtm: new Date(),
+    const name: string | null = body.vaccination_name ?? body.vaccine_name ?? body.title ?? null;
+    if (!name) return res.status(httpStatus.BAD_REQUEST).json({ message: 'vaccination_name is required' });
+
+    const toIsoOrNull = (val: any): string | null => {
+      try {
+        if (!val) return null;
+        const d = new Date(val);
+        return Number.isNaN(d.getTime()) ? null : d.toISOString();
+      } catch (_) {
+        return null;
+      }
     };
+    const given = toIsoOrNull(body.vaccine_given_date);
+    const due = toIsoOrNull(body.vaccine_due_date);
 
-    if (!data.vaccination_name) return res.status(httpStatus.BAD_REQUEST).json({ message: 'vaccination_name is required' });
+    const existing = await prisma.pIQ_Pet_Vaccination.findUnique({ where: { pet_id: BigInt(petId) } as any });
+    const selected = new Set<string>(Array.isArray(existing?.selected_vaccines) ? existing!.selected_vaccines : []);
+    selected.add(name);
+    const vaccination_dates: any = Object.assign({}, (existing?.vaccination_dates as any) || {});
+    const next_due_dates: any = Object.assign({}, (existing?.next_due_dates as any) || {});
+    if (given) vaccination_dates[name] = given; else delete vaccination_dates[name];
+    if (due) next_due_dates[name] = due; else delete next_due_dates[name];
 
-    const created = await prisma.pIQ_Pets_Vaccination.create({ data });
-    return res.status(httpStatus.CREATED).json(toJsonSafe(created));
+    const up = await prisma.pIQ_Pet_Vaccination.upsert({
+      where: { pet_id: BigInt(petId) } as any,
+      create: { pet_id: BigInt(petId), selected_vaccines: Array.from(selected), vaccination_dates, next_due_dates } as any,
+      update: { selected_vaccines: Array.from(selected), vaccination_dates, next_due_dates, last_updated_dtm: new Date() } as any,
+    });
+    return res.status(httpStatus.CREATED).json(toJsonSafe(up));
   } catch (e: any) {
     return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: e?.message || 'Failed to create vaccination' });
   }
@@ -103,21 +140,34 @@ router.post('/pets/:petId/vaccinations/batch', userAuth as any, async (req: any,
     const entries: any[] = Array.isArray(req.body?.entries) ? req.body.entries : [];
     if (!entries.length) return res.status(httpStatus.BAD_REQUEST).json({ message: 'entries array is required' });
 
-    const payloads = entries.map((entry) => ({
-      pet_id: petId,
-      vaccine_mstr_id: entry.vaccine_mstr_id ?? null,
-      vaccination_name: entry.vaccineName || entry.vaccination_name || entry.title,
-      vaccine_given_date: entry.recordDate ? new Date(entry.recordDate) : (entry.vaccine_given_date ? new Date(entry.vaccine_given_date) : null),
-      vaccine_due_date: entry.nextDueDate ? new Date(entry.nextDueDate) : (entry.vaccine_due_date ? new Date(entry.vaccine_due_date) : null),
-      vaccine_status: entry.vaccine_status ?? (entry.vaccine_given_date || entry.recordDate ? 'given' : 'planned'),
-      is_record_valid: true,
-      updated_dtm: new Date(),
-    })).filter((p) => p.vaccination_name);
-
-    if (!payloads.length) return res.status(httpStatus.BAD_REQUEST).json({ message: 'No valid vaccination entries' });
-
-    const created = await prisma.pIQ_Pets_Vaccination.createMany({ data: payloads });
-    return res.status(httpStatus.CREATED).json(toJsonSafe({ count: created.count }));
+    const existing = await prisma.pIQ_Pet_Vaccination.findUnique({ where: { pet_id: BigInt(petId) } as any });
+    const selected = new Set<string>(Array.isArray(existing?.selected_vaccines) ? existing!.selected_vaccines : []);
+    const vaccination_dates: any = Object.assign({}, (existing?.vaccination_dates as any) || {});
+    const next_due_dates: any = Object.assign({}, (existing?.next_due_dates as any) || {});
+    const toIsoOrNull = (val: any): string | null => {
+      try {
+        if (!val) return null;
+        const d = new Date(val);
+        return Number.isNaN(d.getTime()) ? null : d.toISOString();
+      } catch (_) {
+        return null;
+      }
+    };
+    for (const entry of entries) {
+      const name = entry.vaccineName || entry.vaccination_name || entry.title;
+      if (!name) continue;
+      selected.add(name);
+      const given = toIsoOrNull(entry.recordDate || entry.vaccine_given_date);
+      const due = toIsoOrNull(entry.nextDueDate || entry.vaccine_due_date);
+      if (given) vaccination_dates[name] = given; else delete vaccination_dates[name];
+      if (due) next_due_dates[name] = due; else delete next_due_dates[name];
+    }
+    const up = await prisma.pIQ_Pet_Vaccination.upsert({
+      where: { pet_id: BigInt(petId) } as any,
+      create: { pet_id: BigInt(petId), selected_vaccines: Array.from(selected), vaccination_dates, next_due_dates } as any,
+      update: { selected_vaccines: Array.from(selected), vaccination_dates, next_due_dates, last_updated_dtm: new Date() } as any,
+    });
+    return res.status(httpStatus.CREATED).json(toJsonSafe({ count: Array.from(selected).length, row: up }));
   } catch (e: any) {
     return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: e?.message || 'Failed to save vaccinations' });
   }
@@ -127,18 +177,8 @@ router.post('/pets/:petId/vaccinations/batch', userAuth as any, async (req: any,
 router.put('/vaccinations/:id', userAuth as any, async (req: any, res) => {
   try {
     const id = Number(req.params.id);
-    if (!id) return res.status(httpStatus.BAD_REQUEST).send({ message: 'Invalid id' });
-    const body = req.body || {};
-    const data: any = {};
-    if (body.vaccine_mstr_id !== undefined) data.vaccine_mstr_id = body.vaccine_mstr_id;
-    if (body.vaccination_name !== undefined) data.vaccination_name = body.vaccination_name;
-    if (body.vaccine_status !== undefined) data.vaccine_status = body.vaccine_status;
-    if (body.vaccine_given_date !== undefined) data.vaccine_given_date = body.vaccine_given_date ? new Date(body.vaccine_given_date) : null;
-    if (body.vaccine_due_date !== undefined) data.vaccine_due_date = body.vaccine_due_date ? new Date(body.vaccine_due_date) : null;
-    data.updated_dtm = new Date();
-
-    const updated = await prisma.pIQ_Pets_Vaccination.update({ where: { id }, data });
-    return res.status(httpStatus.OK).json(toJsonSafe(updated));
+    // This endpoint used old per-row model; not applicable with consolidated schema.
+    return res.status(httpStatus.NOT_IMPLEMENTED).json({ message: 'Update single vaccination not supported with consolidated schema. Use POST /pets/:petId/vaccinations instead.' });
   } catch (e: any) {
     return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: e?.message || 'Failed to update vaccination' });
   }
@@ -148,9 +188,8 @@ router.put('/vaccinations/:id', userAuth as any, async (req: any, res) => {
 router.delete('/vaccinations/:id', userAuth as any, async (req: any, res) => {
   try {
     const id = Number(req.params.id);
-    if (!id) return res.status(httpStatus.BAD_REQUEST).send({ message: 'Invalid id' });
-    await prisma.pIQ_Pets_Vaccination.delete({ where: { id } });
-    return res.sendStatus(httpStatus.NO_CONTENT);
+    // Not applicable in consolidated schema. Use query by pet + name instead.
+    return res.status(httpStatus.NOT_IMPLEMENTED).json({ message: 'Delete by ID not supported with consolidated schema. Use DELETE /vaccines/pets/:petId?vaccine=Name' });
   } catch (e: any) {
     return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: e?.message || 'Failed to delete vaccination' });
   }

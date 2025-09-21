@@ -56,44 +56,106 @@ export const petController = {
 
       if (typeof body.neutered === 'boolean') data.neutered = body.neutered;
 
-      const allergiesStr: string | undefined = body.allergies;
-      const medStr: string | undefined = body.medicalConditions;
-      const vaccinations: any[] = Array.isArray(body.vaccinations) ? body.vaccinations : [];
+      // Support legacy and new shapes for health data
+      const allergiesStr: string | undefined = body.allergies; // legacy comma-separated
+      const selected_allergies: string[] | undefined = Array.isArray(body.selected_allergies)
+        ? body.selected_allergies
+        : (typeof body.allergies === 'string' ? body.allergies.split(',').map((s: string) => s.trim()).filter(Boolean) : undefined);
+      const other_allergies: string | undefined = body.other_allergies;
+
+      const medStr: string | undefined = body.medicalConditions; // legacy comma-separated
+      const selected_conditions: string[] | undefined = Array.isArray(body.selected_conditions)
+        ? body.selected_conditions
+        : (typeof body.medicalConditions === 'string' ? body.medicalConditions.split(',').map((s: string) => s.trim()).filter(Boolean) : undefined);
+      const other_conditions: string | undefined = body.other_conditions;
+      const current_medications: string | undefined = body.current_medications ?? body.medications;
+      const dietary_needs: string | undefined = body.dietary_needs ?? body.dietaryNeeds;
+
+      const vaccinationsArr: any[] = Array.isArray(body.vaccinations) ? body.vaccinations : [];
+      const selected_vaccines: string[] | undefined = Array.isArray(body.selected_vaccines) ? body.selected_vaccines : undefined;
+      const vaccination_dates: any | undefined = body.vaccination_dates; // JSON object name->date
+      const next_due_dates: any | undefined = body.next_due_dates; // JSON object name->date
+      const custom_vaccines: string | undefined = body.custom_vaccines;
 
       const pet = await prisma.$transaction(async (tx) => {
         const updated = await tx.pIQ_Pets.update({ where: { pet_id: id }, data });
 
-        if (typeof allergiesStr === 'string') {
-          await tx.pIQ_Pet_Allergy.deleteMany({ where: { pet_id: BigInt(id) } as any });
-          const names = allergiesStr.split(',').map((s) => s.trim()).filter(Boolean);
-          if (names.length) {
-            await tx.pIQ_Pet_Allergy.createMany({ data: names.map((n) => ({ pet_id: BigInt(id), allergy_name: n } as any)) });
-          }
+        // Allergies: single row per pet
+        if (selected_allergies || typeof other_allergies === 'string' || typeof allergiesStr === 'string') {
+          const nextSelected = Array.isArray(selected_allergies)
+            ? selected_allergies
+            : (typeof allergiesStr === 'string' ? allergiesStr.split(',').map((s) => s.trim()).filter(Boolean) : []);
+          await tx.pIQ_Pet_Allergy.upsert({
+            where: { pet_id: BigInt(id) },
+            create: {
+              pet_id: BigInt(id),
+              selected_allergies: nextSelected,
+              other_allergies: other_allergies ?? null,
+            } as any,
+            update: {
+              selected_allergies: nextSelected,
+              other_allergies: other_allergies ?? null,
+              last_updated_dtm: new Date(),
+            } as any,
+          });
         }
 
-        if (typeof medStr === 'string') {
-          await tx.pIQ_PET_MEDICAL_CONDITION.deleteMany({ where: { pet_id: BigInt(id) } as any });
-          const names = medStr.split(',').map((s) => s.trim()).filter(Boolean);
-          if (names.length) {
-            await tx.pIQ_PET_MEDICAL_CONDITION.createMany({ data: names.map((n) => ({ pet_id: BigInt(id), condition_name: n } as any)) });
-          }
+        // Health conditions: single row per pet
+        if (selected_conditions || typeof other_conditions === 'string' || typeof current_medications === 'string' || typeof dietary_needs === 'string' || typeof medStr === 'string') {
+          const nextSelected = Array.isArray(selected_conditions)
+            ? selected_conditions
+            : (typeof medStr === 'string' ? medStr.split(',').map((s) => s.trim()).filter(Boolean) : []);
+          await tx.pIQ_Pet_Medical_Condition.upsert({
+            where: { pet_id: BigInt(id) },
+            create: {
+              pet_id: BigInt(id),
+              selected_conditions: nextSelected,
+              other_conditions: other_conditions ?? null,
+              current_medications: current_medications ?? null,
+              dietary_needs: dietary_needs ?? null,
+            } as any,
+            update: {
+              selected_conditions: nextSelected,
+              other_conditions: other_conditions ?? null,
+              current_medications: current_medications ?? null,
+              dietary_needs: dietary_needs ?? null,
+              last_updated_dtm: new Date(),
+            } as any,
+          });
         }
 
-        if (vaccinations.length) {
-          await tx.pIQ_Pets_Vaccination.deleteMany({ where: { pet_id: id } });
-          const payloads = vaccinations.map((v) => ({
-            pet_id: id,
-            vaccine_mstr_id: v.vaccine_mstr_id ?? null,
-            vaccination_name: v.vaccine || v.vaccination_name || v.title || null,
-            vaccine_given_date: v.date ? new Date(v.date) : (v.vaccine_given_date ? new Date(v.vaccine_given_date) : null),
-            vaccine_due_date: v.nextDue ? new Date(v.nextDue) : (v.vaccine_due_date ? new Date(v.vaccine_due_date) : null),
-            vaccine_status: v.vaccine_status ?? (v.date || v.vaccine_given_date ? 'given' : 'planned'),
-            is_record_valid: true,
-            updated_dtm: new Date(),
-          })).filter((p) => p.vaccination_name);
-          if (payloads.length) {
-            await tx.pIQ_Pets_Vaccination.createMany({ data: payloads as any });
+        // Vaccinations: single row per pet
+        if (selected_vaccines || vaccinationsArr.length || vaccination_dates || next_due_dates || typeof custom_vaccines === 'string') {
+          let vaccines = Array.isArray(selected_vaccines) ? selected_vaccines : [];
+          // Adapt from legacy vaccinations array into maps if provided
+          const vDates: Record<string, any> = vaccination_dates && typeof vaccination_dates === 'object' ? vaccination_dates : {};
+          const nextDue: Record<string, any> = next_due_dates && typeof next_due_dates === 'object' ? next_due_dates : {};
+          if (!vaccines.length && vaccinationsArr.length) {
+            vaccines = vaccinationsArr.map((v) => v.vaccination_name || v.vaccine || v.title).filter(Boolean);
+            for (const v of vaccinationsArr) {
+              const key = v.vaccination_name || v.vaccine || v.title;
+              if (!key) continue;
+              if (v.date || v.vaccine_given_date) vDates[key] = new Date(v.date || v.vaccine_given_date).toISOString();
+              if (v.nextDue || v.vaccine_due_date) nextDue[key] = new Date(v.nextDue || v.vaccine_due_date).toISOString();
+            }
           }
+          await tx.pIQ_Pet_Vaccination.upsert({
+            where: { pet_id: BigInt(id) },
+            create: {
+              pet_id: BigInt(id),
+              selected_vaccines: vaccines,
+              vaccination_dates: Object.keys(vDates).length ? vDates : ({} as any),
+              next_due_dates: Object.keys(nextDue).length ? nextDue : ({} as any),
+              custom_vaccines: custom_vaccines ?? null,
+            } as any,
+            update: {
+              selected_vaccines: vaccines,
+              vaccination_dates: Object.keys(vDates).length ? vDates : ({} as any),
+              next_due_dates: Object.keys(nextDue).length ? nextDue : ({} as any),
+              custom_vaccines: custom_vaccines ?? null,
+              last_updated_dtm: new Date(),
+            } as any,
+          });
         }
 
         return updated;
