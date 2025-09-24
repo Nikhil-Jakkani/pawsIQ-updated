@@ -105,7 +105,7 @@ const UserPayments = () => {
               onClick={() => setActiveTab('methods')}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'methods'
-                  ? 'border-pink-500 text-pink-600'
+                  ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -115,7 +115,7 @@ const UserPayments = () => {
               onClick={() => setActiveTab('history')}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'history'
-                  ? 'border-pink-500 text-pink-600'
+                  ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -131,7 +131,7 @@ const UserPayments = () => {
               <h2 className="text-lg font-semibold text-gray-800">Your Payment Methods</h2>
               <button
                 onClick={() => setShowAddCard(true)}
-                className="bg-pink-600 text-white px-4 py-2 rounded-lg hover:bg-pink-700 transition-colors flex items-center gap-2"
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
               >
                 <FaPlus size={14} />
                 Add Payment Method
@@ -156,7 +156,7 @@ const UserPayments = () => {
                       </div>
                     </div>
                     {method.isDefault && (
-                      <span className="bg-pink-100 text-pink-800 text-xs px-2 py-1 rounded-full">
+                      <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
                         Default
                       </span>
                     )}
@@ -196,7 +196,7 @@ const UserPayments = () => {
                       <input
                         type="text"
                         placeholder="1234 5678 9012 3456"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
@@ -207,7 +207,7 @@ const UserPayments = () => {
                         <input
                           type="text"
                           placeholder="MM/YY"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
                       <div>
@@ -217,7 +217,7 @@ const UserPayments = () => {
                         <input
                           type="text"
                           placeholder="123"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
                     </div>
@@ -228,14 +228,14 @@ const UserPayments = () => {
                       <input
                         type="text"
                         placeholder="John Doe"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
                     <div className="flex items-center">
                       <input
                         type="checkbox"
                         id="setDefault"
-                        className="h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded"
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                       />
                       <label htmlFor="setDefault" className="ml-2 block text-sm text-gray-700">
                         Set as default payment method
@@ -251,7 +251,7 @@ const UserPayments = () => {
                       </button>
                       <button
                         type="submit"
-                        className="flex-1 bg-pink-600 text-white px-4 py-2 rounded-md hover:bg-pink-700 transition-colors"
+                        className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
                       >
                         Add Card
                       </button>

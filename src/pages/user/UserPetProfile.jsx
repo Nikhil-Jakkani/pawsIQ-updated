@@ -8,7 +8,7 @@ import { useAuth } from '../../context/AuthContext';
 const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
 
 const inputCls =
-  'w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-gray-900 placeholder-gray-400 focus:border-pink-500 focus:outline-none focus:ring-2 focus:ring-pink-500/40 transition';
+  'w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 transition';
 const labelCls = 'block text-sm font-medium text-gray-700 mb-1';
 const sectionTitleCls = 'text-base font-semibold text-gray-900';
 const sectionDescCls = 'text-sm text-gray-500';
@@ -444,7 +444,7 @@ const UserPetProfile = () => {
       <UserLayout>
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-pink-600"></div>
+            <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600"></div>
             <p className="mt-4 text-gray-600">Loading pet profile...</p>
           </div>
         </div>
@@ -540,7 +540,7 @@ const UserPetProfile = () => {
                           </button>
                           <button
                             onClick={() => navigate(`/user/pets/${pet.id}/health-records?type=prescription`)}
-                            className="rounded-lg bg-pink-600 px-3 py-2 text-sm font-medium text-white transition "
+                            className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition "
                           >
                             <FaFileMedical className="mr-1 inline" /> Prescriptions
                           </button>
@@ -554,7 +554,7 @@ const UserPetProfile = () => {
                     <div className="mt-6 space-y-8">
                       {/* Hero meta row */}
                       <div className="flex flex-wrap items-center gap-2">
-                        {pet.type && <span className="rounded-full bg-pink-50 px-3 py-1 text-xs font-medium text-pink-700 ring-1 ring-pink-200 capitalize">{pet.type}</span>}
+                        {pet.type && <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 ring-1 ring-blue-200 capitalize">{pet.type}</span>}
                         {pet.gender && <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 ring-1 ring-blue-200 capitalize">{pet.gender}</span>}
                         {pet.ageGroup && <span className="rounded-full bg-purple-50 px-3 py-1 text-xs font-medium text-purple-700 ring-1 ring-purple-200 capitalize">{pet.ageGroup}</span>}
                         {pet.weight ? (
@@ -729,7 +729,7 @@ const UserPetProfile = () => {
                         </header>
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                           <div className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2.5">
-                            <input id="microchipped" type="checkbox" name="microchipped" checked={formData.microchipped} onChange={handleChange} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
+                            <input id="microchipped" type="checkbox" name="microchipped" checked={formData.microchipped} onChange={handleChange} className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
                             <label htmlFor="microchipped" className="text-sm text-gray-700">Microchipped</label>
                           </div>
                           <div>
@@ -737,7 +737,7 @@ const UserPetProfile = () => {
                             <input name="microchipNumber" value={formData.microchipNumber} onChange={handleChange} className={inputCls} />
                           </div>
                           <div className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2.5">
-                            <input id="neutered" type="checkbox" name="neutered" checked={formData.neutered} onChange={handleChange} className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500" />
+                            <input id="neutered" type="checkbox" name="neutered" checked={formData.neutered} onChange={handleChange} className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
                             <label htmlFor="neutered" className="text-sm text-gray-700">Neutered/Spayed</label>
                           </div>
 
@@ -750,7 +750,7 @@ const UserPetProfile = () => {
                                   <label key={opt} className="flex cursor-pointer items-center gap-2 rounded-md bg-white px-2 py-2 shadow-sm ring-1 ring-gray-200 ">
                                     <input
                                       type="checkbox"
-                                      className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500"
+                                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                       checked={selectedAllergies.includes(opt)}
                                       onChange={() => toggleSelection(selectedAllergies, setSelectedAllergies, opt)}
                                     />
@@ -776,7 +776,7 @@ const UserPetProfile = () => {
                                   <label key={opt} className="flex cursor-pointer items-center gap-2 rounded-md bg-white px-2 py-2 shadow-sm ring-1 ring-gray-200 ">
                                     <input
                                       type="checkbox"
-                                      className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500"
+                                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                       checked={selectedMedicalConditions.includes(opt)}
                                       onChange={() => toggleSelection(selectedMedicalConditions, setSelectedMedicalConditions, opt)}
                                     />
@@ -830,7 +830,7 @@ const UserPetProfile = () => {
                           type="button"
                           onClick={handleSave}
                           disabled={saving}
-                          className="rounded-lg bg-pink-600 px-4 py-2 text-sm font-medium text-white transition disabled:opacity-60"
+                          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition disabled:opacity-60"
                         >
                           <FaSave className="mr-1 inline" /> {saving ? 'Saving…' : 'Save Changes'}
                         </button>

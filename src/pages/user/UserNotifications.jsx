@@ -114,9 +114,9 @@ const UserNotifications = () => {
       case 'order':
         return <FaShoppingCart className="text-blue-500" />;
       case 'pet':
-        return <FaPaw className="text-pink-500" />;
+        return <FaPaw className="text-blue-500" />;
       case 'promotion':
-        return <FaTag className="text-yellow-500" />;
+        return <FaTag className="text-blue-500" />;
       case 'system':
         return <FaExclamationCircle className="text-red-500" />;
       default:
@@ -148,8 +148,8 @@ const UserNotifications = () => {
         <div className="flex justify-between items-center">
           <div>
             <div className="flex items-center gap-3">
-              <div className="bg-yellow-100 p-2 rounded-lg">
-                <FaBell className="text-yellow-600 text-2xl" />
+              <div className="bg-blue-100 p-2 rounded-lg">
+                <FaBell className="text-blue-600 text-2xl" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-800">Notifications</h1>
@@ -161,7 +161,7 @@ const UserNotifications = () => {
             {unreadCount > 0 && (
               <button 
                 onClick={markAllAsRead}
-                className="px-3 py-1.5 bg-yellow-100 text-yellow-700 rounded-lg text-sm font-medium hover:bg-yellow-200 transition-colors flex items-center gap-1"
+                className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-200 transition-colors flex items-center gap-1"
               >
                 <FaCheck size={12} />
                 <span>Mark All as Read</span>
@@ -186,13 +186,13 @@ const UserNotifications = () => {
               onClick={() => setFilterType('all')}
               className={`flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors
                 ${filterType === 'all' 
-                  ? 'text-yellow-600 border-b-2 border-yellow-600' 
-                  : 'text-gray-600 hover:text-yellow-600 hover:bg-yellow-50'}`}
+                  ? 'text-blue-600 border-b-2 border-blue-600' 
+                  : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'}`}
             >
               <FaBell />
               <span>All</span>
               {unreadCount > 0 && (
-                <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-0.5 rounded-full">
+                <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded-full">
                   {unreadCount}
                 </span>
               )}
@@ -201,8 +201,8 @@ const UserNotifications = () => {
               onClick={() => setFilterType('appointment')}
               className={`flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors
                 ${filterType === 'appointment' 
-                  ? 'text-yellow-600 border-b-2 border-yellow-600' 
-                  : 'text-gray-600 hover:text-yellow-600 hover:bg-yellow-50'}`}
+                  ? 'text-blue-600 border-b-2 border-blue-600' 
+                  : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'}`}
             >
               <FaCalendarAlt />
               <span>Appointments</span>
@@ -211,8 +211,8 @@ const UserNotifications = () => {
               onClick={() => setFilterType('order')}
               className={`flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors
                 ${filterType === 'order' 
-                  ? 'text-yellow-600 border-b-2 border-yellow-600' 
-                  : 'text-gray-600 hover:text-yellow-600 hover:bg-yellow-50'}`}
+                  ? 'text-blue-600 border-b-2 border-blue-600' 
+                  : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'}`}
             >
               <FaShoppingCart />
               <span>Orders</span>
@@ -221,8 +221,8 @@ const UserNotifications = () => {
               onClick={() => setFilterType('pet')}
               className={`flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors
                 ${filterType === 'pet' 
-                  ? 'text-yellow-600 border-b-2 border-yellow-600' 
-                  : 'text-gray-600 hover:text-yellow-600 hover:bg-yellow-50'}`}
+                  ? 'text-blue-600 border-b-2 border-blue-600' 
+                  : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'}`}
             >
               <FaPaw />
               <span>Pets</span>
@@ -231,8 +231,8 @@ const UserNotifications = () => {
               onClick={() => setFilterType('promotion')}
               className={`flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors
                 ${filterType === 'promotion' 
-                  ? 'text-yellow-600 border-b-2 border-yellow-600' 
-                  : 'text-gray-600 hover:text-yellow-600 hover:bg-yellow-50'}`}
+                  ? 'text-blue-600 border-b-2 border-blue-600' 
+                  : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'}`}
             >
               <FaTag />
               <span>Promotions</span>
@@ -241,8 +241,8 @@ const UserNotifications = () => {
               onClick={() => setFilterType('system')}
               className={`flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors
                 ${filterType === 'system' 
-                  ? 'text-yellow-600 border-b-2 border-yellow-600' 
-                  : 'text-gray-600 hover:text-yellow-600 hover:bg-yellow-50'}`}
+                  ? 'text-blue-600 border-b-2 border-blue-600' 
+                  : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'}`}
             >
               <FaExclamationCircle />
               <span>System</span>
@@ -256,10 +256,10 @@ const UserNotifications = () => {
             {filteredNotifications.map(notification => (
               <div 
                 key={notification.id} 
-                className={`p-4 hover:bg-gray-50 transition-colors ${!notification.isRead ? 'bg-yellow-50' : ''}`}
+                className={`p-4 hover:bg-gray-50 transition-colors ${!notification.isRead ? 'bg-blue-50' : ''}`}
               >
                 <div className="flex items-start gap-4">
-                  <div className={`p-3 rounded-full ${!notification.isRead ? 'bg-yellow-100' : 'bg-gray-100'}`}>
+                  <div className={`p-3 rounded-full ${!notification.isRead ? 'bg-blue-100' : 'bg-gray-100'}`}>
                     {getNotificationIcon(notification.type)}
                   </div>
                   <div className="flex-1">
@@ -277,7 +277,7 @@ const UserNotifications = () => {
                       </div>
                       <div className="flex items-center">
                         {!notification.isRead && (
-                          <div className="w-2 h-2 bg-yellow-500 rounded-full mr-2"></div>
+                          <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
                         )}
                         <div className="relative">
                           <button className="p-1 text-gray-500 hover:text-gray-700 rounded-full hover:bg-gray-100">
@@ -290,7 +290,7 @@ const UserNotifications = () => {
                     <div className="mt-3 flex gap-2">
                       <button 
                         onClick={() => navigate(notification.actionUrl)}
-                        className="px-3 py-1.5 bg-yellow-100 text-yellow-700 rounded-lg text-sm font-medium hover:bg-yellow-200 transition-colors"
+                        className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-200 transition-colors"
                       >
                         View Details
                       </button>
@@ -316,8 +316,8 @@ const UserNotifications = () => {
           </div>
         ) : (
           <div className="bg-white rounded-lg p-8 text-center border border-gray-200">
-            <div className="bg-yellow-100 w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4">
-              <FaBell className="text-yellow-600 text-2xl" />
+            <div className="bg-blue-100 w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4">
+              <FaBell className="text-blue-600 text-2xl" />
             </div>
             <h3 className="text-xl font-semibold text-gray-800 mb-2">No notifications</h3>
             <p className="text-gray-600 mb-6">
@@ -328,7 +328,7 @@ const UserNotifications = () => {
             {filterType !== 'all' && (
               <button 
                 onClick={() => setFilterType('all')}
-                className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg inline-flex items-center gap-2 transition-colors"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg inline-flex items-center gap-2 transition-colors"
               >
                 <FaBell />
                 View All Notifications
