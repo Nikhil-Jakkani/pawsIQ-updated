@@ -279,8 +279,8 @@
   }
   
   .pet-info-item {
-    @apply flex items-center gap-2.5 text-sm text-slate-600 bg-slate-50 rounded-lg px-3 py-2.5;
-    border: 1px solid rgba(226, 232, 240, 0.5);
+    @apply flex items-center gap-2.5 text-sm text-black bg-white rounded-lg px-3 py-2.5;
+    border: 1px solid rgba(6, 7, 8, 0.5);
   }
   
 
@@ -398,15 +398,15 @@
   }
   
   .pet-card-loading .pet-card-image {
-    @apply bg-gray-200;
+    @apply bg-white;
   }
   
   .pet-card-loading .pet-name {
-    @apply bg-gray-200 h-6 rounded;
+    @apply bg-white h-6 rounded;
   }
   
   .pet-card-loading .pet-breed {
-    @apply bg-gray-200 h-4 rounded mt-2;
+    @apply bg-white h-4 rounded mt-2;
   }
   
   /* Focus states for accessibility */
@@ -421,26 +421,26 @@
   /* Dark mode support */
   @media (prefers-color-scheme: dark) {
     .pet-card {
-      @apply bg-gray-800 border-gray-700;
+      @apply bg-white border-gray-700;
     }
     
     .pet-card-content {
-      background: linear-gradient(180deg, rgba(31, 41, 55, 0.9) 0%, rgba(17, 24, 39, 0.9) 100%);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.9) 100%);
     }
     
     .pet-name {
-      background: linear-gradient(135deg, #f9fafb 0%, #e5e7eb 100%);
+      background: linear-gradient(135deg, #000000 0%, #000000 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
     
     .pet-breed {
-      @apply text-gray-300;
+      @apply text-black;
     }
     
     .pet-info-item {
-      @apply bg-gray-700 text-gray-200;
+      @apply bg-black text-white;
     }
     
   }

@@ -560,7 +560,7 @@ const UserPets = () => {
               <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search pets by name or breed..."
+                placeholder="Search pets by name or breed"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-gray-300"
@@ -730,7 +730,7 @@ const UserPets = () => {
                         onClick={() => navigate(`/user/pets/${pet.id}`)}
                         className="px-4 py-2.5 rounded-lg text-xs font-medium -all duration-200 bg-white-700 text-gray " style={{ color: 'white' }}
                       >
-                        <FaEye className="inline mr-1.5" />
+                        <FaEye className="inline mr-2" />
                          View Profile
                       </button>
                     </div>
