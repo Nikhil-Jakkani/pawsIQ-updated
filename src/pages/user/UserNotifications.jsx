@@ -265,26 +265,25 @@ const UserNotifications = () => {
                   <div className="flex-1">
                     <div className="flex justify-between items-start">
                       <div>
-                        <h3 className={`font-medium ${!notification.isRead ? 'text-gray-900' : 'text-gray-800'}`}>
-                          {notification.title}
-                        </h3>
+                        <div className="flex justify-between items-center">
+                          <h3 className={`font-medium ${!notification.isRead ? 'text-gray-900' : 'text-gray-800'}`}>
+                            {notification.title}
+                          </h3>
+                          <p className="text-sm text-gray-500">
+                            {formatDate(notification.date)}
+                          </p>
+                        </div>
                         <p className={`mt-1 ${!notification.isRead ? 'text-gray-800' : 'text-gray-600'}`}>
                           {notification.message}
-                        </p>
-                        <p className="text-sm text-gray-500 mt-1">
-                          {formatDate(notification.date)}
                         </p>
                       </div>
                       <div className="flex items-center">
                         {!notification.isRead && (
                           <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
                         )}
-                        <div className="relative">
-                          <button className="p-1 text-gray-500 hover:text-gray-700 rounded-full hover:bg-gray-100">
-                            <FaEllipsisH />
-                          </button>
-                          {/* Dropdown menu would go here in a real implementation */}
-                        </div>
+                        <p className="text-sm text-gray-500">
+                          {formatDate(notification.date)}
+                        </p>
                       </div>
                     </div>
                     <div className="mt-3 flex gap-2">
