@@ -294,17 +294,19 @@ const UserAppointments = () => {
                           }`} />
                         </div>
                         <div>
-                          <h3 className="text-lg font-bold text-gray-800 mb-1">{appointment.serviceType}</h3>
+                          <div className="flex justify-between items-center mb-1">
+                            <h3 className="text-lg font-bold text-gray-800">{appointment.serviceType}</h3>
+                            {appointment.isPendingApproval && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-yellow-200 text-yellow-700 border border-yellow-300">
+                                Awaiting Approval
+                              </span>
+                            )}
+                          </div>
                           <div className="flex items-center gap-2 text-gray-600 text-sm">
                             <FaPaw className="text-blue-500" />
                             <span className="font-medium">{appointment.petName}</span>
                             <span className="text-gray-400">•</span>
                             <span className="capitalize">{appointment.petType}</span>
-                            {appointment.isPendingApproval && (
-                              <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-yellow-200 text-yellow-700 border border-yellow-300">
-                                Awaiting Approval
-                              </span>
-                            )}
                           </div>
                         </div>
                       </div>
