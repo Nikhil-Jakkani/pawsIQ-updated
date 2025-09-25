@@ -851,7 +851,7 @@ const UserSettings = () => {
               <p className="text-sm text-gray-500 -mt-2 mb-4">Control what data we collect and who can see your information.</p>
               
               <div className="bg-white rounded-lg p-4 border border-gray-200 space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between privacy-item">
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     <p className="font-medium text-gray-700 whitespace-nowrap">Data Collection</p>
                     <span className="text-xs text-green-700 bg-green-100 px-2 py-0.5 rounded-full whitespace-nowrap">Recommended</span>
@@ -863,7 +863,7 @@ const UserSettings = () => {
                   </label>
                 </div>
                 
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between privacy-item">
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     <p className="font-medium text-gray-700 whitespace-nowrap">Personalized Ads</p>
                     <span className="text-sm text-gray-500 truncate">• Allow us to show personalized ads based on your activity</span>
@@ -875,9 +875,10 @@ const UserSettings = () => {
                 </div>
                 
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-gray-700">Profile Visibility</p>
-                    <p className="text-sm text-gray-500">Allow other users to see your profile information</p>
+                  <div className="flex items-center justify-between privacy-item">
+                    <p className="font-medium text-gray-700 whitespace-nowrap
+                    ">Profile Visibility</p>
+                    <span className="text-sm text-gray-500 truncate"> • Allow other users to see your profile information</span>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" className="sr-only peer" defaultChecked />
@@ -891,7 +892,7 @@ const UserSettings = () => {
               <h3 className="text-lg font-medium text-gray-800 mb-4">Data Management</h3>
               
               <div className="space-y-4">
-                <div className="bg-white p-4 rounded-lg border border-gray-200">
+                <div className="bg-white p-4 rounded-lg border border-gray-200 flex items-center justify-between privacy-item">
                   <h4 className="font-medium text-gray-800 mb-2">Download Your Data</h4>
                   <p className="text-sm text-gray-600 mb-3">
                     You can download a copy of all the data we have stored about you and your pets.
@@ -901,7 +902,7 @@ const UserSettings = () => {
                   </button>
                 </div>
                 
-                <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+                <div className="bg-red-50 p-4 rounded-lg border border-red-200 flex items-start justify-between privacy-item">
                   <div className="flex items-start gap-3">
                     <div className="bg-red-100 p-2 rounded-full mt-1">
                       <FaExclamationTriangle className="text-red-600" />

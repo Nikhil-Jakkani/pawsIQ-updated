@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaShoppingCart, FaSearch, FaFilter, FaStar, FaHeart, FaRegHeart, FaChevronDown, FaChevronUp, FaTags, FaShippingFast, FaStore, FaDog, FaCat, FaBed, FaCut, FaTshirt } from 'react-icons/fa';
+import { FaShoppingCart, FaSearch, FaFilter, FaStar, FaHeart, FaRegHeart, FaChevronDown, FaChevronUp, FaTags, FaShippingFast, FaStore, FaDog, FaCat, FaBed, FaCut, FaTshirt, FaCreditCard, FaMobileAlt, FaUniversity, FaWallet, FaPhone, FaGooglePay } from 'react-icons/fa';
 import UserLayout from '../../components/layout/UserLayout';
 
 const UserMarketplace = () => {
@@ -181,7 +181,7 @@ const UserMarketplace = () => {
   };
   
   // Add to cart
-  const addToCart = (product) => {
+  const addToCart = () => {
     setCartCount(cartCount + 1);
     // In a real app, you would add the product to the cart state or context
   };
@@ -509,28 +509,28 @@ const UserMarketplace = () => {
             <h2 className="text-lg font-semibold text-green-900">Accepted Payment Methods</h2>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4">
-            <div className="bg-white rounded-lg p-3 text-center border border-green-100 hover:shadow-md transition-shadow">
-              <div className="text-2xl mb-2">💳</div>
+            <div className="bg-white rounded-lg p-3 flex flex-row justify-center items-center border border-green-100 hover:shadow-md transition-shadow">
+              <div className="text-2xl mr-2"><FaCreditCard /></div>
               <p className="text-xs font-medium text-gray-700">Credit/Debit Cards</p>
             </div>
-            <div className="bg-white rounded-lg p-3 text-center border border-green-100 hover:shadow-md transition-shadow">
-              <div className="text-2xl mb-2">📱</div>
+            <div className="bg-white rounded-lg p-3 flex flex-row justify-center items-center border border-green-100 hover:shadow-md transition-shadow">
+              <div className="text-2xl mr-2"><FaMobileAlt /></div>
               <p className="text-xs font-medium text-gray-700">UPI</p>
             </div>
-            <div className="bg-white rounded-lg p-3 text-center border border-green-100 hover:shadow-md transition-shadow">
-              <div className="text-2xl mb-2">🏦</div>
+            <div className="bg-white rounded-lg p-3 flex flex-row justify-center items-center border border-green-100 hover:shadow-md transition-shadow">
+              <div className="text-2xl mr-2"><FaUniversity /></div>
               <p className="text-xs font-medium text-gray-700">Net Banking</p>
             </div>
-            <div className="bg-white rounded-lg p-3 text-center border border-green-100 hover:shadow-md transition-shadow">
-              <div className="text-2xl mb-2">💰</div>
+            <div className="bg-white rounded-lg p-3 flex flex-row justify-center items-center border border-green-100 hover:shadow-md transition-shadow">
+              <div className="text-2xl mr-2"><FaWallet /></div>
               <p className="text-xs font-medium text-gray-700">Paytm</p>
             </div>
-            <div className="bg-white rounded-lg p-3 text-center border border-green-100 hover:shadow-md transition-shadow">
-              <div className="text-2xl mb-2">📲</div>
+            <div className="bg-white rounded-lg p-3 flex flex-row justify-center items-center border border-green-100 hover:shadow-md transition-shadow">
+              <div className="text-2xl mr-2"><FaPhone /></div>
               <p className="text-xs font-medium text-gray-700">PhonePe</p>
             </div>
-            <div className="bg-white rounded-lg p-3 text-center border border-green-100 hover:shadow-md transition-shadow">
-              <div className="text-2xl mb-2">💸</div>
+            <div className="bg-white rounded-lg p-3 flex flex-row justify-center items-center border border-green-100 hover:shadow-md transition-shadow">
+              <div className="text-2xl mr-2"><FaGooglePay /></div>
               <p className="text-xs font-medium text-gray-700">Google Pay</p>
             </div>
           </div>

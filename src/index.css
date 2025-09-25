@@ -1,3 +1,7 @@
+.privacy-item {
+  justify-content: flex-start;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

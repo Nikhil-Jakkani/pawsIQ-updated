@@ -104,10 +104,7 @@ const UserSidebar = ({ isOpen, toggleSidebar }) => {
       icon: <FaCreditCard />,
       label: 'Payments',
       path: '/user/payments',
-      items: [
-        { path: '/user/payments/methods', icon: <FaCreditCard />, label: 'Payment Methods' },
-        { path: '/user/payments/history', icon: <FaClipboardList />, label: 'Payment History' }
-      ]
+      items: []
     },
     {
       id: 'community',
@@ -131,11 +128,7 @@ const UserSidebar = ({ isOpen, toggleSidebar }) => {
       icon: <FaUser />,
       label: 'Profile',
       path: '/user/settings',
-      items: [
-        { path: '/user/settings/profile', icon: <FaUser />, label: 'Profile' },
-        { path: '/user/settings/notifications', icon: <FaBell />, label: 'Notifications' },
-        { path: '/user/settings/security', icon: <FaLock />, label: 'Security' }
-      ]
+      items: []        
     },
     {
       id: 'help',
