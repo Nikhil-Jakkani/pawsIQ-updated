@@ -19,6 +19,7 @@ import userActivityRoutes from './user/activity.route.js';
 import bookingRoutes from './booking/booking.route.js';
 import serviceBizEntityRoutes from './service/bizEntity.route.js';
 import serviceMasterRoutes from './service/serviceMaster.route.js';
+import availabilityRoutes from './booking/availability.route.js';
 import providerBookingRoutes from './provider/booking.route.js';
 import vaccineRoutes from './vaccine.route.js';
 
@@ -49,6 +50,7 @@ router.use('/reminders', reminderRoutes);
 router.use('/bookings', bookingRoutes);
 router.use('', serviceBizEntityRoutes);
 router.use('', serviceMasterRoutes);
+router.use('', availabilityRoutes);
 router.use('/vaccines', vaccineRoutes);
 
 export default router;

@@ -1,6 +1,16 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { 
+  isTokenExpired, 
+  shouldRefreshToken, 
+  validateStoredAuthData, 
+  cleanInvalidSessionData,
+  wasExplicitlyLoggedOut,
+  clearLogoutFlag,
+  setLogoutFlag,
+  getMinutesUntilExpiry
+} from '../utils/sessionUtils.js';
 
 const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
 
@@ -47,12 +57,16 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     try {
+      // Clean any invalid session data first
+      cleanInvalidSessionData();
+      
       const storedUser = localStorage.getItem('user');
       if (storedUser) {
         const parsedUser = JSON.parse(storedUser);
         setCurrentUser(parsedUser);
       }
     } catch (err) {
+      console.error('[Auth] Error loading stored user:', err);
       localStorage.removeItem('user');
     } finally {
       setTimeout(() => {
@@ -72,18 +86,29 @@ export const AuthProvider = ({ children }) => {
 
   const refreshToken = useCallback(async () => {
     if (!tokens?.refresh?.token) {
+      console.warn('[Auth] No refresh token available for refresh');
+      return null;
+    }
+
+    // Check if refresh token is expired before attempting refresh
+    if (isTokenExpired(tokens.refresh.token)) {
+      console.warn('[Auth] Refresh token is expired');
+      logout();
       return null;
     }
 
     try {
-      let response = await fetch(`${API_URL}/auth/refresh-token`, {
+      console.log('[Auth] Attempting token refresh...');
+      let response = await fetch(`${API_URL}/user/auth/refresh-tokens`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refreshToken: tokens.refresh.token })
       });
 
+      // Fallback to legacy endpoint if primary fails
       if (!response.ok) {
-        response = await fetch(`${API_URL}/user/auth/refresh-tokens`, {
+        console.log('[Auth] Primary refresh endpoint failed, trying fallback...');
+        response = await fetch(`${API_URL}/auth/refresh-token`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ refreshToken: tokens.refresh.token })
@@ -91,28 +116,39 @@ export const AuthProvider = ({ children }) => {
       }
 
       if (!response.ok) {
-        throw new Error('Failed to refresh token');
+        const errorText = await response.text();
+        console.error('[Auth] Token refresh failed:', response.status, errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
 
       const data = await response.json();
-      let nextTokens = tokens || {};
+      console.log('[Auth] Token refresh successful');
+      
+      let nextTokens = {};
       if (data?.access || data?.refresh) {
         nextTokens = {
-          access: { ...(tokens?.access || {}), ...(data.access || {}) },
-          refresh: { ...(tokens?.refresh || {}), ...(data.refresh || {}) },
+          access: { ...(data.access || tokens?.access || {}) },
+          refresh: { ...(data.refresh || tokens?.refresh || {}) },
         };
       } else if (data?.accessToken || data?.refreshToken) {
         nextTokens = {
-          access: { ...(tokens?.access || {}), token: data.accessToken || tokens?.access?.token },
-          refresh: { ...(tokens?.refresh || {}), token: data.refreshToken || tokens?.refresh?.token },
+          access: { token: data.accessToken, expires: data.accessExpires },
+          refresh: { token: data.refreshToken, expires: data.refreshExpires },
         };
+      } else {
+        throw new Error('Invalid token refresh response format');
       }
+      
       setTokens(nextTokens);
       localStorage.setItem('authTokens', JSON.stringify(nextTokens));
+      clearLogoutFlag(); // Clear logout flag on successful refresh
       return nextTokens.access?.token || null;
     } catch (error) {
-      console.error('Token refresh failed:', error);
-      logout();
+      console.error('[Auth] Token refresh failed:', error);
+      // Only logout if it's a token-related error, not network issues
+      if (error.message.includes('HTTP 401') || error.message.includes('HTTP 403')) {
+        logout();
+      }
       return null;
     }
   }, [tokens]);
@@ -220,7 +256,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('user', JSON.stringify(user));
         localStorage.setItem('authTokens', JSON.stringify(normalizedTokens));
         // Clear any explicit logout flag
-        localStorage.removeItem('loggedOut');
+        clearLogoutFlag();
         return { success: true, userType: role };
       }
     } catch (apiError) {
@@ -255,7 +291,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       // Set a flag to prevent silent re-login via refresh until user explicitly logs in
-      localStorage.setItem('loggedOut', '1');
+      setLogoutFlag();
       navigate('/login');
     }
   };
@@ -273,7 +309,7 @@ export const AuthProvider = ({ children }) => {
       setTokens(nextTokens);
       localStorage.setItem('authTokens', JSON.stringify(nextTokens));
       // Clear explicit logout barrier when tokens are set programmatically
-      localStorage.removeItem('loggedOut');
+      clearLogoutFlag();
     } catch (_) {}
   };
 
@@ -387,13 +423,28 @@ export const AuthProvider = ({ children }) => {
     const initializeAuth = async () => {
       try {
         // If user explicitly logged out, do not attempt silent refresh
-        if (localStorage.getItem('loggedOut') === '1') {
+        if (wasExplicitlyLoggedOut()) {
+          setLoading(false);
           return;
         }
-        if (!tokens?.access?.token && tokens?.refresh?.token) {
-          const newTok = await refreshToken();
-          if (newTok) {
-            return;
+        
+        // Check if we need to refresh tokens
+        if (tokens?.refresh?.token) {
+          const accessToken = tokens?.access?.token;
+          const needsRefresh = !accessToken || shouldRefreshToken(accessToken, 5);
+          
+          if (needsRefresh) {
+            console.log('[Auth] Access token needs refresh, attempting refresh...');
+            const newTok = await refreshToken();
+            if (newTok) {
+              console.log('[Auth] Token refresh successful, user should be authenticated');
+              return;
+            } else {
+              console.warn('[Auth] Token refresh failed');
+            }
+          } else {
+            const minutesLeft = getMinutesUntilExpiry(accessToken);
+            console.log(`[Auth] Access token valid for ${minutesLeft} more minutes`);
           }
         }
 
@@ -478,9 +529,12 @@ export const AuthProvider = ({ children }) => {
           }
         }
 
-        if (process.env.NODE_ENV !== 'production') {
-          console.warn('[PawsIQ] All auth checks failed, logging out');
-        }
+        console.warn('[Auth] All auth checks failed, clearing invalid session');
+        // Clear tokens but don't redirect to login immediately - let user try again
+        setCurrentUser(null);
+        setTokens(null);
+        localStorage.removeItem('user');
+        localStorage.removeItem('authTokens');
       } catch (error) {
         console.error('Auth initialization error:', error);
         logout();

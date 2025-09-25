@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import moment from 'moment';
 import httpStatus from 'http-status';
-import prisma from '../../../lib/prisma.js';
+import { db } from '../../../config/db.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { tokenTypes, tokenExpiration } from '../../../config/tokens.js';
 import config from '../../../config/config.js';
@@ -24,15 +24,21 @@ const generateToken = (
 };
 
 const saveToken = async (token: string, userId: number, expires: moment.Moment, type: string, blacklisted = false) => {
-  const saved = await prisma.tokens.create({
-    data: {
+  const { data: saved, error } = await db
+    .from('tokens')
+    .insert({
       token,
       user_id: userId,
       expires: expires.toDate(),
       type,
       blacklisted,
-    },
-  });
+    })
+    .select()
+    .single();
+  
+  if (error) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to save token');
+  }
   return saved;
 };
 
@@ -40,9 +46,15 @@ const saveToken = async (token: string, userId: number, expires: moment.Moment, 
 const verifyToken = async (token: string, type: string) => {
   const payload = jwt.verify(token, config.jwtSecret);
   
-  const tokenDoc = await prisma.tokens.findFirst({ where: { token, type, blacklisted: false } });
+  const { data: tokenDoc, error } = await db
+    .from('tokens')
+    .select('*')
+    .eq('token', token)
+    .eq('type', type)
+    .eq('blacklisted', false)
+    .single();
 
-  if (!tokenDoc) {
+  if (error || !tokenDoc) {
     throw new Error('Token not found');
   }
 
@@ -83,20 +95,21 @@ const refreshAuth = async (refreshToken: string) => {
 
     let subjectExists = false;
     if (role === 'admin') {
-      const admin = await prisma.pIQ_Admins.findUnique({ where: { admin_id: BigInt(sub) } });
+      const { data: admin } = await db.from('PIQ_Admins').select('admin_id').eq('admin_id', sub).single();
       subjectExists = !!admin;
     } else if (role === 'user') {
-      const user = await prisma.pIQ_User.findUnique({ where: { user_id: BigInt(sub) } });
+      const { data: user } = await db.from('PIQ_User').select('user_id').eq('user_id', sub).single();
       subjectExists = !!user;
     } else if (role === 'provider') {
-      const provider = await prisma.pIQ_Service_Provider.findUnique({ where: { service_provider_id: Number(sub) } });
+      const { data: provider } = await db.from('PIQ_Service_Provider').select('service_provider_id').eq('service_provider_id', sub).single();
       subjectExists = !!provider;
     }
     if (!subjectExists) {
       throw new Error('Subject not found');
     }
 
-    await prisma.tokens.deleteMany({ where: { token: refreshToken } });
+    // Delete the old refresh token
+    await db.from('tokens').delete().eq('token', refreshToken);
 
     return await generateAuthTokens(sub, role);
   } catch (error) {
@@ -114,6 +127,58 @@ const generateVerifyEmailToken = async (user: any, role: string) => {
   return verifyEmailToken;
 };
 
+// Clean up expired tokens - should be called periodically
+const cleanupExpiredTokens = async () => {
+  try {
+    const { error } = await db
+      .from('tokens')
+      .delete()
+      .lt('expires', new Date());
+    
+    if (error) {
+      console.error('Failed to cleanup expired tokens:', error);
+    }
+  } catch (error) {
+    console.error('Token cleanup error:', error);
+  }
+};
+
+// Blacklist a specific token
+const blacklistToken = async (token: string) => {
+  try {
+    const { error } = await db
+      .from('tokens')
+      .update({ blacklisted: true })
+      .eq('token', token);
+    
+    if (error) {
+      throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to blacklist token');
+    }
+  } catch (error) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to blacklist token');
+  }
+};
+
+// Get user's active tokens count
+const getUserActiveTokensCount = async (userId: number) => {
+  try {
+    const { count, error } = await db
+      .from('tokens')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('type', tokenTypes.REFRESH)
+      .eq('blacklisted', false)
+      .gt('expires', new Date());
+    
+    if (error) {
+      return 0;
+    }
+    return count || 0;
+  } catch (error) {
+    return 0;
+  }
+};
+
 export const tokenService = {
   generateToken,
   saveToken,
@@ -121,4 +186,7 @@ export const tokenService = {
   generateAuthTokens,
   generateVerifyEmailToken,
   refreshAuth,
+  cleanupExpiredTokens,
+  blacklistToken,
+  getUserActiveTokensCount,
 };

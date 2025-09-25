@@ -1,5 +1,6 @@
 import bcryptjs from 'bcryptjs';
 import { db } from '../../../config/db.js';
+import prisma from '../../../lib/prisma.js';
 import { ApiError } from '../../utils/ApiError.js';
 import httpStatus from 'http-status';
 
@@ -23,6 +24,9 @@ export const userService = {
       .from('PIQ_Pets')
       .select('*')
       .eq('user_id', user.user_id)
+      // Exclude deleted/inactive pets; keep NULL statuses
+      .neq('pet_status', 'deleted')
+      .neq('pet_status', 'Inactive')
       .order('created_at', { ascending: true });
 
     if (petsError) {
@@ -59,11 +63,37 @@ export const userService = {
       };
     });
 
+    // Bookings summary from Prisma (by user_id)
+    const userIdBig = BigInt(user.user_id);
+    const now = new Date();
+    const [totalBookings, upcomingBookings, recentBookings] = await Promise.all([
+      prisma.pIQ_Bookings.count({ where: { user_id: userIdBig } }),
+      prisma.pIQ_Bookings.findMany({
+        where: { user_id: userIdBig, booked_dtm: { gte: now } },
+        orderBy: { booked_dtm: 'asc' },
+        take: 10,
+      }),
+      prisma.pIQ_Bookings.findMany({
+        where: { user_id: userIdBig },
+        orderBy: { booked_dtm: 'desc' },
+        take: 10,
+      }),
+    ]);
+
+    const normalizeBigInt = (obj: any) => JSON.parse(
+      JSON.stringify(obj, (_k, v) => (typeof v === 'bigint' ? v.toString() : v))
+    );
+
     // Remove sensitive data
     const { user_password, ...userWithoutPassword } = user;
 
-    // Attach transformed pets to the user object
+    // Attach transformed pets and bookings to the user object
     (userWithoutPassword as any).pets = transformedPets;
+    (userWithoutPassword as any).bookings = {
+      total: totalBookings,
+      upcoming: normalizeBigInt(upcomingBookings),
+      recent: normalizeBigInt(recentBookings),
+    };
 
     return userWithoutPassword;
   },

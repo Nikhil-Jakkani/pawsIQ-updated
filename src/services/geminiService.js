@@ -1,66 +1,31 @@
 const API_URL = import.meta.env.VITE_API_URL || '/api/v1';
 
+const getToken = () => {
+  try {
+    const raw = localStorage.getItem('authTokens');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed?.access?.token) return parsed.access.token;
+    }
+  } catch (_) {}
+  try {
+    const legacy = localStorage.getItem('pawsiq_user');
+    if (legacy) {
+      const parsed = JSON.parse(legacy);
+      return parsed?.tokens?.access?.token || null;
+    }
+  } catch (_) {}
+  return null;
+};
+
 export const generatePetCareSuggestions = async (petData) => {
   try {
     const prompt = `
     As a professional veterinarian and pet care expert, provide comprehensive care recommendations for the following pet:
-
-    Pet Information:
-    - Name: ${petData.name}
-    - Type: ${petData.type}
-    - Breed: ${petData.breed}
-    - Age: ${petData.age}
-    - Weight: ${petData.weight}
-    - Gender: ${petData.gender}
-    - Last Checkup: ${petData.lastCheckup}
-    - Current Vaccinations: ${petData.vaccinations}
-
-    Please provide detailed recommendations in the following categories. Format your response as a JSON object with the following structure:
-
-    {
-      "health": {
-        "recommendations": ["recommendation 1", "recommendation 2", ...],
-        "priority": "high/medium/low",
-        "nextCheckup": "suggested date or timeframe"
-      },
-      "grooming": {
-        "recommendations": ["recommendation 1", "recommendation 2", ...],
-        "frequency": "daily/weekly/monthly",
-        "specialCare": ["special care item 1", "special care item 2", ...]
-      },
-      "vaccinations": {
-        "upcoming": ["vaccine 1", "vaccine 2", ...],
-        "schedule": "next vaccination timeframe",
-        "boosters": ["booster 1", "booster 2", ...]
-      },
-      "nutrition": {
-        "recommendations": ["recommendation 1", "recommendation 2", ...],
-        "dailyCalories": "estimated calories",
-        "feedingSchedule": "recommended schedule"
-      },
-      "exercise": {
-        "recommendations": ["recommendation 1", "recommendation 2", ...],
-        "duration": "daily exercise duration",
-        "activities": ["activity 1", "activity 2", ...]
-      },
-      "behavioral": {
-        "recommendations": ["recommendation 1", "recommendation 2", ...],
-        "training": ["training tip 1", "training tip 2", ...],
-        "enrichment": ["enrichment activity 1", "enrichment activity 2", ...]
-      },
-      "preventive": {
-        "recommendations": ["recommendation 1", "recommendation 2", ...],
-        "seasonalCare": ["seasonal tip 1", "seasonal tip 2", ...],
-        "emergencyTips": ["emergency tip 1", "emergency tip 2", ...]
-      }
-    }
-
-    Make sure all recommendations are specific to the pet's breed, age, and current health status. Be thorough but practical.
+{{ ... }}
     `;
 
-    const stored = localStorage.getItem('pawsiq_user');
-    const parsed = stored ? JSON.parse(stored) : null;
-    const token = parsed?.tokens?.access?.token;
+    const token = getToken();
     if (!token) {
       throw new Error('Authentication token not found.');
     }

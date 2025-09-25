@@ -24,10 +24,19 @@ export const userAuthController = {
   refreshTokens: catchAsync(async (req: Request, res: Response) => {
     const { refreshToken } = req.body;
     if (!refreshToken) {
+      console.log('[Auth Controller] Refresh token missing in request');
       throw new ApiError(httpStatus.BAD_REQUEST, 'Refresh token is required');
     }
-    const tokens = await userAuthService.refreshAuth(refreshToken);
-    res.send({ ...tokens });
+    
+    try {
+      console.log('[Auth Controller] Processing token refresh request');
+      const tokens = await userAuthService.refreshAuth(refreshToken);
+      console.log('[Auth Controller] Token refresh successful');
+      res.send({ ...tokens });
+    } catch (error) {
+      console.error('[Auth Controller] Token refresh failed:', error);
+      throw error;
+    }
   }),
 
   logout: catchAsync(async (req: any, res: Response) => {

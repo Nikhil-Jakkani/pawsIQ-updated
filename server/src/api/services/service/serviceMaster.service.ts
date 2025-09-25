@@ -10,12 +10,32 @@ const listServices = async () => {
   const items = await prisma.pIQ_Service_Master.findMany({
     orderBy: [{ service_type: 'asc' }, { service_sub_type: 'asc' }, { service_title: 'asc' }],
   });
-  return items.map(serializeBigInt);
+  // Normalize fields so frontend can render without extra mapping
+  return items.map((s) => {
+    const row = serializeBigInt(s as any) as any;
+    return {
+      // Original columns
+      ...row,
+      // UI-friendly fields
+      service_name: row.service_title || row.service_type || 'Service',
+      service_description: row.service_description || '',
+      duration_minutes: Number(row.service_duration ?? 60),
+      price: Number(row.service_price_amt ?? 0),
+    };
+  });
 };
 
 const getService = async (services_id: number) => {
   const item = await prisma.pIQ_Service_Master.findUnique({ where: { services_id } });
-  return item ? serializeBigInt(item) : null;
+  if (!item) return null;
+  const row = serializeBigInt(item as any) as any;
+  return {
+    ...row,
+    service_name: row.service_title || row.service_type || 'Service',
+    service_description: row.service_description || '',
+    duration_minutes: Number(row.service_duration ?? 60),
+    price: Number(row.service_price_amt ?? 0),
+  };
 };
 
 const listProvidersForService = async (services_id: number) => {

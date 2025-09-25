@@ -22,6 +22,8 @@ import {
 } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 
+const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
+
 // Utility: format currency in INR (Indian standards 2025)
 const inr = (n) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n || 0);
 
@@ -31,9 +33,13 @@ const nowIST = () => new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkat
 const mockToday = new Date().toISOString().slice(0, 10);
 
 const VetDashboard = () => {
-  const { currentUser, logout } = useAuth();
+  const { currentUser, logout, authFetch } = useAuth();
   const navigate = useNavigate();
   const [istNow, setIstNow] = useState(nowIST());
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [pending, setPending] = useState([]);
+  const [confirmed, setConfirmed] = useState([]);
 
   useEffect(() => {
     if (!currentUser || currentUser.role !== 'provider') {
@@ -46,27 +52,85 @@ const VetDashboard = () => {
     return () => clearInterval(t);
   }, []);
 
-  // Dummy KPI data aligned to Indian context
+  useEffect(() => {
+    if (currentUser?.role === 'provider') {
+      loadDashboard();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser?.role]);
+
+  // KPIs (derive lightweight counts; keep placeholders for items we don't compute here)
   const kpis = useMemo(() => ({
-    todayAppointments: 7,
-    activePatients: 128,
-    todayRevenue: 6400, // ₹
-    pendingPrescriptions: 3,
-  }), []);
+    todayAppointments: confirmed.filter(a => a.date === mockToday).length + pending.filter(a => a.date === mockToday).length,
+    activePatients: 0,
+    todayRevenue: 0,
+    pendingPrescriptions: 0,
+  }), [confirmed, pending]);
 
-  const upcomingAppointments = [
-    { id: 1, date: mockToday, time: '10:00 AM', owner: 'Amit Sharma', pet: 'Bruno (Labrador)', reason: 'Annual Vaccination', location: 'Clinic - Andheri East, Mumbai' },
-    { id: 2, date: mockToday, time: '12:15 PM', owner: 'Priya Verma', pet: 'Mittu (Indie Cat)', reason: 'Fever & Lethargy', location: 'Video Consult' },
-    { id: 3, date: mockToday, time: '04:30 PM', owner: 'Rohit Gupta', pet: 'Simba (GSD)', reason: 'Skin Allergy', location: 'Clinic - Powai, Mumbai' },
-  ];
+  const normalizeBooking = (b) => {
+    const d = new Date(b.booked_dtm || b.appointment_date);
+    const date = Number.isNaN(d.getTime()) ? '—' : d.toISOString().slice(0, 10);
+    const time = Number.isNaN(d.getTime()) ? '' : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return {
+      id: b.booking_id || b.appointment_id,
+      date,
+      time,
+      owner: b.user_name || b.user_email || '—',
+      pet: b.pet_name ? `${b.pet_name} (${b.pet_type || ''})` : '—',
+      reason: b.service_title || b.service_type || b.appointment_type || '—',
+      location: b.location || '—',
+      raw: b,
+    };
+  };
 
-  const recentActivities = [
-    { id: 1, type: 'prescription', title: 'Prescription issued to Bruno', time: '20 min ago' },
-    { id: 2, type: 'report', title: 'Lab report uploaded for Mittu', time: '1 hour ago' },
-    { id: 3, type: 'payment', title: 'UPI payment received via PhonePe', time: '2 hours ago' },
-  ];
+  const fetchSection = async (status, limit = 5) => {
+    const res = await authFetch(`${API_URL}/provider/bookings?status=${encodeURIComponent(status)}&limit=${limit}`);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data?.message || `Failed to load ${status} bookings`);
+    return (data?.items || []).map(normalizeBooking);
+  };
+
+  const loadDashboard = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const [conf, pend] = await Promise.all([
+        fetchSection('Confirmed', 5),
+        fetchSection('Pending', 5),
+      ]);
+      setConfirmed(conf);
+      setPending(pend);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLogout = () => { logout(); navigate('/'); };
+
+  const approveBooking = async (id) => {
+    try {
+      const res = await authFetch(`${API_URL}/provider/bookings/${id}/approve`, { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.message || 'Failed to approve booking');
+      await loadDashboard();
+    } catch (e) {
+      alert(e.message);
+    }
+  };
+
+  const declineBooking = async (id) => {
+    if (!window.confirm('Decline this booking?')) return;
+    try {
+      const res = await authFetch(`${API_URL}/provider/bookings/${id}/decline`, { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.message || 'Failed to decline booking');
+      await loadDashboard();
+    } catch (e) {
+      alert(e.message);
+    }
+  };
 
   if (!currentUser || currentUser.role !== 'provider') {
     return (
@@ -141,34 +205,79 @@ const VetDashboard = () => {
 
       {/* Grid: Appointments + Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Upcoming appointments */}
+        {/* Upcoming (dynamic) */}
         <section className="bg-white rounded-lg shadow overflow-hidden lg:col-span-2">
           <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">Upcoming Appointments</h2>
-            <Link to="/appointments" className="text-sm text-indigo-600 hover:text-indigo-700 flex items-center">
+            <h2 className="text-lg font-semibold text-gray-900">Upcoming</h2>
+            <Link to="/provider/vet/appointments" className="text-sm text-indigo-600 hover:text-indigo-700 flex items-center">
               View All <FaChevronRight className="ml-1" />
             </Link>
           </div>
-          <ul className="divide-y divide-gray-200">
-            {upcomingAppointments.map(a => (
-              <li key={a.id} className="px-6 py-4">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="font-medium text-gray-900">{a.owner} • {a.pet}</div>
-                    <div className="text-sm text-gray-600">{a.reason}</div>
-                    <div className="text-xs text-gray-500 flex items-center mt-1">{a.location}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-semibold text-gray-900">{a.date} • {a.time}</div>
-                    <div className="mt-2 flex space-x-2">
-                      <button className="px-3 py-1.5 text-xs bg-indigo-600 text-white rounded" onClick={() => navigate('/provider/vet/appointments')}>Start</button>
-                      <button className="px-3 py-1.5 text-xs bg-white border border-gray-300 rounded" onClick={() => navigate('/appointments/scheduler')}>Reschedule</button>
+          {loading ? (
+            <div className="p-4 text-sm text-gray-600">Loading...</div>
+          ) : error ? (
+            <div className="p-3 text-sm text-red-700 bg-red-50 border border-red-200 m-4 rounded">{error}</div>
+          ) : (
+            <ul className="divide-y divide-gray-200">
+              {confirmed.map(a => (
+                <li key={a.id} className="px-6 py-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="font-medium text-gray-900">{a.owner} • {a.pet}</div>
+                      <div className="text-sm text-gray-600">{a.reason}</div>
+                      <div className="text-xs text-gray-500 flex items-center mt-1">{a.location}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-semibold text-gray-900">{a.date} • {a.time}</div>
+                      <div className="mt-2 flex space-x-2">
+                        <button className="px-3 py-1.5 text-xs bg-indigo-600 text-white rounded" onClick={() => navigate('/provider/vet/appointments')}>Start</button>
+                        <button className="px-3 py-1.5 text-xs bg-white border border-gray-300 rounded" onClick={() => navigate('/appointments/scheduler')}>Reschedule</button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </li>
-            ))}
-          </ul>
+                </li>
+              ))}
+              {confirmed.length === 0 && (
+                <li className="px-6 py-6 text-sm text-gray-500">No confirmed appointments.</li>
+              )}
+            </ul>
+          )}
+        </section>
+
+        {/* Pending (dynamic) - separate card for visual parity */}
+        <section className="bg-white rounded-lg shadow overflow-hidden lg:col-span-2">
+          <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-900">Pending</h2>
+            <Link to="/provider/vet/appointments" className="text-sm text-indigo-600 hover:text-indigo-700 flex items-center">
+              View All <FaChevronRight className="ml-1" />
+            </Link>
+          </div>
+          {loading ? (
+            <div className="p-4 text-sm text-gray-600">Loading...</div>
+          ) : error ? (
+            <div className="p-3 text-sm text-red-700 bg-red-50 border border-red-200 m-4 rounded">{error}</div>
+          ) : (
+            <ul className="divide-y divide-gray-200">
+              {pending.map(a => (
+                <li key={a.id} className="px-6 py-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="font-medium text-gray-900">{a.owner} • {a.pet}</div>
+                      <div className="text-sm text-gray-600">{a.reason}</div>
+                      <div className="text-xs text-gray-500 mt-1">{a.date} • {a.time}</div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button className="px-3 py-1.5 text-xs bg-indigo-600 text-white rounded" onClick={() => approveBooking(a.id)}>Approve</button>
+                      <button className="px-3 py-1.5 text-xs border rounded" onClick={() => declineBooking(a.id)}>Decline</button>
+                    </div>
+                  </div>
+                </li>
+              ))}
+              {pending.length === 0 && (
+                <li className="px-6 py-6 text-sm text-gray-500">No pending requests.</li>
+              )}
+            </ul>
+          )}
         </section>
 
         {/* Quick actions (India-first) */}
@@ -202,14 +311,7 @@ const VetDashboard = () => {
 
           <div className="bg-white rounded-lg shadow p-4">
             <h3 className="text-sm font-semibold text-gray-900 mb-3">Recent Activity</h3>
-            <ul className="space-y-2">
-              {recentActivities.map(r => (
-                <li key={r.id} className="text-sm text-gray-700 flex items-center justify-between">
-                  <span>{r.title}</span>
-                  <span className="text-xs text-gray-500">{r.time}</span>
-                </li>
-              ))}
-            </ul>
+            <div className="text-xs text-gray-500">Auto-generated from appointments. Coming soon.</div>
           </div>
         </aside>
       </div>
