@@ -60,3 +60,6 @@ server/.env.*
 # Lock files
 pnpm-lock.yaml
 .vercel
+
+# .bak files
+*.bak

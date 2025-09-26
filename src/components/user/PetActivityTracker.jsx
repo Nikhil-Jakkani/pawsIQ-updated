@@ -57,10 +57,12 @@ const PetActivityTracker = ({ pets: petsProp = [], fetchActivities }) => {
         { day: 'Thu', walking: 40, food: 3, play: 35 },
         { day: 'Fri', walking: 50, food: 3, play: 50 },
         { day: 'Sat', walking: 70, food: 3, play: 60 },
-        { day: 'Sun', walking: 45, food: 2, play: 30 }
       ]
     }
   }));
+
+  // Real-time timer (per pet & activity)
+  const [running, setRunning] = useState(null); // { petName, type, startedAt, initialValue, baseValue }
 
   // Optional realtime polling hook (every 20s) if fetchActivities provided
   useEffect(() => {
@@ -69,14 +71,63 @@ const PetActivityTracker = ({ pets: petsProp = [], fetchActivities }) => {
     const load = async () => {
       try {
         const data = await fetchActivities(); // expected shape should match setActivities
-        if (mounted && data) setActivities(data);
+        // Do not overwrite local live increments while a timer is running
+        if (mounted && data && !running) setActivities(data);
       } catch {}
     };
     load();
     const id = setInterval(load, 20000);
     return () => { mounted = false; clearInterval(id); };
-  }, [fetchActivities]);
+  }, [fetchActivities, running]);
 
+  useEffect(() => {
+    if (!running) return;
+    const id = setInterval(() => {
+      setActivities((prev) => {
+        const copy = { ...prev };
+        const { petName, type, startedAt, initialValue, baseValue } = running;
+        const pdata = copy[petName] || { today: {}, week: [] };
+        const today = pdata.today || {};
+        const rec = today[type];
+        if (!rec) return copy;
+        // Only auto-increment minute-based activities
+        if (rec.unit !== 'min') return copy;
+        const elapsedMin = (Date.now() - startedAt) / 60000;
+        // Keep the underlying cumulative value growing from the starting base
+        rec.value = Math.min((baseValue || 0) + elapsedMin, (rec.goal || 0) * 1.5 || 1e6);
+        return { ...copy };
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [running]);
+
+  const startTimer = (petName, type, currentVal) => {
+    const base = Number(currentVal) || 0;
+    // initialValue is the session's starting displayed value (0), baseValue is the cumulative baseline
+    setRunning({ petName, type, startedAt: Date.now(), initialValue: 0, baseValue: base });
+  };
+  const stopTimer = () => setRunning(null);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('petActivityRunning');
+      if (saved && !running) {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.petName && parsed.type && parsed.startedAt && parsed.initialValue !== undefined) {
+          setRunning(parsed);
+        }
+      }
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    try {
+      if (running) localStorage.setItem('petActivityRunning', JSON.stringify(running));
+      else localStorage.removeItem('petActivityRunning');
+    } catch {}
+  }, [running]);
+
+  // Icon per activity type
   const getActivityIcon = (type) => {
     switch (type) {
       case 'walking': return FaRunning;
@@ -466,7 +517,23 @@ const PetActivityTracker = ({ pets: petsProp = [], fetchActivities }) => {
         <div className="space-y-2">
           {Object.entries(currentPetData.today).map(([activity, data]) => {
             const IconComponent = getActivityIcon(activity);
-            const percentage = Math.min((data.value / data.goal) * 100, 100);
+            const displayValue = Math.round(data.value);
+            const isRunning = running && running.petName === currentPet.name && running.type === activity;
+            // Use session-only progress while running; otherwise use cumulative
+            const sessionVal = (isRunning && data.unit === 'min' && typeof (running?.baseValue) === 'number')
+              ? Math.max(0, data.value - running.baseValue)
+              : data.value;
+            const percentage = Math.min((sessionVal / data.goal) * 100, 100);
+            const formatMinutes = (val, goal) => {
+              const totalSec = Math.max(0, Math.round(val * 60));
+              const mm = Math.floor(totalSec / 60);
+              const ss = totalSec % 60;
+              const goalSec = Math.max(0, Math.round((goal || 0) * 60));
+              const mmG = Math.floor(goalSec / 60);
+              const ssG = goalSec % 60;
+              return `${mm}:${String(ss).padStart(2,'0')} / ${mmG}:${String(ssG).padStart(2,'0')}`;
+            };
+            const valueLabel = data.unit === 'min' ? formatMinutes(sessionVal, data.goal) : `${Math.round(sessionVal)}/${data.goal} ${data.unit}`;
             
             return (
               <div key={activity} className="bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition-colors">
@@ -477,7 +544,7 @@ const PetActivityTracker = ({ pets: petsProp = [], fetchActivities }) => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-sm font-semibold text-gray-800 capitalize">{activity}</span>
-                      <span className="text-xs text-gray-500">{data.value}/{data.goal} {data.unit}</span>
+                      <span className="text-xs text-gray-500">{valueLabel}</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div 
@@ -493,12 +560,20 @@ const PetActivityTracker = ({ pets: petsProp = [], fetchActivities }) => {
                   }`}>
                     {Math.round(percentage)}%
                   </div>
+                  <div className="ml-2 flex items-center gap-2">
+                    {isRunning ? (
+                      <button className="px-2 py-1 text-[10px] bg-red-600 text-white rounded" onClick={stopTimer}>Stop</button>
+                    ) : (
+                      <button className="px-2 py-1 text-[10px] border rounded" onClick={() => startTimer(currentPet.name, activity, data.value)}>Start</button>
+                    )}
+                    <span className={`text-[10px] ${isRunning ? 'text-green-600' : 'text-gray-500'}`}>{isRunning ? 'Live' : 'Not running'}</span>
+                  </div>
                 </div>
               </div>
             );
           })}
         </div>
-        
+
         {/* Compact Daily Summary */}
         <div className="mt-4 bg-blue-50 rounded-lg p-3 border border-blue-100">
           <div className="flex items-center justify-between">

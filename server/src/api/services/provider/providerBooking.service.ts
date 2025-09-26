@@ -84,22 +84,28 @@ const approveBooking = async (providerId: number, bookingId: number) => {
     throw new ApiError(httpStatus.FORBIDDEN, 'Not authorized to approve this booking');
   }
 
-  const updated = await prisma.pIQ_Bookings.update({
-    where: { booking_id: bookingId },
-    data: { service_provider_id: providerId, booking_status: 'Confirmed' },
+  // Update booking and appointment in a transaction
+  const result = await prisma.$transaction(async (tx) => {
+    // Update the booking status
+    const updatedBooking = await tx.pIQ_Bookings.update({
+      where: { booking_id: bookingId },
+      data: { service_provider_id: providerId, booking_status: 'Confirmed' },
+    });
+
+    // Find and update the existing appointment (created when booking was made)
+    const updatedAppointment = await tx.pIQ_Appointments.updateMany({
+      where: { 
+        pet_id: booking.pet_id,
+        appointment_date: booking.booked_dtm,
+        appointment_status: 'Awaiting Approval'
+      },
+      data: { appointment_status: 'Scheduled' },
+    });
+
+    return { booking: updatedBooking, appointmentUpdated: updatedAppointment.count > 0 };
   });
 
-  const appointment = await prisma.pIQ_Appointments.create({
-    data: {
-      pet_id: booking.pet_id,
-      appointment_type: booking.PIQ_Service_Master?.service_title || booking.PIQ_Service_Master?.service_type || 'Checkup',
-      appointment_date: booking.booked_dtm,
-      appointment_status: 'Scheduled',
-      appointment_comments: booking.booking_comments ?? null,
-    },
-  });
-
-  return serializeBigInt({ booking: updated, appointment });
+  return serializeBigInt({ booking: result.booking, appointmentUpdated: result.appointmentUpdated });
 };
 
 const declineBooking = async (providerId: number, bookingId: number) => {
@@ -108,11 +114,28 @@ const declineBooking = async (providerId: number, bookingId: number) => {
   if (!booking) throw new ApiError(httpStatus.NOT_FOUND, 'Booking not found');
   if (booking.booking_status !== 'Pending') throw new ApiError(httpStatus.BAD_REQUEST, 'Booking is not pending');
 
-  const updated = await prisma.pIQ_Bookings.update({
-    where: { booking_id: bookingId },
-    data: { booking_status: 'Cancelled' },
+  // Update booking and appointment in a transaction
+  const result = await prisma.$transaction(async (tx) => {
+    // Update the booking status
+    const updatedBooking = await tx.pIQ_Bookings.update({
+      where: { booking_id: bookingId },
+      data: { booking_status: 'Cancelled' },
+    });
+
+    // Update the corresponding appointment to cancelled
+    const updatedAppointment = await tx.pIQ_Appointments.updateMany({
+      where: { 
+        pet_id: booking.pet_id,
+        appointment_date: booking.booked_dtm,
+        appointment_status: 'Awaiting Approval'
+      },
+      data: { appointment_status: 'Cancelled' },
+    });
+
+    return { booking: updatedBooking, appointmentUpdated: updatedAppointment.count > 0 };
   });
-  return serializeBigInt(updated);
+
+  return serializeBigInt(result.booking);
 };
 
 export const providerBookingService = {
