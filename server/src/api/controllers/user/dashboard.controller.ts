@@ -20,9 +20,11 @@ export const getDashboard = async (req: any, res: Response) => {
       prisma.pIQ_Pets.findMany({
         where: {
           user_id: userIdBig,
-          OR: [
-            { pet_status: null as any },
-            { pet_status: { not: 'Inactive' } as any },
+          NOT: [
+            { pet_status: 'deleted' as any },
+            { pet_status: 'Deleted' as any },
+            { pet_status: 'Inactive' as any },
+            { pet_status: 'inactive' as any },
           ],
         },
         orderBy: { created_at: 'asc' },

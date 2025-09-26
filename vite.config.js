@@ -22,6 +22,8 @@ export default defineConfig(({ mode }) => {
         skipWaiting: true,
         clientsClaim: true,
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB limit
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/api\//, /^\/auth\//], // Exclude API and auth routes
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -55,6 +57,15 @@ export default defineConfig(({ mode }) => {
                 maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
               }
             }
+          },
+          // Exclude auth endpoints from caching
+          {
+            urlPattern: /\/api\/.*\/auth\/.*/,
+            handler: 'NetworkOnly'
+          },
+          {
+            urlPattern: /\/api\/.*\/refresh.*/,
+            handler: 'NetworkOnly'
           }
         ]
       },

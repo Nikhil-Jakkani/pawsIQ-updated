@@ -1,22 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaCog, FaUser, FaLock, FaBell, FaCreditCard, FaAddressCard, FaShieldAlt, FaSignOutAlt, FaCamera, FaCheck, FaExclamationTriangle } from 'react-icons/fa';
 import UserLayout from '../../components/layout/UserLayout';
 import { useAuth } from '../../context/AuthContext';
 
+const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
+
 const UserSettings = () => {
   const navigate = useNavigate();
-  const { currentUser, logout } = useAuth();
+  const { currentUser, logout, authFetch } = useAuth();
   const [activeTab, setActiveTab] = useState('profile');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [originalEmail, setOriginalEmail] = useState('');
   
-  // Mock user data
+  // User profile data loaded from backend
   const [userData, setUserData] = useState({
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    phone: '(555) 123-4567',
+    name: '',
+    email: '',
+    phone: '',
     profileImage: 'https://randomuser.me/api/portraits/men/32.jpg',
     address: {
       street: '123 Main St',
@@ -60,7 +63,31 @@ const UserSettings = () => {
       }
     ]
   });
-  
+
+  // Load profile from backend
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await authFetch(`${API_URL}/user/profile`);
+        const data = await res.json().catch(() => ({}));
+        if (!mounted) return;
+        if (res.ok && data) {
+          setUserData((prev) => ({
+            ...prev,
+            name: data.user_full_name || prev.name || '',
+            email: data.user_email_id || prev.email || '',
+            phone: data.user_phone_number || prev.phone || '',
+          }));
+          setOriginalEmail(String(data.user_email_id || ''));
+        }
+      } catch (_) {
+        // ignore
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
   // Handle form input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -82,58 +109,33 @@ const UserSettings = () => {
     }
   };
   
-  // Handle notification preference changes
-  const handleNotificationChange = (channel, type) => {
-    setUserData({
-      ...userData,
-      notificationPreferences: {
-        ...userData.notificationPreferences,
-        [channel]: {
-          ...userData.notificationPreferences[channel],
-          [type]: !userData.notificationPreferences[channel][type]
-        }
-      }
-    });
-  };
-  
-  // Handle payment method default change
-  const handleSetDefaultPayment = (id) => {
-    setUserData({
-      ...userData,
-      paymentMethods: userData.paymentMethods.map(method => ({
-        ...method,
-        isDefault: method.id === id
-      }))
-    });
-  };
-  
-  // Handle payment method removal
-  const handleRemovePayment = (id) => {
-    if (window.confirm('Are you sure you want to remove this payment method?')) {
-      setUserData({
-        ...userData,
-        paymentMethods: userData.paymentMethods.filter(method => method.id !== id)
-      });
-    }
-  };
-  
   // Handle form submission
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     setSuccessMessage('');
     setErrorMessage('');
-    
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      const payload = {};
+      if (typeof userData.name === 'string') payload.user_full_name = userData.name;
+      // Only send email if it actually changed to avoid unique-email 400s
+      if (userData.email && userData.email !== originalEmail) payload.user_email_id = userData.email;
+      if (typeof userData.phone === 'string') payload.user_phone_number = userData.phone;
+      const res = await authFetch(`${API_URL}/user/profile`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json?.message || json?.error || 'Failed to update profile');
       setSuccessMessage('Your settings have been updated successfully!');
-      
-      // Clear success message after 3 seconds
-      setTimeout(() => {
-        setSuccessMessage('');
-      }, 3000);
-    }, 1500);
+      setTimeout(() => setSuccessMessage(''), 3000);
+      if (payload.user_email_id) setOriginalEmail(payload.user_email_id);
+    } catch (err) {
+      setErrorMessage(err.message || 'Failed to update profile');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
   
   // Handle password change
