@@ -145,7 +145,7 @@ const UserNotifications = () => {
   return (
     <UserLayout>
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex items-center">
           <div>
             <div className="flex items-center gap-3">
               <div className="bg-blue-100 p-2 rounded-lg">
@@ -269,9 +269,6 @@ const UserNotifications = () => {
                           <h3 className={`font-medium ${!notification.isRead ? 'text-gray-900' : 'text-gray-800'}`}>
                             {notification.title}
                           </h3>
-                          <p className="text-sm text-gray-500">
-                            {formatDate(notification.date)}
-                          </p>
                         </div>
                         <p className={`mt-1 ${!notification.isRead ? 'text-gray-800' : 'text-gray-600'}`}>
                           {notification.message}
