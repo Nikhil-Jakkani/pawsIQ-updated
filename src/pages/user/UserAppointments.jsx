@@ -10,7 +10,7 @@ const UserAppointments = () => {
   const { currentUser, tokens, authFetch } = useAuth();
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('upcoming');
   const [appointments, setAppointments] = useState([]);
   const [petsById, setPetsById] = useState({});
   const [loading, setLoading] = useState(false);
@@ -74,6 +74,7 @@ const UserAppointments = () => {
         const ts = new Date(a.appointment_date).getTime() || 0;
         return {
           id: a.appointment_id,
+          petId: a.pet_id,
           petName: pet.name || a.pet_name || 'Pet',
           petType: pet.type || (a.pet_type ? String(a.pet_type).toLowerCase() : ''),
           serviceType: a.appointment_type,
@@ -102,6 +103,7 @@ const UserAppointments = () => {
           };
           return {
             id: b.booking_id,
+            petId: b.pet_id,
             petName: pet.name || 'Pet',
             petType: pet.type || '',
             serviceType: b.PIQ_Service_Master?.service_title || b.service_title || 'Service',
@@ -111,15 +113,33 @@ const UserAppointments = () => {
             notes: b.booking_comments || '',
             location: '—',
             address: '—',
-            isBooking: true,
             isPendingApproval: b.booking_status === 'Pending',
             sortTs: ts,
           };
-        });
+        }).filter((it) => it.isPendingApproval);
       }
-      setAppointments([...bookingItems, ...apptItems].sort((a, b) => (b.sortTs || 0) - (a.sortTs || 0)));
+      // Merge with de-duplication. Prefer canonical appointments over derived bookings.
+      const byKey = new Map();
+      const makeKey = (item) => {
+        const tsMin = Math.floor((item.sortTs || 0) / 60000); // minute-level bucket
+        const petKey = item.petId ? String(item.petId) : (item.petName || '').toLowerCase();
+        const svc = (item.serviceType || '').toLowerCase();
+        return `${tsMin}|${petKey}|${svc}`;
+      };
+      // First add bookings (lower priority)
+      bookingItems.forEach((it) => {
+        const key = makeKey(it) || `booking|${it.id}`;
+        if (!byKey.has(key)) byKey.set(key, it);
+      });
+      // Then add appointments (higher priority, overwrite booking if same key)
+      apptItems.forEach((it) => {
+        const key = makeKey(it) || `appt|${it.id}`;
+        byKey.set(key, it);
+      });
+      const merged = Array.from(byKey.values()).sort((a, b) => (b.sortTs || 0) - (a.sortTs || 0));
+      setAppointments(merged);
     } catch (e) {
-      setError(e.message);
+      setError(e.message || 'Failed to load appointments');
     } finally {
       setLoading(false);
     }
@@ -127,7 +147,6 @@ const UserAppointments = () => {
 
   useEffect(() => {
     if (!accessToken) return;
-    // load pets first, then appointments to map names
     (async () => {
       await fetchPets();
       await fetchAppointments();
@@ -141,9 +160,13 @@ const UserAppointments = () => {
       appointment.petName.toLowerCase().includes(searchTerm.toLowerCase()) || 
       appointment.serviceType.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (appointment.providerName || '').toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesFilter = filterStatus === 'all' || appointment.status === filterStatus;
-    
+
+    const isUpcomingFuture = appointment.status === 'upcoming' && (appointment.sortTs || 0) >= Date.now();
+    const matchesFilter = 
+      filterStatus === 'all' ? true :
+      filterStatus === 'upcoming' ? isUpcomingFuture :
+      appointment.status === filterStatus;
+
     return matchesSearch && matchesFilter;
   });
 
