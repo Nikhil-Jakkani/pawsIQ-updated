@@ -59,7 +59,6 @@ import ProviderForgotPassword from './pages/provider/ProviderForgotPassword.jsx'
 import ProviderOTPVerification from './pages/provider/ProviderOTPVerification.jsx';
 // import ProviderDashboard from './pages/provider/ProviderDashboard.jsx';
 import VetDashboard from './pages/provider/VetDashboard.jsx';
-import ProviderProtectedRoute from './components/common/ProviderProtectedRoute.jsx';
 import VetAppointments from './pages/provider/VetAppointments.jsx';
 import VetClients from './pages/provider/VetClients.jsx';
 import VetServices from './pages/provider/VetServices.jsx';
@@ -68,6 +67,7 @@ import VetLabReports from './pages/provider/VetLabReports.jsx';
 import VetAnalytics from './pages/provider/VetAnalytics.jsx';
 import VetNotifications from './pages/provider/VetNotifications.jsx';
 import VetSettings from './pages/provider/VetSettings.jsx';
+import ServiceForm from './pages/provider/ServiceForm.jsx';
 
 // Auth pages
 import Login from './pages/auth/Login.jsx';
@@ -104,6 +104,7 @@ import { useAuth } from './context/AuthContext';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import PWAUpdateNotification from './components/PWAUpdateNotification';
 import OfflineStatus from './components/OfflineStatus';
+import ProviderProtectedRoute from './components/common/ProviderProtectedRoute';
 
 import './App.css'; 
 
@@ -254,6 +255,8 @@ function App() {
             <Route path="/provider/vet/appointments" element={<ProviderProtectedRoute><VetAppointments /></ProviderProtectedRoute>} />
             <Route path="/provider/vet/clients" element={<ProviderProtectedRoute><VetClients /></ProviderProtectedRoute>} />
             <Route path="/provider/vet/services" element={<ProviderProtectedRoute><VetServices /></ProviderProtectedRoute>} />
+            <Route path="/provider/vet/services/new" element={<ProviderProtectedRoute><ServiceForm /></ProviderProtectedRoute>} />
+            <Route path="/provider/vet/services/:id/edit" element={<ProviderProtectedRoute><ServiceForm /></ProviderProtectedRoute>} />
             <Route path="/provider/vet/prescriptions" element={<ProviderProtectedRoute><VetPrescriptions /></ProviderProtectedRoute>} />
             <Route path="/provider/vet/labs" element={<ProviderProtectedRoute><VetLabReports /></ProviderProtectedRoute>} />
             <Route path="/provider/vet/analytics" element={<ProviderProtectedRoute><VetAnalytics /></ProviderProtectedRoute>} />
