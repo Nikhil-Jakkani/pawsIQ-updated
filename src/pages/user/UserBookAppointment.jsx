@@ -212,8 +212,8 @@ const UserBookAppointment = () => {
           name: p.serv_provider_name || 'Provider',
           title: p.serv_provider_type || 'Service Provider',
           image: 'https://placehold.co/128x128?text=Provider',
-          location: p.provider_src || '—',
-          address: p.serv_provider_desc || '—',
+          location: p.provider_src || 'â€”',
+          address: p.serv_provider_desc || 'â€”',
           rating: 4.8,
           reviewCount: 0,
         })));
@@ -239,10 +239,12 @@ const UserBookAppointment = () => {
 
   // Handle date selection
   const handleDateSelect = (date) => {
+    console.log('Date selected:', date);
     setFormData({
       ...formData,
       date
     });
+    console.log('Form data after date selection:', { ...formData, date });
   };
 
   // Handle time slot selection
@@ -286,12 +288,40 @@ const UserBookAppointment = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!accessToken) return;
+    
+    // Validate required fields
+    if (!formData.petId) {
+      alert('Please select a pet for the appointment');
+      petSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+    if (!formData.serviceId) {
+      alert('Please select a service for the appointment');
+      serviceSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+    if (!formData.providerId) {
+      alert('Please select a service provider for the appointment');
+      providerSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+    if (!formData.date) {
+      alert('Please select a date for the appointment');
+      dateTimeSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+    if (!formData.timeSlot) {
+      alert('Please select a time slot for the appointment');
+      dateTimeSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+    
     setIsSubmitting(true);
     try {
-      // const booked_dtm = combineDateTime(formData.date, formData.timeSlot);
-      // if (!booked_dtm || Number.isNaN(new Date(booked_dtm).getTime()) || new Date(booked_dtm).getTime() <= Date.now()) {
-      //   throw new Error('Date for booking needs to be a future date/time');
-      // }
+      const booked_dtm = combineDateTime(formData.date, formData.timeSlot);
+      if (!booked_dtm || Number.isNaN(new Date(booked_dtm).getTime()) || new Date(booked_dtm).getTime() <= Date.now()) {
+        throw new Error('Date for booking needs to be a future date/time');
+      }
 
       const payload = {
         petId: String(formData.petId),
@@ -525,12 +555,16 @@ const UserBookAppointment = () => {
             {/* Date Selection */}
             <div className="space-y-4">
               <h4 className="text-lg font-semibold text-gray-700">Select a Date</h4>
+              {formData.date && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-2 text-sm text-green-800">
+                  Selected Date: {formData.date}
+                </div>
+              )}
               <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2">
                 {availableDates.map(date => {
                   const dateObj = new Date(date);
                   const isToday = date === new Date().toISOString().slice(0, 10);
-                  const isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6; // Sunday or Saturday
-                  const formattedDate = dateObj.toLocaleDateString('en-US', {
+                                    const formattedDate = dateObj.toLocaleDateString('en-US', {
                     month: 'short',
                     day: 'numeric'
                   });
@@ -538,13 +572,14 @@ const UserBookAppointment = () => {
                   return (
                     <button
                       key={date}
+                      type="button"
                       onClick={() => handleDateSelect(date)}
                       className={`rounded-lg py-2 px-3 text-sm font-medium
                         ${formData.date === date
                           ? 'bg-blue-500 text-white hover:bg-blue-600'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}
                         ${isToday ? 'font-bold' : ''}
-                        ${isWeekend ? 'text-red-500' : ''}
+                        
                         focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
                     >
                       {formattedDate}
@@ -559,19 +594,35 @@ const UserBookAppointment = () => {
               <div className="space-y-2">
                 <h4 className="text-lg font-semibold text-gray-700">Select a Time Slot</h4>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {timeSlots.map(time => (
-                    <button
-                      key={time}
-                      onClick={() => handleTimeSlotSelect(time)}
-                      className={`rounded-lg py-2 px-3 text-sm font-medium
-                          ${formData.timeSlot === time
-                            ? 'bg-blue-500 text-white hover:bg-blue-600'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}
-                          focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
-                    >
-                      {time}
-                    </button>
-                  ))}
+                  {timeSlots.map(time => {
+  // disable past time options when booking for today (local time)
+  const [t, mer] = time.split(' ');
+  const [hh, mm] = t.split(':').map(Number);
+  let adj = hh;
+  if (mer?.toUpperCase() === 'PM' && hh < 12) adj += 12; else if (mer?.toUpperCase() === 'AM' && hh === 12) adj = 0;
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const isTodaySel = formData.date === todayIso;
+  const now = new Date();
+  const disabled = isTodaySel && (adj < now.getHours() || (adj === now.getHours() && mm <= now.getMinutes()));
+  return (
+    <button
+      key={time}
+      type="button"
+      onClick={() => !disabled && handleTimeSlotSelect(time)}
+      disabled={disabled}
+      className={`rounded-lg py-2 px-3 text-sm font-medium
+          ${formData.timeSlot === time && !disabled
+            ? 'bg-blue-500 text-white hover:bg-blue-600'
+            : disabled
+              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}
+          focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
+    >
+      {time}
+    </button>
+  );
+})}
+
                 </div>
               </div>
             )}
@@ -609,3 +660,4 @@ const UserBookAppointment = () => {
 };
 
 export default UserBookAppointment;
+

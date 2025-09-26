@@ -18,16 +18,59 @@ const UserAppointments = () => {
 
   const accessToken = tokens?.access?.token;
 
-  const toUiStatus = (status) => {
+  const toUiStatus = (status, appointmentDate) => {
+    // Check if appointment is in the past
+    const appointmentTs = new Date(appointmentDate).getTime();
+    const now = Date.now();
+    const isPastAppointment = appointmentTs < now;
+    
     switch (status) {
       case 'Scheduled':
-        return 'upcoming';
+      case 'Confirmed':
+      case 'Approved':
+      case 'Awaiting Approval':
+      case 'Pending':
+      case 'Awaiting':
+      case 'Submitted':
+        // If appointment is in the past, it's completed; if future, it's upcoming
+        return isPastAppointment ? 'completed' : 'upcoming';
       case 'Completed':
         return 'completed';
       case 'Cancelled':
+      case 'Rejected':
         return 'cancelled';
       default:
-        return 'upcoming';
+        // Default based on timing
+        return isPastAppointment ? 'completed' : 'upcoming';
+    }
+  };
+
+  // Get the actual status for badge display (separate from filter status)
+  const getActualStatus = (status, appointmentDate, fullAppointment = {}) => {
+    // Check if appointment is in the past
+    const appointmentTs = new Date(appointmentDate).getTime();
+    const now = Date.now();
+    const isPastAppointment = appointmentTs < now;
+    
+    switch (status) {
+      case 'Awaiting Approval':
+      case 'Pending':
+      case 'Awaiting':
+      case 'Submitted':
+        return isPastAppointment ? 'completed' : 'awaiting';
+      case 'Scheduled':
+        // Provider has approved - show as confirmed
+        return isPastAppointment ? 'completed' : 'confirmed';
+      case 'Confirmed':
+      case 'Approved':
+        return isPastAppointment ? 'completed' : 'confirmed';
+      case 'Completed':
+        return 'completed';
+      case 'Cancelled':
+      case 'Rejected':
+        return 'cancelled';
+      default:
+        return isPastAppointment ? 'completed' : 'awaiting';
     }
   };
 
@@ -80,64 +123,18 @@ const UserAppointments = () => {
           serviceType: a.appointment_type,
           date,
           time,
-          status: toUiStatus(a.appointment_status),
+          status: toUiStatus(a.appointment_status, a.appointment_date), // For filtering
+          actualStatus: getActualStatus(a.appointment_status, a.appointment_date, a), // For badge display
+          rawStatus: a.appointment_status, // Keep raw status for reference
           notes: a.appointment_comments || '',
           location: '—',
           address: '—',
           sortTs: ts,
+          rawAppointment: a, // Keep full appointment data for debugging
         };
       });
-      const bRes = await authFetch(`${API_URL}/bookings?limit=50`);
-      const bPayload = await bRes.json().catch(() => ({}));
-      let bookingItems = [];
-      if (bRes.ok) {
-        bookingItems = (bPayload?.items || []).map((b) => {
-          const pet = petsById[String(b.pet_id)] || {};
-          const { date, time } = formatDateTime(b.booked_dtm);
-          const ts = new Date(b.booked_dtm).getTime() || 0;
-          const statusMap = {
-            Pending: 'upcoming',
-            Confirmed: 'upcoming',
-            Cancelled: 'cancelled',
-            Completed: 'completed',
-          };
-          return {
-            id: b.booking_id,
-            petId: b.pet_id,
-            petName: pet.name || 'Pet',
-            petType: pet.type || '',
-            serviceType: b.PIQ_Service_Master?.service_title || b.service_title || 'Service',
-            date,
-            time,
-            status: statusMap[b.booking_status] || 'upcoming',
-            notes: b.booking_comments || '',
-            location: '—',
-            address: '—',
-            isPendingApproval: b.booking_status === 'Pending',
-            sortTs: ts,
-          };
-        }).filter((it) => it.isPendingApproval);
-      }
-      // Merge with de-duplication. Prefer canonical appointments over derived bookings.
-      const byKey = new Map();
-      const makeKey = (item) => {
-        const tsMin = Math.floor((item.sortTs || 0) / 60000); // minute-level bucket
-        const petKey = item.petId ? String(item.petId) : (item.petName || '').toLowerCase();
-        const svc = (item.serviceType || '').toLowerCase();
-        return `${tsMin}|${petKey}|${svc}`;
-      };
-      // First add bookings (lower priority)
-      bookingItems.forEach((it) => {
-        const key = makeKey(it) || `booking|${it.id}`;
-        if (!byKey.has(key)) byKey.set(key, it);
-      });
-      // Then add appointments (higher priority, overwrite booking if same key)
-      apptItems.forEach((it) => {
-        const key = makeKey(it) || `appt|${it.id}`;
-        byKey.set(key, it);
-      });
-      const merged = Array.from(byKey.values()).sort((a, b) => (b.sortTs || 0) - (a.sortTs || 0));
-      setAppointments(merged);
+      // Show only canonical appointments to match DB table
+      setAppointments(apptItems.sort((a, b) => (b.sortTs || 0) - (a.sortTs || 0)));
     } catch (e) {
       setError(e.message || 'Failed to load appointments');
     } finally {
@@ -161,14 +158,21 @@ const UserAppointments = () => {
       appointment.serviceType.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (appointment.providerName || '').toLowerCase().includes(searchTerm.toLowerCase());
 
-    const isUpcomingFuture = appointment.status === 'upcoming' && (appointment.sortTs || 0) >= Date.now();
+    const now = Date.now();
+    // More inclusive logic for upcoming appointments - include all future appointments
+    const appointmentTs = appointment.sortTs || 0;
+    const isFutureAppointment = appointmentTs >= now;
+    const isUpcomingFuture = appointment.status === 'upcoming' && isFutureAppointment;
+    
     const matchesFilter = 
       filterStatus === 'all' ? true :
       filterStatus === 'upcoming' ? isUpcomingFuture :
       appointment.status === filterStatus;
 
+
     return matchesSearch && matchesFilter;
   });
+
 
   // Cancel appointment handler
   const handleCancelAppointment = async (id) => {
@@ -196,29 +200,40 @@ const UserAppointments = () => {
   // Get status badge styling
   const getStatusBadge = (status) => {
     switch(status) {
-      case 'upcoming':
+      case 'confirmed':
         return {
           bgColor: 'bg-blue-100',
           textColor: 'text-blue-800',
-          icon: <FaClock className="text-blue-500" />
+          icon: <FaCheck className="text-blue-500" />,
+          label: 'Confirmed'
+        };
+      case 'awaiting':
+        return {
+          bgColor: 'bg-yellow-100',
+          textColor: 'text-yellow-800',
+          icon: <FaClock className="text-yellow-500" />,
+          label: 'Awaiting Approval'
         };
       case 'completed':
         return {
           bgColor: 'bg-green-100',
           textColor: 'text-green-800',
-          icon: <FaCheck className="text-green-500" />
+          icon: <FaCheck className="text-green-500" />,
+          label: 'Completed'
         };
       case 'cancelled':
         return {
           bgColor: 'bg-red-100',
           textColor: 'text-red-800',
-          icon: <FaTimes className="text-red-500" />
+          icon: <FaTimes className="text-red-500" />,
+          label: 'Cancelled'
         };
       default:
         return {
-          bgColor: 'bg-gray-100',
-          textColor: 'text-gray-800',
-          icon: <FaClock className="text-gray-500" />
+          bgColor: 'bg-yellow-100',
+          textColor: 'text-yellow-800',
+          icon: <FaClock className="text-yellow-500" />,
+          label: 'Awaiting Approval'
         };
     }
   };
@@ -285,7 +300,7 @@ const UserAppointments = () => {
         ) : filteredAppointments.length > 0 ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
             {filteredAppointments.map(appointment => {
-              const statusBadge = getStatusBadge(appointment.status);
+              const statusBadge = getStatusBadge(appointment.actualStatus);
               const appointmentDate = new Date(appointment.date);
               const isUpcoming = appointment.status === 'upcoming';
 
@@ -296,8 +311,9 @@ const UserAppointments = () => {
                 >
                   {/* Card Header with Status */}
                   <div className={`h-2 ${
-                    appointment.status === 'upcoming' ? 'bg-gradient-to-r from-blue-400 to-blue-600' :
-                    appointment.status === 'completed' ? 'bg-gradient-to-r from-green-400 to-green-600' :
+                    appointment.actualStatus === 'confirmed' ? 'bg-gradient-to-r from-blue-400 to-blue-600' :
+                    appointment.actualStatus === 'awaiting' ? 'bg-gradient-to-r from-yellow-400 to-yellow-600' :
+                    appointment.actualStatus === 'completed' ? 'bg-gradient-to-r from-green-400 to-green-600' :
                     'bg-gradient-to-r from-red-400 to-red-600'
                   }`}></div>
                   
@@ -306,13 +322,15 @@ const UserAppointments = () => {
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-3">
                         <div className={`p-3 rounded-xl ${
-                          appointment.status === 'upcoming' ? 'bg-blue-50' :
-                          appointment.status === 'completed' ? 'bg-green-50' :
+                          appointment.actualStatus === 'confirmed' ? 'bg-blue-50' :
+                          appointment.actualStatus === 'awaiting' ? 'bg-yellow-50' :
+                          appointment.actualStatus === 'completed' ? 'bg-green-50' :
                           'bg-red-50'
                         }`}>
                           <FaCalendarCheck className={`text-xl ${
-                            appointment.status === 'upcoming' ? 'text-blue-600' :
-                            appointment.status === 'completed' ? 'text-green-600' :
+                            appointment.actualStatus === 'confirmed' ? 'text-blue-600' :
+                            appointment.actualStatus === 'awaiting' ? 'text-yellow-600' :
+                            appointment.actualStatus === 'completed' ? 'text-green-600' :
                             'text-red-600'
                           }`} />
                         </div>
@@ -336,7 +354,7 @@ const UserAppointments = () => {
                       
                       <div className={`px-3 py-1.5 rounded-full ${statusBadge.bgColor} ${statusBadge.textColor} text-xs font-bold flex items-center gap-1.5 shadow-sm`}>
                         {statusBadge.icon}
-                        <span>{appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}</span>
+                        <span>{statusBadge.label}</span>
                       </div>
                     </div>
 

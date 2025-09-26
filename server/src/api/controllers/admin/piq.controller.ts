@@ -61,9 +61,17 @@ export const getPets = catchAsync(async (req, res) => {
   const page = Math.max(1, Number(req.query.page) || 1);
   const limit = Math.max(1, Math.min(100, Number(req.query.limit) || 24));
   const search = String(req.query.search || '').trim();
+  const userIdParam = String(req.query.userId || '').trim();
   const skip = (page - 1) * limit;
 
   const where: any = {};
+  if (userIdParam) {
+    try {
+      where.user_id = BigInt(userIdParam);
+    } catch (_e) {
+      // ignore invalid userId
+    }
+  }
   if (search) {
     where.OR = [
       { pet_name: { contains: search, mode: 'insensitive' } },
@@ -152,6 +160,77 @@ export const getRoles = catchAsync(async (_req, res) => {
   res.status(httpStatus.OK).send({ results: roles });
 });
 
+// List provider applications for onboarding dashboard
+export const getProviders = catchAsync(async (req, res) => {
+  const page = Math.max(1, Number(req.query.page) || 1);
+  const limit = Math.max(1, Math.min(100, Number(req.query.limit) || 20));
+  const search = String(req.query.search || '').trim();
+  const status = String(req.query.status || '').trim();
+  const type = String(req.query.type || '').trim();
+  const skip = (page - 1) * limit;
+
+  const where: any = {};
+  if (status) where.serv_provider_status = status;
+  if (type) where.serv_provider_type = type;
+  if (search) {
+    where.OR = [
+      { serv_provider_name: { contains: search, mode: 'insensitive' } },
+      { serv_provider_email: { contains: search, mode: 'insensitive' } },
+      { serv_provider_desc: { contains: search, mode: 'insensitive' } },
+    ];
+  }
+
+  const [items, count] = await Promise.all([
+    prisma.pIQ_Service_Provider.findMany({
+      where,
+      orderBy: { created_at: 'desc' },
+      skip,
+      take: limit,
+      select: {
+        service_provider_id: true,
+        serv_provider_name: true,
+        serv_provider_email: true,
+        serv_provider_contact_nbr: true,
+        serv_provider_type: true,
+        serv_provider_desc: true,
+        serv_provider_status: true,
+        serv_provider_certificates: true,
+        serv_provider_exp_years: true,
+        provider_src: true,
+        is_provider_bgchecked: true,
+        created_at: true,
+        last_updated_dtm: true,
+      },
+    }),
+    prisma.pIQ_Service_Provider.count({ where }),
+  ]);
+
+  // Normalize for UI
+  const results = (items || []).map((p: any) => ({
+    id: p.service_provider_id,
+    name: p.serv_provider_name || 'Provider',
+    email: p.serv_provider_email || '',
+    phone: p.serv_provider_contact_nbr || '',
+    type: p.serv_provider_type || 'Service Provider',
+    specialty: p.provider_src || '',
+    status: p.serv_provider_status || 'Pending Review',
+    date: (p.created_at ? new Date(p.created_at).toISOString().slice(0, 10) : ''),
+    documents: (p.serv_provider_certificates ? String(p.serv_provider_certificates).split(',').map((s) => s.trim()).filter(Boolean) : []),
+    experience: p.serv_provider_exp_years ? `${p.serv_provider_exp_years} years` : '—',
+    address: p.serv_provider_desc || '—',
+    notes: '',
+    verified: !!p.is_provider_bgchecked,
+  }));
+
+  res.status(httpStatus.OK).send({
+    results,
+    page,
+    limit,
+    totalPages: Math.ceil((count || 0) / limit),
+    totalResults: count || 0,
+  });
+});
+
 export const getAdminMe = catchAsync(async (req: any, res) => {
   // The admin auth middleware already validated the token against admins table.
   // To return the admin profile, decode token id and fetch admin row
@@ -171,5 +250,6 @@ export default {
   getUsers,
   getPets,
   getRoles,
+  getProviders,
   getAdminMe,
 };

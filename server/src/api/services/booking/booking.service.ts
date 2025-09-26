@@ -46,20 +46,40 @@ const createBooking = async (
     throw new ApiError(httpStatus.BAD_REQUEST, 'Date for booking needs to be a future date/time');
   }
 
-  const created = await prisma.pIQ_Bookings.create({
-    data: {
-      pet_id,
-      services_id: body.services_id,
-      biz_dtls_id: body.biz_dtls_id ?? null,
-      service_provider_id: body.service_provider_id ?? null,
-      user_id: userId,
-      booked_dtm: booked,
-      booking_status: 'Pending',
-      booking_comments: body.booking_comments ?? null,
-    },
+  // Create booking and appointment in a transaction
+  const result = await prisma.$transaction(async (tx) => {
+    // Create the booking
+    const booking = await tx.pIQ_Bookings.create({
+      data: {
+        pet_id,
+        services_id: body.services_id,
+        biz_dtls_id: body.biz_dtls_id ?? null,
+        service_provider_id: body.service_provider_id ?? null,
+        user_id: userId,
+        booked_dtm: booked,
+        booking_status: 'Pending',
+        booking_comments: body.booking_comments ?? null,
+      },
+      include: {
+        PIQ_Service_Master: { select: { service_title: true, service_type: true } },
+      },
+    });
+
+    // Also create an appointment for the user to see immediately
+    const appointment = await tx.pIQ_Appointments.create({
+      data: {
+        pet_id,
+        appointment_type: booking.PIQ_Service_Master?.service_title || booking.PIQ_Service_Master?.service_type || 'Checkup',
+        appointment_date: booked,
+        appointment_status: 'Awaiting Approval',
+        appointment_comments: body.booking_comments ?? null,
+      },
+    });
+
+    return { booking, appointment };
   });
 
-  return serializeBigInt(created);
+  return serializeBigInt(result.booking);
 };
 
 const listBookings = async (
