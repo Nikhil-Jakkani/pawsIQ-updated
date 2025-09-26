@@ -328,7 +328,7 @@ const UserSettings = () => {
           <div className="space-y-8">
             {/* Password Change */}
             <div>
-              <h3 className="text-lg font-medium text-gray-800 mb-4">Change Password</h3>
+              <h3 className="text-lg font-medium text-gray-800 mb-4 text-left">Change Password</h3>
               <form onSubmit={handlePasswordSubmit} className="space-y-4">
                 <div>
                   <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 mb-1">
@@ -408,23 +408,19 @@ const UserSettings = () => {
             <div>
               <h3 className="text-lg font-medium text-gray-800 mb-4">Two-Factor Authentication</h3>
               <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                <div className="flex items-start gap-3">
+                <div className="flex items-center justify-between">
                   <div className="bg-indigo-100 p-2 rounded-full">
                     <FaShieldAlt className="text-indigo-600" />
                   </div>
-                  <div>
-                    <h4 className="font-medium text-gray-800">Enhance Your Account Security</h4>
-                    <p className="text-gray-600 text-sm mt-1">
-                      Two-factor authentication adds an extra layer of security to your account by requiring more than just a password to sign in.
-                    </p>
-                    <button className="mt-3 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 text-sm">
+                  <div className="flex items-center justify-between flex-1">
+                    <h4 className="font-medium text-gray-800 text-left">Enhance Your Account Security</h4>
+                    <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 text-sm">
                       Enable Two-Factor Authentication
                     </button>
                   </div>
                 </div>
               </div>
             </div>
-            
             {/* Login Sessions */}
             <div>
               <h3 className="text-lg font-medium text-gray-800 mb-4">Active Sessions</h3>
@@ -891,8 +887,10 @@ const UserSettings = () => {
             </div>
             
             <div>
-              <h3 className="text-lg font-medium text-gray-800 mb-4">Data Management</h3>
-              
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-gray-800 mb-4">Data Management</h3>
+                
+              </div>
               <div className="space-y-4">
                 <div className="bg-white p-4 rounded-lg border border-gray-200 flex items-center justify-between privacy-item">
                   <h4 className="font-medium text-gray-800 mb-2">Download Your Data</h4>
@@ -904,23 +902,22 @@ const UserSettings = () => {
                   </button>
                 </div>
                 
-                <div className="bg-red-50 p-4 rounded-lg border border-red-200 flex items-start justify-between privacy-item">
-                  <div className="flex items-start gap-3">
-                    <div className="bg-red-100 p-2 rounded-full mt-1">
-                      <FaExclamationTriangle className="text-red-600" />
+                <div className="bg-red-50 p-4 rounded-lg border border-red-200 privacy-item">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-red-100 p-2 rounded-full mt-1">
+                        <FaExclamationTriangle className="text-red-600" />
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-red-800 mb-2 text-left">Delete Account</h4>
+                        <p className="text-sm text-red-700 mb-3">
+                          Permanently delete your account and all associated data. This action cannot be undone.
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="font-medium text-red-800 mb-2">Delete Account</h4>
-                      <p className="text-sm text-red-700 mb-3">
-                        Permanently delete your account and all associated data. This action cannot be undone.
-                      </p>
-                      <button 
-                        onClick={handleDeleteAccount}
-                        className="px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 text-sm"
-                      >
-                        Delete Account
-                      </button>
-                    </div>
+                    <button onClick={handleDeleteAccount} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 text-sm">
+                      Delete Account
+                    </button>
                   </div>
                 </div>
               </div>
