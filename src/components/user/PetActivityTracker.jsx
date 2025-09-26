@@ -519,7 +519,11 @@ const PetActivityTracker = ({ pets: petsProp = [], fetchActivities }) => {
             const IconComponent = getActivityIcon(activity);
             const displayValue = Math.round(data.value);
             const isRunning = running && running.petName === currentPet.name && running.type === activity;
-            const percentage = Math.min((data.value / data.goal) * 100, 100);
+            // Use session-only progress while running; otherwise use cumulative
+            const sessionVal = (isRunning && data.unit === 'min' && typeof (running?.baseValue) === 'number')
+              ? Math.max(0, data.value - running.baseValue)
+              : data.value;
+            const percentage = Math.min((sessionVal / data.goal) * 100, 100);
             const formatMinutes = (val, goal) => {
               const totalSec = Math.max(0, Math.round(val * 60));
               const mm = Math.floor(totalSec / 60);
@@ -529,11 +533,7 @@ const PetActivityTracker = ({ pets: petsProp = [], fetchActivities }) => {
               const ssG = goalSec % 60;
               return `${mm}:${String(ss).padStart(2,'0')} / ${mmG}:${String(ssG).padStart(2,'0')}`;
             };
-            let shownVal = data.value;
-            if (isRunning && data.unit === 'min' && typeof (running?.baseValue) === 'number') {
-              shownVal = Math.max(0, data.value - running.baseValue);
-            }
-            const valueLabel = data.unit === 'min' ? formatMinutes(shownVal, data.goal) : `${displayValue}/${data.goal} ${data.unit}`;
+            const valueLabel = data.unit === 'min' ? formatMinutes(sessionVal, data.goal) : `${Math.round(sessionVal)}/${data.goal} ${data.unit}`;
             
             return (
               <div key={activity} className="bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition-colors">
