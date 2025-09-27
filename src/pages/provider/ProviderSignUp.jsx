@@ -247,10 +247,10 @@ const ProviderSignUp = () => {
             <img src={logoImage} alt="PawsIQ Logo" className="w-16 h-16" />
           </div>
         </div>
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-white">
+        <h2 className="mt-6 text-center text-3xl font-extrabold text-black">
           Join PawsIQ as a Provider
         </h2>
-        <p className="mt-2 text-center text-sm text-indigo-100">
+        <p className="mt-2 text-center text-sm text-black">
           Connect with pet owners and grow your business
         </p>
       </div>

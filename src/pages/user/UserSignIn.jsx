@@ -323,6 +323,9 @@ const UserSignIn = () => {
                 </>
               )}
             </button>
+            <Link to="/provider/signup" className="w-full py-3 px-4 bg-gray-200 text-gray-700 font-medium rounded-xl shadow-sm hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 flex items-center justify-center gap-2 mt-2">
+              <span>Sign up as Provider</span>
+            </Link>
           </form>
         </div>
 
