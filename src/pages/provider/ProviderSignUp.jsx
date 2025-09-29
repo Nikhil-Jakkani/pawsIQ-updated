@@ -17,6 +17,12 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { signInWithPhoneNumber } from 'firebase/auth';
 import { auth, setupRecaptcha } from '../../firebaseClient';
+import DocumentUpload from './DocumentUpload';
+import GroomerDetails from './GroomerDetails';
+import ReviewSubmission from './ReviewSubmission';
+import TrainerDetails from './TrainerDetails';
+import ProfessionalInfo from './ProfessionalInfo';
+import VeterinarianDetails from './VeterinarianDetails';
 
 // Cute pet-themed logo
 const logoImage = "/7.png";
@@ -52,7 +58,15 @@ const ProviderSignUp = () => {
   // Redirect if already logged in
   useEffect(() => {
     if (currentUser) {
-      navigate('/provider/vet/dashboard');
+      const serviceType = localStorage.getItem('selectedService');
+      if (serviceType) {
+        navigate(`/provider/${serviceType}/dashboard`);
+      } else {
+        // Handle case where serviceType is not found in local storage
+        console.error('Service type not found in local storage');
+        // Optionally redirect to a default dashboard or an error page
+        navigate('/provider/login');
+      }
     }
   }, [currentUser, navigate]);
   
@@ -217,14 +231,31 @@ const ProviderSignUp = () => {
         console.warn('Failed to send OTP via Firebase:', e);
       }
 
-      // Pass the registration data to the OTP verification page for later account creation
-      navigate('/provider/otp-verification', {
-        state: {
-          phoneNumber: formData.phoneNumber,
-          registrationData,
-          message: 'OTP sent successfully. Please verify your phone number to create your account.'
-        }
-      });
+      // Navigate to the appropriate onboarding step based on provider type
+      switch (formData.providerType) {
+        case 'Veterinarian':
+          navigate('/provider/VeterinarianDetails');
+          break;
+        case 'Trainer':
+          navigate('/provider/TrainerDetails');
+          break;
+        case 'Groomer':
+          navigate('/provider/GroomerDetails');
+          break;
+        case 'Pet Sitter':
+          navigate('/provider/ProfessionalInfo');
+          break;
+        default:
+          navigate('/provider/ProviderOTPVerification', {
+            state: {
+              phoneNumber: formData.phoneNumber,
+              registrationData,
+              message: 'OTP sent successfully. Please verify your phone number to create your account.'
+            }
+          });
+          break;
+      }
+      
     } catch (error) {
       console.error('Registration error:', error);
       setErrors(prev => ({
@@ -610,7 +641,7 @@ const ProviderSignUp = () => {
               </button>
             </div>
           </form>
-          
+
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
@@ -620,7 +651,7 @@ const ProviderSignUp = () => {
                 <span className="px-2 bg-white text-gray-500">Already have an account?</span>
               </div>
             </div>
-            
+
             <div className="mt-6 text-center">
               <Link to="/login" className="font-medium text-indigo-600 hover:text-indigo-500 flex items-center justify-center gap-1">
                 <FaPaw size={12} />

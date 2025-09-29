@@ -69,7 +69,9 @@ const ProviderOTPVerification = () => {
           if (result?.success) {
             toast.success('Account created! You are now logged in.');
             setStatus({ loading: false, message: '', error: '' });
-            return navigate('/provider/vet/dashboard');
+            // Store providerType in local storage
+            localStorage.setItem('selectedService', registrationData.provider_type);
+            return navigate(`/provider/${registrationData.provider_type}/dashboard`);
           }
         }
       }

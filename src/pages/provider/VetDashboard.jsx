@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useParams } from 'react-router-dom';
 import VetLayout from './VetLayout';
 import {
   FaCalendarAlt,
@@ -32,9 +32,11 @@ const nowIST = () => new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkat
 
 const mockToday = new Date().toISOString().slice(0, 10);
 
-const VetDashboard = () => {
+const VetDashboard = ({ serviceType: propServiceType }) => {
   const { currentUser, logout, authFetch } = useAuth();
   const navigate = useNavigate();
+  const { serviceType } = useParams();
+  const currentServiceType = propServiceType || serviceType;
   const [istNow, setIstNow] = useState(nowIST());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -173,34 +175,134 @@ const VetDashboard = () => {
 
       {/* KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-lg shadow p-4 flex items-center">
-          <div className="p-3 rounded-md bg-indigo-100 text-indigo-600"><FaCalendarAlt /></div>
-          <div className="ml-4">
-            <div className="text-xs text-gray-500">Today’s Appointments</div>
-            <div className="text-xl font-semibold">{kpis.todayAppointments}</div>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4 flex items-center">
-          <div className="p-3 rounded-md bg-emerald-100 text-emerald-600"><FaUserFriends /></div>
-          <div className="ml-4">
-            <div className="text-xs text-gray-500">Active Patients</div>
-            <div className="text-xl font-semibold">{kpis.activePatients}</div>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4 flex items-center">
-          <div className="p-3 rounded-md bg-yellow-100 text-yellow-700"><FaRupeeSign /></div>
-          <div className="ml-4">
-            <div className="text-xs text-gray-500">Today’s Revenue</div>
-            <div className="text-xl font-semibold">{inr(kpis.todayRevenue)}</div>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4 flex items-center">
-          <div className="p-3 rounded-md bg-rose-100 text-rose-600"><FaPrescriptionBottleAlt /></div>
-          <div className="ml-4">
-            <div className="text-xs text-gray-500">Pending Prescriptions</div>
-            <div className="text-xl font-semibold">{kpis.pendingPrescriptions}</div>
-          </div>
-        </div>
+        {currentServiceType === 'vet' && (
+          <>
+            <div className="bg-white rounded-lg shadow p-4 flex items-center">
+              <div className="p-3 rounded-md bg-indigo-100 text-indigo-600"><FaCalendarAlt /></div>
+              <div className="ml-4">
+                <div className="text-xs text-gray-500">Today’s Appointments</div>
+                <div className="text-xl font-semibold">{kpis.todayAppointments}</div>
+              </div>
+            </div>
+            <div className="bg-white rounded-lg shadow p-4 flex items-center">
+              <div className="p-3 rounded-md bg-emerald-100 text-emerald-600"><FaUserFriends /></div>
+              <div className="ml-4">
+                <div className="text-xs text-gray-500">Active Patients</div>
+                <div className="text-xl font-semibold">{kpis.activePatients}</div>
+              </div>
+            </div>
+            <div className="bg-white rounded-lg shadow p-4 flex items-center">
+              <div className="p-3 rounded-md bg-yellow-100 text-yellow-700"><FaRupeeSign /></div>
+              <div className="ml-4">
+                <div className="text-xs text-gray-500">Today’s Revenue</div>
+                <div className="text-xl font-semibold">{inr(kpis.todayRevenue)}</div>
+              </div>
+            </div>
+            <div className="bg-white rounded-lg shadow p-4 flex items-center">
+              <div className="p-3 rounded-md bg-rose-100 text-rose-600"><FaPrescriptionBottleAlt /></div>
+              <div className="ml-4">
+                <div className="text-xs text-gray-500">Pending Prescriptions</div>
+                <div className="text-xl font-semibold">{kpis.pendingPrescriptions}</div>
+              </div>
+            </div>
+          </>
+        )}
+        {currentServiceType === 'groomer' && (
+          <>
+            <div className="bg-white rounded-lg shadow p-4 flex items-center">
+              <div className="p-3 rounded-md bg-indigo-100 text-indigo-600"><FaCalendarAlt /></div>
+              <div className="ml-4">
+                <div className="text-xs text-gray-500">Today’s Appointments</div>
+                <div className="text-xl font-semibold">{kpis.todayAppointments}</div>
+              </div>
+            </div>
+            <div className="bg-white rounded-lg shadow p-4 flex items-center">
+              <div className="p-3 rounded-md bg-emerald-100 text-emerald-600"><FaUserFriends /></div>
+              <div className="ml-4">
+                <div className="text-xs text-gray-500">Active Clients</div>
+                <div className="text-xl font-semibold">{kpis.activePatients}</div>
+              </div>
+            </div>
+            <div className="bg-white rounded-lg shadow p-4 flex items-center">
+              <div className="p-3 rounded-md bg-yellow-100 text-yellow-700"><FaRupeeSign /></div>
+              <div className="ml-4">
+                <div className="text-xs text-gray-500">Today’s Revenue</div>
+                <div className="text-xl font-semibold">{inr(kpis.todayRevenue)}</div>
+              </div>
+            </div>
+            <div className="bg-white rounded-lg shadow p-4 flex items-center">
+              <div className="p-3 rounded-md bg-rose-100 text-rose-600"><FaCut /></div>
+              <div className="ml-4">
+                <div className="text-xs text-gray-500">Grooming Sessions</div>
+                <div className="text-xl font-semibold">{kpis.pendingPrescriptions}</div>
+              </div>
+            </div>
+          </>
+        )}
+        {currentServiceType === 'trainer' && (
+          <>
+            <div className="bg-white rounded-lg shadow p-4 flex items-center">
+              <div className="p-3 rounded-md bg-indigo-100 text-indigo-600"><FaCalendarAlt /></div>
+              <div className="ml-4">
+                <div className="text-xs text-gray-500">Today’s Appointments</div>
+                <div className="text-xl font-semibold">{kpis.todayAppointments}</div>
+              </div>
+            </div>
+            <div className="bg-white rounded-lg shadow p-4 flex items-center">
+              <div className="p-3 rounded-md bg-emerald-100 text-emerald-600"><FaUserFriends /></div>
+              <div className="ml-4">
+                <div className="text-xs text-gray-500">Active Clients</div>
+                <div className="text-xl font-semibold">{kpis.activePatients}</div>
+              </div>
+            </div>
+            <div className="bg-white rounded-lg shadow p-4 flex items-center">
+              <div className="p-3 rounded-md bg-yellow-100 text-yellow-700"><FaRupeeSign /></div>
+              <div className="ml-4">
+                <div className="text-xs text-gray-500">Today’s Revenue</div>
+                <div className="text-xl font-semibold">{inr(kpis.todayRevenue)}</div>
+              </div>
+            </div>
+            <div className="bg-white rounded-lg shadow p-4 flex items-center">
+              <div className="p-3 rounded-md bg-rose-100 text-rose-600"><FaGraduationCap /></div>
+              <div className="ml-4">
+                <div className="text-xs text-gray-500">Training Sessions</div>
+                <div className="text-xl font-semibold">{kpis.pendingPrescriptions}</div>
+              </div>
+            </div>
+          </>
+        )}
+        {currentServiceType === 'petsitter' && (
+          <>
+            <div className="bg-white rounded-lg shadow p-4 flex items-center">
+              <div className="p-3 rounded-md bg-indigo-100 text-indigo-600"><FaCalendarAlt /></div>
+              <div className="ml-4">
+                <div className="text-xs text-gray-500">Today’s Bookings</div>
+                <div className="text-xl font-semibold">{kpis.todayAppointments}</div>
+              </div>
+            </div>
+            <div className="bg-white rounded-lg shadow p-4 flex items-center">
+              <div className="p-3 rounded-md bg-emerald-100 text-emerald-600"><FaUserFriends /></div>
+              <div className="ml-4">
+                <div className="text-xs text-gray-500">Active Clients</div>
+                <div className="text-xl font-semibold">{kpis.activePatients}</div>
+              </div>
+            </div>
+            <div className="bg-white rounded-lg shadow p-4 flex items-center">
+              <div className="p-3 rounded-md bg-yellow-100 text-yellow-700"><FaRupeeSign /></div>
+              <div className="ml-4">
+                <div className="text-xs text-gray-500">Today’s Revenue</div>
+                <div className="text-xl font-semibold">{inr(kpis.todayRevenue)}</div>
+              </div>
+            </div>
+            <div className="bg-white rounded-lg shadow p-4 flex items-center">
+              <div className="p-3 rounded-md bg-rose-100 text-rose-600"><FaPaw /></div>
+              <div className="ml-4">
+                <div className="text-xs text-gray-500">Sitting Bookings</div>
+                <div className="text-xl font-semibold">{kpis.pendingPrescriptions}</div>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Grid: Appointments + Quick Actions */}
@@ -282,23 +384,82 @@ const VetDashboard = () => {
 
         {/* Quick actions (India-first) */}
         <aside className="space-y-6">
-          <div className="bg-white rounded-lg shadow p-4">
-            <h3 className="text-sm font-semibold text-gray-900 mb-3">Quick Actions</h3>
-            <div className="grid grid-cols-2 gap-3">
-              <button className="flex items-center p-3 rounded border hover:bg-gray-50" onClick={() => navigate('/provider/vet/services')}>
-                Vaccinate
-              </button>
-              <button className="flex items-center p-3 rounded border hover:bg-gray-50" onClick={() => navigate('/provider/vet/clients')}>
-                Add Note
-              </button>
-              <button className="flex items-center p-3 rounded border hover:bg-gray-50" onClick={() => navigate('/provider/vet/prescriptions')}>
-                Rx
-              </button>
-              <button className="flex items-center p-3 rounded border hover:bg-gray-50" onClick={() => navigate('/provider/vet/labs')}>
-                Lab
-              </button>
+          {currentServiceType === 'vet' && (
+            <div className="bg-white rounded-lg shadow p-4">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">Quick Actions</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <button className="flex items-center p-3 rounded border hover:bg-gray-50" onClick={() => navigate('/provider/vet/services')}>
+                  Vaccinate
+                </button>
+                <button className="flex items-center p-3 rounded border hover:bg-gray-50" onClick={() => navigate('/provider/vet/clients')}>
+                  Add Note
+                </button>
+                <button className="flex items-center p-3 rounded border hover:bg-gray-50" onClick={() => navigate('/provider/vet/prescriptions')}>
+                  Rx
+                </button>
+                <button className="flex items-center p-3 rounded border hover:bg-gray-50" onClick={() => navigate('/provider/vet/labs')}>
+                  Lab
+                </button>
+              </div>
             </div>
-          </div>
+          )}
+          {currentServiceType === 'groomer' && (
+            <div className="bg-white rounded-lg shadow p-4">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">Quick Actions</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <button className="flex items-center p-3 rounded border hover:bg-gray-50" onClick={() => navigate('/provider/groomer/services')}>
+                  Grooming Services
+                </button>
+                <button className="flex items-center p-3 rounded border hover:bg-gray-50" onClick={() => navigate('/provider/groomer/clients')}>
+                  Manage Clients
+                </button>
+                <button className="flex items-center p-3 rounded border hover:bg-gray-50" onClick={() => navigate('/provider/groomer/schedule')}>
+                  View Schedule
+                </button>
+                <button className="flex items-center p-3 rounded border hover:bg-gray-50" onClick={() => navigate('/provider/groomer/products')}>
+                  Manage Products
+                </button>
+              </div>
+            </div>
+          )}
+          {currentServiceType === 'trainer' && (
+            <div className="bg-white rounded-lg shadow p-4">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">Quick Actions</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <button className="flex items-center p-3 rounded border hover:bg-gray-50" onClick={() => navigate('/provider/trainer/services')}>
+                  Training Programs
+                </button>
+                <button className="flex items-center p-3 rounded border hover:bg-gray-50" onClick={() => navigate('/provider/trainer/clients')}>
+                  Manage Clients
+                </button>
+                <button className="flex items-center p-3 rounded border hover:bg-gray-50" onClick={() => navigate('/provider/trainer/schedule')}>
+                  View Schedule
+                </button>
+                <button className="flex items-center p-3 rounded border hover:bg-gray-50" onClick={() => navigate('/provider/trainer/resources')}>
+                  Training Resources
+                </button>
+              </div>
+            </div>
+          )}
+          {currentServiceType === 'petsitter' && (
+            <div className="bg-white rounded-lg shadow p-4">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">Quick Actions</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <button className="flex items-center p-3 rounded border hover:bg-gray-50" onClick={() => navigate('/provider/petsitter/bookings')}>
+                  Manage Bookings
+                </button>
+                <button className="flex items-center p-3 rounded border hover:bg-gray-50" onClick={() => navigate('/provider/petsitter/clients')}>
+                  Manage Clients
+                </button>
+                <button className="flex items-center p-3 rounded border hover:bg-gray-50" onClick={() => navigate('/provider/petsitter/availability')}>
+                  Set Availability
+                </button>
+                <button className="flex items-center p-3 rounded border hover:bg-gray-50" onClick={() => navigate('/provider/petsitter/services')}>
+                  Offered Services
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="bg-white rounded-lg shadow p-4">
             <h3 className="text-sm font-semibold text-gray-900 mb-3">Payments (UPI)</h3>
@@ -318,22 +479,83 @@ const VetDashboard = () => {
 
       {/* Compliance & Help */}
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="bg-white rounded-lg shadow p-4">
-          <h3 className="text-sm font-semibold text-gray-900 mb-2">Compliance (India)</h3>
-          <ul className="text-xs text-gray-600 list-disc pl-5 space-y-1">
-            <li>eRx with batch & dosage. Exports in PDF with clinic GSTIN.</li>
-            <li>Maintains OPD register views for inspection.</li>
-            <li>Data stored with Indian date formats and IST timestamps.</li>
-          </ul>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <h3 className="text-sm font-semibold text-gray-900 mb-2">Shortcuts</h3>
-          <div className="flex flex-wrap gap-2">
-            <Link to="/provider/onboarding/veterinarian-details" className="px-3 py-1.5 text-xs rounded bg-white border">Clinic Profile</Link>
-            <Link to="/appointments/scheduler" className="px-3 py-1.5 text-xs rounded bg-white border">Scheduler</Link>
-            <Link to="/transactions/payments" className="px-3 py-1.5 text-xs rounded bg-white border">Payouts</Link>
-          </div>
-        </div>
+        {currentServiceType === 'vet' && (
+          <>
+            <div className="bg-white rounded-lg shadow p-4">
+              <h3 className="text-sm font-semibold text-gray-900 mb-2">Compliance (India)</h3>
+              <ul className="text-xs text-gray-600 list-disc pl-5 space-y-1">
+                <li>eRx with batch & dosage. Exports in PDF with clinic GSTIN.</li>
+                <li>Maintains OPD register views for inspection.</li>
+                <li>Data stored with Indian date formats and IST timestamps.</li>
+              </ul>
+            </div>
+            <div className="bg-white rounded-lg shadow p-4">
+              <h3 className="text-sm font-semibold text-gray-900 mb-2">Shortcuts</h3>
+              <div className="flex flex-wrap gap-2">
+                <Link to="/provider/onboarding/veterinarian-details" className="px-3 py-1.5 text-xs rounded bg-white border">Clinic Profile</Link>
+                <Link to="/appointments/scheduler" className="px-3 py-1.5 text-xs rounded bg-white border">Scheduler</Link>
+                <Link to="/transactions/payments" className="px-3 py-1.5 text-xs rounded bg-white border">Payouts</Link>
+              </div>
+            </div>
+          </>
+        )}
+        {currentServiceType === 'groomer' && (
+          <>
+            <div className="bg-white rounded-lg shadow p-4">
+              <h3 className="text-sm font-semibold text-gray-900 mb-2">Compliance</h3>
+              <ul className="text-xs text-gray-600 list-disc pl-5 space-y-1">
+                <li>Adherence to grooming standards.</li>
+                <li>Proper disposal of waste.</li>
+              </ul>
+            </div>
+            <div className="bg-white rounded-lg shadow p-4">
+              <h3 className="text-sm font-semibold text-gray-900 mb-2">Shortcuts</h3>
+              <div className="flex flex-wrap gap-2">
+                <Link to="/provider/onboarding/groomer-details" className="px-3 py-1.5 text-xs rounded bg-white border">Groomer Profile</Link>
+                <Link to="/appointments/scheduler" className="px-3 py-1.5 text-xs rounded bg-white border">Scheduler</Link>
+                <Link to="/transactions/payments" className="px-3 py-1.5 text-xs rounded bg-white border">Payouts</Link>
+              </div>
+            </div>
+          </>
+        )}
+        {currentServiceType === 'trainer' && (
+          <>
+            <div className="bg-white rounded-lg shadow p-4">
+              <h3 className="text-sm font-semibold text-gray-900 mb-2">Compliance</h3>
+              <ul className="text-xs text-gray-600 list-disc pl-5 space-y-1">
+                <li>Certification requirements.</li>
+                <li>Adherence to training standards.</li>
+              </ul>
+            </div>
+            <div className="bg-white rounded-lg shadow p-4">
+              <h3 className="text-sm font-semibold text-gray-900 mb-2">Shortcuts</h3>
+              <div className="flex flex-wrap gap-2">
+                <Link to="/provider/onboarding/trainer-details" className="px-3 py-1.5 text-xs rounded bg-white border">Trainer Profile</Link>
+                <Link to="/appointments/scheduler" className="px-3 py-1.5 text-xs rounded bg-white border">Scheduler</Link>
+                <Link to="/transactions/payments" className="px-3 py-1.5 text-xs rounded bg-white border">Payouts</Link>
+              </div>
+            </div>
+          </>
+        )}
+        {currentServiceType === 'petsitter' && (
+          <>
+            <div className="bg-white rounded-lg shadow p-4">
+              <h3 className="text-sm font-semibold text-gray-900 mb-2">Compliance</h3>
+              <ul className="text-xs text-gray-600 list-disc pl-5 space-y-1">
+                <li>Background check requirements.</li>
+                <li>Insurance requirements.</li>
+              </ul>
+            </div>
+            <div className="bg-white rounded-lg shadow p-4">
+              <h3 className="text-sm font-semibold text-gray-900 mb-2">Shortcuts</h3>
+              <div className="flex flex-wrap gap-2">
+                <Link to="/provider/onboarding/pet-sitter-details" className="px-3 py-1.5 text-xs rounded bg-white border">Pet Sitter Profile</Link>
+                <Link to="/appointments/scheduler" className="px-3 py-1.5 text-xs rounded bg-white border">Scheduler</Link>
+                <Link to="/transactions/payments" className="px-3 py-1.5 text-xs rounded bg-white border">Payouts</Link>
+              </div>
+            </div>
+          </>
+        )}
         <div className="bg-white rounded-lg shadow p-4">
           <h3 className="text-sm font-semibold text-gray-900 mb-2">Support</h3>
           <p className="text-xs text-gray-600">Need help? Reach out to our support team 9:00–18:00 IST, Mon–Sat.</p>

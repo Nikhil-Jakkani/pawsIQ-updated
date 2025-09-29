@@ -57,6 +57,7 @@ import ApplicationStatus from './pages/provider/ApplicationStatus.jsx';
 import ProviderLogin from './pages/provider/ProviderLogin.jsx';
 import ProviderForgotPassword from './pages/provider/ProviderForgotPassword.jsx';
 import ProviderOTPVerification from './pages/provider/ProviderOTPVerification.jsx';
+import ProviderOnboarding from './pages/provider/ProviderOnboarding.jsx';
 // import ProviderDashboard from './pages/provider/ProviderDashboard.jsx';
 import VetDashboard from './pages/provider/VetDashboard.jsx';
 import VetAppointments from './pages/provider/VetAppointments.jsx';
@@ -250,10 +251,10 @@ function App() {
             <Route path="/provider/login" element={<ProviderLogin />} />
             <Route path="/provider/forgot-password" element={<ProviderForgotPassword />} />
             <Route path="/provider/otp-verification" element={<ProviderOTPVerification />} />
-            {/* Vet (Provider - Veterinarian) Routes */}
-            <Route path="/provider/vet/dashboard" element={<ProviderProtectedRoute><VetDashboard /></ProviderProtectedRoute>} />
-            <Route path="/provider/vet/appointments" element={<ProviderProtectedRoute><VetAppointments /></ProviderProtectedRoute>} />
-            <Route path="/provider/vet/clients" element={<ProviderProtectedRoute><VetClients /></ProviderProtectedRoute>} />
+            {/* Provider Routes */}
+            <Route path="/provider/:serviceType/dashboard" element={<ProviderProtectedRoute><VetDashboard /></ProviderProtectedRoute>} />
+            <Route path="/provider/:serviceType/appointments" element={<ProviderProtectedRoute><VetAppointments /></ProviderProtectedRoute>} />
+            <Route path="/provider/:serviceType/clients" element={<ProviderProtectedRoute><VetClients /></ProviderProtectedRoute>} />
             <Route path="/provider/vet/services" element={<ProviderProtectedRoute><VetServices /></ProviderProtectedRoute>} />
             <Route path="/provider/vet/services/new" element={<ProviderProtectedRoute><ServiceForm /></ProviderProtectedRoute>} />
             <Route path="/provider/vet/services/:id/edit" element={<ProviderProtectedRoute><ServiceForm /></ProviderProtectedRoute>} />
@@ -333,6 +334,9 @@ function App() {
             <Route path="/provider/onboarding/payment-info" element={<PaymentInfo />} />
             <Route path="/provider/onboarding/review" element={<ReviewSubmission />} />
             <Route path="/provider/application-status" element={<ApplicationStatus />} />
+
+            {/* Provider Onboarding */}
+            <Route path="/provider/onboarding" element={<ProviderOnboarding />} />
 
             {/* 404 */}
             <Route
