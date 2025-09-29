@@ -285,6 +285,7 @@ function App() {
             
             
             <Route path="/user/appointments/:id" element={<UserProtectedRoute><UserAppointmentDetails /></UserProtectedRoute>} />
+            <Route path="/user/appointments/confirmation" element={<UserProtectedRoute><UserAppointmentConfirmation /></UserProtectedRoute>} />
             
             {/* Marketplace Routes */}
             <Route path="/user/marketplace" element={<UserProtectedRoute><UserMarketplace /></UserProtectedRoute>} />

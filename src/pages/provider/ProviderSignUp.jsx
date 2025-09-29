@@ -237,7 +237,26 @@ const ProviderSignUp = () => {
           navigate('/provider/VeterinarianDetails');
           break;
         case 'Trainer':
-          navigate('/provider/TrainerDetails');
+          // Register provider and store provider ID
+          try {
+            const registrationResult = await providerRegister(registrationData);
+            console.log('registrationResult:', registrationResult);
+            const providerId = registrationResult?.provider_id;
+
+            if (providerId) {
+              localStorage.setItem('providerId', providerId);
+              console.log('providerId:', providerId);
+              navigate('/provider/onboarding/trainer-details');
+            } else {
+              throw new Error('Provider registration failed to return provider ID.');
+            }
+          } catch (error) {
+            console.error('Trainer registration error:', error);
+            setErrors(prev => ({
+              ...prev,
+              form: 'An error occurred during trainer registration. Please try again.'
+            }));
+          }
           break;
         case 'Groomer':
           navigate('/provider/GroomerDetails');

@@ -368,7 +368,7 @@ export const AuthProvider = ({ children }) => {
       if (!response.ok) {
         throw new Error(data?.message || 'Provider registration failed');
       }
-      return data?.provider || true;
+      return data?.provider?.provider_id ? data.provider : true;
     } catch (err) {
       setError(err.message || 'Provider registration failed');
       throw err;
