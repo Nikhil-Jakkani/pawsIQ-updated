@@ -632,14 +632,6 @@ const UserPetProfile = () => {
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-left">{pet.neutered ? 'Yes' : 'No'}</td>
                               </tr>
                               <tr>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-left">Allergies</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-left">{pet.allergies || '-'}</td>
-                              </tr>
-                              <tr>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-left">Medical Conditions</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-left">{pet.medicalConditions || '-'}</td>
-                              </tr>
-                              <tr>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-left">Medications</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-left">{pet.medications || '-'}</td>
                               </tr>
@@ -879,11 +871,7 @@ const UserPetProfile = () => {
                   {allergiesList.length === 0 ? (
                     <p className="text-sm text-gray-500">No allergies recorded.</p>
                   ) : (
-                    <ul className="list-disc pl-6 text-sm text-gray-700 space-y-1">
-                      {allergiesList.map((a) => (
-                        <li key={a}>{a}</li>
-                      ))}
-                    </ul>
+                    <div className="text-sm text-gray-700">{allergiesList.join(', ')}</div>
                   )}
                 </section>
 
@@ -892,11 +880,26 @@ const UserPetProfile = () => {
                   {conditionsList.length === 0 ? (
                     <p className="text-sm text-gray-500">No medical conditions recorded.</p>
                   ) : (
-                    <ul className="list-disc pl-6 text-sm text-gray-700 space-y-1">
-                      {conditionsList.map((c) => (
-                        <li key={c}>{c}</li>
-                      ))}
-                    </ul>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead>
+                          <tr>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Sr. No</th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Name of condition</th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Document (uploaded)</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {conditionsList.map((c, index) => (
+                            <tr key={c}>
+                              <td className="px-4 py-2 text-sm text-gray-800 text-left">{index + 1}</td>
+                              <td className="px-4 py-2 text-sm text-gray-800 text-left">{c}</td>
+                              <td className="px-4 py-2 text-sm text-gray-500 text-left">-</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   )}
                 </section>
               </div>
