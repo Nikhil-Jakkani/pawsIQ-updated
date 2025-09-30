@@ -6,6 +6,16 @@ import { useAuth } from '../../context/AuthContext';
 
 const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
 
+// Placeholder function for uploading vaccination details
+const uploadVaccinationDetails = async (file) => {
+  // Replace this with actual upload logic
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve('https://example.com/vaccination-details/' + file.name);
+    }, 1000);
+  });
+};
+
 const UserEditPet = () => {
   const navigate = useNavigate();
   const { petId } = useParams();
@@ -37,8 +47,9 @@ const UserEditPet = () => {
     vetName: '',
     vetPhone: '',
     notes: '',
-    ageGroup: 'adult',
-    vaccinations: [],
+  ageGroup: 'adult',
+  vaccinationDetails: '',
+  vaccinations: [],
   });
   
   // State for breeds
@@ -221,12 +232,24 @@ const UserEditPet = () => {
   }, [petId, authFetch, navigate]);
 
   // Handle form input changes
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData({
-      ...formData,
-      [name]: type === 'checkbox' ? checked : value
-    });
+  const handleChange = async (e) => {
+    const { name, value, type, checked, files } = e.target;
+    
+    if (name === 'vaccinationDetails' && files && files[0]) {
+      try {
+        // Assuming uploadVaccinationDetails function exists and handles the upload
+        const uploadUrl = await uploadVaccinationDetails(files[0]);
+        setFormData(prev => ({ ...prev, vaccinationDetails: uploadUrl }));
+      } catch (uploadError) {
+        console.error("Failed to upload vaccination details:", uploadError);
+        alert("Failed to upload vaccination details.");
+      }
+    } else {
+      setFormData({
+        ...formData,
+        [name]: type === 'checkbox' ? checked : value
+      });
+    }
     
     // If pet type changes, fetch breeds and reset breed selection
     if (name === 'type') {
@@ -311,6 +334,7 @@ const UserEditPet = () => {
         vetName: formData.vetName || undefined,
         vetPhone: formData.vetPhone || undefined,
         notes: formData.notes || undefined,
+        vaccinationDetails: formData.vaccinationDetails || undefined,
         vaccinations: formData.vaccinations,
         region: "India"
       };
@@ -468,7 +492,21 @@ const UserEditPet = () => {
                     ))}
                   </div>
                 </div>
-                  
+                {/* Vaccination Details Upload */}
+                <div>
+                  <label htmlFor="vaccinationDetails" className="block text-sm font-semibold text-gray-700 mb-2">
+                    Vaccination Details (PDF, PNG, JPG)
+                  </label>
+                  <input
+                    type="file"
+                    id="vaccinationDetails"
+                    name="vaccinationDetails"
+                    accept=".pdf, .png, .jpg, .jpeg"
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
+                  />
+                </div>
+                
                 <div>
                   <label htmlFor="breed" className="block text-sm font-semibold text-gray-700 mb-2">
                     Breed

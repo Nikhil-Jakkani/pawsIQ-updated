@@ -170,7 +170,7 @@ const UserPetProfile = () => {
           vetName: data.vet_name || '',
           vetPhone: data.vet_phone || '',
           notes: data.notes || '',
-        };
+                  };
 
         setPet(normalized);
         // Initialize custom fields from consolidated data
@@ -538,12 +538,6 @@ const UserPetProfile = () => {
                           >
                             <FaFileMedical className="mr-1 inline" /> Health Records
                           </button>
-                          <button
-                            onClick={() => navigate(`/user/pets/${pet.id}/health-records?type=prescription`)}
-                            className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition "
-                          >
-                            <FaFileMedical className="mr-1 inline" /> Prescriptions
-                          </button>
                         </>
                       )}
                     </div>
@@ -647,6 +641,7 @@ const UserPetProfile = () => {
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-left">Notes</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-left">{pet.notes || '-'}</td>
                               </tr>
+                              
                             </tbody>
                           </table>
                         </div>
@@ -846,21 +841,21 @@ const UserPetProfile = () => {
                         <thead>
                           <tr className="bg-gray-50">
                             <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Vaccine</th>
-                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Given</th>
-                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Next Due</th>
-                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Status</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                          {vaccinations.map((v, idx) => (
-                            <tr key={v.vaccination_name || idx}>
-                              <td className="px-4 py-2 text-sm text-gray-800">{v.vaccination_name}</td>
-                              <td className="px-4 py-2 text-sm text-gray-500">{v.vaccine_given_date ? String(v.vaccine_given_date).slice(0,10) : '-'}</td>
-                              <td className="px-4 py-2 text-sm text-gray-500">{v.vaccine_due_date ? String(v.vaccine_due_date).slice(0,10) : '-'}</td>
-                              <td className="px-4 py-2 text-sm text-gray-500 capitalize">{v.vaccine_status || '-'}</td>
-                            </tr>
-                          ))}
-                        </tbody>
+                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Given</th>
+                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Next Due</th>
+                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Status</th>
+                         </tr>
+                       </thead>
+                       <tbody className="divide-y divide-gray-100">
+                         {vaccinations.map((v, idx) => (
+                           <tr key={v.id || idx}>
+                             <td className="px-4 py-2 text-sm text-gray-800">{v.vaccination_name || v.name}</td>
+                             <td className="px-4 py-2 text-sm text-gray-500">{v.vaccine_given_date || v.date ? String(v.vaccine_given_date || v.date).slice(0, 10) : '-'}</td>
+                             <td className="px-4 py-2 text-sm text-gray-500">{v.vaccine_due_date || v.next_due_date ? String(v.vaccine_due_date || v.next_due_date).slice(0, 10) : '-'}</td>
+                             <td className="px-4 py-2 text-sm text-gray-500 capitalize">{v.vaccine_status || v.status || '-'}</td>
+                           </tr>
+                         ))}
+                       </tbody>
                       </table>
                     </div>
                   )}
