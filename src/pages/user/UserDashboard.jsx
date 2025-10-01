@@ -197,6 +197,39 @@ const UserDashboard = () => {
           if (!res.ok) throw new Error((arr && arr.message) || 'Failed to load pets');
           rawPets = Array.isArray(arr) ? arr : (arr?.pets || []);
         }
+        
+        // Fetch appointments to get last checkup dates
+        let appointmentsMap = new Map();
+        try {
+          // Try user-specific appointments endpoint
+          const userId = Number(currentUser?.user_id ?? currentUser?.id);
+          const apptRes = await authFetch(`${API_URL}/user/${userId}/appointments`);
+          if (apptRes.ok) {
+            const apptData = await apptRes.json();
+            const appointments = Array.isArray(apptData?.items) ? apptData.items : (Array.isArray(apptData) ? apptData : []);
+            
+            console.log('Fetched appointments for last checkup:', appointments.length);
+            
+            // Group completed appointments by pet_id and find the most recent
+            appointments
+              .filter(a => {
+                const status = (a.appointment_status || a.booking_status || '').toLowerCase();
+                return status === 'completed';
+              })
+              .forEach(a => {
+                const petId = Number(a.pet_id);
+                const apptDate = new Date(a.appointment_date || a.booked_dtm || a.appointment_dtm);
+                if (isNaN(apptDate.getTime())) return; // Skip invalid dates
+                
+                if (!appointmentsMap.has(petId) || apptDate > appointmentsMap.get(petId)) {
+                  appointmentsMap.set(petId, apptDate);
+                  console.log(`Set last checkup for pet ${petId}:`, apptDate.toISOString());
+                }
+              });
+          }
+        } catch (err) {
+          console.warn('Failed to fetch appointments for last checkup:', err);
+        }
 
         // Phase 1: map pet data synchronously using cached image URLs (if present)
         rawPets = rawPets
@@ -215,8 +248,11 @@ const UserDashboard = () => {
               })()
             : (typeof p.age === 'number' ? `${p.age} years` : (p.pet_age != null ? `${p.pet_age} years` : 'Unknown'));
           const weightDisplay = formatWeight(p);
+          const petId = Number(p.id || p.pet_id);
+          const lastCompletedAppt = appointmentsMap.get(petId);
+          
           return {
-            id: Number(p.id || p.pet_id),
+            id: petId,
             name: p.name || p.pet_name || 'Pet',
             type: (p.type || p.pet_type || '').toString().toLowerCase(),
             breed: p.breed || p.pet_breed || '',
@@ -227,7 +263,7 @@ const UserDashboard = () => {
             createdAt: p.createdAt || p.created_at || null,
             imagePath,
             image: cachedUrl || (legacy ? placeholder : (p.image || p.profileImage || 'https://placehold.co/600x400?text=Pet')),
-            lastCheckup: p.lastCheckup || p.last_checkup || new Date().toISOString().slice(0, 10),
+            lastCheckup: lastCompletedAppt ? lastCompletedAppt.toISOString().slice(0, 10) : null,
             vaccinations: p.vaccinations || 'Unknown',
           };
         });

@@ -8,7 +8,7 @@ const db = prisma as any;
  * List all service offerings for a provider
  */
 const listServiceOfferings = async (providerId: number) => {
-  const offerings = await db.ProviderServiceOffering.findMany({
+  const offerings = await (db as any).PIQ_Provider_ServiceOffering.findMany({
     where: { service_provider_id: providerId },
     include: {
       service: {
@@ -50,7 +50,7 @@ const listServiceOfferings = async (providerId: number) => {
  * Get a single service offering by ID
  */
 const getServiceOffering = async (providerId: number, offeringId: number) => {
-  const offering = await db.ProviderServiceOffering.findFirst({
+  const offering = await (db as any).PIQ_Provider_ServiceOffering.findFirst({
     where: {
       offering_id: offeringId,
       service_provider_id: providerId,
@@ -115,7 +115,7 @@ const createServiceOffering = async (
   }
 
   // Check if provider already offers this service
-  const existing = await db.ProviderServiceOffering.findFirst({
+  const existing = await (db as any).PIQ_Provider_ServiceOffering.findFirst({
     where: {
       service_provider_id: providerId,
       services_id: payload.services_id,
@@ -130,7 +130,7 @@ const createServiceOffering = async (
   }
 
   // Create the offering
-  const offering = await db.ProviderServiceOffering.create({
+  const offering = await (db as any).PIQ_Provider_ServiceOffering.create({
     data: {
       service_provider_id: providerId,
       services_id: payload.services_id,
@@ -185,7 +185,7 @@ const updateServiceOffering = async (
   }
 ) => {
   // Check if offering exists and belongs to provider
-  const existing = await db.ProviderServiceOffering.findFirst({
+  const existing = await (db as any).PIQ_Provider_ServiceOffering.findFirst({
     where: {
       offering_id: offeringId,
       service_provider_id: providerId,
@@ -197,7 +197,7 @@ const updateServiceOffering = async (
   }
 
   // Update the offering
-  const updated = await db.ProviderServiceOffering.update({
+  const updated = await (db as any).PIQ_Provider_ServiceOffering.update({
     where: { offering_id: offeringId },
     data: {
       custom_title: payload.custom_title !== undefined ? payload.custom_title : undefined,
@@ -243,7 +243,7 @@ const updateServiceOffering = async (
  */
 const deleteServiceOffering = async (providerId: number, offeringId: number) => {
   // Check if offering exists and belongs to provider
-  const existing = await db.ProviderServiceOffering.findFirst({
+  const existing = await (db as any).PIQ_Provider_ServiceOffering.findFirst({
     where: {
       offering_id: offeringId,
       service_provider_id: providerId,
@@ -271,7 +271,7 @@ const deleteServiceOffering = async (providerId: number, offeringId: number) => 
   }
 
   // Delete the offering
-  await db.ProviderServiceOffering.delete({
+  await (db as any).PIQ_Provider_ServiceOffering.delete({
     where: { offering_id: offeringId },
   });
 
@@ -291,7 +291,7 @@ const listAvailableServices = async (providerId: number) => {
   });
 
   // Get services already offered by provider
-  const offeredServices = await db.providerServiceOffering.findMany({
+  const offeredServices = await (db as any).PIQ_Provider_ServiceOffering.findMany({
     where: { service_provider_id: providerId },
     select: { services_id: true },
   });

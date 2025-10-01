@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import useApi from '../../hooks/useApi';
 import { 
   FaHospital, 
   FaClipboardCheck, 
@@ -24,15 +25,60 @@ import {
 import DashboardLayout from '../../components/layout/DashboardLayout';
 
 const ProviderOnboarding = ({ filterType }) => {
+  const api = useApi();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTypeState, setFilterTypeState] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [sortField, setSortField] = useState('date');
   const [sortDirection, setSortDirection] = useState('desc');
   const [selectedApplication, setSelectedApplication] = useState(null);
+  const [providers, setProviders] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [stats, setStats] = useState({ total: 0, pending: 0, approved: 0, rejected: 0 });
   
-  // Sample data for applications
-  const applicationsData = [
+  // Fetch providers
+  useEffect(() => {
+    let alive = true;
+    const run = async () => {
+      setLoading(true);
+      try {
+        const [providersData, statsData] = await Promise.all([
+          api.get('/admin/providers'),
+          api.get('/admin/providers/stats')
+        ]);
+        if (!alive) return;
+        setProviders(Array.isArray(providersData) ? providersData : []);
+        setStats(statsData || { total: 0, pending: 0, approved: 0, rejected: 0 });
+      } catch (e) {
+        console.error('Error loading providers:', e);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    };
+    run();
+    return () => { alive = false; };
+  }, [api]);
+  
+  // Map providers to application format
+  const applicationsData = providers.map(p => ({
+    id: p.service_provider_id,
+    name: p.serv_provider_name || 'Unknown',
+    email: p.serv_provider_email || '',
+    phone: p.serv_provider_phone_number || '',
+    type: (p.serv_provider_type || 'Provider').charAt(0).toUpperCase() + (p.serv_provider_type || 'Provider').slice(1),
+    specialty: p.serv_provider_specialization || 'General',
+    status: p.serv_provider_status === 'inactive' ? 'Pending Review' : 
+            p.serv_provider_status === 'active' ? 'Approved' :
+            p.serv_provider_status === 'rejected' ? 'Rejected' : 'In Progress',
+    date: p.created_at ? new Date(p.created_at).toLocaleDateString() : '',
+    documents: [],
+    experience: '',
+    address: p.serv_provider_location || '',
+    notes: ''
+  }));
+  
+  // Sample data as fallback
+  const sampleData = [
     { id: 1, name: 'Dr. James Wilson', email: 'james.wilson@example.com', phone: '(555) 123-4567', type: 'Veterinarian', specialty: 'Small Animals', status: 'Pending Review', date: '2023-12-05', documents: ['License', 'Certification', 'Insurance', 'ID'], experience: '8 years', address: '123 Main St, Anytown, CA 12345', notes: 'Specializes in small animal care with focus on dogs and cats. Previously worked at City Animal Hospital for 5 years.' },
     { id: 2, name: 'Emma Thompson', email: 'emma.t@example.com', phone: '(555) 234-5678', type: 'Groomer', specialty: 'Dogs', status: 'Pending Review', date: '2023-12-04', documents: ['Certification', 'Insurance', 'ID'], experience: '5 years', address: '456 Oak Ave, Somewhere, NY 67890', notes: 'Professional dog groomer with specialty in poodles and other high-maintenance breeds. Owns mobile grooming business.' },
     { id: 3, name: 'Dr. Michael Chen', email: 'michael.c@example.com', phone: '(555) 345-6789', type: 'Veterinarian', specialty: 'Exotic Pets', status: 'In Progress', date: '2023-12-03', documents: ['License', 'ID'], experience: '10 years', address: '789 Pine Rd, Elsewhere, TX 54321', notes: 'Waiting for certification documents. Specializes in exotic animals including reptiles and birds.' },
@@ -113,13 +159,27 @@ const ProviderOnboarding = ({ filterType }) => {
   };
 
   // Handle application action
-  const handleApplicationAction = (action, applicationId) => {
-    console.log(`Performing ${action} on application:`, applicationId);
-    // In a real app, you would call an API to perform the action
-    alert(`${action} action would be performed on application #${applicationId}`);
-    
-    if (selectedApplication && selectedApplication.id === applicationId) {
-      setSelectedApplication(null);
+  const handleApplicationAction = async (action, applicationId) => {
+    try {
+      const status = action === 'Approve' ? 'active' : 'rejected';
+      await api.patch(`/admin/providers/${applicationId}/status`, { status });
+      
+      // Refresh providers list
+      const [providersData, statsData] = await Promise.all([
+        api.get('/admin/providers'),
+        api.get('/admin/providers/stats')
+      ]);
+      setProviders(Array.isArray(providersData) ? providersData : []);
+      setStats(statsData || { total: 0, pending: 0, approved: 0, rejected: 0 });
+      
+      if (selectedApplication && selectedApplication.id === applicationId) {
+        setSelectedApplication(null);
+      }
+      
+      alert(`Provider ${action === 'Approve' ? 'approved' : 'rejected'} successfully!`);
+    } catch (error) {
+      console.error('Error updating provider status:', error);
+      alert('Failed to update provider status. Please try again.');
     }
   };
 
@@ -153,7 +213,7 @@ const ProviderOnboarding = ({ filterType }) => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-500">Total Applications</p>
-                <p className="text-xl font-bold text-gray-800 mt-1">{applicationsData.length}</p>
+                <p className="text-xl font-bold text-gray-800 mt-1">{stats.total}</p>
               </div>
               <div className="bg-indigo-100 p-2 rounded-full">
                 <FaClipboardCheck className="text-indigo-600" />
@@ -166,7 +226,7 @@ const ProviderOnboarding = ({ filterType }) => {
               <div>
                 <p className="text-sm font-medium text-gray-500">Pending Review</p>
                 <p className="text-xl font-bold text-amber-600 mt-1">
-                  {applicationsData.filter(app => app.status === 'Pending Review').length}
+                  {stats.pending}
                 </p>
               </div>
               <div className="bg-amber-100 p-2 rounded-full">
@@ -180,7 +240,7 @@ const ProviderOnboarding = ({ filterType }) => {
               <div>
                 <p className="text-sm font-medium text-gray-500">Approved</p>
                 <p className="text-xl font-bold text-green-600 mt-1">
-                  {applicationsData.filter(app => app.status === 'Approved').length}
+                  {stats.approved}
                 </p>
               </div>
               <div className="bg-green-100 p-2 rounded-full">
@@ -194,7 +254,7 @@ const ProviderOnboarding = ({ filterType }) => {
               <div>
                 <p className="text-sm font-medium text-gray-500">Rejected</p>
                 <p className="text-xl font-bold text-red-600 mt-1">
-                  {applicationsData.filter(app => app.status === 'Rejected').length}
+                  {stats.rejected}
                 </p>
               </div>
               <div className="bg-red-100 p-2 rounded-full">

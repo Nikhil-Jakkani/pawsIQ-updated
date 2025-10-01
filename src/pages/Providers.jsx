@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import useApi from '../hooks/useApi';
 import { 
   FaHospital, 
   FaClipboardCheck, 
@@ -29,6 +30,7 @@ import {
 import DashboardLayout from '../components/layout/DashboardLayout';
 
 const Providers = () => {
+  const api = useApi();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterType, setFilterType] = useState('all');
@@ -36,17 +38,54 @@ const Providers = () => {
   const [sortDirection, setSortDirection] = useState('asc');
   const [selectedProviders, setSelectedProviders] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
+  const [providers, setProviders] = useState([]);
+  const [loading, setLoading] = useState(false);
   
-  // Sample data for provider statistics
+  // Fetch providers from backend
+  useEffect(() => {
+    let alive = true;
+    const run = async () => {
+      setLoading(true);
+      try {
+        const data = await api.get('/admin/piq/providers');
+        if (!alive) return;
+        setProviders(Array.isArray(data) ? data : []);
+      } catch (e) {
+        console.error('Error loading providers:', e);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    };
+    run();
+    return () => { alive = false; };
+  }, [api]);
+  
+  // Map backend providers to UI format
+  const providersData = providers.map(p => ({
+    id: p.service_provider_id,
+    name: p.serv_provider_name || 'Unknown',
+    email: p.serv_provider_email || '',
+    type: (p.serv_provider_type || 'Provider').charAt(0).toUpperCase() + (p.serv_provider_type || 'Provider').slice(1),
+    specialty: p.serv_provider_specialization || 'General',
+    status: (p.serv_provider_status || 'pending').charAt(0).toUpperCase() + (p.serv_provider_status || 'pending').slice(1),
+    rating: 0,
+    reviews: 0,
+    lastActive: p.last_updated_dtm ? new Date(p.last_updated_dtm).toLocaleString() : 'Never',
+    registeredDate: p.created_at ? new Date(p.created_at).toLocaleDateString() : '—',
+    appointments: 0,
+    commission: '15%',
+    verified: p.serv_provider_status === 'active',
+  }));
+  
   const providerStats = {
-    totalProviders: 842,
-    activeProviders: 750,
-    pendingApproval: 42,
-    flaggedProviders: 8
+    totalProviders: providersData.length,
+    activeProviders: providersData.filter(p => p.status === 'Active').length,
+    pendingApproval: providersData.filter(p => p.status === 'Pending').length,
+    flaggedProviders: providersData.filter(p => p.status === 'Flagged').length
   };
 
-  // Sample data for providers
-  const providersData = [
+  // Keep original sample data as fallback
+  const sampleData = [
     { id: 1, name: 'Dr. James Wilson', email: 'james.wilson@example.com', type: 'Veterinarian', specialty: 'Small Animals', status: 'Active', rating: 4.8, reviews: 124, lastActive: '2 hours ago', registeredDate: '12/05/2023', appointments: 35, commission: '15%', verified: true },
     { id: 2, name: 'Emma Thompson', email: 'emma.t@example.com', type: 'Groomer', specialty: 'Dogs', status: 'Active', rating: 4.6, reviews: 98, lastActive: '1 day ago', registeredDate: '10/15/2023', appointments: 28, commission: '12%', verified: true },
     { id: 3, name: 'Dr. Michael Chen', email: 'michael.c@example.com', type: 'Veterinarian', specialty: 'Exotic Pets', status: 'Active', rating: 4.9, reviews: 87, lastActive: '3 hours ago', registeredDate: '11/20/2023', appointments: 42, commission: '15%', verified: true },
@@ -428,10 +467,12 @@ const Providers = () => {
                 onChange={(e) => setFilterType(e.target.value)}
               >
                 <option value="all">All Types</option>
-                <option value="veterinarian">Veterinarians</option>
-                <option value="groomer">Groomers</option>
-                <option value="pet sitter">Pet Sitters</option>
-                <option value="trainer">Trainers</option>
+                <option value="veterinary">Veterinary</option>
+                <option value="diagnostic services">Diagnostic Services</option>
+                <option value="boarding">Boarding</option>
+                <option value="grooming">Grooming</option>
+                <option value="training">Training</option>
+                <option value="physical activity">Physical Activity</option>
               </select>
             </div>
           </div>

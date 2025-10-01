@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaStethoscope, FaCut, FaGraduationCap, FaDog, FaShieldAlt, FaPercentage, FaStar, FaExclamationTriangle } from 'react-icons/fa';
+import { FaStethoscope, FaCut, FaGraduationCap, FaDog, FaShieldAlt, FaPercentage, FaStar, FaExclamationTriangle, FaMicroscope, FaRunning } from 'react-icons/fa';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   FaHome, 
@@ -96,10 +96,12 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       label: 'Provider Management',
       path: '/providers',
       items: [
-        { path: '/providers/onboarding/veterinarian', icon: <FaStethoscope />, label: 'Vet Onboarding' },
-        { path: '/providers/onboarding/groomer', icon: <FaCut />, label: 'Groomer Onboarding' },
-        { path: '/providers/onboarding/trainer', icon: <FaGraduationCap />, label: 'Trainer Onboarding' },
-        { path: '/providers/onboarding/pet-sitter', icon: <FaDog />, label: 'Pet Sitter Onboarding' },
+        { path: '/providers/onboarding/veterinary', icon: <FaStethoscope />, label: 'Vet Onboarding' },
+        { path: '/providers/onboarding/diagnostic-services', icon: <FaMicroscope />, label: 'Diagnostic Services' },
+        { path: '/providers/onboarding/boarding', icon: <FaHome />, label: 'Boarding Onboarding' },
+        { path: '/providers/onboarding/grooming', icon: <FaCut />, label: 'Grooming Onboarding' },
+        { path: '/providers/onboarding/training', icon: <FaGraduationCap />, label: 'Training Onboarding' },
+        { path: '/providers/onboarding/physical-activity', icon: <FaRunning />, label: 'Physical Activity' },
         { path: '/providers/verification', icon: <FaShieldAlt />, label: 'Verification' },
         { path: '/providers/commission', icon: <FaPercentage />, label: 'Commission' },
         { path: '/providers/performance', icon: <FaStar />, label: 'Performance' },
@@ -236,6 +238,18 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       setExpandedCategory(categoryId);
     }
   };
+  
+  // Keep category expanded when navigating to its subitems
+  useEffect(() => {
+    // Find which category contains the current path
+    const activeCategory = menuCategories.find(cat => 
+      cat.items.some(item => location.pathname === item.path)
+    );
+    
+    if (activeCategory && expandedCategory !== activeCategory.id) {
+      setExpandedCategory(activeCategory.id);
+    }
+  }, [location.pathname]);
 
   // Handle category click - navigate or expand
   const handleCategoryClick = (category) => {

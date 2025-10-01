@@ -45,6 +45,7 @@ const UserProfiles = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalResults, setTotalResults] = useState(0);
   const [users, setUsers] = useState([]);
+  const [userStats, setUserStats] = useState({});
 
   React.useEffect(() => {
     let alive = true;
@@ -59,9 +60,27 @@ const UserProfiles = () => {
         if (filterStatus !== 'all') qs.set('status', filterStatus);
         const data = await api.get(`/admin/piq/users?${qs.toString()}`);
         if (!alive) return;
-        setUsers(Array.isArray(data?.results) ? data.results : []);
+        const userList = Array.isArray(data?.results) ? data.results : [];
+        setUsers(userList);
         setTotalPages(Number(data?.totalPages) || 1);
         setTotalResults(Number(data?.totalResults) || 0);
+        
+        // Fetch stats for all users
+        if (userList.length > 0) {
+          try {
+            const userIds = userList.map(u => Number(u.user_id));
+            console.log('Fetching stats for user IDs:', userIds);
+            const stats = await api.post('/admin/stats/bulk-user-stats', { userIds });
+            console.log('Received stats:', stats);
+            if (!alive) return;
+            setUserStats(stats || {});
+          } catch (statsError) {
+            console.error('Failed to load user stats:', statsError);
+            // Set empty stats on error
+            if (!alive) return;
+            setUserStats({});
+          }
+        }
       } catch (e) {
         if (!alive) return;
         setError('Failed to load users');
@@ -76,22 +95,25 @@ const UserProfiles = () => {
   }, [api, page, limit, searchTerm, filterStatus]);
   
   // Map backend users to UI rows
-  const usersData = users.map(u => ({
-    id: u.user_id,
-    name: u.user_full_name,
-    email: u.user_email_id,
-    type: 'Pet Owner',
-    role: 'User',
-    status: (u.user_status || 'Active').charAt(0).toUpperCase() + (u.user_status || 'Active').slice(1),
-    lastActive: u.last_updated_dtm ? new Date(u.last_updated_dtm).toLocaleString() : '—',
-    registeredDate: u.created_at ? new Date(u.created_at).toLocaleDateString() : '—',
-    pets: 0,
-    appointments: 0,
-    phone: u.user_phone_number || '',
-    address: '',
-    verifiedEmail: true,
-    verifiedPhone: !!u.user_phone_number,
-  }));
+  const usersData = users.map(u => {
+    const stats = userStats[u.user_id] || { pets: 0, appointments: 0 };
+    return {
+      id: u.user_id,
+      name: u.user_full_name,
+      email: u.user_email_id,
+      type: 'Pet Owner',
+      role: 'User',
+      status: (u.user_status || 'Active').charAt(0).toUpperCase() + (u.user_status || 'Active').slice(1),
+      lastActive: u.last_updated_dtm ? new Date(u.last_updated_dtm).toLocaleString() : '—',
+      registeredDate: u.created_at ? new Date(u.created_at).toLocaleDateString() : '—',
+      pets: stats.pets,
+      appointments: stats.appointments,
+      phone: u.user_phone_number || '',
+      address: '',
+      verifiedEmail: true,
+      verifiedPhone: !!u.user_phone_number,
+    };
+  });
 
   // Filter and sort users
   const filteredAndSortedUsers = usersData
@@ -317,7 +339,7 @@ const UserProfiles = () => {
         {/* User List */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full table-fixed">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left">

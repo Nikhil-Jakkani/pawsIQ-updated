@@ -67,12 +67,18 @@ const VetDashboard = () => {
   }, [currentUser?.role]);
 
   // KPIs computed from real data
-  const kpis = useMemo(() => ({
-    todayAppointments: confirmed.filter(a => a.date === mockToday).length + pending.filter(a => a.date === mockToday).length,
-    activePatients: metrics.activePatients,
-    todayRevenue: metrics.todayRevenue,
-    pendingPrescriptions: metrics.pendingPrescriptions,
-  }), [confirmed, pending, metrics]);
+  const kpis = useMemo(() => {
+    const todayCount = confirmed.filter(a => a.date === mockToday).length + pending.filter(a => a.date === mockToday).length;
+    const totalUpcoming = confirmed.length + pending.length;
+    
+    return {
+      todayAppointments: todayCount,
+      totalAppointments: totalUpcoming,
+      activePatients: metrics.activePatients,
+      todayRevenue: metrics.todayRevenue,
+      pendingPrescriptions: metrics.pendingPrescriptions,
+    };
+  }, [confirmed, pending, metrics]);
 
   const normalizeBooking = (b) => {
     const d = new Date(b.booked_dtm || b.date || b.appointment_date);
@@ -210,7 +216,7 @@ const VetDashboard = () => {
             </div>
             <div className="text-right">
               <div className="text-xs text-gray-500">Appointments</div>
-              <div className="text-lg font-bold text-indigo-600">{kpis.todayAppointments}</div>
+              <div className="text-lg font-bold text-indigo-600">{kpis.totalAppointments}</div>
             </div>
           </div>
         </div>

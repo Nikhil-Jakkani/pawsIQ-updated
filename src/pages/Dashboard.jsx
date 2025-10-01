@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaUsers, FaCalendarCheck, FaShoppingCart, FaDollarSign, FaPaw, FaDog, FaCat, FaBone } from 'react-icons/fa';
+import { FaUsers, FaCalendarCheck, FaShoppingCart, FaDollarSign, FaPaw, FaDog, FaCat, FaBone, FaStethoscope, FaMicroscope, FaHome, FaCut, FaGraduationCap, FaRunning } from 'react-icons/fa';
 import { PetIcon, PetIconButton } from '../components/layout/PetIcons';
 import StatCard from '../components/dashboard/StatCard';
 import OverviewChart from '../components/dashboard/OverviewChart';
@@ -14,6 +14,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const api = useApi();
   const [stats, setStats] = useState({ users: 0, pets: 0, appointments: 0, providers: 0 });
+  const [serviceTypes, setServiceTypes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -21,16 +22,25 @@ const Dashboard = () => {
     let isMounted = true;
     (async () => {
       try {
-        const data = await api.get('/admin/stats');
-        if (isMounted && data) {
+        const [statsData, providerTypesData] = await Promise.all([
+          api.get('/admin/stats'),
+          api.get('/admin/stats/providers-by-type')
+        ]);
+        
+        if (isMounted && statsData) {
           setStats({
-            users: Number(data.users) || 0,
-            pets: Number(data.pets) || 0,
-            appointments: Number(data.appointments) || 0,
-            providers: Number(data.providers) || 0,
+            users: Number(statsData.users) || 0,
+            pets: Number(statsData.pets) || 0,
+            appointments: Number(statsData.appointments) || 0,
+            providers: Number(statsData.providers) || 0,
           });
         }
+        
+        if (isMounted && providerTypesData?.items) {
+          setServiceTypes(providerTypesData.items);
+        }
       } catch (e) {
+        console.error('Failed to load dashboard data:', e);
         setError('Failed to load stats');
       } finally {
         if (isMounted) setLoading(false);
@@ -148,46 +158,84 @@ const Dashboard = () => {
         />
       </div>
       
-      {/* Pet Services Summary */}
+      {/* Pet Services Summary - Dynamic */}
       <div className="bg-white rounded-xl shadow-sm p-6 border border-indigo-100">
         <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
           <FaBone className="text-indigo-500" />
           Pet Services Summary
         </h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-indigo-50 rounded-lg p-4 text-center">
-            <div className="bg-white w-12 h-12 mx-auto rounded-full flex items-center justify-center mb-3 shadow-sm">
-              <FaDog className="text-indigo-600 text-xl" />
-            </div>
-            <h3 className="font-semibold text-indigo-900">Veterinary</h3>
-            <p className="text-2xl font-bold text-indigo-700 mt-1">438</p>
-            <p className="text-xs text-indigo-500 mt-1">Active appointments</p>
+        {loading ? (
+          <div className="text-center py-8 text-gray-500">Loading service providers...</div>
+        ) : serviceTypes.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">No active service providers found</div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {serviceTypes.map((service) => {
+              const bgColors = {
+                indigo: 'bg-indigo-50',
+                purple: 'bg-purple-50',
+                blue: 'bg-blue-50',
+                pink: 'bg-pink-50',
+                green: 'bg-green-50',
+                amber: 'bg-amber-50',
+                gray: 'bg-gray-50'
+              };
+              const iconColors = {
+                indigo: 'text-indigo-600',
+                purple: 'text-purple-600',
+                blue: 'text-blue-600',
+                pink: 'text-pink-600',
+                green: 'text-green-600',
+                amber: 'text-amber-600',
+                gray: 'text-gray-600'
+              };
+              const textColors = {
+                indigo: 'text-indigo-900',
+                purple: 'text-purple-900',
+                blue: 'text-blue-900',
+                pink: 'text-pink-900',
+                green: 'text-green-900',
+                amber: 'text-amber-900',
+                purple: 'text-purple-900',
+                blue: 'text-blue-900',
+                green: 'text-green-900',
+                gray: 'text-gray-900'
+              };
+              const boldColors = {
+                indigo: 'text-indigo-700',
+                purple: 'text-purple-700',
+                blue: 'text-blue-700',
+                green: 'text-green-700',
+                gray: 'text-gray-700'
+              };
+              const lightColors = {
+                indigo: 'text-indigo-500',
+                purple: 'text-purple-500',
+                blue: 'text-blue-500',
+                green: 'text-green-500',
+                gray: 'text-gray-500'
+              };
+              
+              const color = service.color || 'gray';
+              
+              return (
+                <div key={service.type} className={`${bgColors[color]} rounded-lg p-4 text-center`}>
+                  <div className="bg-white w-12 h-12 mx-auto rounded-full flex items-center justify-center mb-3 shadow-sm">
+                    {service.icon === 'stethoscope' && <FaStethoscope className={`${iconColors[color]} text-xl`} />}
+                    {service.icon === 'microscope' && <FaMicroscope className={`${iconColors[color]} text-xl`} />}
+                    {service.icon === 'home' && <FaHome className={`${iconColors[color]} text-xl`} />}
+                    {service.icon === 'cut' && <FaCut className={`${iconColors[color]} text-xl`} />}
+                    {service.icon === 'graduation-cap' && <FaGraduationCap className={`${iconColors[color]} text-xl`} />}
+                    {service.icon === 'running' && <FaRunning className={`${iconColors[color]} text-xl`} />}
+                  </div>
+                  <h3 className={`font-semibold ${textColors[color]}`}>{service.type}</h3>
+                  <p className={`text-2xl font-bold ${boldColors[color]} mt-1`}>{service.count}</p>
+                  <p className={`text-xs ${lightColors[color]} mt-1`}>Active providers</p>
+                </div>
+              );
+            })}
           </div>
-          <div className="bg-purple-50 rounded-lg p-4 text-center">
-            <div className="bg-white w-12 h-12 mx-auto rounded-full flex items-center justify-center mb-3 shadow-sm">
-              <FaCat className="text-purple-600 text-xl" />
-            </div>
-            <h3 className="font-semibold text-purple-900">Grooming</h3>
-            <p className="text-2xl font-bold text-purple-700 mt-1">327</p>
-            <p className="text-xs text-purple-500 mt-1">Active appointments</p>
-          </div>
-          <div className="bg-blue-50 rounded-lg p-4 text-center">
-            <div className="bg-white w-12 h-12 mx-auto rounded-full flex items-center justify-center mb-3 shadow-sm">
-              <PetIcon type="rabbit" className="text-blue-600 text-xl" />
-            </div>
-            <h3 className="font-semibold text-blue-900">Pet Sitting</h3>
-            <p className="text-2xl font-bold text-blue-700 mt-1">215</p>
-            <p className="text-xs text-blue-500 mt-1">Active bookings</p>
-          </div>
-          <div className="bg-green-50 rounded-lg p-4 text-center">
-            <div className="bg-white w-12 h-12 mx-auto rounded-full flex items-center justify-center mb-3 shadow-sm">
-              <PetIcon type="bird" className="text-green-600 text-xl" />
-            </div>
-            <h3 className="font-semibold text-green-900">Training</h3>
-            <p className="text-2xl font-bold text-green-700 mt-1">189</p>
-            <p className="text-xs text-green-500 mt-1">Active sessions</p>
-          </div>
-        </div>
+        )}
       </div>
       
       {/* Charts */}
