@@ -40,6 +40,13 @@ const VetDashboard = () => {
   const [error, setError] = useState('');
   const [pending, setPending] = useState([]);
   const [confirmed, setConfirmed] = useState([]);
+  const [providerProfile, setProviderProfile] = useState(null);
+  const [metrics, setMetrics] = useState({
+    todayAppointments: 0,
+    activePatients: 0,
+    todayRevenue: 0,
+    pendingPrescriptions: 0,
+  });
 
   useEffect(() => {
     if (!currentUser || currentUser.role !== 'provider') {
@@ -59,26 +66,26 @@ const VetDashboard = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser?.role]);
 
-  // KPIs (derive lightweight counts; keep placeholders for items we don't compute here)
+  // KPIs computed from real data
   const kpis = useMemo(() => ({
     todayAppointments: confirmed.filter(a => a.date === mockToday).length + pending.filter(a => a.date === mockToday).length,
-    activePatients: 0,
-    todayRevenue: 0,
-    pendingPrescriptions: 0,
-  }), [confirmed, pending]);
+    activePatients: metrics.activePatients,
+    todayRevenue: metrics.todayRevenue,
+    pendingPrescriptions: metrics.pendingPrescriptions,
+  }), [confirmed, pending, metrics]);
 
   const normalizeBooking = (b) => {
-    const d = new Date(b.booked_dtm || b.appointment_date);
+    const d = new Date(b.booked_dtm || b.date || b.appointment_date);
     const date = Number.isNaN(d.getTime()) ? '—' : d.toISOString().slice(0, 10);
     const time = Number.isNaN(d.getTime()) ? '' : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     return {
-      id: b.booking_id || b.appointment_id,
+      id: b.booking_id || b.id || b.appointment_id,
       date,
       time,
-      owner: b.user_name || b.user_email || '—',
-      pet: b.pet_name ? `${b.pet_name} (${b.pet_type || ''})` : '—',
-      reason: b.service_title || b.service_type || b.appointment_type || '—',
-      location: b.location || '—',
+      owner: b.client || b.user_name || b.clientName || b.user_email || '—',
+      pet: b.pet || (b.pet_name ? `${b.pet_name} (${b.pet_type || ''})` : '—'),
+      reason: b.service || b.service_title || b.service_type || b.appointment_type || '—',
+      location: providerProfile?.serv_provider_location || b.location || '—',
       raw: b,
     };
   };
@@ -94,12 +101,50 @@ const VetDashboard = () => {
     setLoading(true);
     setError('');
     try {
-      const [conf, pend] = await Promise.all([
-        fetchSection('Confirmed', 5),
-        fetchSection('Pending', 5),
-      ]);
-      setConfirmed(conf);
-      setPending(pend);
+      // Fetch provider profile first
+      const profileRes = await authFetch(`${API_URL}/provider/me`);
+      if (profileRes.ok) {
+        const profile = await profileRes.json();
+        setProviderProfile(profile);
+        
+        // Extract metrics from profile if available
+        if (profile.performance) {
+          setMetrics({
+            todayAppointments: profile.performance.totalBookings || 0,
+            activePatients: profile.performance.newClients || 0,
+            todayRevenue: profile.performance.earnings || 0,
+            pendingPrescriptions: 0,
+          });
+        }
+      }
+      
+      // Fetch appointments
+      const appointmentsRes = await authFetch(`${API_URL}/provider/appointments?limit=10`);
+      if (appointmentsRes.ok) {
+        const apptData = await appointmentsRes.json();
+        const appointments = Array.isArray(apptData?.items) ? apptData.items : [];
+        
+        // Separate by status
+        const conf = appointments
+          .filter(a => a.status === 'Confirmed' || a.booking_status === 'Confirmed')
+          .slice(0, 5)
+          .map(normalizeBooking);
+        const pend = appointments
+          .filter(a => a.status === 'Pending' || a.booking_status === 'Pending')
+          .slice(0, 5)
+          .map(normalizeBooking);
+        
+        setConfirmed(conf);
+        setPending(pend);
+      } else {
+        // Fallback to bookings endpoint
+        const [conf, pend] = await Promise.all([
+          fetchSection('Confirmed', 5),
+          fetchSection('Pending', 5),
+        ]);
+        setConfirmed(conf);
+        setPending(pend);
+      }
     } catch (e) {
       setError(e.message);
     } finally {
@@ -154,8 +199,8 @@ const VetDashboard = () => {
             </div>
             <div className="ml-4">
               <div className="text-sm text-gray-500">Welcome</div>
-              <div className="text-lg font-semibold text-gray-900">{currentUser.name || 'Veterinarian'}</div>
-              <div className="text-xs text-gray-500">Reg. No: MVSC-2025-001 | Maharashtra</div>
+              <div className="text-lg font-semibold text-gray-900">{providerProfile?.serv_provider_name || currentUser.name || 'Veterinarian'}</div>
+              <div className="text-xs text-gray-500">{providerProfile?.serv_provider_location || 'Location not set'}</div>
             </div>
           </div>
           <div className="flex items-center space-x-6">

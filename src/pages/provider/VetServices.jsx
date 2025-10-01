@@ -21,85 +21,29 @@ export default function VetServices() {
       setLoading(true);
       setError('');
       
-      // Mock data that will be used if API calls fail
-      const mockServices = [
-        {
-          id: 1,
-          name: 'General Checkup',
-          description: 'Comprehensive health examination for your pet',
-          price: 500,
-          gst: 18,
-          duration: 30,
-          isActive: true
-        },
-        {
-          id: 2,
-          name: 'Vaccination',
-          description: 'Essential vaccinations for your pet',
-          price: 800,
-          gst: 18,
-          duration: 20,
-          isActive: true
-        },
-        {
-          id: 3,
-          name: 'Dental Cleaning',
-          description: 'Professional dental cleaning for your pet',
-          price: 1500,
-          gst: 18,
-          duration: 45,
-          isActive: true
-        }
-      ];
-      
-      // First try to get the provider's profile from API
-      try {
-        const profileRes = await authFetch(`${API_URL}/provider/me`);
-        if (!profileRes.ok) {
-          throw new Error('Failed to load provider profile');
-        }
-        const profile = await profileRes.json();
-        
-        // Then try to fetch services from API
-        try {
-          const servicesRes = await authFetch(`${API_URL}/services`);
-          if (!servicesRes.ok) {
-            throw new Error('Failed to load services');
-          }
-          const data = await servicesRes.json();
-          
-          // If we got here, API is working
-          const list = Array.isArray(data?.items) ? data.items : (Array.isArray(data) ? data : []);
-          const normalized = list.map((s) => ({
-            id: s.services_id || s.id || s.service_id,
-            name: s.title || s.service_title || s.name || 'Service',
-            description: s.description || '',
-            price: Number(s.base_price ?? s.service_price_amt ?? s.price ?? 0),
-            gst: Number(s.gst_pct ?? s.gst ?? 0),
-            duration: s.duration || 30,
-            isActive: s.is_active !== false,
-          }));
-          
-          setItems(normalized);
-          return;
-        } catch (serviceError) {
-          console.warn('Using mock services data:', serviceError);
-          // Fall through to use mock data
-        }
-      } catch (profileError) {
-        console.warn('Using mock data due to profile error:', profileError);
-        // Fall through to use mock data
+      // Fetch provider's service offerings from the new API
+      const servicesRes = await authFetch(`${API_URL}/provider/services`);
+      if (!servicesRes.ok) {
+        throw new Error('Failed to load services');
       }
+      const data = await servicesRes.json();
       
-      // If we get here, either the profile or services API failed
-      setItems(mockServices);
-      console.log('Using mock services data');
+      const list = Array.isArray(data?.items) ? data.items : (Array.isArray(data) ? data : []);
+      const normalized = list.map((s) => ({
+        id: s.offering_id || s.id,
+        name: s.custom_title || s.service_title || 'Service',
+        description: s.custom_description || s.service_description || '',
+        price: Number(s.default_price ?? 0),
+        gst: 18, // Default GST for veterinary services in India
+        duration: Number(s.default_duration ?? 30),
+        isActive: s.is_active !== false,
+      }));
       
+      setItems(normalized);
     } catch (e) {
       console.error('Error in fetchServices:', e);
-      setError('Service management is currently in demo mode. Some features may be limited.');
-      // Still show mock data even if there's an error
-      setItems(mockServices || []);
+      setError(e.message || 'Failed to load services');
+      setItems([]);
     } finally {
       setLoading(false);
     }
@@ -108,25 +52,24 @@ export default function VetServices() {
   useEffect(() => {
     fetchServices();
   }, [authFetch]);
-
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this service? This action cannot be undone.')) {
       return;
     }
     
     try {
-      setLoading(true);
-      // For now, just remove the service from the local state
-      // In a real implementation, this would call the API
-      setItems(prevItems => prevItems.filter(item => item.id !== id));
+      const res = await authFetch(`${API_URL}/provider/services/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.message || 'Failed to delete service');
+      }
       
-      // Show success message
       toast.success('Service deleted successfully');
+      await fetchServices(); // Reload the list
     } catch (err) {
       console.error('Error deleting service:', err);
-      setError('Failed to delete service. The service management feature is currently under development.');
-    } finally {
-      setLoading(false);
+      setError(err.message || 'Failed to delete service');
+      toast.error(err.message || 'Failed to delete service');
     }
   };
 

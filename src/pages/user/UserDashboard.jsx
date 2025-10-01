@@ -43,6 +43,31 @@ const UserDashboard = () => {
   // In-memory cache for signed image URLs with persistence to localStorage
   const imageCacheRef = useRef(new Map());
 
+  const formatWeight = (petLike = {}) => {
+    const candidates = [
+      petLike.weight,
+      petLike.pet_weight,
+      petLike.pet_weight_kg,
+      petLike.weight_kg,
+    ];
+
+    const raw = candidates.find((value) => {
+      if (value === undefined || value === null) return false;
+      const str = String(value).trim();
+      return str.length > 0 && str.toLowerCase() !== 'unknown';
+    });
+
+    if (raw === undefined) return null;
+
+    const numeric = Number(raw);
+    if (!Number.isNaN(numeric)) return `${numeric} kg`;
+
+    const stringValue = String(raw).trim();
+    if (!stringValue.length) return null;
+    if (/[a-zA-Z]/.test(stringValue)) return stringValue;
+    return `${stringValue} kg`;
+  };
+
   const petsCacheKey = React.useMemo(() => {
     if (!currentUser) return null;
     const uid = currentUser.id || currentUser.user_id || currentUser.email || 'me';
@@ -189,13 +214,14 @@ const UserDashboard = () => {
                 return `${years} years`;
               })()
             : (typeof p.age === 'number' ? `${p.age} years` : (p.pet_age != null ? `${p.pet_age} years` : 'Unknown'));
+          const weightDisplay = formatWeight(p);
           return {
             id: Number(p.id || p.pet_id),
             name: p.name || p.pet_name || 'Pet',
             type: (p.type || p.pet_type || '').toString().toLowerCase(),
             breed: p.breed || p.pet_breed || '',
             age: ageText,
-            weight: (p.weight || (p.pet_weight != null ? `${p.pet_weight} lbs` : 'Unknown')),
+            weight: weightDisplay,
             gender: (p.gender || p.pet_gender || ''),
             birthday: p.birthday || p.pet_birth_dtm || p.pet_birthday || null,
             createdAt: p.createdAt || p.created_at || null,

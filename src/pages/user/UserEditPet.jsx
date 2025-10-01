@@ -177,6 +177,26 @@ const UserEditPet = () => {
         }
 
         const mappedType = (petData.pet_type || petData.type || '').toLowerCase();
+        
+        // Parse vaccinations data from backend
+        let vaccinationsArray = [];
+        if (petData.vaccinations) {
+          if (typeof petData.vaccinations === 'object' && petData.vaccinations.selected_vaccines) {
+            // New format: { selected_vaccines: [], vaccination_dates: {}, next_due_dates: {} }
+            const { selected_vaccines, vaccination_dates, next_due_dates, custom_vaccines } = petData.vaccinations;
+            vaccinationsArray = (selected_vaccines || []).map(vaccine => ({
+              vaccine,
+              date: vaccination_dates?.[vaccine] || '',
+              nextDue: next_due_dates?.[vaccine] || '',
+              notes: '',
+              administered: true
+            }));
+          } else if (Array.isArray(petData.vaccinations)) {
+            // Legacy format: array of vaccination objects
+            vaccinationsArray = petData.vaccinations;
+          }
+        }
+        
         // Map the pet data to form data
         setFormData({
           name: petData.pet_name || petData.name || '',
@@ -194,13 +214,13 @@ const UserEditPet = () => {
           customAllergies: '',
           medicalConditions: petData.medical_conditions ? petData.medical_conditions.split(', ') : [],
           customMedicalConditions: '',
-          medications: petData.medications || '',
+          medications: petData.current_medications || petData.medications || '',
           dietaryNeeds: petData.dietary_needs || '',
           vetName: petData.vet_name || '',
           vetPhone: petData.vet_phone || '',
           notes: petData.notes || '',
           ageGroup: petData.age_group || petData.ageGroup || 'adult',
-          vaccinations: petData.vaccinations || [],
+          vaccinations: vaccinationsArray,
         });
 
         // Fetch breeds for the pet type
@@ -223,6 +243,7 @@ const UserEditPet = () => {
   // Handle form input changes
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+    
     setFormData({
       ...formData,
       [name]: type === 'checkbox' ? checked : value
@@ -292,22 +313,31 @@ const UserEditPet = () => {
         allMedicalConditions.push(formData.customMedicalConditions.trim());
       }
 
+      const weightValue = formData.weight !== '' && formData.weight !== null && formData.weight !== undefined 
+        ? (typeof formData.weight === 'number' ? formData.weight : Number(formData.weight))
+        : null;
+      
+      if (weightValue !== null && Number.isNaN(weightValue)) {
+        throw new Error('Please enter a valid numeric weight');
+      }
+
       const payload = {
         name: formData.name.trim(),
         type: formData.type || undefined,
         breed: formData.breed || undefined,
         gender: formData.gender || undefined,
         birthdate: formData.birthdate || undefined,
+        weight: weightValue !== null ? weightValue : undefined,
         color: formData.color || undefined,
         bloodGroup: formData.bloodGroup || undefined,
         ageGroup: formData.ageGroup || undefined,
         microchipped: formData.microchipped,
         microchipNumber: formData.microchipNumber || undefined,
         neutered: formData.neutered,
-        allergies: allAllergies.length > 0 ? allAllergies.join(', ') : undefined,
-        medicalConditions: allMedicalConditions.length > 0 ? allMedicalConditions.join(', ') : undefined,
-        medications: formData.medications || undefined,
-        dietaryNeeds: formData.dietaryNeeds || undefined,
+        selected_allergies: allAllergies.length > 0 ? allAllergies : undefined,
+        selected_conditions: allMedicalConditions.length > 0 ? allMedicalConditions : undefined,
+        current_medications: formData.medications || undefined,
+        dietary_needs: formData.dietaryNeeds || undefined,
         vetName: formData.vetName || undefined,
         vetPhone: formData.vetPhone || undefined,
         notes: formData.notes || undefined,
