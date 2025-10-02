@@ -101,9 +101,36 @@ const getUserAppointments = async (
 };
 
 const getUserAppointmentById = async (userId: bigint, id: number) => {
-  const appt = await prisma.pIQ_Appointments.findUnique({ where: { appointment_id: id }, include: { PIQ_Pets: true } });
+  const appt = await prisma.pIQ_Appointments.findUnique({ 
+    where: { appointment_id: id }, 
+    include: { 
+      PIQ_Pets: true,
+      Booking: {
+        include: {
+          PIQ_Service_Provider: {
+            select: {
+              service_provider_id: true,
+              serv_provider_name: true,
+              serv_provider_type: true,
+              serv_provider_location: true,
+            }
+          }
+        }
+      }
+    } 
+  });
   if (!appt || appt.PIQ_Pets.user_id !== userId) throw new ApiError(httpStatus.NOT_FOUND, 'Appointment not found');
-  return serializeBigInt(appt);
+  
+  // Flatten provider details for easier access
+  const result = {
+    ...appt,
+    service_provider_id: appt.Booking?.PIQ_Service_Provider?.service_provider_id,
+    provider_name: appt.Booking?.PIQ_Service_Provider?.serv_provider_name,
+    provider_type: appt.Booking?.PIQ_Service_Provider?.serv_provider_type,
+    provider_location: appt.Booking?.PIQ_Service_Provider?.serv_provider_location,
+  };
+  
+  return serializeBigInt(result);
 };
 
 const updateUserAppointment = async (
