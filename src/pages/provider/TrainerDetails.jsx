@@ -43,7 +43,72 @@ const TrainerDetails = () => {
       setFormData(JSON.parse(trainerData));
     }
   }, [navigate]);
-  
+
+  // Fetch trainer details
+  useEffect(() => {
+    const fetchTrainerDetails = async () => {
+      const providerId = localStorage.getItem('providerId');
+      if (providerId) {
+        // Replace with your actual API endpoint
+        try {
+          // Simulate API call
+          await new Promise(resolve => setTimeout(resolve, 500));
+          const trainerDetails = {
+            certifications: ['Professional Dog Training Certification - India'],
+            otherCertifications: 'Some other cert',
+            trainingMethodology: 'Positive Reinforcement',
+            yearsTrainingExperience: '5',
+            specializations: {
+              obedienceTraining: true,
+              behaviorModification: false,
+              puppyTraining: true,
+              agility: false,
+              serviceAnimalTraining: false,
+              therapy: false,
+              protection: false,
+              other: false
+            },
+            otherSpecializations: '',
+            trainingSettings: {
+              inHome: true,
+              groupClasses: false,
+              boardAndTrain: false,
+              dayTraining: false,
+              virtual: false
+            },
+            ageGroups: {
+              puppies: true,
+              adolescent: false,
+              adult: true,
+              senior: false
+            },
+            dogSizes: {
+              small: true,
+              medium: false,
+              large: true,
+              giant: false
+            },
+            hasFacility: false,
+            facilityDetails: {
+              facilityType: '',
+              facilitySize: '',
+              indoorTrainingArea: false,
+              outdoorTrainingArea: false,
+              maxGroupSize: ''
+            },
+            trainingPhilosophy: 'Some training philosophy'
+          };
+
+          setFormData(trainerDetails);
+        } catch (error) {
+          console.error('Error fetching trainer details:', error);
+        }
+      }
+    };
+
+    fetchTrainerDetails();
+  }, []);
+
   // Form state
   const [formData, setFormData] = useState({
     // Training Qualifications
@@ -277,8 +342,8 @@ const TrainerDetails = () => {
         registrationStep: 3
       }));
       
-      // Navigate to the document upload page
-      navigate('/provider/onboarding/document-upload');
+      // Navigate to the provider onboarding page
+      navigate('/provider/onboarding');
     } catch (error) {
       console.error('Submission error:', error);
       setErrors(prev => ({

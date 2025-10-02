@@ -372,7 +372,7 @@ const UserBookAppointment = () => {
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.message || 'Failed to create booking');
-      navigate('/user/appointments');
+      navigate('/user/appointments/confirmation');
     } catch (err) {
       alert(err.message || 'Failed to create appointment');
     } finally {

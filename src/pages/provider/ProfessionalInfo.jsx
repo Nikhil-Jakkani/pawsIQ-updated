@@ -50,7 +50,7 @@ const ProfessionalInfo = () => {
     profilePhotoPreview: null,
     
     // Provider Type (Business or Freelancer)
-    providerCategory: 'freelancer', // 'business' or 'freelancer'
+    providerCategory: 'freelancer', 
     
     // Business Information
     businessName: '',
@@ -349,10 +349,10 @@ const ProfessionalInfo = () => {
           break;
         default:
           // Default to document upload if provider type is unknown
-          navigate('/provider/onboarding/document-upload');
-      }
-    } catch (error) {
-      console.error('Submission error:', error);
+          navigate('/provider/onboarding');
+        }
+      } catch (error) {
+        console.error('Submission error:', error);
       setErrors(prev => ({
         ...prev,
         form: 'An error occurred during submission. Please try again.'

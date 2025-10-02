@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { 
-  FaCheckCircle, 
-  FaHourglassHalf, 
-  FaExclamationCircle, 
-  FaTimesCircle, 
+import {
+  FaCheckCircle,
+  FaHourglassHalf,
+  FaExclamationCircle,
+  FaTimesCircle,
   FaFileAlt,
   FaEnvelope,
   FaPhone,
@@ -18,7 +18,7 @@ const logoImage = "/1.svg";
 
 const ApplicationStatus = () => {
   const navigate = useNavigate();
-  
+
   // State for application data
   const [applicationData, setApplicationData] = useState(null);
   const [applicationStatus, setApplicationStatus] = useState('pending');
@@ -26,7 +26,7 @@ const ApplicationStatus = () => {
   const [estimatedCompletionDate, setEstimatedCompletionDate] = useState(null);
   const [statusHistory, setStatusHistory] = useState([]);
   const [missingDocuments, setMissingDocuments] = useState([]);
-  
+
   // Load application data
   useEffect(() => {
     const registration = localStorage.getItem('provider_registration');
@@ -35,25 +35,25 @@ const ApplicationStatus = () => {
       navigate('/provider/signup');
       return;
     }
-    
+
     const parsedData = JSON.parse(registration);
     setApplicationData(parsedData);
-    
+
     // Check if application has been submitted
     if (!parsedData.submissionDate) {
       navigate('/provider/onboarding/review');
       return;
     }
-    
+
     // Set application status
     setApplicationStatus(parsedData.applicationStatus || 'pending');
     setSubmissionDate(parsedData.submissionDate);
-    
+
     // Calculate estimated completion date (5 business days from submission)
     const submissionDateObj = new Date(parsedData.submissionDate);
     const estimatedDate = new Date(submissionDateObj);
     let businessDaysToAdd = 5;
-    
+
     while (businessDaysToAdd > 0) {
       estimatedDate.setDate(estimatedDate.getDate() + 1);
       // Skip weekends
@@ -61,9 +61,9 @@ const ApplicationStatus = () => {
         businessDaysToAdd--;
       }
     }
-    
+
     setEstimatedCompletionDate(estimatedDate.toISOString());
-    
+
     // Mock status history
     const mockHistory = [
       {
@@ -72,10 +72,10 @@ const ApplicationStatus = () => {
         message: 'Application submitted successfully'
       }
     ];
-    
+
     // Add additional status updates based on time elapsed
     const daysSinceSubmission = Math.floor((new Date() - submissionDateObj) / (1000 * 60 * 60 * 24));
-    
+
     if (daysSinceSubmission >= 1) {
       const reviewDate = new Date(submissionDateObj);
       reviewDate.setDate(reviewDate.getDate() + 1);
@@ -85,7 +85,7 @@ const ApplicationStatus = () => {
         message: 'Application is under review'
       });
     }
-    
+
     // Simulate a request for additional documents
     if (daysSinceSubmission >= 2) {
       const docsRequestDate = new Date(submissionDateObj);
@@ -95,17 +95,31 @@ const ApplicationStatus = () => {
         status: 'documents_requested',
         message: 'Additional documents requested'
       });
-      
+
       // Set missing documents
       setMissingDocuments([
         'Proof of professional liability insurance',
         'Additional certification documentation'
       ]);
     }
-    
+
     setStatusHistory(mockHistory);
   }, [navigate]);
-  
+
+  useEffect(() => {
+    if (applicationStatus === 'approved') {
+      const serviceType = localStorage.getItem('selectedService');
+      if (serviceType) {
+        navigate(`/provider/${serviceType}/dashboard`);
+      } else {
+        // Handle case where serviceType is not found in local storage
+        console.error('Service type not found in local storage');
+        // Optionally redirect to a default dashboard or an error page
+        navigate('/provider/login');
+      }
+    }
+  }, [applicationStatus, navigate]);
+
   // Format date
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -115,7 +129,7 @@ const ApplicationStatus = () => {
       day: 'numeric'
     });
   };
-  
+
   // Get status badge
   const getStatusBadge = (status) => {
     switch (status) {
@@ -151,7 +165,7 @@ const ApplicationStatus = () => {
         );
     }
   };
-  
+
   // Get status icon for timeline
   const getStatusIcon = (status) => {
     switch (status) {
@@ -193,7 +207,7 @@ const ApplicationStatus = () => {
         );
     }
   };
-  
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -208,7 +222,7 @@ const ApplicationStatus = () => {
           </div>
         </div>
       </header>
-      
+
       <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Progress indicator */}
         <div className="mb-8">
@@ -220,7 +234,7 @@ const ApplicationStatus = () => {
             <div className="bg-indigo-600 h-2.5 rounded-full" style={{ width: '100%' }}></div>
           </div>
         </div>
-        
+
         <div className="bg-white shadow-md rounded-lg overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
@@ -228,7 +242,7 @@ const ApplicationStatus = () => {
               {applicationStatus && getStatusBadge(applicationStatus)}
             </div>
           </div>
-          
+
           <div className="p-6 space-y-8">
             {/* Application Summary */}
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
@@ -249,7 +263,7 @@ const ApplicationStatus = () => {
                 <p className="mt-1 text-sm text-gray-900">{estimatedCompletionDate ? formatDate(estimatedCompletionDate) : 'N/A'}</p>
               </div>
             </div>
-            
+
             {/* Status Message */}
             <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
               <div className="flex">
@@ -287,7 +301,7 @@ const ApplicationStatus = () => {
                 </div>
               </div>
             </div>
-            
+
             {/* Required Actions (if any) */}
             {missingDocuments.length > 0 && (
               <div className="border border-yellow-200 rounded-md overflow-hidden">
@@ -317,7 +331,7 @@ const ApplicationStatus = () => {
                 </div>
               </div>
             )}
-            
+
             {/* Application Timeline */}
             <div>
               <h3 className="text-base font-medium text-gray-900 mb-4">Application Timeline</h3>
@@ -346,7 +360,7 @@ const ApplicationStatus = () => {
                 </ul>
               </div>
             </div>
-            
+
             {/* Support Information */}
             <div className="border-t border-gray-200 pt-6">
               <h3 className="text-base font-medium text-gray-900 mb-4">Need Help?</h3>
@@ -386,7 +400,7 @@ const ApplicationStatus = () => {
                 </div>
               </div>
             </div>
-            
+
             {/* Provider Resources */}
             <div className="border-t border-gray-200 pt-6">
               <h3 className="text-base font-medium text-gray-900 mb-4">Provider Resources</h3>
@@ -419,7 +433,7 @@ const ApplicationStatus = () => {
                 </a>
               </div>
             </div>
-            
+
             {/* Back Button */}
             <div className="pt-5 border-t border-gray-200">
               <Link
