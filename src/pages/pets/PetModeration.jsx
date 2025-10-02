@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import useApi from '../../hooks/useApi';
 import { 
   FaArrowLeft,
   FaSearch,
@@ -33,6 +34,7 @@ import {
 import DashboardLayout from '../../components/layout/DashboardLayout';
 
 const PetModeration = () => {
+  const api = useApi();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -40,180 +42,63 @@ const PetModeration = () => {
   const [sortDirection, setSortDirection] = useState('desc');
   const [showContentModal, setShowContentModal] = useState(false);
   const [currentContent, setCurrentContent] = useState(null);
-  
-  // Sample data for content moderation
-  const contentData = [
-    { 
-      id: 1, 
-      petName: 'Max', 
-      petSpecies: 'Dog',
-      petBreed: 'Golden Retriever',
-      ownerName: 'John Smith',
-      ownerEmail: 'john.smith@example.com',
-      contentType: 'photo',
-      contentURL: 'https://images.unsplash.com/photo-1552053831-71594a27632d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8Z29sZGVuJTIwcmV0cmlldmVyfGVufDB8fDB8fHww&auto=format&fit=crop&w=500&q=60',
-      caption: 'Max enjoying his day at the park!',
-      dateSubmitted: '2023-12-05',
-      status: 'pending',
-      flags: 0,
-      reports: [],
-      notes: ''
-    },
-    { 
-      id: 2, 
-      petName: 'Luna', 
-      petSpecies: 'Cat',
-      petBreed: 'Siamese',
-      ownerName: 'Sarah Johnson',
-      ownerEmail: 'sarah.j@example.com',
-      contentType: 'photo',
-      contentURL: 'https://images.unsplash.com/photo-1592194996308-7b43878e84a6?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8c2lhbWVzZSUyMGNhdHxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=500&q=60',
-      caption: 'Luna looking regal as always',
-      dateSubmitted: '2023-12-03',
-      status: 'approved',
-      flags: 0,
-      reports: [],
-      notes: 'Approved on 2023-12-04'
-    },
-    { 
-      id: 3, 
-      petName: 'Charlie', 
-      petSpecies: 'Dog',
-      petBreed: 'Beagle',
-      ownerName: 'Michael Brown',
-      ownerEmail: 'michael.b@example.com',
-      contentType: 'photo',
-      contentURL: 'https://images.unsplash.com/photo-1505628346881-b72b27e84530?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8YmVhZ2xlfGVufDB8fDB8fHww&auto=format&fit=crop&w=500&q=60',
-      caption: 'Charlie found something interesting on our walk!',
-      dateSubmitted: '2023-12-01',
-      status: 'rejected',
-      flags: 2,
-      reports: [
-        { reportedBy: 'User123', reason: 'Inappropriate content', details: 'This image shows the dog digging in a protected garden area.' }
-      ],
-      notes: 'Rejected due to showing destructive behavior in a public space.'
-    },
-    { 
-      id: 4, 
-      petName: 'Oliver', 
-      petSpecies: 'Cat',
-      petBreed: 'Maine Coon',
-      ownerName: 'Emily Davis',
-      ownerEmail: 'emily.d@example.com',
-      contentType: 'comment',
-      contentURL: '',
-      caption: '',
-      content: 'Oliver just had his first visit to the vet and was so well-behaved! The vet said he\'s the biggest Maine Coon kitten they\'ve seen. #proudcatmom',
-      dateSubmitted: '2023-11-28',
-      status: 'approved',
-      flags: 0,
-      reports: [],
-      notes: 'Approved on 2023-11-29'
-    },
-    { 
-      id: 5, 
-      petName: 'Bella', 
-      petSpecies: 'Dog',
-      petBreed: 'Labrador Retriever',
-      ownerName: 'David Wilson',
-      ownerEmail: 'david.w@example.com',
-      contentType: 'photo',
-      contentURL: 'https://images.unsplash.com/photo-1591769225440-811ad7d6eab2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8Y2hvY29sYXRlJTIwbGFicmFkb3J8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&w=500&q=60',
-      caption: 'Bella after her swimming lesson. She loves the water!',
-      dateSubmitted: '2023-11-25',
-      status: 'pending',
-      flags: 1,
-      reports: [
-        { reportedBy: 'User456', reason: 'Safety concern', details: 'Dog appears to be unsupervised near water.' }
-      ],
-      notes: 'Under review for safety concerns.'
-    },
-    { 
-      id: 6, 
-      petName: 'Coco', 
-      petSpecies: 'Bird',
-      petBreed: 'Cockatiel',
-      ownerName: 'Jessica Taylor',
-      ownerEmail: 'jessica.t@example.com',
-      contentType: 'video',
-      contentURL: 'https://example.com/videos/coco-singing.mp4',
-      caption: 'Coco singing her favorite tune!',
-      videoThumbnail: 'https://images.unsplash.com/photo-1591198936750-16d8e15edc9f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8Y29ja2F0aWVsfGVufDB8fDB8fHww&auto=format&fit=crop&w=500&q=60',
-      dateSubmitted: '2023-11-22',
-      status: 'approved',
-      flags: 0,
-      reports: [],
-      notes: 'Approved on 2023-11-23'
-    },
-    { 
-      id: 7, 
-      petName: 'Rocky', 
-      petSpecies: 'Dog',
-      petBreed: 'Boxer',
-      ownerName: 'Robert Martinez',
-      ownerEmail: 'robert.m@example.com',
-      contentType: 'comment',
-      contentURL: '',
-      caption: '',
-      content: 'Rocky is having trouble with his arthritis medication. Has anyone tried natural supplements for joint pain? Looking for recommendations.',
-      dateSubmitted: '2023-11-20',
-      status: 'pending',
-      flags: 0,
-      reports: [],
-      notes: 'Reviewing for medical advice concerns.'
-    },
-    { 
-      id: 8, 
-      petName: 'Nemo', 
-      petSpecies: 'Fish',
-      petBreed: 'Betta',
-      ownerName: 'Lisa Anderson',
-      ownerEmail: 'lisa.a@example.com',
-      contentType: 'photo',
-      contentURL: 'https://images.unsplash.com/photo-1545048702-79362596cdc9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8YmV0dGElMjBmaXNofGVufDB8fDB8fHww&auto=format&fit=crop&w=500&q=60',
-      caption: 'Nemo\'s new tank setup. What do you think?',
-      dateSubmitted: '2023-11-18',
-      status: 'approved',
-      flags: 0,
-      reports: [],
-      notes: 'Approved on 2023-11-19'
-    },
-    { 
-      id: 9, 
-      petName: 'Daisy', 
-      petSpecies: 'Rabbit',
-      petBreed: 'Holland Lop',
-      ownerName: 'Kevin Thomas',
-      ownerEmail: 'kevin.t@example.com',
-      contentType: 'photo',
-      contentURL: 'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8aG9sbGFuZCUyMGxvcHxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=500&q=60',
-      caption: 'Daisy enjoying her new chew toys from PetSupplies.com - they have the best deals!',
-      dateSubmitted: '2023-11-15',
-      status: 'rejected',
-      flags: 3,
-      reports: [
-        { reportedBy: 'User789', reason: 'Spam/Advertising', details: 'This post contains promotional content.' }
-      ],
-      notes: 'Rejected for promotional content without proper disclosure.'
-    },
-    { 
-      id: 10, 
-      petName: 'Shadow', 
-      petSpecies: 'Cat',
-      petBreed: 'Bombay',
-      ownerName: 'Amanda White',
-      ownerEmail: 'amanda.w@example.com',
-      contentType: 'video',
-      contentURL: 'https://example.com/videos/shadow-playing.mp4',
-      caption: 'Shadow playing with his new toy mouse!',
-      videoThumbnail: 'https://images.unsplash.com/photo-1570824104453-508955ab713e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8YmxhY2slMjBjYXR8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&w=500&q=60',
-      dateSubmitted: '2023-11-12',
-      status: 'approved',
-      flags: 0,
-      reports: [],
-      notes: 'Approved on 2023-11-13'
-    }
-  ];
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [pets, setPets] = useState([]);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(24);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalResults, setTotalResults] = useState(0);
+
+  // Fetch pets from backend
+  useEffect(() => {
+    let alive = true;
+    const fetchPets = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const qs = new URLSearchParams();
+        qs.set('page', String(page));
+        qs.set('limit', String(limit));
+        if (searchTerm) qs.set('search', searchTerm);
+        const data = await api.get(`/admin/piq/pets?${qs.toString()}`);
+        if (!alive) return;
+        setPets(data?.results || []);
+        setTotalPages(Number(data?.totalPages) || 1);
+        setTotalResults(Number(data?.totalResults) || 0);
+      } catch (e) {
+        if (!alive) return;
+        console.error('Failed to load pets:', e);
+        setError('Failed to load pets');
+        setPets([]);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    };
+    fetchPets();
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, limit, searchTerm]);
+
+  // Map pets to content format for moderation
+  const contentData = pets.map(pet => ({
+    id: pet.id,
+    petName: pet.name || 'Unknown',
+    petSpecies: pet.species || 'Pet',
+    petBreed: pet.breed || '—',
+    ownerName: pet.ownerName || 'Owner',
+    ownerEmail: pet.ownerEmail || '—',
+    contentType: 'photo',
+    contentURL: pet.profileImage || '',
+    caption: `${pet.name} - ${pet.species}`,
+    dateSubmitted: pet.lastUpdated ? new Date(pet.lastUpdated).toISOString().split('T')[0] : '',
+    status: pet.status || 'active',
+    flags: 0,
+    reports: [],
+    notes: ''
+  }));
 
   // Get content type icon
   const getContentTypeIcon = (type) => {
@@ -319,22 +204,6 @@ const PetModeration = () => {
     console.log(`Changing content ${contentId} status to ${newStatus}`);
     
     // Update the status in our local state (simulating API update)
-    const updatedContentData = contentData.map(content => {
-      if (content.id === contentId) {
-        const now = new Date();
-        const formattedDate = now.toISOString().split('T')[0];
-        return {
-          ...content,
-          status: newStatus,
-          notes: newStatus === 'approved' 
-            ? `Approved on ${formattedDate}` 
-            : newStatus === 'rejected' 
-              ? `Rejected on ${formattedDate}` 
-              : content.notes
-        };
-      }
-      return content;
-    });
     
     // In a real app, we would update the state with the response from the API
     // For now, we'll just show an alert

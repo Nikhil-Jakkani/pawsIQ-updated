@@ -139,6 +139,7 @@ model PIQ_User {
   user_phone_number        String                 @db.VarChar
   user_second_phone_number String?                @db.VarChar
   user_status              String                 @default("") @db.VarChar
+  user_location            String?                @db.VarChar(255)
   last_updated_dtm         DateTime               @default(now()) @db.Timestamp(6)
   created_at               DateTime               @default(now()) @db.Timestamptz(6)
   paid_user                Boolean?               @default(false)

@@ -41,7 +41,8 @@ import {
   FaChevronRight,
   FaAngleLeft,
   FaAngleRight,
-  FaBook
+  FaBook,
+  FaUserPlus
 } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import logoImage from '/7.png';
@@ -96,11 +97,11 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       label: 'Provider Management',
       path: '/providers',
       items: [
-        { path: '/providers/onboarding/veterinary', icon: <FaStethoscope />, label: 'Vet Onboarding' },
-        { path: '/providers/onboarding/diagnostic-services', icon: <FaMicroscope />, label: 'Diagnostic Services' },
-        { path: '/providers/onboarding/boarding', icon: <FaHome />, label: 'Boarding Onboarding' },
-        { path: '/providers/onboarding/grooming', icon: <FaCut />, label: 'Grooming Onboarding' },
-        { path: '/providers/onboarding/training', icon: <FaGraduationCap />, label: 'Training Onboarding' },
+        { path: '/providers/onboarding/veterinarian', icon: <FaStethoscope />, label: 'Vet Onboarding' },
+        { path: '/providers/onboarding/diagnostic', icon: <FaMicroscope />, label: 'Diagnostic Services' },
+        { path: '/providers/onboarding/boarder', icon: <FaHome />, label: 'Boarder Onboarding' },
+        { path: '/providers/onboarding/groomer', icon: <FaCut />, label: 'Grooming Onboarding' },
+        { path: '/providers/onboarding/trainer', icon: <FaGraduationCap />, label: 'Training Onboarding' },
         { path: '/providers/onboarding/physical-activity', icon: <FaRunning />, label: 'Physical Activity' },
         { path: '/providers/verification', icon: <FaShieldAlt />, label: 'Verification' },
         { path: '/providers/commission', icon: <FaPercentage />, label: 'Commission' },

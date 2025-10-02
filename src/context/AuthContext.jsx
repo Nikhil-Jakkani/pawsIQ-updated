@@ -257,6 +257,8 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('authTokens', JSON.stringify(normalizedTokens));
         // Clear any explicit logout flag
         clearLogoutFlag();
+        // Signal that location should be requested (handled by LocationPrompt component)
+        sessionStorage.removeItem('location_prompt_dismissed');
         return { success: true, userType: role };
       }
     } catch (apiError) {

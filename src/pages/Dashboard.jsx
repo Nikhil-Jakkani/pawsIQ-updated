@@ -128,7 +128,7 @@ const Dashboard = () => {
           title="Pet Owners" 
           value={loading ? '...' : String(stats.users)} 
           icon={<PetIcon type="dog" size="lg" className="text-white" />} 
-          change="12% from last month" 
+          change="x% from last month" 
           changeType="increase" 
           bgColor="bg-gradient-to-br from-indigo-600 to-indigo-700"
         />
@@ -136,7 +136,7 @@ const Dashboard = () => {
           title="Appointments" 
           value={loading ? '...' : String(stats.appointments)} 
           icon={<PetIcon type="cat" size="lg" className="text-white" />} 
-          change="5% from last month" 
+          change="x% from last month" 
           changeType="increase" 
           bgColor="bg-gradient-to-br from-green-500 to-green-600"
         />
@@ -144,15 +144,15 @@ const Dashboard = () => {
           title="Pets" 
           value={loading ? '...' : String(stats.pets)} 
           icon={<PetIcon type="fish" size="lg" className="text-white" />} 
-          change="3% from last month" 
+          change="x" 
           changeType="decrease" 
           bgColor="bg-gradient-to-br from-purple-500 to-purple-600"
         />
         <StatCard 
           title="Revenue" 
-          value="$35,210" 
+          value="Coming Soon..." 
           icon={<PetIcon type="paw" size="lg" className="text-white" />} 
-          change="8% from last month" 
+          change="x% from last month" 
           changeType="increase" 
           bgColor="bg-gradient-to-br from-blue-500 to-blue-600"
         />

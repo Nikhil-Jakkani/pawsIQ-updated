@@ -23,6 +23,9 @@ router.get('/piq/users', auth('admin'), adminPIQ.getUsers);
 router.get('/piq/pets', auth('admin'), adminPIQ.getPets);
 router.get('/piq/providers', auth('admin'), adminPIQ.getProviders);
 
+// Appointments
+router.get('/appointments', auth('admin'), adminPIQ.getAppointments);
+
 // Provider management
 router.get('/providers', auth('admin'), providerController.getAllProviders);
 router.get('/providers/stats', auth('admin'), providerController.getProviderStats);

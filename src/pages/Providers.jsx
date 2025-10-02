@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import useApi from '../hooks/useApi';
+import { useLocation as useUserLocation } from '../hooks/useLocation';
 import { 
   FaHospital, 
   FaClipboardCheck, 
   FaShieldAlt, 
   FaPercentage, 
   FaStar, 
-  FaExclamationTriangle, 
+  FaExclamationTriangle,
   FaSearch, 
   FaFilter, 
   FaEllipsisH, 
@@ -34,6 +35,7 @@ const Providers = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterType, setFilterType] = useState('all');
+  const [filterLocation, setFilterLocation] = useState('');
   const [sortField, setSortField] = useState('name');
   const [sortDirection, setSortDirection] = useState('asc');
   const [selectedProviders, setSelectedProviders] = useState([]);
@@ -41,13 +43,19 @@ const Providers = () => {
   const [providers, setProviders] = useState([]);
   const [loading, setLoading] = useState(false);
   
-  // Fetch providers from backend
+  // Fetch providers from backend (supports server-side filters)
   useEffect(() => {
     let alive = true;
     const run = async () => {
       setLoading(true);
       try {
-        const data = await api.get('/admin/piq/providers');
+        const qs = new URLSearchParams();
+        if (searchTerm) qs.set('search', searchTerm);
+        if (filterStatus && filterStatus !== 'all') qs.set('status', filterStatus);
+        if (filterType && filterType !== 'all') qs.set('type', filterType);
+        if (filterLocation) qs.set('location', filterLocation);
+        const url = `/admin/piq/providers${qs.toString() ? `?${qs.toString()}` : ''}`;
+        const data = await api.get(url);
         if (!alive) return;
         setProviders(Array.isArray(data) ? data : []);
       } catch (e) {
@@ -58,24 +66,29 @@ const Providers = () => {
     };
     run();
     return () => { alive = false; };
-  }, [api]);
+  }, [api, searchTerm, filterStatus, filterType, filterLocation]);
   
   // Map backend providers to UI format
-  const providersData = providers.map(p => ({
-    id: p.service_provider_id,
-    name: p.serv_provider_name || 'Unknown',
-    email: p.serv_provider_email || '',
-    type: (p.serv_provider_type || 'Provider').charAt(0).toUpperCase() + (p.serv_provider_type || 'Provider').slice(1),
-    specialty: p.serv_provider_specialization || 'General',
-    status: (p.serv_provider_status || 'pending').charAt(0).toUpperCase() + (p.serv_provider_status || 'pending').slice(1),
-    rating: 0,
-    reviews: 0,
-    lastActive: p.last_updated_dtm ? new Date(p.last_updated_dtm).toLocaleString() : 'Never',
-    registeredDate: p.created_at ? new Date(p.created_at).toLocaleDateString() : '—',
-    appointments: 0,
-    commission: '15%',
-    verified: p.serv_provider_status === 'active',
-  }));
+  const providersData = providers.map(p => {
+    const rawType = p.serv_provider_type || p.type || 'Provider';
+    const rawStatus = p.serv_provider_status || p.status || 'pending';
+    return {
+      id: p.service_provider_id || p.id,
+      name: p.serv_provider_name || p.name || 'Unknown',
+      email: p.serv_provider_email || p.email || '',
+      type: rawType.charAt(0).toUpperCase() + rawType.slice(1),
+      specialty: p.serv_provider_specialization || p.specialty || p.provider_src || 'General',
+      status: rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1),
+      location: p.serv_provider_location || p.location || '',
+      rating: Number(p.rating) || 0,
+      reviews: Number(p.reviews) || 0,
+      lastActive: p.last_updated_dtm ? new Date(p.last_updated_dtm).toLocaleString() : (p.lastActive || 'Never'),
+      registeredDate: p.created_at ? new Date(p.created_at).toLocaleDateString() : (p.date || '—'),
+      appointments: Number(p.appointments) || 0,
+      commission: p.commission || '15%',
+      verified: (p.serv_provider_status || p.status) === 'active',
+    };
+  });
   
   const providerStats = {
     totalProviders: providersData.length,
@@ -104,12 +117,14 @@ const Providers = () => {
       const matchesSearch = 
         provider.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
         provider.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        provider.specialty.toLowerCase().includes(searchTerm.toLowerCase());
+        provider.specialty.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (provider.location || '').toLowerCase().includes(searchTerm.toLowerCase());
       
       const matchesStatus = filterStatus === 'all' || provider.status.toLowerCase() === filterStatus.toLowerCase();
       const matchesType = filterType === 'all' || provider.type.toLowerCase() === filterType.toLowerCase();
+      const matchesLocation = !filterLocation || (provider.location || '').toLowerCase().includes(filterLocation.toLowerCase());
       
-      return matchesSearch && matchesStatus && matchesType;
+      return matchesSearch && matchesStatus && matchesType && matchesLocation;
     })
     .sort((a, b) => {
       let comparison = 0;

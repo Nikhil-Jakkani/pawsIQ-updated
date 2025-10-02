@@ -9,7 +9,6 @@ import UserStatCard from '../../components/user/UserStatCard';
 import PetProfiles from '../../components/user/PetProfiles';
 import AIPetCareSuggestions from '../../components/user/AIPetCareSuggestions';
 import AISymptomChecker from '../../components/user/AISymptomChecker';
-import PetSelector from '../../components/user/PetSelector';
 import PetHealthCard from '../../components/user/PetHealthCard';
 import SmartInsights from '../../components/user/SmartInsights';
 
@@ -20,6 +19,7 @@ import UpcomingSchedule from '../../components/user/UpcomingSchedule';
 import CareReminders from '../../components/user/CareReminders';
 import PetActivityTracker from '../../components/user/PetActivityTracker';
 import UserLayout from '../../components/layout/UserLayout';
+import LocationPrompt from '../../components/common/LocationPrompt';
 import { useAuth } from '../../context/AuthContext';
 
 const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
@@ -207,9 +207,7 @@ const UserDashboard = () => {
           if (apptRes.ok) {
             const apptData = await apptRes.json();
             const appointments = Array.isArray(apptData?.items) ? apptData.items : (Array.isArray(apptData) ? apptData : []);
-            
-            console.log('Fetched appointments for last checkup:', appointments.length);
-            
+                        
             // Group completed appointments by pet_id and find the most recent
             appointments
               .filter(a => {
@@ -223,7 +221,6 @@ const UserDashboard = () => {
                 
                 if (!appointmentsMap.has(petId) || apptDate > appointmentsMap.get(petId)) {
                   appointmentsMap.set(petId, apptDate);
-                  console.log(`Set last checkup for pet ${petId}:`, apptDate.toISOString());
                 }
               });
           }
@@ -848,6 +845,9 @@ const UserDashboard = () => {
           pets={pets}
           initialActiveService={activeService}
         />
+
+        {/* Location Permission Prompt */}
+        <LocationPrompt autoRequest={false} />
       </div>
     </UserLayout>
   );

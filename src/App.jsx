@@ -20,6 +20,7 @@ import UserBookAppointment from './pages/user/UserBookAppointment.jsx';
 import UserAppointmentConfirmation from './pages/user/UserAppointmentConfirmation.jsx';
 import UserRescheduleAppointment from './pages/user/UserRescheduleAppointment.jsx';
 import UserAppointmentDetails from './pages/user/UserAppointmentDetails.jsx';
+import AIPetCare from './pages/user/AIPetCare.jsx';
 
 import UserMarketplace from './pages/user/UserMarketplace.jsx';
 import UserOrders from './pages/user/UserOrders.jsx';
@@ -28,7 +29,6 @@ import UserSettings from './pages/user/UserSettings.jsx';
 import UserNotifications from './pages/user/UserNotifications.jsx';
 import UserHelp from './pages/user/UserHelp.jsx';
 import UserCommunity from './pages/user/UserCommunity.jsx';
-import AIPetCare from './pages/user/AIPetCare.jsx';
 import Users from './pages/Users.jsx';
 import UserProfiles from './pages/users/UserProfiles.jsx';
 import UserRoles from './pages/users/UserRoles.jsx';
@@ -37,7 +37,9 @@ import Providers from './pages/Providers.jsx';
 import ProviderOnboardingVeterinarian from './pages/providers/ProviderOnboardingVeterinarian.jsx';
 import ProviderOnboardingGroomer from './pages/providers/ProviderOnboardingGroomer.jsx';
 import ProviderOnboardingTrainer from './pages/providers/ProviderOnboardingTrainer.jsx';
-import ProviderOnboardingPetSitter from './pages/providers/ProviderOnboardingPetSitter.jsx';
+import ProviderOnboardingBoarder from './pages/providers/ProviderOnboardingBoarder.jsx';
+import ProviderOnboardingDiagnostic from './pages/providers/ProviderOnboardingDiagnostic.jsx';
+import ProviderOnboardingPhysicalActivity from './pages/providers/ProviderOnboardingPhysicalActivity.jsx';
 import ProviderVerification from './pages/providers/ProviderVerification.jsx';
 import ProviderCommission from './pages/providers/ProviderCommission.jsx';
 import ProviderPerformance from './pages/providers/ProviderPerformance.jsx';
@@ -190,7 +192,9 @@ function App() {
             <Route path="/providers/onboarding/veterinarian" element={<AdminProtectedRoute><ProviderOnboardingVeterinarian /></AdminProtectedRoute>} />
             <Route path="/providers/onboarding/groomer" element={<AdminProtectedRoute><ProviderOnboardingGroomer /></AdminProtectedRoute>} />
             <Route path="/providers/onboarding/trainer" element={<AdminProtectedRoute><ProviderOnboardingTrainer /></AdminProtectedRoute>} />
-            <Route path="/providers/onboarding/pet-sitter" element={<AdminProtectedRoute><ProviderOnboardingPetSitter /></AdminProtectedRoute>} />
+            <Route path="/providers/onboarding/boarder" element={<AdminProtectedRoute><ProviderOnboardingBoarder /></AdminProtectedRoute>} />
+            <Route path="/providers/onboarding/diagnostic" element={<AdminProtectedRoute><ProviderOnboardingDiagnostic /></AdminProtectedRoute>} />
+            <Route path="/providers/onboarding/physical-activity" element={<AdminProtectedRoute><ProviderOnboardingPhysicalActivity /></AdminProtectedRoute>} />
             <Route path="/providers/verification" element={<AdminProtectedRoute><ProviderVerification /></AdminProtectedRoute>} />
             <Route path="/providers/commission" element={<AdminProtectedRoute><ProviderCommission /></AdminProtectedRoute>} />
             <Route path="/providers/performance" element={<AdminProtectedRoute><ProviderPerformance /></AdminProtectedRoute>} />

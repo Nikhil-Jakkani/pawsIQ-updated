@@ -46,6 +46,9 @@ const UserProfiles = () => {
   const [totalResults, setTotalResults] = useState(0);
   const [users, setUsers] = useState([]);
   const [userStats, setUserStats] = useState({});
+  const [userPets, setUserPets] = useState([]);
+  const [userAppointments, setUserAppointments] = useState([]);
+  const [loadingDetails, setLoadingDetails] = useState(false);
 
   React.useEffect(() => {
     let alive = true;
@@ -69,17 +72,17 @@ const UserProfiles = () => {
         if (userList.length > 0) {
           try {
             const userIds = userList.map(u => Number(u.user_id));
-            console.log('Fetching stats for user IDs:', userIds);
             const stats = await api.post('/admin/stats/bulk-user-stats', { userIds });
-            console.log('Received stats:', stats);
             if (!alive) return;
             setUserStats(stats || {});
           } catch (statsError) {
-            console.error('Failed to load user stats:', statsError);
             // Set empty stats on error
             if (!alive) return;
             setUserStats({});
           }
+        } else {
+          // Clear stats if no users
+          setUserStats({});
         }
       } catch (e) {
         if (!alive) return;
@@ -92,7 +95,8 @@ const UserProfiles = () => {
     return () => {
       alive = false;
     };
-  }, [api, page, limit, searchTerm, filterStatus]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, limit, searchTerm, filterStatus]);
   
   // Map backend users to UI rows
   const usersData = users.map(u => {
@@ -194,15 +198,35 @@ const UserProfiles = () => {
 
   // Handle bulk actions
   const handleBulkAction = (action) => {
-    console.log(`Performing ${action} on users:`, selectedUsers);
-    // In a real app, you would call an API to perform the action
     alert(`${action} action would be performed on ${selectedUsers.length} users`);
   };
 
   // Handle view user details
-  const handleViewUser = (user) => {
+  const handleViewUser = async (user) => {
     setCurrentUser(user);
     setShowUserModal(true);
+    setLoadingDetails(true);
+    
+    try {
+      // Fetch user's pets
+      const petsData = await api.get(`/admin/piq/pets?userId=${user.id}`);
+      setUserPets(petsData?.results || []);
+      
+      // Fetch user's appointments through their pets
+      if (petsData?.results?.length > 0) {
+        const petIds = petsData.results.map(p => p.id);
+        const appointmentsData = await api.get(`/admin/appointments?petIds=${petIds.join(',')}`);
+        setUserAppointments(appointmentsData?.results || []);
+      } else {
+        setUserAppointments([]);
+      }
+    } catch (error) {
+      console.error('Failed to load user details:', error);
+      setUserPets([]);
+      setUserAppointments([]);
+    } finally {
+      setLoadingDetails(false);
+    }
   };
 
   return (
@@ -697,17 +721,19 @@ const UserProfiles = () => {
                       <h3 className="font-semibold text-gray-800">Pets</h3>
                       <button className="text-indigo-600 hover:text-indigo-800 text-sm">View All</button>
                     </div>
-                    {currentUser.pets > 0 ? (
+                    {loadingDetails ? (
+                      <div className="p-4 text-center text-gray-500">Loading pets...</div>
+                    ) : userPets.length > 0 ? (
                       <div className="p-4">
                         <div className="space-y-3">
-                          {[...Array(currentUser.pets)].map((_, index) => (
-                            <div key={index} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-md">
+                          {userPets.map((pet) => (
+                            <div key={pet.id} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-md">
                               <div className="h-10 w-10 bg-indigo-100 rounded-full flex items-center justify-center">
                                 <FaPaw className="text-indigo-600" />
                               </div>
                               <div>
-                                <p className="font-medium text-gray-800">{['Max', 'Luna', 'Buddy', 'Bella', 'Charlie'][index % 5]}</p>
-                                <p className="text-sm text-gray-500">{['Dog', 'Cat', 'Dog', 'Cat', 'Dog'][index % 5]}</p>
+                                <p className="font-medium text-gray-800">{pet.name}</p>
+                                <p className="text-sm text-gray-500">{pet.species || pet.breed || 'Pet'} {pet.age ? `• ${pet.age} years` : ''}</p>
                               </div>
                             </div>
                           ))}
@@ -725,24 +751,34 @@ const UserProfiles = () => {
                     <h3 className="font-semibold text-gray-800">Recent Appointments</h3>
                     <button className="text-indigo-600 hover:text-indigo-800 text-sm">View All</button>
                   </div>
-                  {currentUser.appointments > 0 ? (
+                  {loadingDetails ? (
+                    <div className="p-4 text-center text-gray-500">Loading appointments...</div>
+                  ) : userAppointments.length > 0 ? (
                     <div className="p-4">
                       <div className="space-y-3">
-                        {[...Array(Math.min(currentUser.appointments, 3))].map((_, index) => (
-                          <div key={index} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-md">
-                            <div className="h-10 w-10 bg-green-100 rounded-full flex items-center justify-center">
-                              <FaCalendarAlt className="text-green-600" />
+                        {userAppointments.slice(0, 5).map((appointment) => {
+                          const statusColors = {
+                            'confirmed': 'bg-blue-100 text-blue-800',
+                            'completed': 'bg-green-100 text-green-800',
+                            'cancelled': 'bg-red-100 text-red-800',
+                            'pending': 'bg-amber-100 text-amber-800',
+                          };
+                          const status = (appointment.status || 'pending').toLowerCase();
+                          return (
+                            <div key={appointment.id} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-md">
+                              <div className="h-10 w-10 bg-green-100 rounded-full flex items-center justify-center">
+                                <FaCalendarAlt className="text-green-600" />
+                              </div>
+                              <div className="flex-1">
+                                <p className="font-medium text-gray-800">{appointment.type || 'Appointment'}</p>
+                                <p className="text-sm text-gray-500">{appointment.date ? new Date(appointment.date).toLocaleDateString() : '—'}</p>
+                              </div>
+                              <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[status] || 'bg-gray-100 text-gray-800'}`}>
+                                {status.charAt(0).toUpperCase() + status.slice(1)}
+                              </span>
                             </div>
-                            <div className="flex-1">
-                              <p className="font-medium text-gray-800">{['Vet Checkup', 'Grooming', 'Training Session', 'Pet Sitting', 'Vaccination'][index % 5]}</p>
-                              <p className="text-sm text-gray-500">{['Dec 15, 2023', 'Dec 10, 2023', 'Dec 5, 2023', 'Nov 30, 2023', 'Nov 25, 2023'][index % 5]}</p>
-                            </div>
-                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                              ${['bg-green-100 text-green-800', 'bg-blue-100 text-blue-800', 'bg-amber-100 text-amber-800'][index % 3]}`}>
-                              {['Completed', 'Upcoming', 'Pending'][index % 3]}
-                            </span>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   ) : (
@@ -754,7 +790,6 @@ const UserProfiles = () => {
                 <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
                   <div className="p-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
                     <h3 className="font-semibold text-gray-800">Recent Activity</h3>
-                    <button className="text-indigo-600 hover:text-indigo-800 text-sm">View All</button>
                   </div>
                   <div className="p-4">
                     <div className="space-y-3">
@@ -763,8 +798,8 @@ const UserProfiles = () => {
                           <FaSignInAlt className="text-indigo-600" />
                         </div>
                         <div>
-                          <p className="font-medium text-gray-800">Logged in</p>
-                          <p className="text-sm text-gray-500">2 hours ago</p>
+                          <p className="font-medium text-gray-800">Last Active</p>
+                          <p className="text-sm text-gray-500">{currentUser.lastActive}</p>
                         </div>
                       </div>
                       <div className="flex items-start gap-3 p-2 hover:bg-gray-50 rounded-md">
@@ -772,17 +807,8 @@ const UserProfiles = () => {
                           <FaEdit className="text-green-600" />
                         </div>
                         <div>
-                          <p className="font-medium text-gray-800">Updated profile information</p>
-                          <p className="text-sm text-gray-500">Yesterday at 3:45 PM</p>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-3 p-2 hover:bg-gray-50 rounded-md">
-                        <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center mt-1">
-                          <FaCalendarAlt className="text-blue-600" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-800">Booked an appointment</p>
-                          <p className="text-sm text-gray-500">Dec 1, 2023 at 10:30 AM</p>
+                          <p className="font-medium text-gray-800">Registered</p>
+                          <p className="text-sm text-gray-500">{currentUser.registeredDate}</p>
                         </div>
                       </div>
                     </div>
