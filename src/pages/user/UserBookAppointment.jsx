@@ -273,25 +273,23 @@ const UserBookAppointment = () => {
 
   // Handle date selection
   const handleDateSelect = (date) => {
-    console.log('Date selected:', date);
-    setFormData({
-      ...formData,
+    setFormData((prev) => ({
+      ...prev,
       date
-    });
-    console.log('Form data after date selection:', { ...formData, date });
+    }));
   };
 
   // Handle time slot selection
   const handleTimeSlotSelect = (timeSlot) => {
-    setFormData({
-      ...formData,
+    setFormData((prev) => ({
+      ...prev,
       timeSlot
-    });
+    }));
      // Scroll to notes section
      notesSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Combine date and time to ISO string
+  // Combine date and time to ISO string (preserves local time without timezone shift)
   const combineDateTime = (dateStr, timeStr) => {
     if (!dateStr || !timeStr) return '';
 
@@ -307,15 +305,10 @@ const UserBookAppointment = () => {
       adjustedHours = 0;
     }
 
-    const year = Number(dateStr.substring(0, 4));
-    const month = Number(dateStr.substring(5, 7)) - 1;
-    const day = Number(dateStr.substring(8, 10));
-
-    if (Number.isNaN(year) || Number.isNaN(month) || Number.isNaN(day)) return '';
-
-    // Construct the date in the user's local timezone so the selected time isn't shifted when formatted later.
-    const localDate = new Date(year, month, day, adjustedHours, minutes, 0, 0);
-    return localDate.toISOString();
+    // Format as YYYY-MM-DDTHH:MM:SS without timezone conversion
+    const paddedHours = String(adjustedHours).padStart(2, '0');
+    const paddedMinutes = String(minutes).padStart(2, '0');
+    return `${dateStr}T${paddedHours}:${paddedMinutes}:00`;
   };
 
   // Handle form submission
@@ -353,8 +346,14 @@ const UserBookAppointment = () => {
     setIsSubmitting(true);
     try {
       const booked_dtm = combineDateTime(formData.date, formData.timeSlot);
-      if (!booked_dtm || Number.isNaN(new Date(booked_dtm).getTime()) || new Date(booked_dtm).getTime() <= Date.now()) {
-        throw new Error('Date for booking needs to be a future date/time');
+      if (!booked_dtm || Number.isNaN(new Date(booked_dtm).getTime())) {
+        throw new Error('Invalid date/time format');
+      }
+      
+      // Check if the selected time is in the future
+      const selectedDateTime = new Date(booked_dtm);
+      if (selectedDateTime.getTime() <= Date.now()) {
+        throw new Error('Please select a future date and time');
       }
 
       const payload = {

@@ -22,16 +22,15 @@ const parseLabelTime = (label: string): { h: number; m: number } | null => {
 
 const combineDateTimeISO = (dateStr?: string, time?: string): string | null => {
   if (!dateStr || !time) return null;
-  // If time already an ISO, trust it
+  // If time already an ISO format, trust it
   if (time.includes('T')) return time;
   const parsed = parseLabelTime(time);
   if (!parsed) return null;
   const { h, m } = parsed;
-  const year = parseInt(dateStr.substring(0, 4));
-  const month = parseInt(dateStr.substring(5, 7)) - 1;
-  const day = parseInt(dateStr.substring(8, 10));
-  const utcMillis = Date.UTC(year, month, day, h, m, 0, 0);
-  return new Date(utcMillis).toISOString();
+  // Format as YYYY-MM-DDTHH:MM:SS without timezone conversion
+  const paddedH = String(h).padStart(2, '0');
+  const paddedM = String(m).padStart(2, '0');
+  return `${dateStr}T${paddedH}:${paddedM}:00`;
 };
 
 const create = catchAsync(async (req: any, res: Response) => {

@@ -69,6 +69,7 @@ const createBooking = async (
     const appointment = await tx.pIQ_Appointments.create({
       data: {
         pet_id,
+        booking_id: booking.booking_id,
         appointment_type: booking.PIQ_Service_Master?.service_title || booking.PIQ_Service_Master?.service_type || 'Checkup',
         appointment_date: booked,
         appointment_status: 'Awaiting Approval',
