@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import useApi from '../../hooks/useApi';
 import { 
   FaHospital, 
   FaClipboardCheck, 
@@ -24,24 +25,97 @@ import {
 import DashboardLayout from '../../components/layout/DashboardLayout';
 
 const ProviderOnboarding = ({ filterType }) => {
+  const api = useApi();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTypeState, setFilterTypeState] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [sortField, setSortField] = useState('date');
   const [sortDirection, setSortDirection] = useState('desc');
   const [selectedApplication, setSelectedApplication] = useState(null);
+  const [providers, setProviders] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [stats, setStats] = useState({ total: 0, pending: 0, approved: 0, rejected: 0 });
   
-  // Sample data for applications
-  const applicationsData = [
-    { id: 1, name: 'Dr. James Wilson', email: 'james.wilson@example.com', phone: '(555) 123-4567', type: 'Veterinarian', specialty: 'Small Animals', status: 'Pending Review', date: '2023-12-05', documents: ['License', 'Certification', 'Insurance', 'ID'], experience: '8 years', address: '123 Main St, Anytown, CA 12345', notes: 'Specializes in small animal care with focus on dogs and cats. Previously worked at City Animal Hospital for 5 years.' },
-    { id: 2, name: 'Emma Thompson', email: 'emma.t@example.com', phone: '(555) 234-5678', type: 'Groomer', specialty: 'Dogs', status: 'Pending Review', date: '2023-12-04', documents: ['Certification', 'Insurance', 'ID'], experience: '5 years', address: '456 Oak Ave, Somewhere, NY 67890', notes: 'Professional dog groomer with specialty in poodles and other high-maintenance breeds. Owns mobile grooming business.' },
-    { id: 3, name: 'Dr. Michael Chen', email: 'michael.c@example.com', phone: '(555) 345-6789', type: 'Veterinarian', specialty: 'Exotic Pets', status: 'In Progress', date: '2023-12-03', documents: ['License', 'ID'], experience: '10 years', address: '789 Pine Rd, Elsewhere, TX 54321', notes: 'Waiting for certification documents. Specializes in exotic animals including reptiles and birds.' },
-    { id: 4, name: 'Sophia Rodriguez', email: 'sophia.r@example.com', phone: '(555) 456-7890', type: 'Pet Sitter', specialty: 'All Pets', status: 'Pending Review', date: '2023-12-02', documents: ['Insurance', 'ID', 'Background Check'], experience: '3 years', address: '321 Elm St, Nowhere, FL 13579', notes: 'Experienced with dogs, cats, and small mammals. Available for overnight stays.' },
-    { id: 5, name: 'Robert Johnson', email: 'robert.j@example.com', phone: '(555) 567-8901', type: 'Trainer', specialty: 'Behavior Training', status: 'Incomplete', date: '2023-12-01', documents: ['ID'], experience: '7 years', address: '654 Maple Dr, Anyplace, WA 24680', notes: 'Missing certification documents and insurance information. Follow up required.' },
-    { id: 6, name: 'Dr. Sarah Miller', email: 'sarah.m@example.com', phone: '(555) 678-9012', type: 'Veterinarian', specialty: 'Surgery', status: 'Approved', date: '2023-11-30', documents: ['License', 'Certification', 'Insurance', 'ID', 'References'], experience: '12 years', address: '987 Cedar Ln, Somewhere, IL 97531', notes: 'Highly qualified veterinary surgeon with specialty in orthopedics. All documents verified.' },
-    { id: 7, name: 'David Garcia', email: 'david.g@example.com', phone: '(555) 789-0123', type: 'Groomer', specialty: 'Cats', status: 'Rejected', date: '2023-11-29', documents: ['ID', 'Insurance'], experience: '2 years', address: '246 Birch Ct, Elsewhere, GA 86420', notes: 'Insufficient experience and missing proper certification for cat grooming.' },
-    { id: 8, name: 'Jennifer Lee', email: 'jennifer.l@example.com', phone: '(555) 890-1234', type: 'Pet Sitter', specialty: 'Overnight Care', status: 'Pending Review', date: '2023-11-28', documents: ['Insurance', 'ID', 'Background Check', 'References'], experience: '4 years', address: '135 Walnut Ave, Nowhere, MI 75319', notes: 'Specializes in overnight pet sitting and house sitting. Good references from previous clients.' }
-  ];
+  // Fetch providers
+  useEffect(() => {
+    let alive = true;
+    const run = async () => {
+      setLoading(true);
+      try {
+        // Build query params
+        const qs = new URLSearchParams();
+        if (filterType && filterType !== 'all') {
+          // Send the display name directly - backend will handle case-insensitive matching
+          qs.set('type', filterType);
+        }
+        
+        const url = `/admin/piq/providers${qs.toString() ? `?${qs.toString()}` : ''}`;
+        const response = await api.get(url);
+        
+        if (!alive) return;
+        // Backend returns { results: [...], page, limit, totalPages, totalResults }
+        const providersData = response?.results || response || [];
+        setProviders(Array.isArray(providersData) ? providersData : []);
+        
+        // Calculate stats from loaded data
+        const total = providersData.length;
+        const pending = providersData.filter(p => (p.status || p.serv_provider_status) === 'inactive').length;
+        const approved = providersData.filter(p => (p.status || p.serv_provider_status) === 'active').length;
+        const rejected = providersData.filter(p => (p.status || p.serv_provider_status) === 'rejected').length;
+        setStats({ total, pending, approved, rejected });
+      } catch (e) {
+        console.error('Error loading providers:', e);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    };
+    run();
+    return () => { alive = false; };
+  }, [filterType]); // Removed 'api' from dependencies to prevent infinite loop
+  
+  // Map providers to application format (ONLY REAL DATA - NO STATIC DATA)
+  const applicationsData = providers.map(p => {
+    const rawStatus = (p.status || p.serv_provider_status || '').toLowerCase();
+    const status = rawStatus === 'active' ? 'Approved'
+      : rawStatus === 'inactive' ? 'Pending Review'
+      : rawStatus === 'rejected' ? 'Rejected'
+      : 'In Progress';
+
+    const rawType = (p.type || p.serv_provider_type || '');
+    const lowerType = rawType.toLowerCase();
+    const typeMap = {
+      veterinary: 'Veterinarian',
+      veterinarian: 'Veterinarian',
+      grooming: 'Groomer',
+      groomer: 'Groomer',
+      training: 'Trainer',
+      trainer: 'Trainer',
+      boarding: 'Boarding',
+      'diagnostic services': 'Diagnostic Services',
+      diagnostics: 'Diagnostic Services',
+      'physical activity': 'Physical Activity',
+      'pet sitter': 'Physical Activity',
+      'pet sitting': 'Physical Activity',
+    };
+    const displayType = typeMap[lowerType] || rawType || 'Provider';
+
+    return {
+      id: p.id || p.service_provider_id,
+      name: p.name || p.serv_provider_name || 'Unknown',
+      email: p.email || p.serv_provider_email || '',
+      phone: p.phone || p.serv_provider_phone_number || p.serv_provider_contact_nbr || '',
+      type: displayType,
+      specialty: p.specialty || p.provider_src || 'General',
+      status,
+      date: p.date || (p.created_at ? new Date(p.created_at).toLocaleDateString() : ''),
+      documents: p.documents || (p.serv_provider_certificates ? String(p.serv_provider_certificates).split(',').map(s => s.trim()).filter(Boolean) : []),
+      experience: p.experience || (p.serv_provider_experience || (p.serv_provider_exp_years ? `${p.serv_provider_exp_years} years` : 'Not specified')),
+      address: p.location || p.address || p.serv_provider_location || '',
+      notes: p.notes || p.serv_provider_desc || '',
+      rawStatus,
+      rawType,
+    };
+  });
 
   // Filter and sort applications
   const filteredAndSortedApplications = applicationsData
@@ -112,14 +186,56 @@ const ProviderOnboarding = ({ filterType }) => {
     }
   };
 
-  // Handle application action
-  const handleApplicationAction = (action, applicationId) => {
-    console.log(`Performing ${action} on application:`, applicationId);
-    // In a real app, you would call an API to perform the action
-    alert(`${action} action would be performed on application #${applicationId}`);
-    
-    if (selectedApplication && selectedApplication.id === applicationId) {
-      setSelectedApplication(null);
+  // Handle application action (Approve/Reject)
+  const handleApplicationAction = async (action, applicationId) => {
+    if (!window.confirm(`Are you sure you want to ${action.toLowerCase()} this provider?`)) {
+      return;
+    }
+
+    try {
+      const status = action === 'Approve' ? 'active' : 'rejected';
+      
+      // Update provider status via API
+      await api.patch(`/admin/piq/providers/${applicationId}/status`, { 
+        status: status 
+      });
+      
+      // Refresh providers list
+      const qs = new URLSearchParams();
+      if (filterType && filterType !== 'all') {
+        const typeMap = {
+          'Veterinarian': 'veterinary',
+          'Groomer': 'grooming',
+          'Trainer': 'training',
+          'Boarding': 'boarding',
+          'Diagnostic Services': 'diagnostic services',
+          'Physical Activity': 'physical activity'
+        };
+        qs.set('type', typeMap[filterType] || filterType.toLowerCase());
+      }
+      
+      const url = `/admin/piq/providers${qs.toString() ? `?${qs.toString()}` : ''}`;
+      const response = await api.get(url);
+      const providersData = response?.results || response || [];
+      
+      setProviders(Array.isArray(providersData) ? providersData : []);
+      
+      // Recalculate stats
+      const total = providersData.length;
+      const pending = providersData.filter(p => (p.status || p.serv_provider_status) === 'inactive').length;
+      const approved = providersData.filter(p => (p.status || p.serv_provider_status) === 'active').length;
+      const rejected = providersData.filter(p => (p.status || p.serv_provider_status) === 'rejected').length;
+      setStats({ total, pending, approved, rejected });
+      
+      // Close detail view if it was the updated provider
+      if (selectedApplication && selectedApplication.id === applicationId) {
+        setSelectedApplication(null);
+      }
+      
+      alert(`Provider ${action === 'Approve' ? 'approved' : 'rejected'} successfully! ${action === 'Approve' ? 'They can now be seen by users.' : ''}`);
+    } catch (error) {
+      console.error('Error updating provider status:', error);
+      alert('Failed to update provider status. Please try again.');
     }
   };
 
@@ -153,7 +269,7 @@ const ProviderOnboarding = ({ filterType }) => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-500">Total Applications</p>
-                <p className="text-xl font-bold text-gray-800 mt-1">{applicationsData.length}</p>
+                <p className="text-xl font-bold text-gray-800 mt-1">{stats.total}</p>
               </div>
               <div className="bg-indigo-100 p-2 rounded-full">
                 <FaClipboardCheck className="text-indigo-600" />
@@ -166,7 +282,7 @@ const ProviderOnboarding = ({ filterType }) => {
               <div>
                 <p className="text-sm font-medium text-gray-500">Pending Review</p>
                 <p className="text-xl font-bold text-amber-600 mt-1">
-                  {applicationsData.filter(app => app.status === 'Pending Review').length}
+                  {stats.pending}
                 </p>
               </div>
               <div className="bg-amber-100 p-2 rounded-full">
@@ -180,7 +296,7 @@ const ProviderOnboarding = ({ filterType }) => {
               <div>
                 <p className="text-sm font-medium text-gray-500">Approved</p>
                 <p className="text-xl font-bold text-green-600 mt-1">
-                  {applicationsData.filter(app => app.status === 'Approved').length}
+                  {stats.approved}
                 </p>
               </div>
               <div className="bg-green-100 p-2 rounded-full">
@@ -194,7 +310,7 @@ const ProviderOnboarding = ({ filterType }) => {
               <div>
                 <p className="text-sm font-medium text-gray-500">Rejected</p>
                 <p className="text-xl font-bold text-red-600 mt-1">
-                  {applicationsData.filter(app => app.status === 'Rejected').length}
+                  {stats.rejected}
                 </p>
               </div>
               <div className="bg-red-100 p-2 rounded-full">

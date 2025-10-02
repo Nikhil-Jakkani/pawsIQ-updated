@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import CalendarView from '../../components/dashboard/CalendarView';
+import useApi from '../../hooks/useApi';
 import { 
   FaCalendarAlt, 
   FaSearch, 
@@ -23,21 +24,57 @@ import {
 } from 'react-icons/fa';
 
 const BookingOverview = () => {
+  const api = useApi();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterService, setFilterService] = useState('all');
+  const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  // Sample booking data
+  // Fetch appointments
+  useEffect(() => {
+    let alive = true;
+    const run = async () => {
+      setLoading(true);
+      try {
+        const data = await api.get('/appointments');
+        if (!alive) return;
+        setAppointments(Array.isArray(data?.items) ? data.items : (Array.isArray(data) ? data : []));
+      } catch (e) {
+        console.error('Error loading appointments:', e);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    };
+    run();
+    return () => { alive = false; };
+  }, [api]);
+
+  // Calculate dynamic stats
+  const today = new Date().toDateString();
   const bookingStats = {
-    totalBookings: 1247,
-    upcomingBookings: 156,
-    completedToday: 23,
-    noShows: 8,
-    cancellations: 12,
-    disputes: 3
+    totalBookings: appointments.length,
+    upcomingBookings: appointments.filter(a => new Date(a.appointment_date) > new Date() && a.appointment_status !== 'Cancelled').length,
+    completedToday: appointments.filter(a => new Date(a.appointment_date).toDateString() === today && a.appointment_status === 'Completed').length,
+    noShows: appointments.filter(a => a.appointment_status === 'No Show').length,
+    cancellations: appointments.filter(a => a.appointment_status === 'Cancelled').length,
+    disputes: appointments.filter(a => a.appointment_status === 'Disputed').length
   };
 
-  const recentBookings = [
+  const recentBookings = appointments.slice(0, 10).map(a => ({
+    id: `BK${String(a.appointment_id).padStart(3, '0')}`,
+    customerName: 'User',
+    petName: 'Pet',
+    service: a.appointment_type || 'Service',
+    provider: 'Provider',
+    date: new Date(a.appointment_date).toLocaleDateString(),
+    time: new Date(a.appointment_date).toLocaleTimeString(),
+    status: a.appointment_status || 'Confirmed',
+    price: 0
+  }));
+
+  // Keep sample data as fallback
+  const sampleBookings = [
     {
       id: 'BK001',
       customerName: 'Sarah Johnson',

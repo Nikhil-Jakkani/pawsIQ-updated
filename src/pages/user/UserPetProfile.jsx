@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { FaPaw, FaArrowLeft, FaCalendarAlt, FaEdit, FaFileMedical, FaSave, FaTimes, FaCheckCircle, FaTimesCircle, FaMicrochip, FaWeight, FaPalette, FaBirthdayCake, FaVenusMars, FaExclamationTriangle, FaStethoscope, FaPills, FaUtensils, FaUserMd, FaStickyNote, FaCopy, FaTrash, FaCamera } from 'react-icons/fa';
+import { FaPaw, FaArrowLeft, FaCalendarAlt, FaEdit, FaFileMedical, FaSave, FaTimes, FaCheckCircle, FaTimesCircle, FaMicrochip, FaWeight, FaPalette, FaBirthdayCake, FaVenusMars, FaExclamationTriangle, FaStethoscope, FaPills, FaUtensils, FaUserMd, FaStickyNote, FaCopy, FaTrash, FaCamera, FaPlus } from 'react-icons/fa';
 import UserLayout from '../../components/layout/UserLayout';
 import { supabase } from '../../lib/supabaseClient';
 import { useAuth } from '../../context/AuthContext';
@@ -24,7 +24,6 @@ const UserPetProfile = () => {
   const [imageUrl, setImageUrl] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
-
   // Extra lists
   const [vaccinations, setVaccinations] = useState([]);
   const [allergiesList, setAllergiesList] = useState([]);
@@ -49,6 +48,7 @@ const UserPetProfile = () => {
     vetName: '',
     vetPhone: '',
     notes: '',
+    vaccinations: [],
   });
 
   // Health options from backend (with fallback)
@@ -100,7 +100,6 @@ const UserPetProfile = () => {
     'Urinary tract issues',
     'Behavioral issues (anxiety, aggression)',
     'Mobility issues',
-    'Chronic pain',
   ];
 
   const fetchHealthOptions = async () => {
@@ -112,6 +111,29 @@ const UserPetProfile = () => {
     } finally {
       setLoadingMeta(false);
     }
+  };
+
+  const handleVaccinationChange = (index, field, value) => {
+    setFormData((prev) => {
+      const list = [...(prev.vaccinations || [])];
+      list[index] = { ...(list[index] || {}), [field]: value };
+      return { ...prev, vaccinations: list };
+    });
+  };
+
+  const addVaccinationRow = () => {
+    setFormData((prev) => ({
+      ...prev,
+      vaccinations: [...(prev.vaccinations || []), { vaccination_name: '', vaccine_given_date: '', vaccine_due_date: '', vaccine_status: '' }],
+    }));
+  };
+
+  const removeVaccinationRow = (index) => {
+    setFormData((prev) => {
+      const list = [...(prev.vaccinations || [])];
+      list.splice(index, 1);
+      return { ...prev, vaccinations: list };
+    });
   };
 
   useEffect(() => {
@@ -239,7 +261,10 @@ const UserPetProfile = () => {
           ]);
           if (vRes && vRes.ok) {
             const list = await vRes.json().catch(() => []);
-            setVaccinations(Array.isArray(list) ? list : []);
+            const vacList = Array.isArray(list) ? list : [];
+            setVaccinations(vacList);
+            // Also update formData with vaccinations
+            setFormData(prev => ({ ...prev, vaccinations: vacList }));
           }
           if (aRes && aRes.ok) {
             const payload = await aRes.json().catch(() => ({}));
@@ -294,6 +319,16 @@ const UserPetProfile = () => {
       const allMedical = [...selectedMedicalConditions];
       if (customMedicalConditions.trim()) allMedical.push(customMedicalConditions.trim());
 
+      // Clean vaccinations - remove empty entries
+      const cleanedVaccinations = (formData.vaccinations || [])
+        .filter((v) => v.vaccination_name && v.vaccination_name.trim())
+        .map((v) => ({
+          vaccination_name: v.vaccination_name.trim(),
+          vaccine_given_date: v.vaccine_given_date || '',
+          vaccine_due_date: v.vaccine_due_date || '',
+          vaccine_status: v.vaccine_status || '',
+        }));
+
       // Build payload for new consolidated health tables (keep legacy fields too)
       const payload = {
         name: formData.name?.trim(),
@@ -301,6 +336,7 @@ const UserPetProfile = () => {
         breed: formData.breed || undefined,
         gender: formData.gender || undefined,
         birthdate: formData.birthdate || undefined,
+        weight: formData.weight ? Number(formData.weight) : undefined,
         color: formData.color || undefined,
         bloodGroup: formData.bloodGroup || undefined,
         ageGroup: formData.ageGroup || undefined,
@@ -322,7 +358,7 @@ const UserPetProfile = () => {
         vetName: formData.vetName || undefined,
         vetPhone: formData.vetPhone || undefined,
         notes: formData.notes || undefined,
-        vaccinations: [],
+        vaccinations: cleanedVaccinations,
         region: 'India',
       };
 
@@ -687,7 +723,7 @@ const UserPetProfile = () => {
                           </div>
                           <div>
                             <label className={labelCls}>Weight (kg)</label>
-                            <input name="weight" value={formData.weight} onChange={handleChange} className={inputCls} />
+                            <input type="number" step="0.1" min="0" name="weight" value={formData.weight} onChange={handleChange} className={inputCls} />
                           </div>
                           <div>
                             <label className={labelCls}>Color</label>
@@ -803,12 +839,86 @@ const UserPetProfile = () => {
                         </div>
                       </section>
 
+                      {/* Vaccinations Section */}
+                      <section>
+                        <header className="mb-4 flex items-center justify-between">
+                          <div>
+                            <h3 className={sectionTitleCls}>Vaccination History</h3>
+                            <p className={sectionDescCls}>Update your pet's vaccination records</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={addVaccinationRow}
+                            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition"
+                          >
+                            <FaPlus /> Add Vaccination
+                          </button>
+                        </header>
+                        <div className="space-y-4">
+                          {(formData.vaccinations || []).map((v, idx) => (
+                            <div key={idx} className="grid grid-cols-1 md:grid-cols-5 gap-4 rounded-lg border border-gray-200 p-4 bg-white">
+                              <div>
+                                <label className={labelCls}>Vaccine Name</label>
+                                <input
+                                  type="text"
+                                  value={v.vaccination_name || ''}
+                                  onChange={(e) => handleVaccinationChange(idx, 'vaccination_name', e.target.value)}
+                                  className={inputCls}
+                                  placeholder="e.g., Rabies"
+                                />
+                              </div>
+                              <div>
+                                <label className={labelCls}>Given Date</label>
+                                <input
+                                  type="date"
+                                  value={v.vaccine_given_date ? String(v.vaccine_given_date).slice(0, 10) : ''}
+                                  onChange={(e) => handleVaccinationChange(idx, 'vaccine_given_date', e.target.value)}
+                                  className={inputCls}
+                                />
+                              </div>
+                              <div>
+                                <label className={labelCls}>Next Due</label>
+                                <input
+                                  type="date"
+                                  value={v.vaccine_due_date ? String(v.vaccine_due_date).slice(0, 10) : ''}
+                                  onChange={(e) => handleVaccinationChange(idx, 'vaccine_due_date', e.target.value)}
+                                  className={inputCls}
+                                />
+                              </div>
+                              <div>
+                                <label className={labelCls}>Status</label>
+                                <select
+                                  value={v.vaccine_status || ''}
+                                  onChange={(e) => handleVaccinationChange(idx, 'vaccine_status', e.target.value)}
+                                  className={inputCls}
+                                >
+                                  <option value="">Select</option>
+                                  <option value="completed">Completed</option>
+                                  <option value="pending">Pending</option>
+                                  <option value="overdue">Overdue</option>
+                                </select>
+                              </div>
+                              <div className="flex items-end">
+                                <button
+                                  type="button"
+                                  onClick={() => removeVaccinationRow(idx)}
+                                  className="w-full rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-red-700 transition"
+                                >
+                                  <FaTimes className="inline mr-1" /> Remove
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                          {(!formData.vaccinations || formData.vaccinations.length === 0) && (
+                            <p className="text-sm text-gray-500 text-center py-4">No vaccinations added yet. Click "Add Vaccination" to add one.</p>
+                          )}
+                        </div>
+                      </section>
                       {/* Form actions at the end of the page (no sticky overlay) */}
                       <div className="pt-4 border-t border-gray-100 flex items-center justify-end gap-3">
                         <button
                           type="button"
                           onClick={handleCancel}
-                          disabled={saving}
                           className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 bg-white transition disabled:opacity-60"
                         >
                           <FaTimes className="mr-1 inline" /> Cancel

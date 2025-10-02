@@ -1,0 +1,325 @@
+import httpStatus from 'http-status';
+import { ApiError } from '../../utils/ApiError.js';
+import prisma from '../../../lib/prisma.js';
+
+const db = prisma as any;
+
+/**
+ * List all service offerings for a provider
+ */
+const listServiceOfferings = async (providerId: number) => {
+  const offerings = await (db as any).PIQ_Provider_ServiceOffering.findMany({
+    where: { service_provider_id: providerId },
+    include: {
+      service: {
+        select: {
+          services_id: true,
+          service_type: true,
+          service_sub_type: true,
+          service_title: true,
+          service_description: true,
+          service_price_amt: true,
+          service_duration: true,
+          pet_type: true,
+        },
+      },
+    },
+    orderBy: { created_at: 'desc' },
+  });
+
+  return offerings.map((offering: any) => ({
+    offering_id: offering.offering_id,
+    service_id: offering.services_id,
+    custom_title: offering.custom_title,
+    custom_description: offering.custom_description,
+    is_active: offering.is_active,
+    created_at: offering.created_at,
+    last_updated_dtm: offering.last_updated_dtm,
+    // Service master details
+    service_type: offering.service?.service_type,
+    service_sub_type: offering.service?.service_sub_type,
+    service_title: offering.service?.service_title,
+    service_description: offering.service?.service_description,
+    default_price: offering.service?.service_price_amt,
+    default_duration: offering.service?.service_duration,
+    pet_type: offering.service?.pet_type,
+  }));
+};
+
+/**
+ * Get a single service offering by ID
+ */
+const getServiceOffering = async (providerId: number, offeringId: number) => {
+  const offering = await (db as any).PIQ_Provider_ServiceOffering.findFirst({
+    where: {
+      offering_id: offeringId,
+      service_provider_id: providerId,
+    },
+    include: {
+      service: {
+        select: {
+          services_id: true,
+          service_type: true,
+          service_sub_type: true,
+          service_title: true,
+          service_description: true,
+          service_price_amt: true,
+          service_duration: true,
+          pet_type: true,
+        },
+      },
+    },
+  });
+
+  if (!offering) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Service offering not found');
+  }
+
+  return {
+    offering_id: offering.offering_id,
+    service_id: offering.services_id,
+    custom_title: offering.custom_title,
+    custom_description: offering.custom_description,
+    is_active: offering.is_active,
+    created_at: offering.created_at,
+    last_updated_dtm: offering.last_updated_dtm,
+    service_type: offering.service?.service_type,
+    service_sub_type: offering.service?.service_sub_type,
+    service_title: offering.service?.service_title,
+    service_description: offering.service?.service_description,
+    default_price: offering.service?.service_price_amt,
+    default_duration: offering.service?.service_duration,
+    pet_type: offering.service?.pet_type,
+  };
+};
+
+/**
+ * Create a new service offering for a provider
+ */
+const createServiceOffering = async (
+  providerId: number,
+  payload: {
+    services_id: number;
+    custom_title?: string;
+    custom_description?: string;
+    is_active?: boolean;
+  }
+) => {
+  // Check if service exists in master
+  const service = await db.pIQ_Service_Master.findUnique({
+    where: { services_id: payload.services_id },
+  });
+
+  if (!service) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Service not found in master list');
+  }
+
+  // Check if provider already offers this service
+  const existing = await (db as any).PIQ_Provider_ServiceOffering.findFirst({
+    where: {
+      service_provider_id: providerId,
+      services_id: payload.services_id,
+    },
+  });
+
+  if (existing) {
+    throw new ApiError(
+      httpStatus.CONFLICT,
+      'You already offer this service. Please update the existing offering instead.'
+    );
+  }
+
+  // Create the offering
+  const offering = await (db as any).PIQ_Provider_ServiceOffering.create({
+    data: {
+      service_provider_id: providerId,
+      services_id: payload.services_id,
+      custom_title: payload.custom_title || null,
+      custom_description: payload.custom_description || null,
+      is_active: payload.is_active !== undefined ? payload.is_active : true,
+    },
+    include: {
+      service: {
+        select: {
+          services_id: true,
+          service_type: true,
+          service_sub_type: true,
+          service_title: true,
+          service_description: true,
+          service_price_amt: true,
+          service_duration: true,
+          pet_type: true,
+        },
+      },
+    },
+  });
+
+  return {
+    offering_id: offering.offering_id,
+    service_id: offering.services_id,
+    custom_title: offering.custom_title,
+    custom_description: offering.custom_description,
+    is_active: offering.is_active,
+    created_at: offering.created_at,
+    last_updated_dtm: offering.last_updated_dtm,
+    service_type: offering.service?.service_type,
+    service_sub_type: offering.service?.service_sub_type,
+    service_title: offering.service?.service_title,
+    service_description: offering.service?.service_description,
+    default_price: offering.service?.service_price_amt,
+    default_duration: offering.service?.service_duration,
+    pet_type: offering.service?.pet_type,
+  };
+};
+
+/**
+ * Update an existing service offering
+ */
+const updateServiceOffering = async (
+  providerId: number,
+  offeringId: number,
+  payload: {
+    custom_title?: string;
+    custom_description?: string;
+    is_active?: boolean;
+  }
+) => {
+  // Check if offering exists and belongs to provider
+  const existing = await (db as any).PIQ_Provider_ServiceOffering.findFirst({
+    where: {
+      offering_id: offeringId,
+      service_provider_id: providerId,
+    },
+  });
+
+  if (!existing) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Service offering not found');
+  }
+
+  // Update the offering
+  const updated = await (db as any).PIQ_Provider_ServiceOffering.update({
+    where: { offering_id: offeringId },
+    data: {
+      custom_title: payload.custom_title !== undefined ? payload.custom_title : undefined,
+      custom_description: payload.custom_description !== undefined ? payload.custom_description : undefined,
+      is_active: payload.is_active !== undefined ? payload.is_active : undefined,
+    },
+    include: {
+      service: {
+        select: {
+          services_id: true,
+          service_type: true,
+          service_sub_type: true,
+          service_title: true,
+          service_description: true,
+          service_price_amt: true,
+          service_duration: true,
+          pet_type: true,
+        },
+      },
+    },
+  });
+
+  return {
+    offering_id: updated.offering_id,
+    service_id: updated.services_id,
+    custom_title: updated.custom_title,
+    custom_description: updated.custom_description,
+    is_active: updated.is_active,
+    created_at: updated.created_at,
+    last_updated_dtm: updated.last_updated_dtm,
+    service_type: updated.service?.service_type,
+    service_sub_type: updated.service?.service_sub_type,
+    service_title: updated.service?.service_title,
+    service_description: updated.service?.service_description,
+    default_price: updated.service?.service_price_amt,
+    default_duration: updated.service?.service_duration,
+    pet_type: updated.service?.pet_type,
+  };
+};
+
+/**
+ * Delete a service offering
+ */
+const deleteServiceOffering = async (providerId: number, offeringId: number) => {
+  // Check if offering exists and belongs to provider
+  const existing = await (db as any).PIQ_Provider_ServiceOffering.findFirst({
+    where: {
+      offering_id: offeringId,
+      service_provider_id: providerId,
+    },
+  });
+
+  if (!existing) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Service offering not found');
+  }
+
+  // Check if there are active bookings for this service
+  const activeBookings = await db.pIQ_Bookings.count({
+    where: {
+      service_provider_id: providerId,
+      services_id: existing.services_id,
+      booking_status: { in: ['Pending', 'Confirmed'] },
+    },
+  });
+
+  if (activeBookings > 0) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      `Cannot delete service offering. You have ${activeBookings} active booking(s) for this service. Please complete or cancel them first.`
+    );
+  }
+
+  // Delete the offering
+  await (db as any).PIQ_Provider_ServiceOffering.delete({
+    where: { offering_id: offeringId },
+  });
+
+  return { success: true, message: 'Service offering deleted successfully' };
+};
+
+/**
+ * List all available services from master that provider can add
+ */
+const listAvailableServices = async (providerId: number) => {
+  // Get all services from master
+  const allServices = await db.pIQ_Service_Master.findMany({
+    where: {
+      is_record_valid: true,
+    },
+    orderBy: [{ service_type: 'asc' }, { service_sub_type: 'asc' }],
+  });
+
+  // Get services already offered by provider
+  const offeredServices = await (db as any).PIQ_Provider_ServiceOffering.findMany({
+    where: { service_provider_id: providerId },
+    select: { services_id: true },
+  });
+
+  const offeredServiceIds = new Set(offeredServices.map((o: any) => o.services_id));
+
+  // Filter out already offered services
+  const availableServices = allServices
+    .filter((service: any) => !offeredServiceIds.has(service.services_id))
+    .map((service: any) => ({
+      services_id: service.services_id,
+      service_type: service.service_type,
+      service_sub_type: service.service_sub_type,
+      service_title: service.service_title,
+      service_description: service.service_description,
+      service_price_amt: service.service_price_amt,
+      service_duration: service.service_duration,
+      pet_type: service.pet_type,
+    }));
+
+  return availableServices;
+};
+
+export const providerServiceOfferingService = {
+  listServiceOfferings,
+  getServiceOffering,
+  createServiceOffering,
+  updateServiceOffering,
+  deleteServiceOffering,
+  listAvailableServices,
+};

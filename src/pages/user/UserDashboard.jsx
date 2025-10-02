@@ -9,7 +9,6 @@ import UserStatCard from '../../components/user/UserStatCard';
 import PetProfiles from '../../components/user/PetProfiles';
 import AIPetCareSuggestions from '../../components/user/AIPetCareSuggestions';
 import AISymptomChecker from '../../components/user/AISymptomChecker';
-import PetSelector from '../../components/user/PetSelector';
 import PetHealthCard from '../../components/user/PetHealthCard';
 import SmartInsights from '../../components/user/SmartInsights';
 
@@ -20,6 +19,7 @@ import UpcomingSchedule from '../../components/user/UpcomingSchedule';
 import CareReminders from '../../components/user/CareReminders';
 import PetActivityTracker from '../../components/user/PetActivityTracker';
 import UserLayout from '../../components/layout/UserLayout';
+import LocationPrompt from '../../components/common/LocationPrompt';
 import { useAuth } from '../../context/AuthContext';
 
 const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
@@ -42,6 +42,31 @@ const UserDashboard = () => {
 
   // In-memory cache for signed image URLs with persistence to localStorage
   const imageCacheRef = useRef(new Map());
+
+  const formatWeight = (petLike = {}) => {
+    const candidates = [
+      petLike.weight,
+      petLike.pet_weight,
+      petLike.pet_weight_kg,
+      petLike.weight_kg,
+    ];
+
+    const raw = candidates.find((value) => {
+      if (value === undefined || value === null) return false;
+      const str = String(value).trim();
+      return str.length > 0 && str.toLowerCase() !== 'unknown';
+    });
+
+    if (raw === undefined) return null;
+
+    const numeric = Number(raw);
+    if (!Number.isNaN(numeric)) return `${numeric} kg`;
+
+    const stringValue = String(raw).trim();
+    if (!stringValue.length) return null;
+    if (/[a-zA-Z]/.test(stringValue)) return stringValue;
+    return `${stringValue} kg`;
+  };
 
   const petsCacheKey = React.useMemo(() => {
     if (!currentUser) return null;
@@ -172,6 +197,36 @@ const UserDashboard = () => {
           if (!res.ok) throw new Error((arr && arr.message) || 'Failed to load pets');
           rawPets = Array.isArray(arr) ? arr : (arr?.pets || []);
         }
+        
+        // Fetch appointments to get last checkup dates
+        let appointmentsMap = new Map();
+        try {
+          // Try user-specific appointments endpoint
+          const userId = Number(currentUser?.user_id ?? currentUser?.id);
+          const apptRes = await authFetch(`${API_URL}/user/${userId}/appointments`);
+          if (apptRes.ok) {
+            const apptData = await apptRes.json();
+            const appointments = Array.isArray(apptData?.items) ? apptData.items : (Array.isArray(apptData) ? apptData : []);
+                        
+            // Group completed appointments by pet_id and find the most recent
+            appointments
+              .filter(a => {
+                const status = (a.appointment_status || a.booking_status || '').toLowerCase();
+                return status === 'completed';
+              })
+              .forEach(a => {
+                const petId = Number(a.pet_id);
+                const apptDate = new Date(a.appointment_date || a.booked_dtm || a.appointment_dtm);
+                if (isNaN(apptDate.getTime())) return; // Skip invalid dates
+                
+                if (!appointmentsMap.has(petId) || apptDate > appointmentsMap.get(petId)) {
+                  appointmentsMap.set(petId, apptDate);
+                }
+              });
+          }
+        } catch (err) {
+          console.warn('Failed to fetch appointments for last checkup:', err);
+        }
 
         // Phase 1: map pet data synchronously using cached image URLs (if present)
         rawPets = rawPets
@@ -189,19 +244,23 @@ const UserDashboard = () => {
                 return `${years} years`;
               })()
             : (typeof p.age === 'number' ? `${p.age} years` : (p.pet_age != null ? `${p.pet_age} years` : 'Unknown'));
+          const weightDisplay = formatWeight(p);
+          const petId = Number(p.id || p.pet_id);
+          const lastCompletedAppt = appointmentsMap.get(petId);
+          
           return {
-            id: Number(p.id || p.pet_id),
+            id: petId,
             name: p.name || p.pet_name || 'Pet',
             type: (p.type || p.pet_type || '').toString().toLowerCase(),
             breed: p.breed || p.pet_breed || '',
             age: ageText,
-            weight: (p.weight || (p.pet_weight != null ? `${p.pet_weight} lbs` : 'Unknown')),
+            weight: weightDisplay,
             gender: (p.gender || p.pet_gender || ''),
             birthday: p.birthday || p.pet_birth_dtm || p.pet_birthday || null,
             createdAt: p.createdAt || p.created_at || null,
             imagePath,
             image: cachedUrl || (legacy ? placeholder : (p.image || p.profileImage || 'https://placehold.co/600x400?text=Pet')),
-            lastCheckup: p.lastCheckup || p.last_checkup || new Date().toISOString().slice(0, 10),
+            lastCheckup: lastCompletedAppt ? lastCompletedAppt.toISOString().slice(0, 10) : null,
             vaccinations: p.vaccinations || 'Unknown',
           };
         });
@@ -786,6 +845,9 @@ const UserDashboard = () => {
           pets={pets}
           initialActiveService={activeService}
         />
+
+        {/* Location Permission Prompt */}
+        <LocationPrompt autoRequest={false} />
       </div>
     </UserLayout>
   );
