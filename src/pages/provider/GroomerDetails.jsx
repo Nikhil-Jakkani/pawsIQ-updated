@@ -273,8 +273,8 @@ const GroomerDetails = () => {
         registrationStep: 3
       }));
       
-      // Navigate to the document upload page
-      navigate('/provider/onboarding/document-upload');
+      // Navigate to the provider onboarding page
+      navigate('/provider/onboarding');
     } catch (error) {
       console.error('Submission error:', error);
       setErrors(prev => ({

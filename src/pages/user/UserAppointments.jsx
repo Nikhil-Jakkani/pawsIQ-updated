@@ -115,6 +115,7 @@ const UserAppointments = () => {
         const pet = petsById[String(a.pet_id)] || {};
         const { date, time } = formatDateTime(a.appointment_date);
         const ts = new Date(a.appointment_date).getTime() || 0;
+        const providerName = a.provider_name || '';
         return {
           id: a.appointment_id,
           petId: a.pet_id,
@@ -127,8 +128,8 @@ const UserAppointments = () => {
           actualStatus: getActualStatus(a.appointment_status, a.appointment_date, a), // For badge display
           rawStatus: a.appointment_status, // Keep raw status for reference
           notes: a.appointment_comments || '',
-          location: '—',
-          address: '—',
+          location: providerName || '—',
+          address: a.provider_address || '—',
           sortTs: ts,
           rawAppointment: a, // Keep full appointment data for debugging
         };
@@ -391,6 +392,9 @@ const UserAppointments = () => {
                         <div>
                           <p className="text-sm font-bold text-gray-800">{appointment.providerName}</p>
                           <p className="text-xs text-blue-600 font-medium">Service Provider</p>
+                          {appointment.providerAddress && (
+                            <p className="text-xs text-gray-500">{appointment.providerAddress}</p>
+                          )}
                         </div>
                       </div>
                     )}

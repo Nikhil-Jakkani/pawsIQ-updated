@@ -103,12 +103,13 @@ const register = async (providerBody: any) => {
   const { data: newProvider, error } = await db
     .from('PIQ_Service_Provider')
     .insert(newProviderData)
-    .select()
+    .select('service_provider_id, serv_provider_name, serv_provider_email, serv_provider_contact_nbr')
     .single();
 
   if (error || !newProvider) {
     if (error) {
       console.error('Provider insert error:', error);
+      console.log('newProvider:', newProvider);
     }
     throw new ApiError(
       httpStatus.INTERNAL_SERVER_ERROR,
