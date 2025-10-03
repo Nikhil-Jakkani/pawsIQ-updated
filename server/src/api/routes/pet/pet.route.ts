@@ -209,6 +209,8 @@ router.get('/user/:userId', userAuth as any, async (req: any, res) => {
         breed: p.pet_breed ?? '',
         gender: p.pet_gender ?? 'Unknown',
         age: ageYears ?? undefined,
+        weight: p.pet_weight != null ? `${p.pet_weight} kg` : undefined,
+        pet_weight: p.pet_weight ?? null,
         // Never surface raw storage path as an image URL; UI resolves signed URL from imagePath
         profileImage: `https://source.unsplash.com/random/400x300?${encodeURIComponent(p.pet_type || 'pet')}`,
         imagePath: p.pet_image ?? null,

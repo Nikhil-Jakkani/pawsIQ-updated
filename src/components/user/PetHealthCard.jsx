@@ -135,6 +135,17 @@ const PetHealthCard = ({ pet }) => {
           </div>
           <p className="text-sm font-semibold text-gray-800">
             {(() => {
+              if (!pet.lastCheckup) {
+                return (
+                  <button 
+                    onClick={() => navigate(`/user/appointments/new?petId=${pet.id}`)}
+                    className="text-xs underline hover:no-underline"
+                    style={{color: '#145ae6'}}
+                  >
+                    Book first appointment
+                  </button>
+                );
+              }
               const d = new Date(pet.lastCheckup);
               const now = new Date();
               const diffDays = Math.floor((now - d) / (1000 * 60 * 60 * 24));

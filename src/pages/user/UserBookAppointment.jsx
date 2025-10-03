@@ -1,29 +1,40 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { FaCalendarAlt, FaArrowLeft, FaPaw, FaMapMarkerAlt, FaClock, FaMoneyBillWave, FaCheck, FaChevronRight, FaCalendarCheck, FaSearch, FaFilter, FaUserMd, FaCut, FaDog, FaHome, FaWalking } from 'react-icons/fa';
 import UserLayout from '../../components/layout/UserLayout';
 import { useAuth } from '../../context/AuthContext';
 
 const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
-
 const UserBookAppointment = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Form state
-  const [formData, setFormData] = useState({
-    petId: '',
-    serviceType: '',
-    serviceId: '',
-    providerId: '',
-    date: '',
-    timeSlot: '',
-    notes: ''
-  });
-
-  // Auth and pets from backend
-  const { currentUser, tokens, authFetch } = useAuth();
+  const { tokens, currentUser, authFetch } = useAuth();
   const accessToken = tokens?.access?.token;
+
+  const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
+  const initialPrefill = useMemo(
+    () => ({
+      petId: searchParams.get('petId') || '',
+      serviceId: searchParams.get('serviceId') || '',
+      providerId: searchParams.get('providerId') || '',
+      date: searchParams.get('date') || '',
+      timeSlot: searchParams.get('time') || '',
+      notes: searchParams.get('notes') || '',
+    }),
+    [searchParams]
+  );
+
+  const [formData, setFormData] = useState(() => ({
+    petId: initialPrefill.petId ? String(initialPrefill.petId) : '',
+    serviceType: '',
+    serviceId: initialPrefill.serviceId ? String(initialPrefill.serviceId) : '',
+    providerId: initialPrefill.providerId ? String(initialPrefill.providerId) : '',
+    date: initialPrefill.date,
+    timeSlot: initialPrefill.timeSlot,
+    notes: initialPrefill.notes,
+  }));
+
   const [pets, setPets] = useState([]);
   const [loadingPets, setLoadingPets] = useState(false);
   const [error, setError] = useState('');
@@ -38,6 +49,22 @@ const UserBookAppointment = () => {
   const providerSectionRef = useRef(null);
   const dateTimeSectionRef = useRef(null);
   const notesSectionRef = useRef(null);
+
+  useEffect(() => {
+    if (!location.state || typeof location.state !== 'object') return;
+    const payload = location.state.prefill || location.state;
+    if (!payload) return;
+
+    setFormData((prev) => ({
+      ...prev,
+      petId: payload.petId ? String(payload.petId) : prev.petId,
+      serviceId: payload.serviceId ? String(payload.serviceId) : prev.serviceId,
+      providerId: payload.providerId ? String(payload.providerId) : prev.providerId,
+      date: payload.date || prev.date,
+      timeSlot: payload.timeSlot || payload.time || prev.timeSlot,
+      notes: payload.notes || prev.notes,
+    }));
+  }, [location.state]);
 
   useEffect(() => {
     const fetchPets = async () => {
@@ -107,6 +134,13 @@ const UserBookAppointment = () => {
     };
     fetchPets();
   }, [accessToken]);
+
+  useEffect(() => {
+    if (!pets.length) return;
+    if (formData.petId && pets.some((p) => String(p.id) === String(formData.petId))) {
+      serviceSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [pets, formData.petId]);
 
   // Load services from backend
   useEffect(() => {
@@ -239,49 +273,42 @@ const UserBookAppointment = () => {
 
   // Handle date selection
   const handleDateSelect = (date) => {
-    console.log('Date selected:', date);
-    setFormData({
-      ...formData,
+    setFormData((prev) => ({
+      ...prev,
       date
-    });
-    console.log('Form data after date selection:', { ...formData, date });
+    }));
   };
 
   // Handle time slot selection
   const handleTimeSlotSelect = (timeSlot) => {
-    setFormData({
-      ...formData,
+    setFormData((prev) => ({
+      ...prev,
       timeSlot
-    });
+    }));
      // Scroll to notes section
      notesSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Combine date and time to ISO string
+  // Combine date and time to ISO string (preserves local time without timezone shift)
   const combineDateTime = (dateStr, timeStr) => {
     if (!dateStr || !timeStr) return '';
 
-    // Parse time string
     const [time, meridiem] = timeStr.split(' ');
-    const [hours, minutes] = time.split(':').map(Number);
+    const [hours, minutes] = (time || '').split(':').map(Number);
 
-    // Adjust hours for AM/PM
+    if (Number.isNaN(hours) || Number.isNaN(minutes)) return '';
+
     let adjustedHours = hours;
     if (meridiem?.toUpperCase() === 'PM' && hours < 12) {
       adjustedHours += 12;
     } else if (meridiem?.toUpperCase() === 'AM' && hours === 12) {
-      adjustedHours = 0; // Midnight
+      adjustedHours = 0;
     }
 
-    // Create Date object (use UTC to avoid timezone issues)
-    const year = parseInt(dateStr.substring(0, 4));
-    const month = parseInt(dateStr.substring(5, 7)) - 1; // Month is 0-indexed
-    const day = parseInt(dateStr.substring(8, 10));
-
-    const utcDate = Date.UTC(year, month, day, adjustedHours, minutes, 0, 0);
-    const d = new Date(utcDate);
-
-    return d.toISOString();
+    // Format as YYYY-MM-DDTHH:MM:SS without timezone conversion
+    const paddedHours = String(adjustedHours).padStart(2, '0');
+    const paddedMinutes = String(minutes).padStart(2, '0');
+    return `${dateStr}T${paddedHours}:${paddedMinutes}:00`;
   };
 
   // Handle form submission
@@ -319,8 +346,14 @@ const UserBookAppointment = () => {
     setIsSubmitting(true);
     try {
       const booked_dtm = combineDateTime(formData.date, formData.timeSlot);
-      if (!booked_dtm || Number.isNaN(new Date(booked_dtm).getTime()) || new Date(booked_dtm).getTime() <= Date.now()) {
-        throw new Error('Date for booking needs to be a future date/time');
+      if (!booked_dtm || Number.isNaN(new Date(booked_dtm).getTime())) {
+        throw new Error('Invalid date/time format');
+      }
+      
+      // Check if the selected time is in the future
+      const selectedDateTime = new Date(booked_dtm);
+      if (selectedDateTime.getTime() <= Date.now()) {
+        throw new Error('Please select a future date and time');
       }
 
       const payload = {
@@ -394,7 +427,7 @@ const UserBookAppointment = () => {
                   key={pet.id}
                   onClick={() => handlePetSelect(pet.id)}
                   className={`bg-white rounded-xl overflow-hidden border cursor-pointer transition-all
-                    ${formData.petId === pet.id
+                    ${String(formData.petId) === String(pet.id)
                       ? 'border-blue-500 ring-2 ring-blue-200 shadow-md'
                       : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'}`}
                 >
@@ -429,7 +462,7 @@ const UserBookAppointment = () => {
                     <p className="text-gray-600">{pet.breed}</p>
                     <p className="text-gray-500 text-sm capitalize">{pet.type}</p>
 
-                    {formData.petId === pet.id && (
+                    {String(formData.petId) === String(pet.id) && (
                       <div className="mt-2 text-blue-600 flex items-center gap-1">
                         <FaCheck />
                         <span className="text-sm font-medium">Selected</span>
@@ -478,7 +511,7 @@ const UserBookAppointment = () => {
                       <p className="text-gray-500 text-sm">Duration: {service.duration_minutes} minutes</p>
                       <p className="text-gray-500 text-sm">Price: {formatINR(service.price)}</p>
 
-                      {formData.serviceId === String(service.services_id) && (
+                      {String(formData.serviceId) === String(service.services_id) && (
                         <div className="mt-2 text-blue-600 flex items-center gap-1">
                           <FaCheck />
                           <span className="text-sm font-medium">Selected</span>
@@ -512,7 +545,7 @@ const UserBookAppointment = () => {
                   key={provider.id}
                   onClick={() => handleProviderSelect(provider.id)}
                   className={`bg-white rounded-xl overflow-hidden border cursor-pointer transition-all
-                    ${formData.providerId === String(provider.id)
+                    ${String(formData.providerId) === String(provider.id)
                       ? 'border-blue-500 ring-2 ring-blue-200 shadow-md'
                       : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'}`}
                 >

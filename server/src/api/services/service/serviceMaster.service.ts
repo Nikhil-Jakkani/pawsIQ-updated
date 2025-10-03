@@ -47,12 +47,17 @@ const listProvidersForService = async (services_id: number) => {
 
   const primary = await prisma.pIQ_Service_Provider.findMany({
     where: {
-      OR: [
-        { serv_provider_type: { equals: type, mode: 'insensitive' } },
-        { serv_provider_type: { contains: type, mode: 'insensitive' } },
-        sub ? { serv_provider_type: { equals: sub, mode: 'insensitive' } } : undefined,
-        sub ? { serv_provider_type: { contains: sub, mode: 'insensitive' } } : undefined,
-      ].filter(Boolean) as any,
+      AND: [
+        { serv_provider_status: 'active' }, // Only show active providers
+        {
+          OR: [
+            { serv_provider_type: { equals: type, mode: 'insensitive' } },
+            { serv_provider_type: { contains: type, mode: 'insensitive' } },
+            sub ? { serv_provider_type: { equals: sub, mode: 'insensitive' } } : undefined,
+            sub ? { serv_provider_type: { contains: sub, mode: 'insensitive' } } : undefined,
+          ].filter(Boolean) as any,
+        },
+      ],
     },
     orderBy: [{ serv_provider_name: 'asc' }],
   });
@@ -61,10 +66,7 @@ const listProvidersForService = async (services_id: number) => {
 
   const fallback = await prisma.pIQ_Service_Provider.findMany({
     where: {
-      OR: [
-        { serv_provider_status: { equals: 'active', mode: 'insensitive' } },
-        { serv_provider_status: null },
-      ],
+      serv_provider_status: { equals: 'active', mode: 'insensitive' },
     },
     orderBy: [{ serv_provider_name: 'asc' }],
   });

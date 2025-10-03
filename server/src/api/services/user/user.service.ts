@@ -131,13 +131,21 @@ export const userService = {
       updateBody.user_password = await bcryptjs.hash(updateBody.user_password, 10);
     }
 
+    // Prepare update payload
+    const updatePayload: any = {
+      ...updateBody,
+      last_updated_dtm: new Date(),
+    };
+
+    // Allow user_location updates
+    if (updateBody.user_location !== undefined) {
+      updatePayload.user_location = updateBody.user_location;
+    }
+
     // Update user
     const { data: updatedUser, error } = await db
       .from('PIQ_User')
-      .update({
-        ...updateBody,
-        last_updated_dtm: new Date(),
-      })
+      .update(updatePayload)
       .eq('user_id', userId)
       .select()
       .single();

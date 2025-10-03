@@ -44,6 +44,8 @@ export default function ServiceForm() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [availableServices, setAvailableServices] = useState([]);
+  const [selectedServiceId, setSelectedServiceId] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -53,6 +55,46 @@ export default function ServiceForm() {
     isActive: true,
   });
 
+  // Load available services from master
+  useEffect(() => {
+    const loadAvailableServices = async () => {
+      try {
+        // Get serviceId from query params if present
+        const urlParams = new URLSearchParams(window.location.search);
+        const preselectedServiceId = urlParams.get('serviceId');
+        
+        const res = await authFetch(`${API_URL}/provider/services/available`);
+        if (res.ok) {
+          const data = await res.json();
+          const services = Array.isArray(data?.items) ? data.items : [];
+          setAvailableServices(services);
+          
+          // If serviceId is in URL, pre-select it
+          if (preselectedServiceId) {
+            setSelectedServiceId(preselectedServiceId);
+            const selected = services.find(s => s.services_id === parseInt(preselectedServiceId));
+            if (selected) {
+              setFormData({
+                name: selected.service_title || '',
+                description: selected.service_description || '',
+                price: selected.service_price_amt || '',
+                gst: 18,
+                duration: selected.service_duration || 30,
+                isActive: true,
+              });
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load available services:', err);
+      }
+    };
+    
+    if (!id) {
+      loadAvailableServices();
+    }
+  }, [id, authFetch]);
+
   // Load service data if in edit mode
   useEffect(() => {
     if (!id) return;
@@ -60,21 +102,22 @@ export default function ServiceForm() {
     const fetchService = async () => {
       setLoading(true);
       try {
-        // Try to fetch from API first
+        // Fetch the service offering
         try {
-          const res = await authFetch(`${API_URL}/services/${id}`);
+          const res = await authFetch(`${API_URL}/provider/services/${id}`);
           const data = await res.json();
           
           if (!res.ok) {
             throw new Error(data?.message || 'Failed to load service');
           }
           
+          setSelectedServiceId(data.services_id);
           setFormData({
-            name: data.service_title || data.name || '',
-            description: data.description || '',
-            price: data.base_price || data.price || '',
-            gst: data.gst_pct || data.gst || 18,
-            duration: data.duration || 30,
+            name: data.custom_title || data.service_title || '',
+            description: data.custom_description || data.service_description || '',
+            price: data.default_price || '',
+            gst: 18,
+            duration: data.default_duration || 30,
             isActive: data.is_active !== false,
           });
         } catch (apiError) {
@@ -139,94 +182,61 @@ export default function ServiceForm() {
     setError('');
     
     try {
-      // Basic validation
-      if (!formData.name.trim()) {
-        throw new Error('Service name is required');
-      }
-      if (!formData.price || isNaN(formData.price) || formData.price <= 0) {
-        throw new Error('Please enter a valid price');
-      }
-      
-      const payload = {
-        title: formData.name.trim(),
-        description: formData.description.trim(),
-        base_price: parseFloat(formData.price),
-        gst_pct: parseFloat(formData.gst) || 0,
-        duration: parseInt(formData.duration) || 30,
-        is_active: formData.isActive,
-      };
-      
-      try {
-        let res;
-        if (id) {
-          // Try to update existing service via API
-          try {
-            res = await authFetch(`${API_URL}/services/${id}`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload),
-            });
-            
-            const data = await res.json();
-            
-            if (!res.ok) {
-              throw new Error(data?.message || 'Failed to update service');
-            }
-            
-            toast.success('Service updated successfully');
-          } catch (apiError) {
-            console.warn('API update failed, using mock update:', apiError);
-            // Mock update in local storage or state
-            const updatedServices = MOCK_SERVICES.map(s => 
-              s.id === parseInt(id) ? { ...s, ...payload } : s
-            );
-            // In a real app, you would update your state management here
-            console.log('Mock updated services:', updatedServices);
-            toast.success('Service updated (demo mode)');
-          }
-        } else {
-          // Try to create new service via API
-          try {
-            res = await authFetch(`${API_URL}/services`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload),
-            });
-            
-            const data = await res.json();
-            
-            if (!res.ok) {
-              throw new Error(data?.message || 'Failed to create service');
-            }
-            
-            toast.success('Service created successfully');
-          } catch (apiError) {
-            console.warn('API create failed, using mock create:', apiError);
-            // Mock create in local storage or state
-            const newService = {
-              id: Math.max(0, ...MOCK_SERVICES.map(s => s.id)) + 1,
-              ...payload,
-              name: payload.title,
-              price: payload.base_price,
-              gst: payload.gst_pct,
-            };
-            // In a real app, you would update your state management here
-            console.log('Mock created service:', newService);
-            toast.success('Service created (demo mode)');
-          }
+      let res;
+      if (id) {
+        // Update existing service offering
+        const updatePayload = {
+          custom_title: formData.name.trim() || undefined,
+          custom_description: formData.description.trim() || undefined,
+          is_active: formData.isActive,
+        };
+        
+        res = await authFetch(`${API_URL}/provider/services/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updatePayload),
+        });
+        
+        const data = await res.json();
+        
+        if (!res.ok) {
+          throw new Error(data?.message || 'Failed to update service');
         }
         
-        // Redirect back to services list on success
-        setTimeout(() => {
-          navigate('/provider/vet/services');
-        }, 1000);
+        toast.success('Service updated successfully');
+      } else {
+        // Create new service offering
+        if (!selectedServiceId) {
+          throw new Error('Please select a service from the master list');
+        }
         
-      } catch (err) {
-        console.error('Error saving service:', err);
-        setError(err.message || 'Failed to save service. The service management feature is currently under development.');
+        const offeringPayload = {
+          services_id: parseInt(selectedServiceId),
+          custom_title: formData.name.trim() || undefined,
+          custom_description: formData.description.trim() || undefined,
+          is_active: formData.isActive,
+        };
+        
+        res = await authFetch(`${API_URL}/provider/services`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(offeringPayload),
+        });
+        
+        const data = await res.json();
+        
+        if (!res.ok) {
+          throw new Error(data?.message || 'Failed to create service');
+        }
+        
+        toast.success('Service created successfully');
       }
+      
+      // Redirect back to services list immediately
+      navigate('/provider/vet/services');
     } catch (err) {
-      setError(err.message);
+      console.error('Error saving service:', err);
+      setError(err.message || 'Failed to save service');
     } finally {
       setLoading(false);
     }
@@ -256,9 +266,46 @@ export default function ServiceForm() {
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-4">
+            {!id && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Select Service from Master List <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={selectedServiceId}
+                  onChange={(e) => {
+                    setSelectedServiceId(e.target.value);
+                    const selected = availableServices.find(s => s.services_id === parseInt(e.target.value));
+                    if (selected) {
+                      setFormData({
+                        ...formData,
+                        name: selected.service_title || '',
+                        description: selected.service_description || '',
+                        price: selected.service_price_amt || '',
+                        duration: selected.service_duration || 30,
+                      });
+                    }
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  disabled={loading}
+                  required
+                >
+                  <option value="">-- Select a service --</option>
+                  {availableServices.map(service => (
+                    <option key={service.services_id} value={service.services_id}>
+                      {service.service_title} - ₹{service.service_price_amt}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-gray-500">
+                  Select a service from the master list. You can customize the title and description below.
+                </p>
+              </div>
+            )}
+            
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Service Name <span className="text-red-500">*</span>
+                Custom Service Name {!id && '(Optional)'}
               </label>
               <input
                 type="text"
@@ -266,15 +313,17 @@ export default function ServiceForm() {
                 value={formData.name}
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="e.g., General Consultation"
-                disabled={loading}
-                required
+                placeholder="Leave empty to use default name"
+                disabled={loading || (!id && !selectedServiceId)}
               />
+              <p className="mt-1 text-xs text-gray-500">
+                Customize the service name for your practice (optional)
+              </p>
             </div>
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description
+                Custom Description {!id && '(Optional)'}
               </label>
               <textarea
                 name="description"
@@ -282,9 +331,12 @@ export default function ServiceForm() {
                 onChange={handleChange}
                 rows={3}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="Brief description of the service"
-                disabled={loading}
+                placeholder="Leave empty to use default description"
+                disabled={loading || (!id && !selectedServiceId)}
               />
+              <p className="mt-1 text-xs text-gray-500">
+                Customize the description for your practice (optional)
+              </p>
             </div>
             
             <div className="flex items-center">
@@ -306,7 +358,7 @@ export default function ServiceForm() {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Base Price (₹) <span className="text-red-500">*</span>
+                Base Price (₹) <span className="text-gray-400">(From Master)</span>
               </label>
               <div className="relative rounded-md shadow-sm">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -316,15 +368,15 @@ export default function ServiceForm() {
                   type="number"
                   name="price"
                   value={formData.price}
-                  onChange={handleChange}
-                  min="0"
-                  step="0.01"
-                  className="pl-7 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="pl-7 w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-600"
                   placeholder="0.00"
-                  disabled={loading}
-                  required
+                  disabled
+                  readOnly
                 />
               </div>
+              <p className="mt-1 text-xs text-gray-500">
+                Price is set in the master service list and cannot be changed here
+              </p>
             </div>
             
             <div>
@@ -353,25 +405,25 @@ export default function ServiceForm() {
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Duration (minutes) <span className="text-red-500">*</span>
+                Duration (minutes) <span className="text-gray-400">(From Master)</span>
               </label>
               <div className="relative rounded-md shadow-sm">
                 <input
                   type="number"
                   name="duration"
                   value={formData.duration}
-                  onChange={handleChange}
-                  min="1"
-                  step="1"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-600"
                   placeholder="30"
-                  disabled={loading}
-                  required
+                  disabled
+                  readOnly
                 />
                 <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                   <span className="text-gray-500 sm:text-sm">minutes</span>
                 </div>
               </div>
+              <p className="mt-1 text-xs text-gray-500">
+                Duration is set in the master service list
+              </p>
             </div>
             
             <div className="mt  -2 bg-gray-50 p-4 rounded-md">

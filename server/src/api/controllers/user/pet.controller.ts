@@ -1,10 +1,10 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import httpStatus from 'http-status';
 import prisma from '../../../lib/prisma.js';
 import { ApiError } from '../../utils/ApiError.js';
 
 export const petController = {
-  async updatePetProfile(req: Request, res: Response) {
+  async updatePetProfile(req: Request, res: Response, next: NextFunction) {
     const { petId } = req.params;
 
     try {
@@ -15,6 +15,7 @@ export const petController = {
       if (!existing) throw new ApiError(httpStatus.NOT_FOUND, 'Pet not found');
 
       const body: any = req.body || {};
+      
       const data: any = {
         last_updated_dtm: new Date(),
       };
@@ -43,7 +44,9 @@ export const petController = {
       const weight = body.weight ?? body.pet_weight;
       if (weight !== undefined && weight !== null && weight !== '') {
         const w = Number(weight);
-        if (!Number.isNaN(w)) data.pet_weight = Math.round(w);
+        if (!Number.isNaN(w)) {
+          data.pet_weight = Math.round(w * 10) / 10; // Round to 1 decimal place
+        }
       }
 
       if (typeof body.microchipped === 'boolean') data.microchipped = body.microchipped;
@@ -57,16 +60,16 @@ export const petController = {
       if (typeof body.neutered === 'boolean') data.neutered = body.neutered;
 
       // Support legacy and new shapes for health data
-      const allergiesStr: string | undefined = body.allergies; // legacy comma-separated
-      const selected_allergies: string[] | undefined = Array.isArray(body.selected_allergies)
+      // Prioritize selected_allergies array over comma-separated string
+      const selected_allergies: string[] | undefined = Array.isArray(body.selected_allergies) && body.selected_allergies.length > 0
         ? body.selected_allergies
-        : (typeof body.allergies === 'string' ? body.allergies.split(',').map((s: string) => s.trim()).filter(Boolean) : undefined);
+        : (typeof body.allergies === 'string' && body.allergies ? body.allergies.split(',').map((s: string) => s.trim()).filter(Boolean) : undefined);
       const other_allergies: string | undefined = body.other_allergies;
 
-      const medStr: string | undefined = body.medicalConditions; // legacy comma-separated
-      const selected_conditions: string[] | undefined = Array.isArray(body.selected_conditions)
+      // Prioritize selected_conditions array over comma-separated string
+      const selected_conditions: string[] | undefined = Array.isArray(body.selected_conditions) && body.selected_conditions.length > 0
         ? body.selected_conditions
-        : (typeof body.medicalConditions === 'string' ? body.medicalConditions.split(',').map((s: string) => s.trim()).filter(Boolean) : undefined);
+        : (typeof body.medicalConditions === 'string' && body.medicalConditions ? body.medicalConditions.split(',').map((s: string) => s.trim()).filter(Boolean) : undefined);
       const other_conditions: string | undefined = body.other_conditions;
       const current_medications: string | undefined = body.current_medications ?? body.medications;
       const dietary_needs: string | undefined = body.dietary_needs ?? body.dietaryNeeds;
@@ -81,10 +84,10 @@ export const petController = {
         const updated = await tx.pIQ_Pets.update({ where: { pet_id: id }, data });
 
         // Allergies: single row per pet
-        if (selected_allergies || typeof other_allergies === 'string' || typeof allergiesStr === 'string') {
-          const nextSelected = Array.isArray(selected_allergies)
+        if (selected_allergies || typeof other_allergies === 'string') {
+          const nextSelected = Array.isArray(selected_allergies) && selected_allergies.length > 0
             ? selected_allergies
-            : (typeof allergiesStr === 'string' ? allergiesStr.split(',').map((s) => s.trim()).filter(Boolean) : []);
+            : [];
           await tx.pIQ_Pet_Allergy.upsert({
             where: { pet_id: BigInt(id) },
             create: {
@@ -101,10 +104,10 @@ export const petController = {
         }
 
         // Health conditions: single row per pet
-        if (selected_conditions || typeof other_conditions === 'string' || typeof current_medications === 'string' || typeof dietary_needs === 'string' || typeof medStr === 'string') {
-          const nextSelected = Array.isArray(selected_conditions)
+        if (selected_conditions || typeof other_conditions === 'string' || typeof current_medications === 'string' || typeof dietary_needs === 'string') {
+          const nextSelected = Array.isArray(selected_conditions) && selected_conditions.length > 0
             ? selected_conditions
-            : (typeof medStr === 'string' ? medStr.split(',').map((s) => s.trim()).filter(Boolean) : []);
+            : [];
           await tx.pIQ_Pet_Medical_Condition.upsert({
             where: { pet_id: BigInt(id) },
             create: {
@@ -172,8 +175,13 @@ export const petController = {
 
       return res.status(httpStatus.OK).json(safe);
     } catch (error: any) {
-      if (error instanceof ApiError) throw error;
-      throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, error?.message || 'Failed to update pet');
+      if (error instanceof ApiError) {
+        return res.status(error.statusCode).json({ message: error.message });
+      }
+      return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ 
+        message: error?.message || 'Failed to update pet',
+        error: process.env.NODE_ENV === 'development' ? error : undefined
+      });
     }
   },
 };

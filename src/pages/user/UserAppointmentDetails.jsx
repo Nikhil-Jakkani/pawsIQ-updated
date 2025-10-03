@@ -41,6 +41,7 @@ export default function UserAppointmentDetails() {
   const [error, setError] = useState('');
   const [appt, setAppt] = useState(null);
   const [petsById, setPetsById] = useState({});
+  const [provider, setProvider] = useState(null);
   const [cancelling, setCancelling] = useState(false);
 
   const uiStatus = useMemo(() => toUiStatus(appt?.appointment_status), [appt]);
@@ -76,7 +77,17 @@ export default function UserAppointmentDetails() {
         }
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data?.message || 'Failed to load appointment');
-        if (!cancelled) setAppt(data);
+        if (!cancelled) {
+          setAppt(data);
+          // Provider details are now included in the appointment response
+          if (data?.provider_name) {
+            setProvider({
+              serv_provider_name: data.provider_name,
+              serv_provider_type: data.provider_type,
+              serv_provider_location: data.provider_location,
+            });
+          }
+        }
       } catch (e) {
         if (!cancelled) setError(e.message || 'Failed to load appointment');
       } finally {
@@ -180,18 +191,56 @@ export default function UserAppointmentDetails() {
                   </div>
                 </div>
 
-                {/* Provider (if available) */}
-                {(appt.provider_name || appt.providerName) && (
-                  <div className="flex items-center gap-3 mb-4 p-3 bg-blue-50 rounded-lg">
-                    <div className="flex-shrink-0">
-                      <FaUser className="text-blue-600" />
+                {/* Provider & Booking Info */}
+                <div className="space-y-3 mb-4">
+                  {(provider || appt.provider_name || appt.providerName || appt.service_provider_id) && (
+                    <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
+                      <div className="flex-shrink-0">
+                        <FaUser className="text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-gray-800">
+                          {provider?.serv_provider_name || provider?.name || appt.provider_name || appt.providerName || 'Service Provider'}
+                        </p>
+                        <p className="text-xs text-blue-600 font-medium">
+                          {provider?.serv_provider_type || provider?.type || 'Service Provider'}
+                        </p>
+                        {provider?.serv_provider_location && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            <FaMapMarkerAlt className="inline mr-1" />
+                            {provider.serv_provider_location}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-bold text-gray-800">{appt.provider_name || appt.providerName}</p>
-                      <p className="text-xs text-blue-600 font-medium">Service Provider</p>
-                    </div>
+                  )}
+                  
+                  {/* Booking & Approval Times */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {appt.created_dtm && (
+                      <div className="p-3 bg-gray-50 rounded-lg">
+                        <p className="text-xs text-gray-500 mb-1">Booked On</p>
+                        <p className="text-sm font-medium text-gray-800">
+                          {new Date(appt.created_dtm).toLocaleDateString('en-US', { 
+                            month: 'short', day: 'numeric', year: 'numeric',
+                            hour: '2-digit', minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
+                    )}
+                    {appt.last_updated_dtm && appt.appointment_status === 'Scheduled' && (
+                      <div className="p-3 bg-green-50 rounded-lg">
+                        <p className="text-xs text-green-600 mb-1">Approved On</p>
+                        <p className="text-sm font-medium text-gray-800">
+                          {new Date(appt.last_updated_dtm).toLocaleDateString('en-US', { 
+                            month: 'short', day: 'numeric', year: 'numeric',
+                            hour: '2-digit', minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
 
                 {/* Location & Notes */}
                 <div className="space-y-3 mb-6">

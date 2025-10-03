@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../components/layout/DashboardLayout';
+import useApi from '../hooks/useApi';
 import { 
   FaCalendarAlt, 
   FaSearch, 
@@ -23,6 +24,7 @@ import {
 } from 'react-icons/fa';
 
 const Appointments = () => {
+  const api = useApi();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterService, setFilterService] = useState('all');
@@ -32,223 +34,77 @@ const Appointments = () => {
   const [showRescheduleModal, setShowRescheduleModal] = useState(false);
   const [showDiscountModal, setShowDiscountModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [appointments, setAppointments] = useState([]);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(20);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalResults, setTotalResults] = useState(0);
 
-  // Sample booking data
+  // Fetch appointments from backend
+  useEffect(() => {
+    let alive = true;
+    const fetchAppointments = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const qs = new URLSearchParams();
+        qs.set('page', String(page));
+        qs.set('limit', String(limit));
+        const data = await api.get(`/admin/appointments?${qs.toString()}`);
+        if (!alive) return;
+        setAppointments(data?.results || []);
+        setTotalPages(Number(data?.totalPages) || 1);
+        setTotalResults(Number(data?.totalResults) || 0);
+      } catch (e) {
+        if (!alive) return;
+        console.error('Failed to load appointments:', e);
+        setError('Failed to load appointments');
+        setAppointments([]);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    };
+    fetchAppointments();
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, limit]);
+
+  // Calculate stats from appointments
   const bookingStats = {
-    totalBookings: 1259,
-    upcomingBookings: 168,
-    completedToday: 25,
-    noShows: 9,
-    cancellations: 13,
-    disputes: 4
+    totalBookings: totalResults,
+    upcomingBookings: appointments.filter(a => a.status === 'confirmed').length,
+    completedToday: appointments.filter(a => {
+      const today = new Date().toDateString();
+      const apptDate = a.date ? new Date(a.date).toDateString() : '';
+      return a.status === 'completed' && apptDate === today;
+    }).length,
+    noShows: 0,
+    cancellations: appointments.filter(a => a.status === 'cancelled').length,
+    disputes: 0
   };
 
-  const bookingsData = [
-    {
-      id: 'BK001',
-      customerName: 'Priya Sharma',
-      petName: 'Buddy',
-      service: 'Dog Walking',
-      provider: 'Rajesh Pet Care',
-      date: '2024-01-15',
-      time: '10:00 AM',
-      duration: '30 min',
-      status: 'Confirmed',
-      price: 500.00,
-      location: 'Lodhi Gardens, New Delhi',
-      phone: '+91 98765 43210',
-      notes: 'Buddy is very energetic and loves to play fetch',
-      petType: 'Dog',
-      urgency: 'Normal'
-    },
-    {
-      id: 'BK002',
-      customerName: 'Arjun Patel',
-      petName: 'Whiskers',
-      service: 'Pet Grooming',
-      provider: 'Mumbai Pet Spa',
-      date: '2024-01-15',
-      time: '2:00 PM',
-      duration: '2 hours',
-      status: 'In Progress',
-      price: 1800.00,
-      location: 'Bandra West, Mumbai',
-      phone: '+91 87654 32109',
-      notes: 'Full grooming service including nail trim',
-      petType: 'Cat',
-      urgency: 'Normal'
-    },
-    {
-      id: 'BK003',
-      customerName: 'Sneha Reddy',
-      petName: 'Max',
-      service: 'Veterinary Checkup',
-      provider: 'Dr. Kavya Nair',
-      date: '2024-01-14',
-      time: '3:30 PM',
-      duration: '45 min',
-      status: 'No Show',
-      price: 2500.00,
-      location: 'Jubilee Hills, Hyderabad',
-      phone: '+91 76543 21098',
-      notes: 'Annual checkup and vaccinations',
-      petType: 'Dog',
-      urgency: 'High'
-    },
-    {
-      id: 'BK004',
-      customerName: 'Vikram Singh',
-      petName: 'Luna',
-      service: 'Pet Sitting',
-      provider: 'Meera Pet Services',
-      date: '2024-01-13',
-      time: '8:00 AM',
-      duration: '8 hours',
-      status: 'Completed',
-      price: 1200.00,
-      location: 'Customer Home, Gurgaon',
-      phone: '+91 65432 10987',
-      notes: 'All day pet sitting while owners at work',
-      petType: 'Dog',
-      urgency: 'Normal'
-    },
-    {
-      id: 'BK005',
-      customerName: 'Kavita Agarwal',
-      petName: 'Charlie',
-      service: 'Dog Training',
-      provider: 'Bangalore Training Pro',
-      date: '2024-01-16',
-      time: '11:00 AM',
-      duration: '1 hour',
-      status: 'Cancelled',
-      price: 1500.00,
-      location: 'Koramangala, Bengaluru',
-      phone: '+91 54321 09876',
-      notes: 'Basic obedience training session',
-      petType: 'Dog',
-      urgency: 'Low'
-    },
-    {
-      id: 'BK006',
-      customerName: 'Rohit Gupta',
-      petName: 'Bella',
-      service: 'Pet Photography',
-      provider: 'Pawsome Photos Delhi',
-      date: '2024-01-17',
-      time: '4:00 PM',
-      duration: '2 hours',
-      status: 'Disputed',
-      price: 3000.00,
-      location: 'Connaught Place, New Delhi',
-      phone: '+91 43210 98765',
-      notes: 'Professional pet photoshoot package',
-      petType: 'Cat',
-      urgency: 'Normal'
-    },
-    {
-      id: 'BK007',
-      customerName: 'Anita Desai',
-      petName: 'Rocky',
-      service: 'Emergency Vet',
-      provider: 'Dr. Suresh Kumar',
-      date: '2024-01-18',
-      time: '9:15 AM',
-      duration: '1 hour',
-      status: 'Confirmed',
-      price: 3500.00,
-      location: 'Sector 18, Noida',
-      phone: '+91 99887 76655',
-      notes: 'Emergency consultation for stomach issues',
-      petType: 'Dog',
-      urgency: 'Emergency'
-    },
-    {
-      id: 'BK008',
-      customerName: 'Ravi Krishnan',
-      petName: 'Mittens',
-      service: 'Cat Boarding',
-      provider: 'Cozy Paws Boarding',
-      date: '2024-01-19',
-      time: '6:00 PM',
-      duration: '3 days',
-      status: 'Confirmed',
-      price: 2400.00,
-      location: 'Indiranagar, Bengaluru',
-      phone: '+91 88776 65544',
-      notes: '3-day boarding while family is traveling',
-      petType: 'Cat',
-      urgency: 'Normal'
-    },
-    {
-      id: 'BK009',
-      customerName: 'Deepika Joshi',
-      petName: 'Simba',
-      service: 'Dental Cleaning',
-      provider: 'Pet Dental Care Clinic',
-      date: '2024-01-20',
-      time: '1:30 PM',
-      duration: '90 min',
-      status: 'Confirmed',
-      price: 2200.00,
-      location: 'Powai, Mumbai',
-      phone: '+91 77665 54433',
-      notes: 'Professional dental cleaning and checkup',
-      petType: 'Dog',
-      urgency: 'Normal'
-    },
-    {
-      id: 'BK010',
-      customerName: 'Sanjay Mehta',
-      petName: 'Fluffy',
-      service: 'Behavioral Training',
-      provider: 'Animal Behavior Expert',
-      date: '2024-01-21',
-      time: '10:30 AM',
-      duration: '2 hours',
-      status: 'In Progress',
-      price: 2800.00,
-      location: 'Vasant Kunj, New Delhi',
-      phone: '+91 66554 43322',
-      notes: 'Addressing aggressive behavior issues',
-      petType: 'Dog',
-      urgency: 'High'
-    },
-    {
-      id: 'BK011',
-      customerName: 'Meera Iyer',
-      petName: 'Coco',
-      service: 'Spa Treatment',
-      provider: 'Luxury Pet Spa',
-      date: '2024-01-22',
-      time: '3:00 PM',
-      duration: '3 hours',
-      status: 'Confirmed',
-      price: 4500.00,
-      location: 'Banjara Hills, Hyderabad',
-      phone: '+91 55443 32211',
-      notes: 'Full spa package with massage and aromatherapy',
-      petType: 'Cat',
-      urgency: 'Low'
-    },
-    {
-      id: 'BK012',
-      customerName: 'Amit Sharma',
-      petName: 'Tiger',
-      service: 'Vaccination',
-      provider: 'City Vet Clinic',
-      date: '2024-01-23',
-      time: '11:45 AM',
-      duration: '30 min',
-      status: 'Completed',
-      price: 800.00,
-      location: 'Malviya Nagar, Jaipur',
-      phone: '+91 44332 21100',
-      notes: 'Annual vaccination booster shots',
-      petType: 'Dog',
-      urgency: 'Normal'
-    }
-  ];
+  // Map appointments to booking format
+  const bookingsData = appointments.map(appt => ({
+    id: `APT${appt.id}`,
+    customerName: 'User',
+    petName: appt.petName || 'Pet',
+    service: appt.type || 'Appointment',
+    provider: 'Service Provider',
+    date: appt.date ? new Date(appt.date).toISOString().split('T')[0] : '',
+    time: appt.date ? new Date(appt.date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '',
+    duration: '—',
+    status: (appt.status || 'pending').charAt(0).toUpperCase() + (appt.status || 'pending').slice(1),
+    price: 0,
+    location: '—',
+    phone: '—',
+    notes: appt.comments || '',
+    petType: '—',
+    urgency: 'Normal'
+  }));
 
   // Filter and sort bookings
   const filteredAndSortedBookings = bookingsData

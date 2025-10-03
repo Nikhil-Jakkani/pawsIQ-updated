@@ -178,7 +178,8 @@ const UserPets = () => {
             type: (p.type || p.pet_type || '').toString().toLowerCase(),
             breed: p.breed || p.pet_breed || '',
             age: ageText,
-            weight: (p.weight || (p.pet_weight != null ? `${p.pet_weight} lbs` : 'Unknown')),
+            weight: p.weight || (p.pet_weight != null && p.pet_weight !== '' && p.pet_weight !== 0 ? `${p.pet_weight} kg` : 'Unknown'),
+            pet_weight: p.pet_weight,
             gender: (p.gender || p.pet_gender || ''),
             birthday: p.birthday || p.pet_birth_dtm || p.pet_birthday || null,
             createdAt: p.createdAt || p.created_at || null,
@@ -721,14 +722,14 @@ const UserPets = () => {
                       </div>
                       <div className="pet-info-item">
                         <FaCalendarAlt className="pet-info-icon" />
-                        <span className="truncate">{new Date(pet.lastCheckup).toLocaleDateString()}</span>
+                        <span className="truncate">{pet.birthday ? new Date(pet.birthday).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Unknown'}</span>
                       </div>
                     </div>
                     
                     <div className="pet-card-buttons flex justify-center">
                       <button 
                         onClick={() => navigate(`/user/pets/${pet.id}`)}
-                        className="px-4 py-2.5 rounded-lg text-xs font-medium -all duration-200 bg-white-700 text-gray " style={{ color: 'white' }}
+                        className="px-4 py-2.5 rounded-lg text-xs font-medium transition-all duration-200 bg-blue-600 text-white hover:bg-blue-700"
                       >
                         <FaEye className="inline mr-2" />
                          View Profile
