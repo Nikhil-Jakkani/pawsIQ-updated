@@ -4,6 +4,37 @@ import { FaCalendarAlt, FaArrowLeft, FaPaw, FaMapMarkerAlt, FaClock, FaMoneyBill
 import UserLayout from '../../components/layout/UserLayout';
 import { useAuth } from '../../context/AuthContext';
 
+const SERVICE_CATEGORIES = [
+  {
+    id: 'vet',
+    label: 'Vet',
+    description: 'Health check-ups, consultations, and medical services',
+    icon: FaUserMd,
+    keywords: ['vet', 'veterinary', 'medical', 'health', 'consult'],
+  },
+  {
+    id: 'grooming',
+    label: 'Grooming',
+    description: 'Bathing, styling, and coat care services',
+    icon: FaCut,
+    keywords: ['groom', 'grooming', 'bath', 'spa', 'trim', 'nail', 'coat'],
+  },
+  {
+    id: 'sitter',
+    label: 'Pet Sitter',
+    description: 'Boarding, daycare, and in-home care services',
+    icon: FaHome,
+    keywords: ['sit', 'sitter', 'board', 'boarding', 'daycare', 'care', 'stay'],
+  },
+  {
+    id: 'walker',
+    label: 'Walker',
+    description: 'Exercise and walking services',
+    icon: FaWalking,
+    keywords: ['walk', 'walker', 'walking', 'exercise', 'outdoor'],
+  },
+];
+
 const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
 const UserBookAppointment = () => {
   const navigate = useNavigate();
@@ -42,6 +73,29 @@ const UserBookAppointment = () => {
   const [allServices, setAllServices] = useState([]);
   const [providers, setProviders] = useState([]);
   const [loadingProviders, setLoadingProviders] = useState(false);
+
+  const filteredServicesByCategory = useMemo(() => {
+    const grouped = SERVICE_CATEGORIES.reduce((acc, category) => {
+      acc[category.id] = [];
+      return acc;
+    }, {});
+
+    const keywordMatcher = (serviceType = '', serviceName = '', serviceDescription = '') => {
+      const combined = `${serviceType} ${serviceName} ${serviceDescription}`.toLowerCase();
+      return SERVICE_CATEGORIES.find((category) =>
+        category.keywords.some((keyword) => combined.includes(keyword.toLowerCase()))
+      )?.id;
+    };
+
+    for (const service of allServices) {
+      const matchedCategoryId = keywordMatcher(service.service_type, service.service_name, service.service_description);
+      if (matchedCategoryId && grouped[matchedCategoryId]) {
+        grouped[matchedCategoryId].push(service);
+      }
+    }
+
+    return grouped;
+  }, [allServices]);
 
   // useRefs for scrolling
   const petSectionRef = useRef(null);
@@ -227,6 +281,17 @@ const UserBookAppointment = () => {
   };
 
   // Handle specific service selection
+  const [selectedCategoryId, setSelectedCategoryId] = useState(SERVICE_CATEGORIES[0]?.id || '');
+
+  const handleCategorySelect = (categoryId) => {
+    setSelectedCategoryId(categoryId);
+    setFormData((prev) => ({
+      ...prev,
+      serviceId: '',
+    }));
+    setProviders([]);
+  };
+
   const handleServiceSelect = async (serviceId) => {
     setFormData({
       ...formData,
@@ -488,39 +553,74 @@ const UserBookAppointment = () => {
           </div>
 
           {/* Find a Service */}
-          <div ref={serviceSectionRef} className="bg-white p-4 rounded-lg border border-gray-200 space-y-4">
+          <div ref={serviceSectionRef} className="bg-white p-4 rounded-lg border border-gray-200 space-y-6">
             <h3 className="text-lg font-semibold text-gray-700">Find a Service</h3>
-            <p className="text-gray-600">Search and select a service to continue booking</p>
+            <p className="text-gray-600">Choose a main service to see the related offerings</p>
 
-            {/* Service Selection */}
-            <div className="space-y-2">
-              <h4 className="text-lg font-semibold text-gray-700">Specific Service</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {allServices.map(service => (
-                  <div
-                    key={service.services_id}
-                    onClick={() => handleServiceSelect(service.services_id)}
-                    className={`bg-white rounded-xl overflow-hidden border cursor-pointer transition-all
-                      ${formData.serviceId === String(service.services_id)
-                        ? 'border-blue-500 ring-2 ring-blue-200 shadow-md'
-                        : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'}`}
-                  >
-                    <div className="p-4">
-                      <h3 className="text-lg font-semibold text-gray-800">{service.service_name}</h3>
-                      <p className="text-gray-600">{service.service_description}</p>
-                      <p className="text-gray-500 text-sm">Duration: {service.duration_minutes} minutes</p>
-                      <p className="text-gray-500 text-sm">Price: {formatINR(service.price)}</p>
-
-                      {String(formData.serviceId) === String(service.services_id) && (
-                        <div className="mt-2 text-blue-600 flex items-center gap-1">
-                          <FaCheck />
-                          <span className="text-sm font-medium">Selected</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
+            {/* Main Service Categories */}
+            <div className="space-y-3">
+              <h4 className="text-lg font-semibold text-gray-700">Main Service</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {SERVICE_CATEGORIES.map((category) => {
+                  const Icon = category.icon;
+                  return (
+                    <button
+                      key={category.id}
+                      type="button"
+                      onClick={() => handleCategorySelect(category.id)}
+                      className={`flex flex-col items-start gap-2 p-4 rounded-xl border transition-all text-left
+                        ${selectedCategoryId === category.id
+                          ? 'border-blue-500 ring-2 ring-blue-200 shadow-md bg-blue-50'
+                          : 'border-gray-200 hover:border-blue-300 hover:shadow-sm bg-white'}`}
+                    >
+                      <span className="flex items-center gap-2 text-lg font-semibold text-gray-800">
+                        <Icon className="text-blue-500" />
+                        {category.label}
+                      </span>
+                      <span className="text-sm text-gray-600">{category.description}</span>
+                    </button>
+                  );
+                })}
               </div>
+            </div>
+
+            {/* Specific Service Selection */}
+            <div className="space-y-3">
+              <h4 className="text-lg font-semibold text-gray-700">Specific Service</h4>
+              {filteredServicesByCategory[selectedCategoryId]?.length ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredServicesByCategory[selectedCategoryId].map(service => (
+                    <div
+                      key={service.services_id}
+                      onClick={() => handleServiceSelect(service.services_id)}
+                      className={`bg-white rounded-xl overflow-hidden border cursor-pointer transition-all
+                        ${formData.serviceId === String(service.services_id)
+                          ? 'border-blue-500 ring-2 ring-blue-200 shadow-md'
+                          : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'}`}
+                    >
+                      <div className="p-4">
+                        <h3 className="text-lg font-semibold text-gray-800">{service.service_name}</h3>
+                        <p className="text-gray-600">{service.service_description}</p>
+                        {service.duration_minutes && (
+                          <p className="text-gray-500 text-sm">Duration: {service.duration_minutes} minutes</p>
+                        )}
+                        <p className="text-gray-500 text-sm">Price: {formatINR(service.price)}</p>
+
+                        {String(formData.serviceId) === String(service.services_id) && (
+                          <div className="mt-2 text-blue-600 flex items-center gap-1">
+                            <FaCheck />
+                            <span className="text-sm font-medium">Selected</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-yellow-50 text-yellow-800 border border-yellow-200 rounded-lg p-3 text-sm">
+                  No services available in this category yet. Please try a different one.
+                </div>
+              )}
             </div>
           </div>
 
