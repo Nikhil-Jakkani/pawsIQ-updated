@@ -33,6 +33,20 @@ const SERVICE_CATEGORIES = [
     icon: FaWalking,
     keywords: ['walk', 'walker', 'walking', 'exercise', 'outdoor'],
   },
+  {
+    id: 'physical_activity',
+    label: 'Physical Activity',
+    description: 'Physical activity services',
+    icon: FaWalking,
+    keywords: ['physical', 'activity', 'exercise'],
+  },
+  {
+    id: 'diagnostic_services',
+    label: 'Diagnostic Services',
+    description: 'Diagnostic services',
+    icon: FaUserMd,
+    keywords: ['diagnostic', 'services', 'testing'],
+  },
 ];
 
 const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
