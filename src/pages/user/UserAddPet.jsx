@@ -937,23 +937,26 @@ const UserAddPet = () => {
                                 Frequency
                               </th>
                               <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Date Administered
+                              </th>
+                              <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Next Due Date
+                              </th>
+                              <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Add to Profile
                               </th>
                             </tr>
                           </thead>
                           <tbody className="bg-white divide-y divide-gray-200">
-                            {filteredVaccines.map((vaccine, index) => (
-                              <tr 
-                                key={index} 
-                                className={`${vaccine.is_core ? 'bg-yellow-50' : ''} hover:bg-gray-50 cursor-pointer`}
-                                onClick={() => {
-                                  const vaccineId = `${vaccine.vaccine}-${index}`;
-                                  const isCurrentlySelected = !!selectedVaccines[vaccineId];
-                                  handleVaccineChange(vaccineId, !isCurrentlySelected, vaccine);
-                                }}
-                              >
-                                <td className="px-4 py-3">
-                                  <div className="flex items-center">
+                            {filteredVaccines.map((vaccine, index) => {
+                              const vaccineId = `${vaccine.vaccine}-${index}`;
+                              const isSelected = !!selectedVaccines[vaccineId];
+                              return (
+                                <tr 
+                                  key={index} 
+                                  className={`${vaccine.is_core ? 'bg-yellow-50' : ''} hover:bg-gray-50`}
+                                >
+                                  <td className="px-4 py-3">
                                     <div className="text-sm font-medium text-gray-900 flex items-center gap-1">
                                       {vaccine.vaccine}
                                       {vaccine.is_core && (
@@ -962,34 +965,60 @@ const UserAddPet = () => {
                                         </span>
                                       )}
                                     </div>
-                                  </div>
-                                </td>
-                                <td className="px-4 py-3">
-                                  <div className="text-sm text-gray-500">{vaccine.purpose}</div>
-                                </td>
-                                <td className="px-4 py-3">
-                                  <div className="text-sm text-gray-500">{vaccine.recommended_age}</div>
-                                </td>
-                                <td className="px-4 py-3">
-                                  <div className="text-sm text-gray-500">{vaccine.frequency}</div>
-                                </td>
-                                <td className="px-4 py-3 text-sm text-gray-500">
-                                  <div className="flex items-center justify-center">
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <div className="text-sm text-gray-500">{vaccine.purpose}</div>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <div className="text-sm text-gray-500">{vaccine.recommended_age}</div>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <div className="text-sm text-gray-500">{vaccine.frequency}</div>
+                                  </td>
+                                  <td className="px-4 py-3">
                                     <input
-                                      type="checkbox"
-                                      id={`vaccine-${index}`}
-                                      checked={!!selectedVaccines[`${vaccine.vaccine}-${index}`]}
+                                      type="date"
+                                      value={selectedVaccines[vaccineId]?.date || ''}
                                       onChange={(e) => {
-                                        e.stopPropagation();
-                                        handleVaccineChange(`${vaccine.vaccine}-${index}`, e.target.checked, vaccine);
+                                        if (!isSelected) {
+                                          handleVaccineChange(vaccineId, true, vaccine);
+                                        }
+                                        handleVaccineDetailChange(vaccineId, 'date', e.target.value);
                                       }}
-                                      className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                      onClick={(e) => e.stopPropagation()}
+                                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                      disabled={!isSelected}
                                     />
-                                  </div>
-                                </td>
-                              </tr>
-                            ))}
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <input
+                                      type="date"
+                                      value={selectedVaccines[vaccineId]?.nextDue || ''}
+                                      onChange={(e) => {
+                                        if (!isSelected) {
+                                          handleVaccineChange(vaccineId, true, vaccine);
+                                        }
+                                        handleVaccineDetailChange(vaccineId, 'nextDue', e.target.value);
+                                      }}
+                                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                      disabled={!isSelected}
+                                    />
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <div className="flex items-center">
+                                      <input
+                                        type="checkbox"
+                                        id={`vaccine-${index}`}
+                                        checked={isSelected}
+                                        onChange={(e) => {
+                                          handleVaccineChange(vaccineId, e.target.checked, vaccine);
+                                        }}
+                                        className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                      />
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
                           </tbody>
                         </table>
                       </div>
@@ -1120,152 +1149,6 @@ const UserAddPet = () => {
                         </button>
                       </div>
                     </div>
-                    
-                    {/* Selected Vaccines Details */}
-                    {Object.keys(selectedVaccines).length > 0 && (
-                      <div className="mt-6">
-                        <h3 className="text-md font-medium text-gray-800 mb-3 flex items-center gap-2">
-                          <FaSyringe className="text-blue-500" />
-                          Selected Vaccines Details
-                        </h3>
-                        <div className="space-y-4">
-                          {Object.entries(selectedVaccines).map(([id, vaccine]) => (
-                            <div key={id} className="border border-gray-200 rounded-lg p-4">
-                              <div className="flex justify-between items-start mb-3">
-                                <div className="flex items-center gap-2">
-                                  <FaSyringe className="text-blue-500" />
-                                  <span className="font-medium">{vaccine.vaccine}</span>
-                                  {vaccine.is_core && (
-                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
-                                      Core
-                                    </span>
-                                  )}
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => handleVaccineChange(id, false)}
-                                  className="text-gray-400 hover:text-gray-600"
-                                >
-                                  <FaTimes />
-                                </button>
-                              </div>
-                              
-                              <div className="flex items-center mb-4 bg-gray-50 p-3 rounded-lg">
-                                <input
-                                  type="checkbox"
-                                  id={`vaccine-administered-${id}`}
-                                  checked={vaccine.administered || false}
-                                  onChange={(e) => handleVaccineDetailChange(id, 'administered', e.target.checked)}
-                                  className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                />
-                                <label htmlFor={`vaccine-administered-${id}`} className="ml-2 block text-sm font-medium text-gray-700">
-                                  This vaccine has already been administered to my pet
-                                </label>
-                              </div>
-                              
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                  <label htmlFor={`vaccine-date-${id}`} className="block text-sm font-medium text-gray-700 mb-1">
-                                    Date Administered
-                                  </label>
-                                  <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                      <FaCalendarAlt className="text-gray-400" />
-                                    </div>
-                                    <input
-                                      type="date"
-                                      id={`vaccine-date-${id}`}
-                                      value={vaccine.date || ''}
-                                      onChange={(e) => handleVaccineDetailChange(id, 'date', e.target.value)}
-                                      className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    />
-                                  </div>
-                                </div>
-                                
-                                <div>
-                                  <label htmlFor={`vaccine-next-${id}`} className="block text-sm font-medium text-gray-700 mb-1">
-                                    Next Due Date
-                                  </label>
-                                  <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                      <FaCalendarAlt className="text-gray-400" />
-                                    </div>
-                                    <input
-                                      type="date"
-                                      id={`vaccine-next-${id}`}
-                                      value={vaccine.nextDue || ''}
-                                      onChange={(e) => handleVaccineDetailChange(id, 'nextDue', e.target.value)}
-                                      className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    />
-                                  </div>
-                                  <p className="text-xs text-gray-500 mt-1">Based on {vaccine.frequency}</p>
-                                </div>
-                                
-                                {vaccine.administered && (
-                                  <>
-                                    <div>
-                                      <label htmlFor={`vaccine-batch-${id}`} className="block text-sm font-medium text-gray-700 mb-1">
-                                        Batch/Serial Number
-                                      </label>
-                                      <input
-                                        type="text"
-                                        id={`vaccine-batch-${id}`}
-                                        value={vaccine.batch_number || ''}
-                                        onChange={(e) => handleVaccineDetailChange(id, 'batch_number', e.target.value)}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                        placeholder="Enter vaccine batch number"
-                                      />
-                                    </div>
-                                    
-                                    <div>
-                                      <label htmlFor={`vaccine-by-${id}`} className="block text-sm font-medium text-gray-700 mb-1">
-                                        Administered By
-                                      </label>
-                                      <input
-                                        type="text"
-                                        id={`vaccine-by-${id}`}
-                                        value={vaccine.administered_by || ''}
-                                        onChange={(e) => handleVaccineDetailChange(id, 'administered_by', e.target.value)}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                        placeholder="Veterinarian name"
-                                      />
-                                    </div>
-                                    
-                                    <div>
-                                      <label htmlFor={`vaccine-clinic-${id}`} className="block text-sm font-medium text-gray-700 mb-1">
-                                        Clinic/Hospital Name
-                                      </label>
-                                      <input
-                                        type="text"
-                                        id={`vaccine-clinic-${id}`}
-                                        value={vaccine.clinic_name || ''}
-                                        onChange={(e) => handleVaccineDetailChange(id, 'clinic_name', e.target.value)}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                        placeholder="Enter clinic name"
-                                      />
-                                    </div>
-                                  </>
-                                )}
-                                
-                                <div className={vaccine.administered ? "md:col-span-2" : "md:col-span-2"}>
-                                  <label htmlFor={`vaccine-notes-${id}`} className="block text-sm font-medium text-gray-700 mb-1">
-                                    Additional Notes
-                                  </label>
-                                  <textarea
-                                    id={`vaccine-notes-${id}`}
-                                    value={vaccine.notes || ''}
-                                    onChange={(e) => handleVaccineDetailChange(id, 'notes', e.target.value)}
-                                    rows="2"
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    placeholder="Any additional information about this vaccination"
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                   </div>
                 ) : (
                   <div className="bg-yellow-50 p-4 rounded-lg">
