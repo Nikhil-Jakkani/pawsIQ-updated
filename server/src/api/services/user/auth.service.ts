@@ -50,6 +50,47 @@ const loginUserWithEmailAndPassword = async (email: string, password: string) =>
   return { user: users, tokens };
 };
 
+const loginUserWithPhoneAndPassword = async (phone: string, password: string) => {
+  // Find user by phone number
+  const { data: users, error } = await db
+    .from('PIQ_User')
+    .select('*')
+    .eq('user_phone_number', phone)
+    .single();
+
+  if (error || !users) {
+    throw new ApiError(httpStatus.UNAUTHORIZED, 'Incorrect phone number or password');
+  }
+
+  // Check password (support bcrypt and legacy plaintext)
+  const stored = users.user_password || '';
+  let isPasswordMatch = false;
+  try {
+    if (stored.startsWith('$2a$') || stored.startsWith('$2b$') || stored.startsWith('$2y$')) {
+      isPasswordMatch = await bcrypt.compare(password, stored);
+    } else {
+      // Legacy plaintext fallback
+      isPasswordMatch = stored === password;
+    }
+  } catch (_) {
+    isPasswordMatch = false;
+  }
+  if (!isPasswordMatch) {
+    throw new ApiError(httpStatus.UNAUTHORIZED, 'Incorrect phone number or password');
+  }
+
+  // Update last login time
+  await db
+    .from('PIQ_User')
+    .update({ last_login_dtm: new Date() })
+    .eq('user_id', users.user_id);
+
+  // Generate tokens
+  const tokens = await tokenService.generateAuthTokens(users.user_id, 'user');
+  
+  return { user: users, tokens };
+};
+
 const registerUser = async (userData: any) => {
   // Check if email is already taken
   const { data: existingUser } = await db
@@ -208,9 +249,59 @@ const verifyMobileOTP = async (phone: string, otp: string): Promise<boolean> => 
   return await otpService.checkOTP(phone, otp);
 };
 
+const changePassword = async (userId: number, currentPassword: string, newPassword: string): Promise<{ success: boolean }> => {
+  // Get user from database
+  const { data: user, error } = await db
+    .from('PIQ_User')
+    .select('user_id, user_password')
+    .eq('user_id', userId)
+    .single();
+
+  if (error || !user) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
+  }
+
+  // Verify current password
+  const stored = user.user_password || '';
+  let isPasswordMatch = false;
+  try {
+    if (stored.startsWith('$2a$') || stored.startsWith('$2b$') || stored.startsWith('$2y$')) {
+      isPasswordMatch = await bcrypt.compare(currentPassword, stored);
+    } else {
+      // Legacy plaintext fallback
+      isPasswordMatch = stored === currentPassword;
+    }
+  } catch (_) {
+    isPasswordMatch = false;
+  }
+
+  if (!isPasswordMatch) {
+    throw new ApiError(httpStatus.UNAUTHORIZED, 'Current password is incorrect');
+  }
+
+  // Hash new password
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+  // Update password
+  const { error: updateError } = await db
+    .from('PIQ_User')
+    .update({ 
+      user_password: hashedPassword,
+      last_updated_dtm: new Date()
+    })
+    .eq('user_id', userId);
+
+  if (updateError) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to update password');
+  }
+
+  return { success: true };
+};
+
 // Define the auth service interface
 export interface IUserAuthService {
   loginUserWithEmailAndPassword(email: string, password: string): Promise<{ user: any; tokens: any }>;
+  loginUserWithPhoneAndPassword(phone: string, password: string): Promise<{ user: any; tokens: any }>;
   registerUser(userData: any): Promise<any>;
   getCurrentUser(userId: number): Promise<any>;
   refreshAuth(refreshToken: string): Promise<{
@@ -223,6 +314,7 @@ export interface IUserAuthService {
   verifyOTP(email: string, otp: string): Promise<boolean>;
   sendMobileOTP(phone: string): Promise<{ success: boolean }>;
   verifyMobileOTP(phone: string, otp: string): Promise<boolean>;
+  changePassword(userId: number, currentPassword: string, newPassword: string): Promise<{ success: boolean }>;
 }
 
 // Non-consuming verification used by /verify-otp endpoint
@@ -232,6 +324,7 @@ const verifyOTP = async (email: string, otp: string): Promise<boolean> => {
 
 export const userAuthService: IUserAuthService = {
   loginUserWithEmailAndPassword,
+  loginUserWithPhoneAndPassword,
   registerUser,
   getCurrentUser,
   refreshAuth,
@@ -241,4 +334,5 @@ export const userAuthService: IUserAuthService = {
   verifyOTP,
   sendMobileOTP,
   verifyMobileOTP,
+  changePassword,
 };

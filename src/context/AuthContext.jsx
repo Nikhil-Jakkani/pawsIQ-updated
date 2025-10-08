@@ -197,17 +197,22 @@ export const AuthProvider = ({ children }) => {
         throw new Error('Session expired. Please log in again.');
       }
     }
-
     return response;
   }, [tokens, refreshToken, navigate]);
 
-  const login = async (email, password) => {
+  const login = async (identifier, password) => {
     setError('');
 
-    if (!email || !password) {
-      setError('Email and password are required');
+    if (!identifier || !password) {
+      setError('Email/phone and password are required');
       return { success: false };
     }
+
+    // Determine if identifier is email or phone
+    const isEmail = /\S+@\S+\.\S+/.test(identifier);
+    const payload = isEmail 
+      ? { email: identifier, password }
+      : { phone: identifier, password };
 
     try {
       let response = await fetch(`${API_URL}/auth/login`, {
@@ -216,7 +221,7 @@ export const AuthProvider = ({ children }) => {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify(payload),
       });
 
       let data = await response.json().catch(() => ({}));
@@ -225,7 +230,7 @@ export const AuthProvider = ({ children }) => {
         const uResp = await fetch(`${API_URL}/user/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password }),
+          body: JSON.stringify(payload),
         });
         const uData = await uResp.json().catch(() => ({}));
         if (uResp.ok) {
@@ -264,7 +269,6 @@ export const AuthProvider = ({ children }) => {
     } catch (apiError) {
       console.warn('API authentication failed');
     }
-
 
     setError('Login failed. Please check your credentials.');
     return { success: false };

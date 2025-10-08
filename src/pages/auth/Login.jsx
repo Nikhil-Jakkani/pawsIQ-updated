@@ -13,7 +13,7 @@ const Login = () => {
   
   // Form state
   const [formData, setFormData] = useState({
-    email: '',
+    identifier: '', // Can be email or phone
     password: '',
     rememberMe: false
   });
@@ -58,10 +58,8 @@ const Login = () => {
   const validateForm = () => {
     const newErrors = {};
     
-    if (!formData.email) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email is invalid';
+    if (!formData.identifier) {
+      newErrors.identifier = 'Email or phone number is required';
     }
     
     if (!formData.password) {
@@ -82,7 +80,7 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      const result = await adminLogin(formData.email, formData.password);
+      const result = await adminLogin(formData.identifier, formData.password);
       
       if (result.success) {
         const role = result.userType || currentUser?.role || 'user';
@@ -282,28 +280,28 @@ const Login = () => {
             {/* Regular login form */}
             <form className="space-y-6" onSubmit={handleSubmit}>
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                  Email address
+                <label htmlFor="identifier" className="block text-sm font-medium text-gray-700">
+                  Email address or Phone number
                 </label>
                 <div className="mt-1 relative rounded-md shadow-sm">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <FaEnvelope className="h-5 w-5 text-gray-400" />
                   </div>
                   <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    value={formData.email}
+                    id="identifier"
+                    name="identifier"
+                    type="text"
+                    autoComplete="username"
+                    value={formData.identifier}
                     onChange={handleChange}
                     className={`pl-10 block w-full focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md ${
-                      errors.email ? 'border-red-300' : ''
+                      errors.identifier ? 'border-red-300' : ''
                     }`}
-                    placeholder="you@example.com"
+                    placeholder="you@example.com or 9876543210"
                   />
                 </div>
-                {errors.email && (
-                  <p className="mt-2 text-sm text-red-600">{errors.email}</p>
+                {errors.identifier && (
+                  <p className="mt-2 text-sm text-red-600">{errors.identifier}</p>
                 )}
               </div>
 
