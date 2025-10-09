@@ -6,8 +6,18 @@ import { ApiError } from '../../utils/ApiError.js';
 
 export const userAuthController = {
   login: catchAsync(async (req: Request, res: Response) => {
-    const { email, password } = req.body;
-    const user = await userAuthService.loginUserWithEmailAndPassword(email, password);
+    const { email, phone, password } = req.body;
+    
+    // Support both email and phone login
+    let user;
+    if (email) {
+      user = await userAuthService.loginUserWithEmailAndPassword(email, password);
+    } else if (phone) {
+      user = await userAuthService.loginUserWithPhoneAndPassword(phone, password);
+    } else {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Email or phone number is required');
+    }
+    
     res.status(httpStatus.OK).send(user);
   }),
 
@@ -107,5 +117,15 @@ export const userAuthController = {
       return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: 'Invalid or expired OTP' });
     }
     return res.status(httpStatus.OK).json({ success: true, message: 'OTP verified' });
+  }),
+
+  // Change password (authenticated endpoint)
+  changePassword: catchAsync(async (req: any, res: Response) => {
+    const { currentPassword, newPassword } = req.body;
+    await userAuthService.changePassword(req.user.user_id, currentPassword, newPassword);
+    res.status(httpStatus.OK).json({ 
+      success: true,
+      message: 'Password changed successfully'
+    });
   }),
 };

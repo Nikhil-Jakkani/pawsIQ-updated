@@ -15,4 +15,7 @@ router
   .put(auth('user'), bookingController.updateMine)
   .delete(auth('user'), bookingController.removeMine);
 
+router.post('/:id/cancel', auth('user'), bookingController.cancelMine);
+router.post('/:id/reschedule', auth('user'), bookingController.rescheduleMine);
+
 export default router;

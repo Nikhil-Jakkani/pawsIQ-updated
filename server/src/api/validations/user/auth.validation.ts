@@ -22,9 +22,10 @@ export const authValidation = {
   },
   login: {
     body: Joi.object().keys({
-      email: Joi.string().required(),
+      email: Joi.string().email(),
+      phone: Joi.string().min(10).max(15),
       password: Joi.string().required(),
-    }),
+    }).or('email', 'phone'), // Require at least one of email or phone
   },
   refreshTokens: {
     body: Joi.object().keys({
@@ -47,6 +48,12 @@ export const authValidation = {
   verifyEmail: {
     query: Joi.object().keys({
       token: Joi.string().required(),
+    }),
+  },
+  changePassword: {
+    body: Joi.object().keys({
+      currentPassword: Joi.string().required(),
+      newPassword: Joi.string().required().custom(password),
     }),
   },
 };

@@ -1,6 +1,7 @@
 import httpStatus from 'http-status';
 import prisma from '../../../lib/prisma.js';
 import { ApiError } from '../../utils/ApiError.js';
+import { notificationService } from '../notification/notification.service.js';
 
 const serializeBigInt = <T>(data: T): T => {
   return JSON.parse(
@@ -105,21 +106,39 @@ const approveBooking = async (providerId: number, bookingId: number) => {
     return { booking: updatedBooking, appointmentUpdated: updatedAppointment.count > 0 };
   });
 
+  // Send booking approval notification to customer
+  notificationService.sendBookingApprovalEmail(bookingId).catch(console.error);
+
   return serializeBigInt({ booking: result.booking, appointmentUpdated: result.appointmentUpdated });
 };
 
 const declineBooking = async (providerId: number, bookingId: number) => {
   await getProvider(providerId);
-  const booking = await prisma.pIQ_Bookings.findUnique({ where: { booking_id: bookingId } });
+  const booking = await prisma.pIQ_Bookings.findUnique({ 
+    where: { booking_id: bookingId },
+    include: {
+      PIQ_Payments: {
+        where: { payment_status: 'success' },
+      },
+    },
+  });
+  
   if (!booking) throw new ApiError(httpStatus.NOT_FOUND, 'Booking not found');
   if (booking.booking_status !== 'Pending') throw new ApiError(httpStatus.BAD_REQUEST, 'Booking is not pending');
+
+  const hasSuccessfulPayment = booking.PIQ_Payments && booking.PIQ_Payments.length > 0;
 
   // Update booking and appointment in a transaction
   const result = await prisma.$transaction(async (tx) => {
     // Update the booking status
     const updatedBooking = await tx.pIQ_Bookings.update({
       where: { booking_id: bookingId },
-      data: { booking_status: 'Cancelled' },
+      data: { 
+        booking_status: 'Cancelled',
+        cancellation_reason: 'Declined by provider',
+        cancelled_by: 'provider',
+        cancelled_at: new Date(),
+      },
     });
 
     // Update the corresponding appointment to cancelled
@@ -132,8 +151,30 @@ const declineBooking = async (providerId: number, bookingId: number) => {
       data: { appointment_status: 'Cancelled' },
     });
 
+    // If payment was made, mark for refund and reverse commission
+    if (hasSuccessfulPayment) {
+      const payment = booking.PIQ_Payments[0];
+      
+      await tx.pIQ_Payments.update({
+        where: { payment_id: payment.payment_id },
+        data: { payment_status: 'refund_pending' },
+      });
+
+      // Reverse commission using raw query (until Prisma regenerates)
+      await tx.$executeRaw`
+        UPDATE "PIQ_Commission" 
+        SET status = 'reversed' 
+        WHERE payment_id = ${payment.payment_id}
+      `;
+
+      console.warn(`REFUND REQUIRED: Provider declined booking ${bookingId}, Payment ${payment.payment_id}, Amount: ₹${payment.amount}`);
+    }
+
     return { booking: updatedBooking, appointmentUpdated: updatedAppointment.count > 0 };
   });
+
+  // Send booking decline notification to customer
+  notificationService.sendBookingDeclineEmail(bookingId).catch(console.error);
 
   return serializeBigInt(result.booking);
 };

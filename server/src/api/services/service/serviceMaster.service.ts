@@ -38,36 +38,52 @@ const getService = async (services_id: number) => {
   };
 };
 
-const listProvidersForService = async (services_id: number) => {
+const listProvidersForService = async (services_id: number, location?: string) => {
   const service = await prisma.pIQ_Service_Master.findUnique({ where: { services_id } });
   if (!service) return [];
 
   const type = (service.service_type || '').trim();
   const sub = (service.service_sub_type || '').trim();
 
+  const whereConditions: any = {
+    AND: [
+      { serv_provider_status: 'active' }, // Only show active providers
+      {
+        OR: [
+          { serv_provider_type: { equals: type, mode: 'insensitive' } },
+          { serv_provider_type: { contains: type, mode: 'insensitive' } },
+          sub ? { serv_provider_type: { equals: sub, mode: 'insensitive' } } : undefined,
+          sub ? { serv_provider_type: { contains: sub, mode: 'insensitive' } } : undefined,
+        ].filter(Boolean) as any,
+      },
+    ],
+  };
+
+  // Add location filter if provided
+  if (location && location.trim().length > 0) {
+    whereConditions.AND.push({
+      serv_provider_location: { contains: location.trim(), mode: 'insensitive' },
+    });
+  }
+
   const primary = await prisma.pIQ_Service_Provider.findMany({
-    where: {
-      AND: [
-        { serv_provider_status: 'active' }, // Only show active providers
-        {
-          OR: [
-            { serv_provider_type: { equals: type, mode: 'insensitive' } },
-            { serv_provider_type: { contains: type, mode: 'insensitive' } },
-            sub ? { serv_provider_type: { equals: sub, mode: 'insensitive' } } : undefined,
-            sub ? { serv_provider_type: { contains: sub, mode: 'insensitive' } } : undefined,
-          ].filter(Boolean) as any,
-        },
-      ],
-    },
+    where: whereConditions,
     orderBy: [{ serv_provider_name: 'asc' }],
   });
 
   if (primary.length > 0) return primary.map(serializeBigInt);
 
+  // Fallback: if no match with type+location, try just active providers in location
+  const fallbackWhere: any = {
+    serv_provider_status: { equals: 'active', mode: 'insensitive' },
+  };
+  
+  if (location && location.trim().length > 0) {
+    fallbackWhere.serv_provider_location = { contains: location.trim(), mode: 'insensitive' };
+  }
+
   const fallback = await prisma.pIQ_Service_Provider.findMany({
-    where: {
-      serv_provider_status: { equals: 'active', mode: 'insensitive' },
-    },
+    where: fallbackWhere,
     orderBy: [{ serv_provider_name: 'asc' }],
   });
   return fallback.map(serializeBigInt);

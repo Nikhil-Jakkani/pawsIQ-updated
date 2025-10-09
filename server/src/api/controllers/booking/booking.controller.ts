@@ -75,6 +75,22 @@ const updateMine = catchAsync(async (req: any, res: Response) => {
   res.status(httpStatus.OK).json(data);
 });
 
+const cancelMine = catchAsync(async (req: any, res: Response) => {
+  const userId = BigInt(req.user.user_id);
+  const id = Number(req.params.id);
+  const { reason } = req.body;
+  const data = await bookingService.cancelBooking(userId, id, reason);
+  res.status(httpStatus.OK).json(data);
+});
+
+const rescheduleMine = catchAsync(async (req: any, res: Response) => {
+  const userId = BigInt(req.user.user_id);
+  const id = Number(req.params.id);
+  const { new_date } = req.body;
+  const data = await bookingService.rescheduleBooking(userId, id, new_date);
+  res.status(httpStatus.OK).json(data);
+});
+
 const removeMine = catchAsync(async (req: any, res: Response) => {
   const userId = BigInt(req.user.user_id);
   const id = Number(req.params.id);
@@ -87,5 +103,7 @@ export const bookingController = {
   listMine,
   getMine,
   updateMine,
+  cancelMine,
+  rescheduleMine,
   removeMine,
 };

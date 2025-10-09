@@ -17,7 +17,8 @@ const get = catchAsync(async (req: any, res: Response) => {
 
 const listProviders = catchAsync(async (req: any, res: Response) => {
   const services_id = Number(req.params.services_id);
-  const data = await serviceMasterService.listProvidersForService(services_id);
+  const location = String(req.query.location || '').trim();
+  const data = await serviceMasterService.listProvidersForService(services_id, location);
   res.status(httpStatus.OK).json({ items: data });
 });
 

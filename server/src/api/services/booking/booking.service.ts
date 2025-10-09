@@ -1,6 +1,7 @@
 import httpStatus from 'http-status';
 import prisma from '../../../lib/prisma.js';
 import { ApiError } from '../../utils/ApiError.js';
+import { notificationService } from '../notification/notification.service.js';
 
 const serializeBigInt = <T>(data: T): T => {
   return JSON.parse(
@@ -80,6 +81,10 @@ const createBooking = async (
     return { booking, appointment };
   });
 
+  // Send notifications asynchronously (don't await to avoid blocking)
+  notificationService.sendBookingConfirmationToUser(result.booking.booking_id).catch(console.error);
+  notificationService.sendBookingNotificationToProvider(result.booking.booking_id).catch(console.error);
+
   return serializeBigInt(result.booking);
 };
 
@@ -136,6 +141,132 @@ const updateBooking = async (
   return serializeBigInt(updated);
 };
 
+const cancelBooking = async (userId: bigint, id: number, reason?: string) => {
+  const existing = await prisma.pIQ_Bookings.findUnique({ where: { booking_id: id } });
+  if (!existing || existing.user_id !== userId) throw new ApiError(httpStatus.NOT_FOUND, 'Booking not found');
+  
+  if (existing.booking_status === 'Cancelled') {
+    throw new ApiError(httpStatus.BAD_REQUEST, 'Booking already cancelled');
+  }
+  if (existing.booking_status === 'Completed') {
+    throw new ApiError(httpStatus.BAD_REQUEST, 'Cannot cancel completed booking');
+  }
+
+  // Check if payment is processing (prevent race condition)
+  const processingPayment = await prisma.pIQ_Payments.findFirst({
+    where: {
+      booking_id: id,
+      payment_status: { in: ['pending', 'processing'] },
+    },
+  });
+
+  if (processingPayment) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      'Cannot cancel booking while payment is processing. Please try again in a moment.'
+    );
+  }
+
+  // Check if payment was successful and needs refund
+  const successfulPayment = await prisma.pIQ_Payments.findFirst({
+    where: {
+      booking_id: id,
+      payment_status: 'success',
+    },
+  });
+
+  // Perform cancellation in transaction
+  const result = await prisma.$transaction(async (tx) => {
+    // Update booking status
+    const updated = await tx.pIQ_Bookings.update({
+      where: { booking_id: id },
+      data: {
+        booking_status: 'Cancelled',
+        cancellation_reason: reason || null,
+        cancelled_by: 'user',
+        cancelled_at: new Date(),
+      },
+    });
+    
+    // Update related appointment
+    await tx.pIQ_Appointments.updateMany({
+      where: { booking_id: id },
+      data: { appointment_status: 'Cancelled' },
+    });
+
+    // If payment was successful, mark it for refund
+    if (successfulPayment) {
+      await tx.pIQ_Payments.update({
+        where: { payment_id: successfulPayment.payment_id },
+        data: {
+          payment_status: 'refund_pending',
+          // Note: Actual Razorpay refund should be processed asynchronously
+          // Add refund_initiated_at timestamp for tracking
+        },
+      });
+
+      // Mark commission as reversed (if exists)
+      // Note: Using raw query to avoid TypeScript errors until Prisma regenerates
+      await tx.$executeRaw`
+        UPDATE "PIQ_Commission" 
+        SET status = 'reversed' 
+        WHERE payment_id = ${successfulPayment.payment_id}
+      `;
+    }
+
+    return updated;
+  });
+  
+  // Send cancellation notification
+  notificationService.sendBookingCancellationEmail(id).catch(console.error);
+
+  // Log refund requirement for admin processing
+  if (successfulPayment) {
+    console.warn(`REFUND REQUIRED: Booking ${id}, Payment ${successfulPayment.payment_id}, Amount: ₹${successfulPayment.amount}`);
+    // TODO: Implement automatic Razorpay refund or admin notification
+  }
+  
+  return serializeBigInt(result);
+};
+
+const rescheduleBooking = async (userId: bigint, id: number, newDate: string) => {
+  const existing = await prisma.pIQ_Bookings.findUnique({ where: { booking_id: id } });
+  if (!existing || existing.user_id !== userId) throw new ApiError(httpStatus.NOT_FOUND, 'Booking not found');
+  
+  if (existing.booking_status === 'Cancelled') {
+    throw new ApiError(httpStatus.BAD_REQUEST, 'Cannot reschedule cancelled booking');
+  }
+  if (existing.booking_status === 'Completed') {
+    throw new ApiError(httpStatus.BAD_REQUEST, 'Cannot reschedule completed booking');
+  }
+
+  const d = new Date(newDate);
+  if (isNaN(d.getTime())) throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid date');
+  if (d.getTime() <= Date.now()) {
+    throw new ApiError(httpStatus.BAD_REQUEST, 'Rescheduled date must be in future');
+  }
+
+  const updated = await prisma.pIQ_Bookings.update({
+    where: { booking_id: id },
+    data: {
+      rescheduled_from: existing.booked_dtm,
+      booked_dtm: d,
+      booking_status: 'Pending',
+    },
+  });
+  
+  // Update appointment
+  await prisma.pIQ_Appointments.updateMany({
+    where: { booking_id: id },
+    data: {
+      appointment_date: d,
+      appointment_status: 'Awaiting Approval',
+    },
+  });
+  
+  return serializeBigInt(updated);
+};
+
 const deleteBooking = async (userId: bigint, id: number) => {
   const existing = await prisma.pIQ_Bookings.findUnique({ where: { booking_id: id } });
   if (!existing || existing.user_id !== userId) throw new ApiError(httpStatus.NOT_FOUND, 'Booking not found');
@@ -148,5 +279,7 @@ export const bookingService = {
   listBookings,
   getBooking,
   updateBooking,
+  cancelBooking,
+  rescheduleBooking,
   deleteBooking,
 };
