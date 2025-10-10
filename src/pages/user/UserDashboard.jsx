@@ -38,6 +38,7 @@ const UserDashboard = () => {
 
   const [pets, setPets] = useState([]);
   const [dashboardData, setDashboardData] = useState(null);
+  const [appointments, setAppointments] = useState([]);
   const careRemRef = useRef(null);
 
   // In-memory cache for signed image URLs with persistence to localStorage
@@ -201,18 +202,23 @@ const UserDashboard = () => {
         // Fetch appointments to get last checkup dates
         let appointmentsMap = new Map();
         try {
-          // Try user-specific appointments endpoint
+          // Fetch user appointments (backend filters by authenticated user)
           const userId = Number(currentUser?.user_id ?? currentUser?.id);
-          const apptRes = await authFetch(`${API_URL}/user/${userId}/appointments`);
+          const apptRes = await authFetch(`${API_URL}/appointments?limit=50`);
           if (apptRes.ok) {
             const apptData = await apptRes.json();
-            const appointments = Array.isArray(apptData?.items) ? apptData.items : (Array.isArray(apptData) ? apptData : []);
+            const fetchedAppointments = Array.isArray(apptData?.items) ? apptData.items : (Array.isArray(apptData) ? apptData : []);
+            
+            // Store in state for UpcomingSchedule to use
+            if (isMounted) {
+              setAppointments(fetchedAppointments);
+            }
                         
             // Group completed appointments by pet_id and find the most recent
-            appointments
+            fetchedAppointments
               .filter(a => {
                 const status = (a.appointment_status || a.booking_status || '').toLowerCase();
-                return status === 'completed';
+                return status === 'completed' || (status === 'scheduled' && (() => { const d = new Date(a.appointment_date || a.booked_dtm || a.appointment_dtm); return !isNaN(d.getTime()) && d <= new Date(); })());
               })
               .forEach(a => {
                 const petId = Number(a.pet_id);
@@ -680,7 +686,7 @@ const UserDashboard = () => {
           {/* Middle Column - Schedule and Reminders */}
           <div className="lg:col-span-1 space-y-4">
             {/* Today's Schedule - Pass pets data to prevent duplicate loading */}
-            <UpcomingSchedule pets={pets} accessToken={accessToken} />
+            <UpcomingSchedule pets={pets} appointments={appointments} accessToken={accessToken} />
 
             {/* Care Reminders */}
             <div className="bg-white rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 border border-blue-50 relative">

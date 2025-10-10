@@ -1,14 +1,17 @@
 import { Router } from 'express';
 import { auth } from '../../../middlewares/auth.js';
 import { validate } from '../../../middlewares/validate.js';
-import { providerController, providerServiceOfferingController } from '../../controllers/provider/index.js';
-import { providerProfileValidation, providerServiceOfferingValidation } from '../../validations/provider/index.js';
+import { providerController, providerReviewController, providerServiceOfferingController } from '../../controllers/provider/index.js';
+import { providerProfileValidation, providerReviewValidation, providerServiceOfferingValidation } from '../../validations/provider/index.js';
 
 const router = Router();
 
 // Profile routes
 router.get('/me', auth('provider'), providerController.getMyProfile);
 router.patch('/me', auth('provider'), validate(providerProfileValidation.update), providerController.updateMyProfile);
+
+// Reviews
+router.get('/reviews', auth('provider'), validate(providerReviewValidation.getMyReviews), providerReviewController.getMyReviews);
 
 // Service Offering routes
 router.get('/services/available', auth('provider'), providerServiceOfferingController.listAvailableServices);

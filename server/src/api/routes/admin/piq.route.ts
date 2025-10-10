@@ -14,6 +14,10 @@ router.get('/auth/me', auth('admin'), adminPIQ.getAdminMe);
 router.get('/stats', auth('admin'), statsController.getDashboardStats);
 router.get('/stats/providers-by-type', auth('admin'), statsController.getProviderCountsByType);
 router.post('/stats/bulk-user-stats', auth('admin'), statsController.getBulkUserStats);
+router.get('/stats/revenue/summary', auth('admin'), statsController.getRevenueSummary);
+router.get('/stats/revenue/series', auth('admin'), statsController.getRevenueSeries);
+router.get('/stats/bookings/breakdown', auth('admin'), statsController.getBookingBreakdown);
+router.get('/stats/engagement/overview', auth('admin'), statsController.getEngagementOverview);
 
 // Roles
 router.get('/roles', auth('admin'), adminPIQ.getRoles);

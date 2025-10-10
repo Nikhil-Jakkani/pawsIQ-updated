@@ -3,6 +3,8 @@ import { db } from '../../../config/db.js';
 import prisma from '../../../lib/prisma.js';
 import { ApiError } from '../../utils/ApiError.js';
 import httpStatus from 'http-status';
+import { serializeBigInt } from '../../utils/bigIntSerializer.js';
+import { transformPets } from '../../utils/petTransformer.js';
 
 export const userService = {
   /**
@@ -19,14 +21,13 @@ export const userService = {
       throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
     }
 
-    // Fetch user's pets
+    // Fetch user's pets (consistent with dashboard filter)
     const { data: pets, error: petsError } = await db
       .from('PIQ_Pets')
       .select('*')
       .eq('user_id', user.user_id)
-      // Exclude deleted/inactive pets; keep NULL statuses
-      .neq('pet_status', 'deleted')
-      .neq('pet_status', 'Inactive')
+      // Exclude all variations of deleted/inactive statuses
+      .not('pet_status', 'in', '(deleted,Deleted,inactive,Inactive)')
       .order('created_at', { ascending: true });
 
     if (petsError) {
@@ -34,34 +35,8 @@ export const userService = {
       console.error('Error fetching pets:', petsError);
     }
 
-    // Transform pets data to match frontend expectations
-    const transformedPets = (pets || []).map((pet: any) => {
-      let ageYears: number | null = null;
-      if (pet?.pet_birth_dtm) {
-        const dob = new Date(pet.pet_birth_dtm);
-        const now = new Date();
-        ageYears = Math.max(0, Math.floor((now.getTime() - dob.getTime()) / (1000 * 60 * 60 * 24 * 365.25)));
-      }
-      
-      return {
-        pet_id: pet.pet_id,
-        id: pet.pet_id, // Add id field for compatibility
-        name: pet.pet_name,
-        type: pet.pet_type || pet.pet_species || 'other',
-        breed: pet.pet_breed || '',
-        gender: pet.pet_gender || 'Unknown',
-        age: ageYears ? `${ageYears} years` : 'Unknown',
-        weight: pet.pet_weight ? `${pet.pet_weight} kg` : 'Unknown',
-        image: pet.pet_image || `https://source.unsplash.com/random/400x300?${encodeURIComponent(pet.pet_type || 'pet')}`,
-        imagePath: pet.pet_image, // Keep original path for signed URL generation
-        status: pet.pet_status || 'active',
-        microchipped: pet.microchipped || false,
-        neutered: pet.neutered || false,
-        vaccinated: pet.vaccinated || false,
-        createdAt: pet.created_at,
-        lastUpdated: pet.last_updated_dtm,
-      };
-    });
+    // Transform pets data using shared utility
+    const transformedPets = transformPets(pets || []);
 
     // Bookings summary from Prisma (by user_id)
     const userIdBig = BigInt(user.user_id);
@@ -80,10 +55,6 @@ export const userService = {
       }),
     ]);
 
-    const normalizeBigInt = (obj: any) => JSON.parse(
-      JSON.stringify(obj, (_k, v) => (typeof v === 'bigint' ? v.toString() : v))
-    );
-
     // Remove sensitive data
     const { user_password, ...userWithoutPassword } = user;
 
@@ -91,8 +62,8 @@ export const userService = {
     (userWithoutPassword as any).pets = transformedPets;
     (userWithoutPassword as any).bookings = {
       total: totalBookings,
-      upcoming: normalizeBigInt(upcomingBookings),
-      recent: normalizeBigInt(recentBookings),
+      upcoming: serializeBigInt(upcomingBookings),
+      recent: serializeBigInt(recentBookings),
     };
 
     return userWithoutPassword;

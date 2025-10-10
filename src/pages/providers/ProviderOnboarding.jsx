@@ -24,7 +24,7 @@ import {
 } from 'react-icons/fa';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 
-const ProviderOnboarding = ({ filterType }) => {
+const ProviderOnboarding = ({ filterType = 'all' }) => {
   const api = useApi();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTypeState, setFilterTypeState] = useState('all');
@@ -623,11 +623,6 @@ const ProviderOnboarding = ({ filterType }) => {
       </div>
     </DashboardLayout>
   );
-};
-
-// Default prop for backward compatibility
-ProviderOnboarding.defaultProps = {
-  filterType: 'all',
 };
 
 export default ProviderOnboarding;

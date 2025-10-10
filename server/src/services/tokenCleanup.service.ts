@@ -15,8 +15,8 @@ class TokenCleanupService {
 
     console.log('[Token Cleanup] Starting token cleanup service');
     
-    // Run cleanup immediately on start
-    this.runCleanup();
+    // Run cleanup after a short delay (non-blocking)
+    setTimeout(() => this.runCleanup(), 5000);
     
     // Schedule periodic cleanup
     this.cleanupInterval = setInterval(() => {

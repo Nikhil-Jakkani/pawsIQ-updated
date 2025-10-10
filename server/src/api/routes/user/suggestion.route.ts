@@ -4,7 +4,7 @@ import suggestionController from '../../../api/controllers/user/suggestion.contr
 
 const router = Router();
 
-router.use((req, res, next) => auth(req, res, next));
+router.use(auth('user'));
 
 router
   .route('/')

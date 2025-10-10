@@ -263,17 +263,12 @@ const UserAddPet = () => {
     try {
       if (!accessToken) throw new Error('You must be logged in to add a pet.');
 
-      // Combine selected allergies with custom allergies
-      const allAllergies = [...formData.allergies];
-      if (formData.customAllergies.trim()) {
-        allAllergies.push(formData.customAllergies.trim());
-      }
+      // Prepare structured health fields (selected + other)
+      const selected_allergies = Array.isArray(formData.allergies) && formData.allergies.length > 0 ? formData.allergies : undefined;
+      const other_allergies = formData.customAllergies && formData.customAllergies.trim() ? formData.customAllergies.trim() : undefined;
 
-      // Combine selected medical conditions with custom conditions
-      const allMedicalConditions = [...formData.medicalConditions];
-      if (formData.customMedicalConditions.trim()) {
-        allMedicalConditions.push(formData.customMedicalConditions.trim());
-      }
+      const selected_conditions = Array.isArray(formData.medicalConditions) && formData.medicalConditions.length > 0 ? formData.medicalConditions : undefined;
+      const other_conditions = formData.customMedicalConditions && formData.customMedicalConditions.trim() ? formData.customMedicalConditions.trim() : undefined;
 
       const payload = {
         name: formData.name.trim(),
@@ -286,10 +281,13 @@ const UserAddPet = () => {
         bloodGroup: formData.bloodGroup || undefined,
         ageGroup: formData.ageGroup || undefined,
         microchipped: formData.microchipped,
-        microchipNumber: formData.microchipNumber || undefined,
+        microchipNumber: formData.microchipNumber && formData.microchipNumber.toString().trim() ? formData.microchipNumber.toString() : undefined,
         neutered: formData.neutered,
-        allergies: allAllergies.length > 0 ? allAllergies.join(', ') : undefined,
-        medicalConditions: allMedicalConditions.length > 0 ? allMedicalConditions.join(', ') : undefined,
+        // Send structured fields for backend to persist separately
+        selected_allergies,
+        other_allergies,
+        selected_conditions,
+        other_conditions,
         medications: formData.medications || undefined,
         dietaryNeeds: formData.dietaryNeeds || undefined,
         vetName: formData.vetName || undefined,

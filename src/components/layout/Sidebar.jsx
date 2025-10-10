@@ -170,7 +170,6 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     //     { path: '/content/social', icon: <FaComments />, label: 'Social Features' },
     //     { path: '/content/lost-found', icon: <FaExclamationTriangle />, label: 'Lost & Found' },
     //     { path: '/content/filters', icon: <FaShieldAlt />, label: 'Content Filters' }
-    //   ]
     // },
     {
       id: 'analytics',
@@ -178,8 +177,8 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       label: 'Analytics & Reporting',
       path: '/analytics',
       items: [
-        { path: '/analytics/dashboard', icon: <FaChartLine />, label: 'Metrics Dashboard' },
-        { path: '/analytics/reports', icon: <FaFileInvoiceDollar />, label: 'Custom Reports' }
+        { path: '/analytics/performance', icon: <FaChartLine />, label: 'Metrics Dashboard' },
+        { path: '/analytics/revenue', icon: <FaFileInvoiceDollar />, label: 'Revenue Reports' }
       ]
     },
     {

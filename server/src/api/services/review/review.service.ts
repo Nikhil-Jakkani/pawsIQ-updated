@@ -179,6 +179,146 @@ const getProviderReviews = async (
   };
 };
 
+interface AdminReviewFilters {
+  page?: number;
+  limit?: number;
+  rating?: number;
+  status?: string;
+  providerId?: number;
+  search?: string;
+}
+
+const getAllReviewsForAdmin = async ({
+  page = 1,
+  limit = 20,
+  rating,
+  status,
+  providerId,
+  search,
+}: AdminReviewFilters) => {
+  const take = Math.min(limit, 100);
+  const skip = (page - 1) * take;
+
+  const where: any = {};
+
+  if (rating) {
+    where.rating = rating;
+  }
+
+  if (status) {
+    where.status = status;
+  }
+
+  if (providerId) {
+    where.service_provider_id = providerId;
+  }
+
+  if (search) {
+    where.OR = [
+      {
+        review_text: {
+          contains: search,
+          mode: 'insensitive',
+        },
+      },
+      {
+        PIQ_User: {
+          user_full_name: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+      },
+      {
+        PIQ_Service_Provider: {
+          serv_provider_name: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+      },
+    ];
+  }
+
+  const [reviews, total] = await Promise.all([
+    prisma.pIQ_Provider_Reviews.findMany({
+      where,
+      orderBy: { reviewed_at: 'desc' },
+      skip,
+      take,
+      include: {
+        PIQ_User: {
+          select: {
+            user_id: true,
+            user_full_name: true,
+            user_email_id: true,
+          },
+        },
+        PIQ_Service_Provider: {
+          select: {
+            service_provider_id: true,
+            serv_provider_name: true,
+            serv_provider_email: true,
+            serv_provider_type: true,
+          },
+        },
+        PIQ_Bookings: {
+          select: {
+            booking_id: true,
+            booking_status: true,
+          },
+        },
+      },
+    }),
+    prisma.pIQ_Provider_Reviews.count({ where }),
+  ]);
+
+  const items = reviews.map((review: any) => ({
+    review_id: Number(review.review_id),
+    rating: review.rating,
+    review_text: review.review_text,
+    reviewed_at: review.reviewed_at,
+    status: review.status,
+    helpful: review.helpful_count ?? 0,
+    unhelpful: review.unhelpful_count ?? 0,
+    flagged: review.flagged ?? false,
+    response: review.response_text,
+    response_date: review.response_at,
+    provider: review.PIQ_Service_Provider
+      ? {
+          id: review.PIQ_Service_Provider.service_provider_id,
+          name: review.PIQ_Service_Provider.serv_provider_name,
+          email: review.PIQ_Service_Provider.serv_provider_email,
+          type: review.PIQ_Service_Provider.serv_provider_type,
+        }
+      : null,
+    customer: review.PIQ_User
+      ? {
+          id: review.PIQ_User.user_id ? Number(review.PIQ_User.user_id) : undefined,
+          name: review.PIQ_User.user_full_name,
+          email: review.PIQ_User.user_email_id,
+        }
+      : null,
+    booking: review.PIQ_Bookings
+      ? {
+          id: review.PIQ_Bookings.booking_id,
+          status: review.PIQ_Bookings.booking_status,
+          appointment_date: review.PIQ_Bookings.appointment_date,
+        }
+      : null,
+  }));
+
+  return {
+    items,
+    pagination: {
+      page,
+      limit: take,
+      total,
+      pages: Math.ceil(total / take),
+    },
+  };
+};
+
 /**
  * Update provider's average rating (internal helper)
  */
@@ -191,10 +331,6 @@ const updateProviderRating = async (providerId: number) => {
   const averageRating = avgRating._avg.rating
     ? Number(avgRating._avg.rating.toFixed(1))
     : 0;
-
-  // Note: If PIQ_Service_Provider has a rating field, update it here
-  // For now, rating is calculated on-the-fly
-  console.log(`Provider ${providerId} average rating: ${averageRating}`);
 };
 
 /**
@@ -263,4 +399,5 @@ export const reviewService = {
   getProviderReviews,
   getUserReviews,
   deleteReview,
+  getAllReviewsForAdmin,
 };

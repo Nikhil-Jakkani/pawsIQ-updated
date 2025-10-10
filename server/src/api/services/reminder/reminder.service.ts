@@ -1,14 +1,9 @@
 import httpStatus from 'http-status';
 import { ApiError } from '../../utils/ApiError.js';
 import prisma from '../../../lib/prisma.js';
+import { serializeBigInt } from '../../utils/bigIntSerializer.js';
 
 // Helpers
-const serializeBigInt = <T>(data: T): T =>
-  JSON.parse(
-    JSON.stringify(data, (_key, value) => 
-      typeof value === 'bigint' ? value.toString() : value
-    )
-  ) as T;
 
 export type ReminderPriority = 'high' | 'normal';
 

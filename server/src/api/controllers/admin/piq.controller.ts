@@ -14,8 +14,29 @@ export const getStats = catchAsync(async (_req, res) => {
 });
 
 export const getUsers = catchAsync(async (req, res) => {
-  const page = Math.max(1, Number(req.query.page) || 1);
-  const limit = Math.max(1, Math.min(100, Number(req.query.limit) || 20));
+  const rawPage = req.query.page;
+  const rawLimit = req.query.limit;
+
+  if (rawPage !== undefined) {
+    const pageValue = Number(rawPage);
+    if (!Number.isFinite(pageValue) || pageValue < 1 || pageValue > 10000) {
+      return res.status(httpStatus.BAD_REQUEST).send({
+        message: 'Invalid page parameter. Must be an integer between 1 and 10000.',
+      });
+    }
+  }
+
+  if (rawLimit !== undefined) {
+    const limitValue = Number(rawLimit);
+    if (!Number.isFinite(limitValue) || limitValue < 1 || limitValue > 100) {
+      return res.status(httpStatus.BAD_REQUEST).send({
+        message: 'Invalid limit parameter. Must be an integer between 1 and 100.',
+      });
+    }
+  }
+
+  const page = Math.max(1, Math.min(10000, Number(rawPage) || 1));
+  const limit = Math.max(1, Math.min(100, Number(rawLimit) || 20));
   const search = String(req.query.search || '').trim();
   const status = String(req.query.status || '').trim();
   const skip = (page - 1) * limit;
@@ -59,19 +80,42 @@ export const getUsers = catchAsync(async (req, res) => {
 });
 
 export const getPets = catchAsync(async (req, res) => {
-  const page = Math.max(1, Number(req.query.page) || 1);
-  const limit = Math.max(1, Math.min(100, Number(req.query.limit) || 24));
+  const rawPage = req.query.page;
+  const rawLimit = req.query.limit;
+
+  if (rawPage !== undefined) {
+    const pageValue = Number(rawPage);
+    if (!Number.isFinite(pageValue) || pageValue < 1 || pageValue > 10000) {
+      return res.status(httpStatus.BAD_REQUEST).send({
+        message: 'Invalid page parameter. Must be an integer between 1 and 10000.',
+      });
+    }
+  }
+
+  if (rawLimit !== undefined) {
+    const limitValue = Number(rawLimit);
+    if (!Number.isFinite(limitValue) || limitValue < 1 || limitValue > 100) {
+      return res.status(httpStatus.BAD_REQUEST).send({
+        message: 'Invalid limit parameter. Must be an integer between 1 and 100.',
+      });
+    }
+  }
+
+  const page = Math.max(1, Math.min(10000, Number(rawPage) || 1));
+  const limit = Math.max(1, Math.min(100, Number(rawLimit) || 24));
   const search = String(req.query.search || '').trim();
   const userIdParam = String(req.query.userId || '').trim();
   const skip = (page - 1) * limit;
 
   const where: any = {};
   if (userIdParam) {
-    try {
-      where.user_id = BigInt(userIdParam);
-    } catch (_e) {
-      // ignore invalid userId
+    // Validate userId is numeric before converting to BigInt
+    if (!/^\d+$/.test(userIdParam)) {
+      return res.status(httpStatus.BAD_REQUEST).send({
+        message: 'Invalid userId format. Must be a positive integer.',
+      });
     }
+    where.user_id = BigInt(userIdParam);
   }
   if (search) {
     where.OR = [
@@ -114,17 +158,23 @@ export const getPets = catchAsync(async (req, res) => {
 
     // Generate signed URL for pet image if it exists
     let imageUrl = getPlaceholderImage((p as any).pet_species ?? p.pet_type);
+    let imageError = false;
+    
     if (p.pet_image) {
       try {
         const { data, error } = await supabase.storage
           .from('pets-photos')
-          .createSignedUrl(p.pet_image, 518400); // 6 days expiry
+          .createSignedUrl(p.pet_image, 3600); // 1 hour expiry for admin view
         
-        if (!error && data?.signedUrl) {
+        if (error) {
+          console.error('Supabase error generating signed URL:', error);
+          imageError = true;
+        } else if (data?.signedUrl) {
           imageUrl = data.signedUrl;
         }
       } catch (err) {
         console.error('Error generating signed URL for pet image:', err);
+        imageError = true;
       }
     }
 
@@ -136,6 +186,7 @@ export const getPets = catchAsync(async (req, res) => {
       gender: p.pet_gender ?? 'Unknown',
       age: ageYears ?? undefined,
       profileImage: imageUrl,
+      imageError: imageError, // Indicate if image loading failed
       status: p.pet_status || 'active',
       microchipped: (p as any).microchipped ?? false,
       neutered: (p as any).neutered ?? false,
@@ -192,8 +243,29 @@ export const getRoles = catchAsync(async (_req, res) => {
 
 // List provider applications for onboarding dashboard
 export const getProviders = catchAsync(async (req, res) => {
-  const page = Math.max(1, Number(req.query.page) || 1);
-  const limit = Math.max(1, Math.min(100, Number(req.query.limit) || 20));
+  const rawPage = req.query.page;
+  const rawLimit = req.query.limit;
+
+  if (rawPage !== undefined) {
+    const pageValue = Number(rawPage);
+    if (!Number.isFinite(pageValue) || pageValue < 1 || pageValue > 10000) {
+      return res.status(httpStatus.BAD_REQUEST).send({
+        message: 'Invalid page parameter. Must be an integer between 1 and 10000.',
+      });
+    }
+  }
+
+  if (rawLimit !== undefined) {
+    const limitValue = Number(rawLimit);
+    if (!Number.isFinite(limitValue) || limitValue < 1 || limitValue > 100) {
+      return res.status(httpStatus.BAD_REQUEST).send({
+        message: 'Invalid limit parameter. Must be an integer between 1 and 100.',
+      });
+    }
+  }
+
+  const page = Math.max(1, Math.min(10000, Number(rawPage) || 1));
+  const limit = Math.max(1, Math.min(100, Number(rawLimit) || 20));
   const search = String(req.query.search || '').trim();
   const status = String(req.query.status || '').trim();
   const type = String(req.query.type || '').trim();
@@ -290,31 +362,82 @@ export const getProviders = catchAsync(async (req, res) => {
 });
 
 export const getAdminMe = catchAsync(async (req: any, res) => {
-  // The admin auth middleware already validated the token against admins table.
-  // To return the admin profile, decode token id and fetch admin row
-  const token = req.headers.authorization?.split(' ')[1];
-  if (!token) return res.status(httpStatus.UNAUTHORIZED).send({ message: 'Unauthorized' });
-  try {
-    // We cannot import jwt in this file without adding a new import; keep it simple by selecting latest admin by email if provided in header
-    // As a compromise, just confirm access is valid and return a stub; frontend only needs to confirm session validity.
-    return res.status(httpStatus.OK).send({ role: 'admin' });
-  } catch (e: any) {
-    return res.status(httpStatus.UNAUTHORIZED).send({ message: 'Unauthorized' });
+  // req.admin should be set by auth middleware
+  const adminId = req.admin?.admin_id;
+  
+  if (!adminId) {
+    return res.status(httpStatus.UNAUTHORIZED).send({ 
+      message: 'Unauthorized - Admin not found in request' 
+    });
   }
+
+  // Fetch full admin profile from database
+  const admin = await prisma.pIQ_Admins.findUnique({
+    where: { admin_id: adminId },
+    select: {
+      admin_id: true,
+      name: true,
+      email: true,
+      role: true,
+      created_at: true,
+    },
+  });
+
+  if (!admin) {
+    return res.status(httpStatus.UNAUTHORIZED).send({ 
+      message: 'Admin not found in database' 
+    });
+  }
+
+  return res.status(httpStatus.OK).send({
+    id: Number(admin.admin_id),
+    name: admin.name,
+    email: admin.email,
+    role: admin.role || 'admin',
+    createdAt: admin.created_at,
+  });
 });
 
 export const getAppointments = catchAsync(async (req, res) => {
-  const page = Math.max(1, Number(req.query.page) || 1);
-  const limit = Math.max(1, Math.min(100, Number(req.query.limit) || 20));
+  const rawPage = req.query.page;
+  const rawLimit = req.query.limit;
+
+  if (rawPage !== undefined) {
+    const pageValue = Number(rawPage);
+    if (!Number.isFinite(pageValue) || pageValue < 1 || pageValue > 10000) {
+      return res.status(httpStatus.BAD_REQUEST).send({
+        message: 'Invalid page parameter. Must be an integer between 1 and 10000.',
+      });
+    }
+  }
+
+  if (rawLimit !== undefined) {
+    const limitValue = Number(rawLimit);
+    if (!Number.isFinite(limitValue) || limitValue < 1 || limitValue > 100) {
+      return res.status(httpStatus.BAD_REQUEST).send({
+        message: 'Invalid limit parameter. Must be an integer between 1 and 100.',
+      });
+    }
+  }
+
+  const page = Math.max(1, Math.min(10000, Number(rawPage) || 1));
+  const limit = Math.max(1, Math.min(100, Number(rawLimit) || 20));
   const petIdsParam = String(req.query.petIds || '').trim();
   const skip = (page - 1) * limit;
 
   const where: any = {};
   if (petIdsParam) {
-    const petIds = petIdsParam.split(',').map(id => BigInt(id.trim())).filter(Boolean);
-    if (petIds.length > 0) {
-      where.pet_id = { in: petIds };
+    // Validate and convert pet IDs
+    const petIdStrings = petIdsParam.split(',').map(id => id.trim()).filter(id => id && /^\d+$/.test(id));
+    
+    if (petIdStrings.length === 0) {
+      return res.status(httpStatus.BAD_REQUEST).send({
+        message: 'Invalid petIds format. Must be comma-separated positive integers.',
+      });
     }
+    
+    const petIds = petIdStrings.map(id => BigInt(id));
+    where.pet_id = { in: petIds };
   }
 
   const [appointments, count] = await Promise.all([

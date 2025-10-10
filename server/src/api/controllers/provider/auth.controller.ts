@@ -68,7 +68,7 @@ const googleLogin = catchAsync(async (req: Request, res: Response) => {
           serv_provider_email: email,
           serv_provider_password: randomPassword,
           serv_provider_contact_nbr: '',
-          serv_provider_status: 'active',
+          serv_provider_status: 'inactive', // ✅ FIX: Requires admin approval
           created_at: new Date(),
           last_updated_dtm: new Date(),
           provider_src: 'google',
@@ -153,7 +153,7 @@ const facebookLogin = catchAsync(async (req: Request, res: Response) => {
           serv_provider_email: userEmail,
           serv_provider_password: randomPassword,
           serv_provider_contact_nbr: '',
-          serv_provider_status: 'active',
+          serv_provider_status: 'inactive', // ✅ FIX: Requires admin approval
           created_at: new Date(),
           last_updated_dtm: new Date(),
           provider_src: 'facebook',
@@ -215,29 +215,13 @@ export const providerAuthController = {
       .single();
 
     if (!provider) {
-      const randomPassword = await bcrypt.hash(`otp-${Date.now()}-${Math.random()}`, 10);
-      const syntheticEmail = `provider-${phone.replace('+', '')}@firebase.pawsiq.com`;
-      const insertResult = await db
-        .from('PIQ_Service_Provider')
-        .insert([
-          {
-            serv_provider_name: 'Phone Provider',
-            serv_provider_email: syntheticEmail,
-            serv_provider_password: randomPassword,
-            serv_provider_contact_nbr: phone,
-            serv_provider_status: 'active',
-            created_at: new Date(),
-            last_updated_dtm: new Date(),
-            provider_src: 'firebase',
-          },
-        ])
-        .select()
-        .single();
-
-      if (insertResult.error) {
-        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ error: 'Failed to create provider' });
-      }
-      provider = insertResult.data as any;
+      // ✅ FIX: Don't auto-create provider with incomplete info
+      // Require proper registration first
+      return res.status(httpStatus.NOT_FOUND).json({
+        error: 'Provider not found. Please complete registration first.',
+        requiresRegistration: true,
+        phoneNumber: phone,
+      });
     }
 
     const tokens = await tokenService.generateAuthTokens(provider.service_provider_id, 'provider');

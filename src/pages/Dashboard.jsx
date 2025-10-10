@@ -10,6 +10,22 @@ import CalendarView from '../components/dashboard/CalendarView';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import useApi from '../hooks/useApi';
 
+const numberFormatter = new Intl.NumberFormat('en-US');
+const currencyFormatter = new Intl.NumberFormat('en-IN', {
+  style: 'currency',
+  currency: 'INR',
+  maximumFractionDigits: 0,
+});
+const percentFormatter = new Intl.NumberFormat('en-US', {
+  style: 'percent',
+  maximumFractionDigits: 0,
+});
+
+const toSafeNumber = (value) => (typeof value === 'number' && !Number.isNaN(value) ? value : 0);
+const formatNumber = (value) => numberFormatter.format(Math.round(toSafeNumber(value)));
+const formatCurrency = (value) => currencyFormatter.format(toSafeNumber(value));
+const formatPercent = (value) => percentFormatter.format(Math.max(0, Math.min(1, toSafeNumber(value))));
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const api = useApi();
@@ -17,14 +33,23 @@ const Dashboard = () => {
   const [serviceTypes, setServiceTypes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [revenueSummary, setRevenueSummary] = useState(null);
+  const [engagement, setEngagement] = useState(null);
+  const [trendInterval, setTrendInterval] = useState('monthly');
+  const [trendSeries, setTrendSeries] = useState([]);
+  const [trendLoading, setTrendLoading] = useState(true);
+  const [trendError, setTrendError] = useState('');
 
   useEffect(() => {
     let isMounted = true;
     (async () => {
       try {
-        const [statsData, providerTypesData] = await Promise.all([
+        const [statsData, providerTypesData, revenueSummaryRes, engagementRes, bookingBreakdownRes] = await Promise.all([
           api.get('/admin/stats'),
-          api.get('/admin/stats/providers-by-type')
+          api.get('/admin/stats/providers-by-type'),
+          api.get('/admin/stats/revenue/summary'),
+          api.get('/admin/stats/engagement/overview'),
+          api.get('/admin/stats/bookings/breakdown'),
         ]);
         
         if (isMounted && statsData) {
@@ -36,12 +61,28 @@ const Dashboard = () => {
           });
         }
         
+        if (isMounted) {
+          setRevenueSummary(revenueSummaryRes?.data ?? null);
+          setEngagement(engagementRes?.data ?? null);
+        }
+
         if (isMounted && providerTypesData?.items) {
-          setServiceTypes(providerTypesData.items);
+          const breakdownMap = bookingBreakdownRes?.data ?? {};
+          const combined = providerTypesData.items.map((service) => ({
+            ...service,
+            bookings: breakdownMap[service.type]?.count ?? 0,
+            revenue: breakdownMap[service.type]?.revenue ?? 0,
+          }));
+          setServiceTypes(combined);
         }
       } catch (e) {
         console.error('Failed to load dashboard data:', e);
-        setError('Failed to load stats');
+        if (isMounted) {
+          setError('Failed to load dashboard data');
+          setRevenueSummary(null);
+          setEngagement(null);
+          setServiceTypes([]);
+        }
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -50,6 +91,43 @@ const Dashboard = () => {
       isMounted = false;
     };
   }, [api]);
+
+  useEffect(() => {
+    let isMounted = true;
+    setTrendLoading(true);
+    setTrendError('');
+
+    (async () => {
+      try {
+        const points = trendInterval === 'daily' ? 30 : 12;
+        const seriesRes = await api.get(`/admin/stats/revenue/series?interval=${trendInterval}&points=${points}`);
+        const normalized = (seriesRes?.data ?? [])
+          .map((point) => ({
+            ...point,
+            bucket: point.bucket ? new Date(point.bucket) : null,
+          }))
+          .filter((point) => point.bucket && !Number.isNaN(point.bucket.getTime()));
+
+        if (isMounted) {
+          setTrendSeries(normalized);
+        }
+      } catch (err) {
+        console.error('Failed to load revenue series:', err);
+        if (isMounted) {
+          setTrendError('Failed to load revenue trends');
+          setTrendSeries([]);
+        }
+      } finally {
+        if (isMounted) {
+          setTrendLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [api, trendInterval]);
 
   return (
     <DashboardLayout>
@@ -100,7 +178,7 @@ const Dashboard = () => {
                   `Pet Owners,${reportData.petOwners}\n` +
                   `Appointments,${reportData.appointments}\n` +
                   `Pets,${reportData.products}\n` +
-                  `Revenue,$${reportData.revenue}\n\n` +
+                  `Revenue,₹${reportData.revenue}\n\n` +
                   `Active Services\n` +
                   `Veterinary,${reportData.activeServices.veterinary}\n` +
                   `Grooming,${reportData.activeServices.grooming}\n` +
@@ -126,37 +204,66 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
           title="Pet Owners" 
-          value={loading ? '...' : String(stats.users)} 
+          value={loading ? '...' : formatNumber(stats.users)} 
           icon={<PetIcon type="dog" size="lg" className="text-white" />} 
-          change="x% from last month" 
-          changeType="increase" 
+          change={undefined}
           bgColor="bg-gradient-to-br from-indigo-600 to-indigo-700"
         />
         <StatCard 
           title="Appointments" 
-          value={loading ? '...' : String(stats.appointments)} 
+          value={loading ? '...' : formatNumber(stats.appointments)} 
           icon={<PetIcon type="cat" size="lg" className="text-white" />} 
-          change="x% from last month" 
-          changeType="increase" 
+          change={undefined}
           bgColor="bg-gradient-to-br from-green-500 to-green-600"
         />
         <StatCard 
           title="Pets" 
-          value={loading ? '...' : String(stats.pets)} 
+          value={loading ? '...' : formatNumber(stats.pets)} 
           icon={<PetIcon type="fish" size="lg" className="text-white" />} 
-          change="x" 
-          changeType="decrease" 
+          change={undefined}
           bgColor="bg-gradient-to-br from-purple-500 to-purple-600"
         />
         <StatCard 
           title="Revenue" 
-          value="Coming Soon..." 
+          value={loading ? '...' : revenueSummary ? formatCurrency(revenueSummary.grossRevenue) : '—'} 
           icon={<PetIcon type="paw" size="lg" className="text-white" />} 
-          change="x% from last month" 
-          changeType="increase" 
+          change={undefined}
           bgColor="bg-gradient-to-br from-blue-500 to-blue-600"
         />
       </div>
+
+      {!loading && engagement && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <StatCard 
+            title="Active Users (30d)"
+            value={formatNumber(engagement.activeUsers30)}
+            icon={<FaUsers size={20} />}
+            change={undefined}
+            bgColor="bg-gradient-to-br from-indigo-500 to-indigo-600"
+          />
+          <StatCard 
+            title="Active Users (7d)"
+            value={formatNumber(engagement.activeUsers7)}
+            icon={<FaCalendarCheck size={20} />}
+            change={undefined}
+            bgColor="bg-gradient-to-br from-green-500 to-green-600"
+          />
+          <StatCard 
+            title="Repeat Booking Rate"
+            value={formatPercent(engagement.repeatRate)}
+            icon={<FaShoppingCart size={20} />}
+            change={undefined}
+            bgColor="bg-gradient-to-br from-pink-500 to-pink-600"
+          />
+          <StatCard 
+            title="New Users (30d)"
+            value={formatNumber(engagement.newUsers30)}
+            icon={<FaDollarSign size={20} />}
+            change={undefined}
+            bgColor="bg-gradient-to-br from-amber-500 to-amber-600"
+          />
+        </div>
+      )}
       
       {/* Pet Services Summary - Dynamic */}
       <div className="bg-white rounded-xl shadow-sm p-6 border border-indigo-100">
@@ -196,28 +303,29 @@ const Dashboard = () => {
                 pink: 'text-pink-900',
                 green: 'text-green-900',
                 amber: 'text-amber-900',
-                purple: 'text-purple-900',
-                blue: 'text-blue-900',
-                green: 'text-green-900',
                 gray: 'text-gray-900'
               };
               const boldColors = {
                 indigo: 'text-indigo-700',
                 purple: 'text-purple-700',
                 blue: 'text-blue-700',
+                pink: 'text-pink-700',
                 green: 'text-green-700',
+                amber: 'text-amber-700',
                 gray: 'text-gray-700'
               };
               const lightColors = {
                 indigo: 'text-indigo-500',
                 purple: 'text-purple-500',
                 blue: 'text-blue-500',
+                pink: 'text-pink-500',
                 green: 'text-green-500',
+                amber: 'text-amber-500',
                 gray: 'text-gray-500'
               };
-              
+
               const color = service.color || 'gray';
-              
+
               return (
                 <div key={service.type} className={`${bgColors[color]} rounded-lg p-4 text-center`}>
                   <div className="bg-white w-12 h-12 mx-auto rounded-full flex items-center justify-center mb-3 shadow-sm">
@@ -229,8 +337,12 @@ const Dashboard = () => {
                     {service.icon === 'running' && <FaRunning className={`${iconColors[color]} text-xl`} />}
                   </div>
                   <h3 className={`font-semibold ${textColors[color]}`}>{service.type}</h3>
-                  <p className={`text-2xl font-bold ${boldColors[color]} mt-1`}>{service.count}</p>
+                  <p className={`text-2xl font-bold ${boldColors[color]} mt-1`}>{formatNumber(service.count)}</p>
                   <p className={`text-xs ${lightColors[color]} mt-1`}>Active providers</p>
+                  <div className="mt-2 space-y-1">
+                    <p className={`text-xs ${lightColors[color]}`}>Bookings: {formatNumber(service.bookings)}</p>
+                    <p className={`text-xs ${lightColors[color]}`}>Revenue: {formatCurrency(service.revenue)}</p>
+                  </div>
                 </div>
               );
             })}
@@ -241,7 +353,13 @@ const Dashboard = () => {
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <OverviewChart />
+          <OverviewChart 
+            data={trendSeries} 
+            loading={trendLoading} 
+            interval={trendInterval} 
+            onIntervalChange={setTrendInterval} 
+            error={trendError}
+          />
         </div>
         <div>
           <RecentActivity />

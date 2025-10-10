@@ -1,15 +1,7 @@
 import httpStatus from 'http-status';
 import { ApiError } from '../../utils/ApiError.js';
 import prisma from '../../../lib/prisma.js';
-
-// Serialize any BigInt fields to string to prevent JSON serialization issues
-const serializeBigInt = <T>(data: T): T => {
-  return JSON.parse(
-    JSON.stringify(data, (_key, value) => 
-      typeof value === 'bigint' ? value.toString() : value
-    )
-  ) as T;
-};
+import { serializeBigInt } from '../../utils/bigIntSerializer.js';
 
 export type AppointmentStatus = 'Awaiting Approval' | 'Scheduled' | 'Cancelled' | 'Completed';
 export type AppointmentType = 'Checkup' | 'Vaccination' | 'Grooming' | 'Training' | 'Others';
@@ -54,6 +46,15 @@ const createAppointment = async (
 
   const dt = new Date(body.appointment_date);
   if (isNaN(dt.getTime())) throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid appointment_date');
+  
+  // Add grace period validation like bookings
+  const GRACE_PERIOD = 5 * 60 * 1000; // 5 minutes
+  if (dt.getTime() <= (Date.now() - GRACE_PERIOD)) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST, 
+      'Appointment date must be in the future'
+    );
+  }
 
   const created = await prisma.pIQ_Appointments.create({
     data: {
@@ -148,18 +149,59 @@ const updateUserAppointment = async (
   if (!existing || existing.PIQ_Pets.user_id !== userId) throw new ApiError(httpStatus.NOT_FOUND, 'Appointment not found');
 
   const data: any = {};
+  
+  // ❌ SECURITY FIX: Users cannot change which pet the appointment is for
   if (body.pet_id !== undefined) {
-    const newPetId = BigInt(body.pet_id);
-    await ensurePetBelongsToUser(userId, newPetId);
-    data.pet_id = newPetId;
+    throw new ApiError(
+      httpStatus.BAD_REQUEST, 
+      'Cannot change pet for existing appointment. Please cancel and create a new appointment.'
+    );
   }
-  if (body.appointment_type) data.appointment_type = assertType(body.appointment_type);
-  if (body.appointment_status) data.appointment_status = assertStatus(body.appointment_status);
-  if (body.appointment_comments !== undefined) data.appointment_comments = body.appointment_comments;
+  
+  // ❌ BUSINESS LOGIC FIX: Users cannot change appointment type after creation
+  if (body.appointment_type) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST, 
+      'Cannot change appointment type. Please cancel and create a new appointment.'
+    );
+  }
+  
+  // ✅ AUTHORIZATION FIX: Users can only cancel appointments, not set other statuses
+  if (body.appointment_status) {
+    const status = assertStatus(body.appointment_status);
+    if (status !== 'Cancelled') {
+      throw new ApiError(
+        httpStatus.FORBIDDEN, 
+        'Users can only cancel appointments. Status changes to Scheduled/Completed require provider/admin approval.'
+      );
+    }
+    data.appointment_status = status;
+  }
+  
+  // ✅ Allow comments changes
+  if (body.appointment_comments !== undefined) {
+    data.appointment_comments = body.appointment_comments;
+  }
+  
+  // ✅ Allow date changes (rescheduling) with validation
   if (body.appointment_date) {
     const dt = new Date(body.appointment_date);
     if (isNaN(dt.getTime())) throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid appointment_date');
+    
+    // Validate future date with grace period
+    const GRACE_PERIOD = 5 * 60 * 1000;
+    if (dt.getTime() <= (Date.now() - GRACE_PERIOD)) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST, 
+        'Appointment date must be in the future'
+      );
+    }
+    
     data.appointment_date = dt;
+  }
+  
+  if (Object.keys(data).length === 0) {
+    throw new ApiError(httpStatus.BAD_REQUEST, 'No valid fields to update');
   }
 
   const updated = await prisma.pIQ_Appointments.update({ where: { appointment_id: id }, data });

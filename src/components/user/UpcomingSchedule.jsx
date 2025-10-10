@@ -4,7 +4,7 @@ import { PetIcon } from '../layout/PetIcons';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
-const UpcomingSchedule = ({ pets = [], accessToken }) => {
+const UpcomingSchedule = ({ pets = [], appointments = null, accessToken }) => {
   const navigate = useNavigate();
   const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
   const { authFetch, loading: authLoading, currentUser, fetchUserDashboard } = useAuth();
@@ -34,19 +34,25 @@ const UpcomingSchedule = ({ pets = [], accessToken }) => {
         // Only load appointments if we have pets data
         if (!pets.length) return [];
 
-        // Prefer aggregated dashboard data
-        let appts = null;
-        try {
-          const payload = await fetchUserDashboard();
-          appts = payload?.appointments?.recent || null;
-        } catch (_) {}
-
-        let itemsSrc = appts;
+        // Use provided appointments prop to avoid duplicate fetching
+        let itemsSrc = appointments;
+        
+        // If no appointments prop provided, fetch them
         if (!itemsSrc) {
-          const res = await authFetch(`${API_URL}/appointments?page=1&limit=50`);
-          const data = await res.json().catch(() => ({}));
-          if (!res.ok) throw new Error(data?.message || 'Failed to load appointments');
-          itemsSrc = data?.items || [];
+          // Prefer aggregated dashboard data
+          let appts = null;
+          try {
+            const payload = await fetchUserDashboard();
+            appts = payload?.appointments?.recent || null;
+          } catch (_) {}
+
+          itemsSrc = appts;
+          if (!itemsSrc) {
+            const res = await authFetch(`${API_URL}/appointments?page=1&limit=50`);
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data?.message || 'Failed to load appointments');
+            itemsSrc = data?.items || [];
+          }
         }
 
         // Process appointments in a single pass
@@ -58,7 +64,11 @@ const UpcomingSchedule = ({ pets = [], accessToken }) => {
             const petIdNum = Number(a.pet_id);
             const pet = pets.find((p) => Number(p.id) === petIdNum);
             const isToday = isSameDay(dt, currentDate);
-            const status = (a.appointment_status || 'Scheduled').toLowerCase();
+            const rawStatus = (a.appointment_status || 'Scheduled').toLowerCase();
+            
+            // Map backend statuses to display statuses
+            // 'scheduled' and 'confirmed' both mean the appointment is confirmed
+            const displayStatus = rawStatus === 'scheduled' ? 'confirmed' : rawStatus;
 
             return {
               id: a.appointment_id ?? `${petIdNum}-${dt.toISOString()}`,
@@ -69,7 +79,7 @@ const UpcomingSchedule = ({ pets = [], accessToken }) => {
               time: dt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
               date: isToday ? 'Today' : 'Other',
               location: a.appointment_comments || '',
-              status: status === 'scheduled' ? 'confirmed' : status,
+              status: displayStatus,
               urgent: isToday && isWithinHours(dt, 2),
               isToday,
             };
@@ -88,7 +98,7 @@ const UpcomingSchedule = ({ pets = [], accessToken }) => {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, currentUser, authFetch, API_URL, pets.length, currentDate]);
+  }, [authLoading, currentUser, authFetch, API_URL, pets.length, appointments, currentDate]);
 
   const getItemIcon = (type) => {
     return type === 'appointment' ? FaCalendarAlt : FaBell;

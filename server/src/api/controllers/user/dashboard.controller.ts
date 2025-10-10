@@ -3,6 +3,8 @@ import httpStatus from 'http-status';
 import prisma from '../../../lib/prisma.js';
 import { reminderService } from '../../services/reminder/reminder.service.js';
 import { createHash } from 'crypto';
+import { serializeBigInt } from '../../utils/bigIntSerializer.js';
+import { transformPets } from '../../utils/petTransformer.js';
 
 export const getDashboard = async (req: any, res: Response) => {
   try {
@@ -20,12 +22,9 @@ export const getDashboard = async (req: any, res: Response) => {
       prisma.pIQ_Pets.findMany({
         where: {
           user_id: userIdBig,
-          NOT: [
-            { pet_status: 'deleted' as any },
-            { pet_status: 'Deleted' as any },
-            { pet_status: 'Inactive' as any },
-            { pet_status: 'inactive' as any },
-          ],
+          pet_status: {
+            notIn: ['deleted', 'Deleted', 'inactive', 'Inactive']
+          },
         },
         orderBy: { created_at: 'asc' },
         select: {
@@ -59,53 +58,23 @@ export const getDashboard = async (req: any, res: Response) => {
       reminderService.getUserCareReminders(userIdBig),
     ]);
 
-    const normalizeBigInt = (obj: any) => JSON.parse(
-      JSON.stringify(obj, (_k, v) => (typeof v === 'bigint' ? v.toString() : v))
-    );
-
-    // Transform pets data to match frontend expectations
-    const transformedPets = pets.map((pet: any) => {
-      let ageYears: number | null = null;
-      if (pet?.pet_birth_dtm) {
-        const dob = new Date(pet.pet_birth_dtm);
-        const now = new Date();
-        ageYears = Math.max(0, Math.floor((now.getTime() - dob.getTime()) / (1000 * 60 * 60 * 24 * 365.25)));
-      }
-      
-      return {
-        pet_id: pet.pet_id,
-        id: pet.pet_id, // Add id field for compatibility
-        name: pet.pet_name,
-        type: pet.pet_type || 'other',
-        breed: pet.pet_breed || '',
-        gender: pet.pet_gender || 'Unknown',
-        age: ageYears ? `${ageYears} years` : 'Unknown',
-        weight: pet.pet_weight ? `${pet.pet_weight} kg` : 'Unknown',
-        // Never expose raw storage path as an image URL; frontend will resolve signed URL from imagePath
-        image: `https://source.unsplash.com/random/400x300?${encodeURIComponent(pet.pet_type || 'pet')}`,
-        imagePath: pet.pet_image, // Keep original path for signed URL generation
-        status: pet.pet_status || 'active',
-        microchipped: pet.microchipped || false,
-        neutered: pet.neutered || false,
-        vaccinated: pet.vaccinated || false,
-        createdAt: pet.created_at,
-        lastUpdated: pet.last_updated_dtm,
-      };
-    });
+    // Transform pets data using shared utility
+    const transformedPets = transformPets(pets);
 
     const payload = {
-      pets: normalizeBigInt(transformedPets),
+      pets: serializeBigInt(transformedPets),
       appointments: {
         total: totalAppointments,
-        recent: normalizeBigInt(recentAppointments),
+        recent: serializeBigInt(recentAppointments),
       },
       reminders: reminders.items,
       reminderCount: reminders.count,
       serverTime: now.toISOString(),
     };
 
+    // Calculate max timestamp without falling back to 'now' (breaks caching)
     const petsMaxTs = pets.reduce<number>((acc: number, p: any) => {
-      const ts = new Date(p.last_updated_dtm || p.created_at || p.pet_birth_dtm || now).getTime();
+      const ts = new Date(p.last_updated_dtm || p.created_at || 0).getTime();
       return Math.max(acc, ts);
     }, 0);
     const latestAppt = recentAppointments[0]?.appointment_date ? new Date(recentAppointments[0].appointment_date).getTime() : 0;

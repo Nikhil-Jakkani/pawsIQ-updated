@@ -2,16 +2,14 @@ import httpStatus from 'http-status';
 import { ApiError } from '../../utils/ApiError.js';
 import prisma from '../../../lib/prisma.js';
 
-const db = prisma as any;
-
 /**
  * List all service offerings for a provider
  */
 const listServiceOfferings = async (providerId: number) => {
-  const offerings = await (db as any).PIQ_Provider_ServiceOffering.findMany({
+  const offerings = await prisma.pIQ_Provider_ServiceOffering.findMany({
     where: { service_provider_id: providerId },
     include: {
-      service: {
+      PIQ_Service_Master: {
         select: {
           services_id: true,
           service_type: true,
@@ -36,13 +34,13 @@ const listServiceOfferings = async (providerId: number) => {
     created_at: offering.created_at,
     last_updated_dtm: offering.last_updated_dtm,
     // Service master details
-    service_type: offering.service?.service_type,
-    service_sub_type: offering.service?.service_sub_type,
-    service_title: offering.service?.service_title,
-    service_description: offering.service?.service_description,
-    default_price: offering.service?.service_price_amt,
-    default_duration: offering.service?.service_duration,
-    pet_type: offering.service?.pet_type,
+    service_type: offering.PIQ_Service_Master?.service_type,
+    service_sub_type: offering.PIQ_Service_Master?.service_sub_type,
+    service_title: offering.PIQ_Service_Master?.service_title,
+    service_description: offering.PIQ_Service_Master?.service_description,
+    default_price: offering.PIQ_Service_Master?.service_price_amt,
+    default_duration: offering.PIQ_Service_Master?.service_duration,
+    pet_type: offering.PIQ_Service_Master?.pet_type,
   }));
 };
 
@@ -50,13 +48,13 @@ const listServiceOfferings = async (providerId: number) => {
  * Get a single service offering by ID
  */
 const getServiceOffering = async (providerId: number, offeringId: number) => {
-  const offering = await (db as any).PIQ_Provider_ServiceOffering.findFirst({
+  const offering = await prisma.pIQ_Provider_ServiceOffering.findFirst({
     where: {
       offering_id: offeringId,
       service_provider_id: providerId,
     },
     include: {
-      service: {
+      PIQ_Service_Master: {
         select: {
           services_id: true,
           service_type: true,
@@ -83,13 +81,13 @@ const getServiceOffering = async (providerId: number, offeringId: number) => {
     is_active: offering.is_active,
     created_at: offering.created_at,
     last_updated_dtm: offering.last_updated_dtm,
-    service_type: offering.service?.service_type,
-    service_sub_type: offering.service?.service_sub_type,
-    service_title: offering.service?.service_title,
-    service_description: offering.service?.service_description,
-    default_price: offering.service?.service_price_amt,
-    default_duration: offering.service?.service_duration,
-    pet_type: offering.service?.pet_type,
+    service_type: offering.PIQ_Service_Master?.service_type,
+    service_sub_type: offering.PIQ_Service_Master?.service_sub_type,
+    service_title: offering.PIQ_Service_Master?.service_title,
+    service_description: offering.PIQ_Service_Master?.service_description,
+    default_price: offering.PIQ_Service_Master?.service_price_amt,
+    default_duration: offering.PIQ_Service_Master?.service_duration,
+    pet_type: offering.PIQ_Service_Master?.pet_type,
   };
 };
 
@@ -106,7 +104,7 @@ const createServiceOffering = async (
   }
 ) => {
   // Check if service exists in master
-  const service = await db.pIQ_Service_Master.findUnique({
+  const service = await prisma.pIQ_Service_Master.findUnique({
     where: { services_id: payload.services_id },
   });
 
@@ -115,7 +113,7 @@ const createServiceOffering = async (
   }
 
   // Check if provider already offers this service
-  const existing = await (db as any).PIQ_Provider_ServiceOffering.findFirst({
+  const existing = await prisma.pIQ_Provider_ServiceOffering.findFirst({
     where: {
       service_provider_id: providerId,
       services_id: payload.services_id,
@@ -130,16 +128,17 @@ const createServiceOffering = async (
   }
 
   // Create the offering
-  const offering = await (db as any).PIQ_Provider_ServiceOffering.create({
+  const offering = await prisma.pIQ_Provider_ServiceOffering.create({
     data: {
       service_provider_id: providerId,
       services_id: payload.services_id,
       custom_title: payload.custom_title || null,
       custom_description: payload.custom_description || null,
       is_active: payload.is_active !== undefined ? payload.is_active : true,
+      last_updated_dtm: new Date(),
     },
     include: {
-      service: {
+      PIQ_Service_Master: {
         select: {
           services_id: true,
           service_type: true,
@@ -162,13 +161,13 @@ const createServiceOffering = async (
     is_active: offering.is_active,
     created_at: offering.created_at,
     last_updated_dtm: offering.last_updated_dtm,
-    service_type: offering.service?.service_type,
-    service_sub_type: offering.service?.service_sub_type,
-    service_title: offering.service?.service_title,
-    service_description: offering.service?.service_description,
-    default_price: offering.service?.service_price_amt,
-    default_duration: offering.service?.service_duration,
-    pet_type: offering.service?.pet_type,
+    service_type: offering.PIQ_Service_Master?.service_type,
+    service_sub_type: offering.PIQ_Service_Master?.service_sub_type,
+    service_title: offering.PIQ_Service_Master?.service_title,
+    service_description: offering.PIQ_Service_Master?.service_description,
+    default_price: offering.PIQ_Service_Master?.service_price_amt,
+    default_duration: offering.PIQ_Service_Master?.service_duration,
+    pet_type: offering.PIQ_Service_Master?.pet_type,
   };
 };
 
@@ -185,7 +184,7 @@ const updateServiceOffering = async (
   }
 ) => {
   // Check if offering exists and belongs to provider
-  const existing = await (db as any).PIQ_Provider_ServiceOffering.findFirst({
+  const existing = await prisma.pIQ_Provider_ServiceOffering.findFirst({
     where: {
       offering_id: offeringId,
       service_provider_id: providerId,
@@ -193,19 +192,20 @@ const updateServiceOffering = async (
   });
 
   if (!existing) {
-    throw new ApiError(httpStatus.NOT_FOUND, 'Service offering not found');
+    throw new ApiError(httpStatus.NOT_FOUND, 'Service offering not found or you do not have permission to update it');
   }
 
   // Update the offering
-  const updated = await (db as any).PIQ_Provider_ServiceOffering.update({
+  const updated = await prisma.pIQ_Provider_ServiceOffering.update({
     where: { offering_id: offeringId },
     data: {
       custom_title: payload.custom_title !== undefined ? payload.custom_title : undefined,
       custom_description: payload.custom_description !== undefined ? payload.custom_description : undefined,
       is_active: payload.is_active !== undefined ? payload.is_active : undefined,
+      last_updated_dtm: new Date(),
     },
     include: {
-      service: {
+      PIQ_Service_Master: {
         select: {
           services_id: true,
           service_type: true,
@@ -228,13 +228,13 @@ const updateServiceOffering = async (
     is_active: updated.is_active,
     created_at: updated.created_at,
     last_updated_dtm: updated.last_updated_dtm,
-    service_type: updated.service?.service_type,
-    service_sub_type: updated.service?.service_sub_type,
-    service_title: updated.service?.service_title,
-    service_description: updated.service?.service_description,
-    default_price: updated.service?.service_price_amt,
-    default_duration: updated.service?.service_duration,
-    pet_type: updated.service?.pet_type,
+    service_type: updated.PIQ_Service_Master?.service_type,
+    service_sub_type: updated.PIQ_Service_Master?.service_sub_type,
+    service_title: updated.PIQ_Service_Master?.service_title,
+    service_description: updated.PIQ_Service_Master?.service_description,
+    default_price: updated.PIQ_Service_Master?.service_price_amt,
+    default_duration: updated.PIQ_Service_Master?.service_duration,
+    pet_type: updated.PIQ_Service_Master?.pet_type,
   };
 };
 
@@ -243,7 +243,7 @@ const updateServiceOffering = async (
  */
 const deleteServiceOffering = async (providerId: number, offeringId: number) => {
   // Check if offering exists and belongs to provider
-  const existing = await (db as any).PIQ_Provider_ServiceOffering.findFirst({
+  const existing = await prisma.pIQ_Provider_ServiceOffering.findFirst({
     where: {
       offering_id: offeringId,
       service_provider_id: providerId,
@@ -251,31 +251,35 @@ const deleteServiceOffering = async (providerId: number, offeringId: number) => 
   });
 
   if (!existing) {
-    throw new ApiError(httpStatus.NOT_FOUND, 'Service offering not found');
+    throw new ApiError(httpStatus.NOT_FOUND, 'Service offering not found or you do not have permission to delete it');
   }
 
-  // Check if there are active bookings for this service
-  const activeBookings = await db.pIQ_Bookings.count({
+  // ✅ IMPROVED: Check for ALL non-completed bookings (not just Pending/Confirmed)
+  const futureBookings = await prisma.pIQ_Bookings.count({
     where: {
       service_provider_id: providerId,
       services_id: existing.services_id,
-      booking_status: { in: ['Pending', 'Confirmed'] },
+      booking_status: { notIn: ['Cancelled', 'Completed'] },
     },
   });
 
-  if (activeBookings > 0) {
+  if (futureBookings > 0) {
     throw new ApiError(
       httpStatus.BAD_REQUEST,
-      `Cannot delete service offering. You have ${activeBookings} active booking(s) for this service. Please complete or cancel them first.`
+      `Cannot delete service offering. You have ${futureBookings} active booking(s) for this service. Please complete or cancel them first.`
     );
   }
 
-  // Delete the offering
-  await (db as any).PIQ_Provider_ServiceOffering.delete({
+  // ✅ IMPROVED: Soft delete instead of hard delete (preserves history)
+  await prisma.pIQ_Provider_ServiceOffering.update({
     where: { offering_id: offeringId },
+    data: {
+      is_active: false,
+      last_updated_dtm: new Date(),
+    },
   });
 
-  return { success: true, message: 'Service offering deleted successfully' };
+  return { success: true, message: 'Service offering deactivated successfully' };
 };
 
 /**
@@ -283,7 +287,7 @@ const deleteServiceOffering = async (providerId: number, offeringId: number) => 
  */
 const listAvailableServices = async (providerId: number) => {
   // Get all services from master
-  const allServices = await db.pIQ_Service_Master.findMany({
+  const allServices = await prisma.pIQ_Service_Master.findMany({
     where: {
       is_record_valid: true,
     },
@@ -291,7 +295,7 @@ const listAvailableServices = async (providerId: number) => {
   });
 
   // Get services already offered by provider
-  const offeredServices = await (db as any).PIQ_Provider_ServiceOffering.findMany({
+  const offeredServices = await prisma.pIQ_Provider_ServiceOffering.findMany({
     where: { service_provider_id: providerId },
     select: { services_id: true },
   });

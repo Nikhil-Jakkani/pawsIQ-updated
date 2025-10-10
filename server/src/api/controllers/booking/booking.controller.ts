@@ -3,21 +3,33 @@ import httpStatus from 'http-status';
 import { catchAsync } from '../../utils/catchAsync.js';
 import { bookingService } from '../../services/booking/booking.service.js';
 
-// Parse a label like "9:00 AM" into hours/minutes (24h)
+// Parse a time label like "9:00 AM", "9:00AM", "9:00", or "09:00" into hours/minutes (24h)
 const parseLabelTime = (label: string): { h: number; m: number } | null => {
   if (!label || typeof label !== 'string') return null;
-  const parts = label.trim().split(' ');
-  if (parts.length < 2) return null;
-  const [hm, ampm] = parts as [string, string];
-  const [hStr, mStr] = hm.split(':');
-  const h = Number(hStr);
-  const m = Number(mStr);
-  if (Number.isNaN(h) || Number.isNaN(m)) return null;
-  let hour = h;
-  const up = ampm.toUpperCase();
-  if (up === 'PM' && hour < 12) hour += 12;
-  if (up === 'AM' && hour === 12) hour = 0;
-  return { h: hour, m };
+  
+  const trimmed = label.trim().toUpperCase();
+  
+  // Match patterns: "9:00 AM", "9:00AM", "9:00", "09:00"
+  const match = trimmed.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/);
+  if (!match) return null;
+  
+  let h = Number(match[1]);
+  const m = Number(match[2]);
+  const ampm = match[3];
+  
+  // Validate values
+  if (isNaN(h) || isNaN(m) || m >= 60) return null;
+  
+  // Convert to 24-hour format if AM/PM specified
+  if (ampm) {
+    if (ampm === 'PM' && h < 12) h += 12;
+    if (ampm === 'AM' && h === 12) h = 0;
+  }
+  
+  // Validate hour range
+  if (h >= 24 || h < 0) return null;
+  
+  return { h, m };
 };
 
 const combineDateTimeISO = (dateStr?: string, time?: string): string | null => {

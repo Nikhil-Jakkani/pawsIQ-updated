@@ -9,7 +9,7 @@ import FacebookLogin from '@greatsumini/react-facebook-login';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login: adminLogin, currentUser, setCurrentUserData, setAuthTokens, tokens } = useAuth();
+  const { login, adminLogin, currentUser, setCurrentUserData, setAuthTokens, tokens } = useAuth();
   
   // Form state
   const [formData, setFormData] = useState({
@@ -80,7 +80,7 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      const result = await adminLogin(formData.identifier, formData.password);
+      const result = await login(formData.identifier, formData.password);
       
       if (result.success) {
         const role = result.userType || currentUser?.role || 'user';

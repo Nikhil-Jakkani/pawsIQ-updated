@@ -4,21 +4,26 @@ import prisma from '../../../lib/prisma.js';
 import { ApiError } from '../../utils/ApiError.js';
 
 export const petController = {
-  async updatePetProfile(req: Request, res: Response, next: NextFunction) {
+  async updatePetProfile(req: any, res: Response, next: NextFunction) {
     const { petId } = req.params;
 
     try {
       const id = Number(petId);
       if (!id) throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid petId');
 
+      // Get authenticated user ID
+      const userId = BigInt(req.user.user_id);
+
       const existing = await prisma.pIQ_Pets.findUnique({ where: { pet_id: id } });
       if (!existing) throw new ApiError(httpStatus.NOT_FOUND, 'Pet not found');
 
+      // CRITICAL: Check pet ownership
+      if (existing.user_id !== userId) {
+        throw new ApiError(httpStatus.FORBIDDEN, 'You do not have permission to update this pet');
+      }
+
       const body: any = req.body || {};
-      
-      const data: any = {
-        last_updated_dtm: new Date(),
-      };
+      const data: any = { last_updated_dtm: new Date() };
 
       const name = body.name ?? body.pet_name;
       if (typeof name === 'string') data.pet_name = name;
@@ -44,9 +49,7 @@ export const petController = {
       const weight = body.weight ?? body.pet_weight;
       if (weight !== undefined && weight !== null && weight !== '') {
         const w = Number(weight);
-        if (!Number.isNaN(w)) {
-          data.pet_weight = Math.round(w * 10) / 10; // Round to 1 decimal place
-        }
+        if (!Number.isNaN(w)) data.pet_weight = Math.round(w * 10) / 10;
       }
 
       if (typeof body.microchipped === 'boolean') data.microchipped = body.microchipped;
@@ -59,14 +62,22 @@ export const petController = {
 
       if (typeof body.neutered === 'boolean') data.neutered = body.neutered;
 
+      // Persist misc fields in extras JSON (no dedicated columns)
+      const existingExtras = (existing as any)?.extras && typeof (existing as any).extras === 'object' ? (existing as any).extras : {};
+      const newExtras: any = { ...existingExtras };
+      const ageGroup = body.ageGroup ?? body.age_group;
+      if (ageGroup !== undefined) newExtras.age_group = String(ageGroup);
+      if (body.vetName !== undefined) newExtras.vet_name = String(body.vetName);
+      if (body.vetPhone !== undefined) newExtras.vet_phone = String(body.vetPhone);
+      if (body.notes !== undefined) newExtras.notes = String(body.notes);
+      if (Object.keys(newExtras).length) data.extras = newExtras;
+
       // Support legacy and new shapes for health data
-      // Prioritize selected_allergies array over comma-separated string
       const selected_allergies: string[] | undefined = Array.isArray(body.selected_allergies) && body.selected_allergies.length > 0
         ? body.selected_allergies
         : (typeof body.allergies === 'string' && body.allergies ? body.allergies.split(',').map((s: string) => s.trim()).filter(Boolean) : undefined);
       const other_allergies: string | undefined = body.other_allergies;
 
-      // Prioritize selected_conditions array over comma-separated string
       const selected_conditions: string[] | undefined = Array.isArray(body.selected_conditions) && body.selected_conditions.length > 0
         ? body.selected_conditions
         : (typeof body.medicalConditions === 'string' && body.medicalConditions ? body.medicalConditions.split(',').map((s: string) => s.trim()).filter(Boolean) : undefined);
@@ -76,61 +87,33 @@ export const petController = {
 
       const vaccinationsArr: any[] = Array.isArray(body.vaccinations) ? body.vaccinations : [];
       const selected_vaccines: string[] | undefined = Array.isArray(body.selected_vaccines) ? body.selected_vaccines : undefined;
-      const vaccination_dates: any | undefined = body.vaccination_dates; // JSON object name->date
-      const next_due_dates: any | undefined = body.next_due_dates; // JSON object name->date
+      const vaccination_dates: any | undefined = body.vaccination_dates;
+      const next_due_dates: any | undefined = body.next_due_dates;
       const custom_vaccines: string | undefined = body.custom_vaccines;
 
       const pet = await prisma.$transaction(async (tx) => {
         const updated = await tx.pIQ_Pets.update({ where: { pet_id: id }, data });
 
-        // Allergies: single row per pet
         if (selected_allergies || typeof other_allergies === 'string') {
-          const nextSelected = Array.isArray(selected_allergies) && selected_allergies.length > 0
-            ? selected_allergies
-            : [];
+          const nextSelected = Array.isArray(selected_allergies) && selected_allergies.length > 0 ? selected_allergies : [];
           await tx.pIQ_Pet_Allergy.upsert({
             where: { pet_id: BigInt(id) },
-            create: {
-              pet_id: BigInt(id),
-              selected_allergies: nextSelected,
-              other_allergies: other_allergies ?? null,
-            } as any,
-            update: {
-              selected_allergies: nextSelected,
-              other_allergies: other_allergies ?? null,
-              last_updated_dtm: new Date(),
-            } as any,
+            create: { pet_id: BigInt(id), selected_allergies: nextSelected, other_allergies: other_allergies ?? null } as any,
+            update: { selected_allergies: nextSelected, other_allergies: other_allergies ?? null, last_updated_dtm: new Date() } as any,
           });
         }
 
-        // Health conditions: single row per pet
         if (selected_conditions || typeof other_conditions === 'string' || typeof current_medications === 'string' || typeof dietary_needs === 'string') {
-          const nextSelected = Array.isArray(selected_conditions) && selected_conditions.length > 0
-            ? selected_conditions
-            : [];
+          const nextSelected = Array.isArray(selected_conditions) && selected_conditions.length > 0 ? selected_conditions : [];
           await tx.pIQ_Pet_Medical_Condition.upsert({
             where: { pet_id: BigInt(id) },
-            create: {
-              pet_id: BigInt(id),
-              selected_conditions: nextSelected,
-              other_conditions: other_conditions ?? null,
-              current_medications: current_medications ?? null,
-              dietary_needs: dietary_needs ?? null,
-            } as any,
-            update: {
-              selected_conditions: nextSelected,
-              other_conditions: other_conditions ?? null,
-              current_medications: current_medications ?? null,
-              dietary_needs: dietary_needs ?? null,
-              last_updated_dtm: new Date(),
-            } as any,
+            create: { pet_id: BigInt(id), selected_conditions: nextSelected, other_conditions: other_conditions ?? null, current_medications: current_medications ?? null, dietary_needs: dietary_needs ?? null } as any,
+            update: { selected_conditions: nextSelected, other_conditions: other_conditions ?? null, current_medications: current_medications ?? null, dietary_needs: dietary_needs ?? null, last_updated_dtm: new Date() } as any,
           });
         }
 
-        // Vaccinations: single row per pet
         if (selected_vaccines || vaccinationsArr.length || vaccination_dates || next_due_dates || typeof custom_vaccines === 'string') {
           let vaccines = Array.isArray(selected_vaccines) ? selected_vaccines : [];
-          // Adapt from legacy vaccinations array into maps if provided
           const vDates: Record<string, any> = vaccination_dates && typeof vaccination_dates === 'object' ? vaccination_dates : {};
           const nextDue: Record<string, any> = next_due_dates && typeof next_due_dates === 'object' ? next_due_dates : {};
           if (!vaccines.length && vaccinationsArr.length) {
@@ -144,20 +127,8 @@ export const petController = {
           }
           await tx.pIQ_Pet_Vaccination.upsert({
             where: { pet_id: BigInt(id) },
-            create: {
-              pet_id: BigInt(id),
-              selected_vaccines: vaccines,
-              vaccination_dates: Object.keys(vDates).length ? vDates : ({} as any),
-              next_due_dates: Object.keys(nextDue).length ? nextDue : ({} as any),
-              custom_vaccines: custom_vaccines ?? null,
-            } as any,
-            update: {
-              selected_vaccines: vaccines,
-              vaccination_dates: Object.keys(vDates).length ? vDates : ({} as any),
-              next_due_dates: Object.keys(nextDue).length ? nextDue : ({} as any),
-              custom_vaccines: custom_vaccines ?? null,
-              last_updated_dtm: new Date(),
-            } as any,
+            create: { pet_id: BigInt(id), selected_vaccines: vaccines, vaccination_dates: Object.keys(vDates).length ? vDates : ({} as any), next_due_dates: Object.keys(nextDue).length ? nextDue : ({} as any), custom_vaccines: custom_vaccines ?? null } as any,
+            update: { selected_vaccines: vaccines, vaccination_dates: Object.keys(vDates).length ? vDates : ({} as any), next_due_dates: Object.keys(nextDue).length ? nextDue : ({} as any), custom_vaccines: custom_vaccines ?? null, last_updated_dtm: new Date() } as any,
           });
         }
 
@@ -178,10 +149,7 @@ export const petController = {
       if (error instanceof ApiError) {
         return res.status(error.statusCode).json({ message: error.message });
       }
-      return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ 
-        message: error?.message || 'Failed to update pet',
-        error: process.env.NODE_ENV === 'development' ? error : undefined
-      });
+      return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: error?.message || 'Failed to update pet', error: process.env.NODE_ENV === 'development' ? error : undefined });
     }
   },
 };
