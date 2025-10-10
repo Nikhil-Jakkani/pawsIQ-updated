@@ -18,7 +18,7 @@ router.get(
 /**
  * Provider routes (requires provider auth)
  */
-router.use(auth(['provider']));
+router.use(auth('provider'));
 
 router.post(
   '/portfolio/upload-url',

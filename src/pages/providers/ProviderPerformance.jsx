@@ -1,30 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  FaArrowLeft,
-  FaSearch,
-  FaSort,
-  FaSortUp,
-  FaSortDown,
-  FaStar,
-  FaStarHalfAlt,
-  FaRegStar,
-  FaEye,
-  FaEdit,
-  FaTrash,
-  FaDownload,
-  FaFilter,
-  FaCheck,
-  FaTimes,
-  FaFlag,
-  FaComment,
-  FaThumbsUp,
-  FaThumbsDown,
-  FaUserCircle
-} from 'react-icons/fa';
+import { FaArrowLeft, FaSearch, FaSort, FaSortUp, FaSortDown, FaStar, FaStarHalfAlt, FaRegStar, FaEye, FaDownload, FaCheck, FaTimes, FaFlag, FaThumbsUp, FaThumbsDown, FaUserCircle } from 'react-icons/fa';
 import DashboardLayout from '../../components/layout/DashboardLayout';
+import useApi from '../../hooks/useApi';
 
 const ProviderPerformance = () => {
+  const api = useApi();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRating, setFilterRating] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -32,192 +13,89 @@ const ProviderPerformance = () => {
   const [sortDirection, setSortDirection] = useState('desc');
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [currentReview, setCurrentReview] = useState(null);
-  
-  // Sample data for provider reviews
-  const reviewsData = [
-    { 
-      id: 1, 
-      providerName: 'Happy Paws Veterinary Clinic', 
-      providerEmail: 'info@happypawsvet.com',
-      customerName: 'John Smith',
-      customerEmail: 'john.smith@example.com',
-      rating: 5, 
-      title: 'Excellent care for my dog',
-      review: 'Dr. Johnson was amazing with my anxious dog. Very patient and thorough with the examination. The clinic was clean and the staff was friendly. Highly recommend!',
-      date: '2023-12-05',
-      status: 'published',
-      response: 'Thank you for your kind words! We strive to provide the best care for all our furry patients.',
-      responseDate: '2023-12-06',
-      helpful: 12,
-      unhelpful: 1,
-      flagged: false,
-      serviceType: 'Veterinary Check-up'
-    },
-    { 
-      id: 2, 
-      providerName: 'Fluffy Cuts Grooming', 
-      providerEmail: 'appointments@fluffycuts.com',
-      customerName: 'Sarah Johnson',
-      customerEmail: 'sarah.j@example.com',
-      rating: 4, 
-      title: 'Great grooming service',
-      review: 'My cat looks amazing after her grooming session. The groomer was gentle and professional. Only giving 4 stars because the wait time was longer than expected.',
-      date: '2023-12-03',
-      status: 'published',
-      response: 'Thank you for your feedback, Sarah! We apologize for the wait time and are working to improve our scheduling.',
-      responseDate: '2023-12-04',
-      helpful: 8,
-      unhelpful: 2,
-      flagged: false,
-      serviceType: 'Full Grooming'
-    },
-    { 
-      id: 3, 
-      providerName: 'Paws & Play Pet Sitting', 
-      providerEmail: 'care@pawsandplay.com',
-      customerName: 'Michael Brown',
-      customerEmail: 'michael.b@example.com',
-      rating: 2, 
-      title: 'Disappointed with the service',
-      review: 'The pet sitter arrived late and didn\'t follow the feeding instructions I left. My cat seemed stressed when I returned home.',
-      date: '2023-12-01',
-      status: 'published',
-      response: 'We sincerely apologize for your experience. We would like to make this right. Please contact our customer service team so we can address your concerns.',
-      responseDate: '2023-12-02',
-      helpful: 5,
-      unhelpful: 1,
-      flagged: false,
-      serviceType: 'Pet Sitting'
-    },
-    { 
-      id: 4, 
-      providerName: 'Canine Academy', 
-      providerEmail: 'training@canineacademy.com',
-      customerName: 'Emily Davis',
-      customerEmail: 'emily.d@example.com',
-      rating: 5, 
-      title: 'Amazing training results',
-      review: 'The training program worked wonders for my hyperactive puppy. The trainer was patient and used positive reinforcement techniques. My puppy is now well-behaved and responds to commands!',
-      date: '2023-11-28',
-      status: 'published',
-      response: 'Thank you for your wonderful review, Emily! We\'re so happy to hear about your puppy\'s progress.',
-      responseDate: '2023-11-29',
-      helpful: 15,
-      unhelpful: 0,
-      flagged: false,
-      serviceType: 'Puppy Training'
-    },
-    { 
-      id: 5, 
-      providerName: 'Pet Paradise Boarding', 
-      providerEmail: 'reservations@petparadise.com',
-      customerName: 'David Wilson',
-      customerEmail: 'david.w@example.com',
-      rating: 3, 
-      title: 'Average boarding experience',
-      review: 'The facility was clean, but my dog didn\'t seem to enjoy his stay. The staff was friendly but I think they were understaffed during my dog\'s stay.',
-      date: '2023-11-25',
-      status: 'published',
-      response: 'Thank you for your feedback, David. We appreciate your honesty and will use your comments to improve our services.',
-      responseDate: '2023-11-26',
-      helpful: 7,
-      unhelpful: 3,
-      flagged: false,
-      serviceType: 'Overnight Boarding'
-    },
-    { 
-      id: 6, 
-      providerName: 'Whiskers & Paws Clinic', 
-      providerEmail: 'appointments@whiskerspaws.com',
-      customerName: 'Jessica Taylor',
-      customerEmail: 'jessica.t@example.com',
-      rating: 1, 
-      title: 'Terrible experience',
-      review: 'The vet was rude and dismissive of my concerns. The clinic was overcrowded and we had to wait for over an hour past our appointment time.',
-      date: '2023-11-22',
-      status: 'under review',
-      response: '',
-      responseDate: '',
-      helpful: 3,
-      unhelpful: 1,
-      flagged: true,
-      serviceType: 'Veterinary Check-up'
-    },
-    { 
-      id: 7, 
-      providerName: 'Pawfect Walkers', 
-      providerEmail: 'schedule@pawfectwalkers.com',
-      customerName: 'Robert Martinez',
-      customerEmail: 'robert.m@example.com',
-      rating: 5, 
-      title: 'Reliable dog walking service',
-      review: 'My dog walker is always on time and sends me updates during their walks. My dog loves her walks and comes back happy and tired!',
-      date: '2023-11-20',
-      status: 'published',
-      response: 'Thank you for your kind review, Robert! We\'re happy to provide reliable service for you and your furry friend.',
-      responseDate: '2023-11-21',
-      helpful: 9,
-      unhelpful: 0,
-      flagged: false,
-      serviceType: 'Dog Walking'
-    },
-    { 
-      id: 8, 
-      providerName: 'Elite Pet Grooming', 
-      providerEmail: 'bookings@elitepetgrooming.com',
-      customerName: 'Lisa Anderson',
-      customerEmail: 'lisa.a@example.com',
-      rating: 4, 
-      title: 'Good grooming but pricey',
-      review: 'My dog looks great after his grooming session. The groomer did an excellent job with his coat. The only downside is the price, which is a bit high compared to other groomers in the area.',
-      date: '2023-11-18',
-      status: 'published',
-      response: 'Thank you for your feedback, Lisa. We pride ourselves on quality grooming and use premium products, which is reflected in our pricing. We do offer loyalty discounts for regular customers!',
-      responseDate: '2023-11-19',
-      helpful: 6,
-      unhelpful: 2,
-      flagged: false,
-      serviceType: 'Full Grooming'
-    },
-    { 
-      id: 9, 
-      providerName: 'Healthy Paws Veterinary', 
-      providerEmail: 'care@healthypaws.com',
-      customerName: 'Kevin Thomas',
-      customerEmail: 'kevin.t@example.com',
-      rating: 5, 
-      title: 'Compassionate care',
-      review: 'Dr. Smith was incredibly compassionate when we had to make a difficult decision for our aging pet. The entire staff was supportive and caring during a tough time.',
-      date: '2023-11-15',
-      status: 'published',
-      response: 'Thank you for sharing your experience, Kevin. We aim to provide compassionate care during all stages of your pet\'s life.',
-      responseDate: '2023-11-16',
-      helpful: 18,
-      unhelpful: 0,
-      flagged: false,
-      serviceType: 'Veterinary Care'
-    },
-    { 
-      id: 10, 
-      providerName: 'Home Pet Care', 
-      providerEmail: 'service@homepetcare.com',
-      customerName: 'Amanda White',
-      customerEmail: 'amanda.w@example.com',
-      rating: 2, 
-      title: 'Unprofessional service',
-      review: 'The pet sitter canceled last minute, leaving me scrambling to find a replacement. Very unprofessional and unreliable.',
-      date: '2023-11-12',
-      status: 'under review',
-      response: '',
-      responseDate: '',
-      helpful: 4,
-      unhelpful: 1,
-      flagged: true,
-      serviceType: 'Pet Sitting'
-    }
-  ];
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Render star rating
+  const statusDisplayMap = {
+    published: { label: 'Published', badge: 'bg-green-100 text-green-800' },
+    pending: { label: 'Pending Review', badge: 'bg-amber-100 text-amber-800' },
+    'under review': { label: 'Under Review', badge: 'bg-amber-100 text-amber-800' },
+    rejected: { label: 'Rejected', badge: 'bg-red-100 text-red-800' },
+  };
+
+  const formatDate = (value) => {
+    if (!value) return '—';
+    try {
+      return new Date(value).toLocaleDateString('en-IN', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      });
+    } catch (err) {
+      return value;
+    }
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadReviews = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const response = await api.get('/admin/reviews');
+
+        if (!isMounted) return;
+
+        const items = response?.data ?? response?.items ?? [];
+        const normalized = items.map((item) => {
+          const reviewText = item.review_text || '';
+          const title = reviewText
+            ? reviewText.split('\n')[0].slice(0, 80) + (reviewText.length > 80 ? '…' : '')
+            : 'Review';
+
+          return {
+            id: item.review_id,
+            providerName: item.provider?.name || 'Unknown Provider',
+            providerEmail: item.provider?.email || '—',
+            serviceType: item.provider?.type || '—',
+            customerName: item.customer?.name || 'Anonymous',
+            customerEmail: item.customer?.email || '—',
+            rating: Number(item.rating ?? 0),
+            title,
+            review: reviewText,
+            date: item.reviewed_at,
+            status: (item.status || 'pending').toLowerCase(),
+            response: item.response || '',
+            responseDate: item.response_date,
+            helpful: item.helpful ?? 0,
+            unhelpful: item.unhelpful ?? 0,
+            flagged: Boolean(item.flagged),
+            booking: item.booking || null,
+          };
+        });
+
+        setReviews(normalized);
+      } catch (err) {
+        console.error('Failed to load provider reviews', err);
+        if (isMounted) {
+          setError(err?.message || 'Unable to load reviews');
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadReviews();
+    return () => {
+      isMounted = false;
+    };
+  }, [api]);
+
   const renderStarRating = (rating) => {
     const stars = [];
     for (let i = 1; i <= 5; i++) {
@@ -232,41 +110,40 @@ const ProviderPerformance = () => {
     return <div className="flex">{stars}</div>;
   };
 
-  // Filter and sort reviews
-  const filteredAndSortedReviews = reviewsData
-    .filter(review => {
-      const matchesSearch = 
-        review.providerName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        review.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        review.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        review.review.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesRating = filterRating === 'all' || 
-        (filterRating === '5' && review.rating === 5) ||
-        (filterRating === '4' && review.rating === 4) ||
-        (filterRating === '3' && review.rating === 3) ||
-        (filterRating === '2' && review.rating === 2) ||
-        (filterRating === '1' && review.rating === 1);
-      
-      const matchesStatus = filterStatus === 'all' || review.status === filterStatus;
-      
-      return matchesSearch && matchesRating && matchesStatus;
-    })
-    .sort((a, b) => {
-      let comparison = 0;
-      
-      if (sortField === 'date') {
-        comparison = new Date(a.date) - new Date(b.date);
-      } else if (sortField === 'rating') {
-        comparison = a.rating - b.rating;
-      } else if (sortField === 'providerName') {
-        comparison = a.providerName.localeCompare(b.providerName);
-      } else if (sortField === 'helpful') {
-        comparison = a.helpful - b.helpful;
-      }
-      
-      return sortDirection === 'asc' ? comparison : -comparison;
-    });
+  const filteredAndSortedReviews = useMemo(() => {
+    return reviews
+      .filter((review) => {
+        const search = searchTerm.toLowerCase();
+        const matchesSearch =
+          review.providerName.toLowerCase().includes(search) ||
+          review.customerName.toLowerCase().includes(search) ||
+          review.title.toLowerCase().includes(search) ||
+          (review.review || '').toLowerCase().includes(search);
+
+        const matchesRating =
+          filterRating === 'all' || review.rating === Number(filterRating);
+
+        const matchesStatus =
+          filterStatus === 'all' || review.status === filterStatus.toLowerCase();
+
+        return matchesSearch && matchesRating && matchesStatus;
+      })
+      .sort((a, b) => {
+        let comparison = 0;
+
+        if (sortField === 'date') {
+          comparison = new Date(a.date || 0) - new Date(b.date || 0);
+        } else if (sortField === 'rating') {
+          comparison = a.rating - b.rating;
+        } else if (sortField === 'providerName') {
+          comparison = a.providerName.localeCompare(b.providerName);
+        } else if (sortField === 'helpful') {
+          comparison = a.helpful - b.helpful;
+        }
+
+        return sortDirection === 'asc' ? comparison : -comparison;
+      });
+  }, [reviews, searchTerm, filterRating, filterStatus, sortField, sortDirection]);
 
   // Handle sort click
   const handleSort = (field) => {
@@ -300,6 +177,12 @@ const ProviderPerformance = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
+        {error && (
+          <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -358,7 +241,9 @@ const ProviderPerformance = () => {
             >
               <option value="all">All Statuses</option>
               <option value="published">Published</option>
+              <option value="pending">Pending Review</option>
               <option value="under review">Under Review</option>
+              <option value="rejected">Rejected</option>
             </select>
           </div>
         </div>

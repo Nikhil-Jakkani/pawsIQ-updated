@@ -6,15 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 
 const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
 
-// Placeholder function for uploading vaccination details
-const uploadVaccinationDetails = async (file) => {
-  // Replace this with actual upload logic
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve('https://example.com/vaccination-details/' + file.name);
-    }, 1000);
-  });
-};
+// Vaccination details will be uploaded via health records API
 
 const UserEditPet = () => {
   const navigate = useNavigate();
@@ -24,6 +16,7 @@ const UserEditPet = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [previewImage, setPreviewImage] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -40,8 +33,10 @@ const UserEditPet = () => {
     neutered: false,
     allergies: [],
     customAllergies: '',
+    other_allergies: '',
     medicalConditions: [],
     customMedicalConditions: '',
+    other_conditions: '',
     medications: '',
     dietaryNeeds: '',
     vetName: '',
@@ -208,7 +203,35 @@ const UserEditPet = () => {
           }
         }
         
+        // Set image preview if pet has image
+        if (petData.pet_image) {
+          // We'll fetch signed URL for preview
+          try {
+            const qs = new URLSearchParams({ bucket: 'pets-photos', path: petData.pet_image, expiresIn: String(60 * 60 * 24) }).toString();
+            const imgRes = await authFetch(`${API_URL}/media/signed-url?${qs}`);
+            const imgPayload = await imgRes.json().catch(() => ({}));
+            if (imgRes.ok && imgPayload?.url) {
+              setPreviewImage(imgPayload.url);
+            }
+          } catch (e) {
+            console.warn('Failed to load pet image:', e);
+          }
+        }
+
         // Map the pet data to form data
+        // Derive selected vs custom for allergies/conditions if backend didn't store other_* on create
+        const allAllergiesArr = petData.allergies
+          ? String(petData.allergies).split(',').map((s) => s.trim()).filter(Boolean)
+          : [];
+        const selectedKnownAllergies = allAllergiesArr.filter((a) => commonAllergies.includes(a));
+        const derivedCustomAllergies = allAllergiesArr.filter((a) => !commonAllergies.includes(a)).join(', ');
+
+        const allConditionsArr = petData.medical_conditions
+          ? String(petData.medical_conditions).split(',').map((s) => s.trim()).filter(Boolean)
+          : [];
+        const selectedKnownConditions = allConditionsArr.filter((c) => commonMedicalConditions.includes(c));
+        const derivedCustomConditions = allConditionsArr.filter((c) => !commonMedicalConditions.includes(c)).join(', ');
+
         setFormData({
           name: petData.pet_name || petData.name || '',
           type: mappedType,
@@ -221,10 +244,12 @@ const UserEditPet = () => {
           microchipped: petData.microchipped || false,
           microchipNumber: petData.microchip_number || '',
           neutered: petData.neutered || false,
-          allergies: petData.allergies ? petData.allergies.split(', ') : [],
-          customAllergies: '',
-          medicalConditions: petData.medical_conditions ? petData.medical_conditions.split(', ') : [],
-          customMedicalConditions: '',
+          allergies: selectedKnownAllergies,
+          customAllergies: petData.other_allergies || derivedCustomAllergies,
+          other_allergies: petData.other_allergies || '',
+          medicalConditions: selectedKnownConditions,
+          customMedicalConditions: petData.other_medical_conditions || derivedCustomConditions,
+          other_conditions: petData.other_medical_conditions || '',
           medications: petData.current_medications || petData.medications || '',
           dietaryNeeds: petData.dietary_needs || '',
           vetName: petData.vet_name || '',
@@ -234,9 +259,12 @@ const UserEditPet = () => {
           vaccinations: vaccinationsArray,
         });
 
-        // Fetch breeds for the pet type
+        // Fetch breeds and blood groups for the pet type
         if (mappedType) {
-          await fetchBreeds(mappedType);
+          await Promise.all([
+            fetchBreeds(mappedType),
+            fetchBloodGroups(mappedType)
+          ]);
         }
 
       } catch (error) {
@@ -255,25 +283,15 @@ const UserEditPet = () => {
   const handleChange = async (e) => {
     const { name, value, type, checked, files } = e.target;
     
-    if (name === 'vaccinationDetails' && files && files[0]) {
-      try {
-        // Assuming uploadVaccinationDetails function exists and handles the upload
-        const uploadUrl = await uploadVaccinationDetails(files[0]);
-        setFormData(prev => ({ ...prev, vaccinationDetails: uploadUrl }));
-      } catch (uploadError) {
-        console.error("Failed to upload vaccination details:", uploadError);
-        alert("Failed to upload vaccination details.");
-      }
-    } else {
-      setFormData({
-        ...formData,
-        [name]: type === 'checkbox' ? checked : value
-      });
-    }
+    setFormData({
+      ...formData,
+      [name]: type === 'checkbox' ? checked : value
+    });
     
-    // If pet type changes, fetch breeds and reset breed selection
+    // If pet type changes, fetch breeds and blood groups, reset breed selection
     if (name === 'type') {
       fetchBreeds(value);
+      fetchBloodGroups(value);
       setFormData(prev => ({
         ...prev,
         [name]: value,
@@ -285,28 +303,53 @@ const UserEditPet = () => {
 
   // Handle allergy checkbox changes
   const handleAllergyChange = (allergy, isChecked) => {
-    setFormData(prev => ({
-      ...prev,
-      allergies: isChecked 
-        ? [...prev.allergies, allergy]
-        : prev.allergies.filter(item => item !== allergy)
-    }));
+    console.log('🔄 Allergy Change:', { allergy, isChecked });
+    setFormData(prev => {
+      const updated = {
+        ...prev,
+        allergies: isChecked 
+          ? [...prev.allergies, allergy]
+          : prev.allergies.filter(item => item !== allergy)
+      };
+      console.log('✅ Updated Allergies:', updated.allergies);
+      return updated;
+    });
   };
 
   // Handle medical condition checkbox changes
   const handleMedicalConditionChange = (condition, isChecked) => {
-    setFormData(prev => ({
-      ...prev,
-      medicalConditions: isChecked 
-        ? [...prev.medicalConditions, condition]
-        : prev.medicalConditions.filter(item => item !== condition)
-    }));
+    console.log('🔄 Medical Condition Change:', { condition, isChecked });
+    setFormData(prev => {
+      const updated = {
+        ...prev,
+        medicalConditions: isChecked 
+          ? [...prev.medicalConditions, condition]
+          : prev.medicalConditions.filter(item => item !== condition)
+      };
+      console.log('✅ Updated Conditions:', updated.medicalConditions);
+      return updated;
+    });
   };
 
   // Handle image upload
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Validate file
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      if (!validTypes.includes(file.type)) {
+        alert('Please upload a JPG, PNG, or WEBP image');
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Image size must be less than 5MB');
+        return;
+      }
+      
+      // Store the file for upload
+      setImageFile(file);
+      
+      // Show preview
       const reader = new FileReader();
       reader.onloadend = () => {
         setPreviewImage(reader.result);
@@ -323,17 +366,13 @@ const UserEditPet = () => {
     try {
       if (!accessToken) throw new Error('You must be logged in to edit a pet.');
 
-      // Combine selected allergies with custom allergies
-      const allAllergies = [...formData.allergies];
-      if (formData.customAllergies.trim()) {
-        allAllergies.push(formData.customAllergies.trim());
-      }
+      // Prepare allergies: send as array + separate other field
+      const selected_allergies = formData.allergies && formData.allergies.length > 0 ? formData.allergies : undefined;
+      const other_allergies = (formData.customAllergies && formData.customAllergies.trim()) || (formData.other_allergies && formData.other_allergies.trim()) || undefined;
 
-      // Combine selected medical conditions with custom conditions
-      const allMedicalConditions = [...formData.medicalConditions];
-      if (formData.customMedicalConditions.trim()) {
-        allMedicalConditions.push(formData.customMedicalConditions.trim());
-      }
+      // Prepare conditions: send as array + separate other field
+      const selected_conditions = formData.medicalConditions && formData.medicalConditions.length > 0 ? formData.medicalConditions : undefined;
+      const other_conditions = (formData.customMedicalConditions && formData.customMedicalConditions.trim()) || (formData.other_conditions && formData.other_conditions.trim()) || undefined;
 
       const weightValue = formData.weight !== '' && formData.weight !== null && formData.weight !== undefined 
         ? (typeof formData.weight === 'number' ? formData.weight : Number(formData.weight))
@@ -342,6 +381,21 @@ const UserEditPet = () => {
       if (weightValue !== null && Number.isNaN(weightValue)) {
         throw new Error('Please enter a valid numeric weight');
       }
+
+      // Debug logging
+      console.log('📋 Form Data Before Submit:', {
+        allergies: formData.allergies,
+        medicalConditions: formData.medicalConditions,
+        customAllergies: formData.customAllergies,
+        customMedicalConditions: formData.customMedicalConditions
+      });
+
+      console.log('📤 Prepared Payload Values:', {
+        selected_allergies,
+        other_allergies,
+        selected_conditions,
+        other_conditions
+      });
 
       const payload = {
         name: formData.name.trim(),
@@ -354,19 +408,31 @@ const UserEditPet = () => {
         bloodGroup: formData.bloodGroup || undefined,
         ageGroup: formData.ageGroup || undefined,
         microchipped: formData.microchipped,
-        microchipNumber: formData.microchipNumber || undefined,
+        microchipNumber: formData.microchipNumber && formData.microchipNumber.toString().trim() ? formData.microchipNumber.toString() : undefined,
         neutered: formData.neutered,
-        selected_allergies: allAllergies.length > 0 ? allAllergies : undefined,
-        selected_conditions: allMedicalConditions.length > 0 ? allMedicalConditions : undefined,
+        selected_allergies,
+        other_allergies,
+        selected_conditions,
+        other_conditions,
         current_medications: formData.medications || undefined,
         dietary_needs: formData.dietaryNeeds || undefined,
         vetName: formData.vetName || undefined,
         vetPhone: formData.vetPhone || undefined,
         notes: formData.notes || undefined,
-        vaccinationDetails: formData.vaccinationDetails || undefined,
-        vaccinations: formData.vaccinations,
+        // Transform vaccinations array to backend format
+        selected_vaccines: formData.vaccinations.map(v => v.vaccine).filter(Boolean),
+        vaccination_dates: formData.vaccinations.reduce((acc, v) => {
+          if (v.vaccine && v.date) acc[v.vaccine] = v.date;
+          return acc;
+        }, {}),
+        next_due_dates: formData.vaccinations.reduce((acc, v) => {
+          if (v.vaccine && v.nextDue) acc[v.vaccine] = v.nextDue;
+          return acc;
+        }, {}),
         region: "India"
       };
+
+      console.log('🚀 Sending Payload to Backend:', JSON.stringify(payload, null, 2));
 
       const res = await authFetch(`${API_URL}/pets/${petId}`, {
         method: 'PATCH',
@@ -379,6 +445,35 @@ const UserEditPet = () => {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.message || 'Failed to update pet');
 
+      // Upload image if user selected a new one
+      if (imageFile) {
+        try {
+          const ext = imageFile.name.split('.').pop().toLowerCase();
+          const uploadRes = await authFetch(`${API_URL}/media/signed-upload`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bucket: 'pets-photos', entity: 'pet', entity_id: petId, file_ext: ext }),
+          });
+          const uploadPayload = await uploadRes.json().catch(() => ({}));
+          if (uploadRes.ok) {
+            const { path: imagePath, token } = uploadPayload;
+            const { supabase } = await import('../../lib/supabaseClient');
+            const { error: upErr } = await supabase.storage.from('pets-photos').uploadToSignedUrl(imagePath, token, imageFile);
+            if (!upErr) {
+              await authFetch(`${API_URL}/pets/${petId}/image`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path: imagePath }),
+              });
+            }
+          }
+        } catch (imgErr) {
+          console.error('Image upload failed:', imgErr);
+          // Don't fail the whole update if only image fails
+        }
+      }
+
+      alert('✅ Pet profile updated successfully!');
       navigate('/user/pets');
     } catch (err) {
       alert(err?.message || 'Failed to update pet');
@@ -521,20 +616,6 @@ const UserEditPet = () => {
                     ))}
                   </div>
                 </div>
-                {/* Vaccination Details Upload */}
-                <div>
-                  <label htmlFor="vaccinationDetails" className="block text-sm font-semibold text-gray-700 mb-2">
-                    Vaccination Details (PDF, PNG, JPG)
-                  </label>
-                  <input
-                    type="file"
-                    id="vaccinationDetails"
-                    name="vaccinationDetails"
-                    accept=".pdf, .png, .jpg, .jpeg"
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
-                  />
-                </div>
                 
                 <div>
                   <label htmlFor="breed" className="block text-sm font-semibold text-gray-700 mb-2">
@@ -588,6 +669,7 @@ const UserEditPet = () => {
                     <input
                       type="date"
                       id="birthdate"
+                      max={new Date().toISOString().split('T')[0]}
                       name="birthdate"
                       value={formData.birthdate}
                       onChange={handleChange}
@@ -607,7 +689,8 @@ const UserEditPet = () => {
                     value={formData.weight}
                     onChange={handleChange}
                     step="0.1"
-                    min="0"
+                    min="0.1"
+                    max="200"
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
                     placeholder="Enter weight"
                   />
@@ -631,15 +714,59 @@ const UserEditPet = () => {
                   <label htmlFor="bloodGroup" className="block text-sm font-semibold text-gray-700 mb-2">
                     Blood Group
                   </label>
-                  <input
-                    type="text"
-                    id="bloodGroup"
-                    name="bloodGroup"
-                    value={formData.bloodGroup}
+                  {loadingBloodGroups ? (
+                    <input
+                      type="text"
+                      disabled
+                      value="Loading..."
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-100 cursor-not-allowed"
+                    />
+                  ) : bloodGroups.length > 0 ? (
+                    <select
+                      id="bloodGroup"
+                      name="bloodGroup"
+                      value={formData.bloodGroup}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
+                    >
+                      <option value="">Select blood group</option>
+                      {bloodGroups.map((bg) => (
+                        <option key={bg} value={bg}>
+                          {bg}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      id="bloodGroup"
+                      name="bloodGroup"
+                      value={formData.bloodGroup}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
+                      placeholder="e.g., DEA 1.1+, A, B, AB, Unknown"
+                    />
+                  )}
+                </div>
+              
+                
+                <div>
+                  <label htmlFor="ageGroup" className="block text-sm font-semibold text-gray-700 mb-2">
+                    Age Group
+                  </label>
+                  <select
+                    id="ageGroup"
+                    name="ageGroup"
+                    value={formData.ageGroup}
                     onChange={handleChange}
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
-                    placeholder="e.g., DEA 1.1+, A, B, AB, Unknown"
-                  />
+                  >
+                    {ageGroups.map((group) => (
+                      <option key={group.value} value={group.value}>
+                        {group.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </div>
@@ -801,6 +928,96 @@ const UserEditPet = () => {
                     placeholder="Special dietary requirements"
                   />
                 </div>
+              </div>
+            </div>
+            
+            {/* Vaccination Section */}
+            <div className="bg-white rounded-2xl p-6 border border-gray-200">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="bg-gray-800 p-2 rounded-xl">
+                  <FaSyringe className="text-white text-xl" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-800">Vaccination Records</h2>
+              </div>
+              <div className="space-y-4">
+                {formData.vaccinations && formData.vaccinations.length > 0 ? (
+                  <div className="space-y-3">
+                    {formData.vaccinations.map((vacc, index) => (
+                      <div key={index} className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-600 mb-1">Vaccine Name</label>
+                            <input
+                              type="text"
+                              value={vacc.vaccine || ''}
+                              onChange={(e) => {
+                                const updated = [...formData.vaccinations];
+                                updated[index] = { ...updated[index], vaccine: e.target.value };
+                                setFormData({ ...formData, vaccinations: updated });
+                              }}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                              placeholder="e.g., Rabies, Distemper"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-600 mb-1">Date Given</label>
+                            <input
+                              type="date"
+                              value={vacc.date ? vacc.date.split('T')[0] : ''}
+                              onChange={(e) => {
+                                const updated = [...formData.vaccinations];
+                                updated[index] = { ...updated[index], date: e.target.value };
+                                setFormData({ ...formData, vaccinations: updated });
+                              }}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-600 mb-1">Next Due</label>
+                            <input
+                              type="date"
+                              value={vacc.nextDue ? vacc.nextDue.split('T')[0] : ''}
+                              onChange={(e) => {
+                                const updated = [...formData.vaccinations];
+                                updated[index] = { ...updated[index], nextDue: e.target.value };
+                                setFormData({ ...formData, vaccinations: updated });
+                              }}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                            />
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = formData.vaccinations.filter((_, i) => i !== index);
+                            setFormData({ ...formData, vaccinations: updated });
+                          }}
+                          className="mt-2 text-red-600 hover:text-red-700 text-sm font-medium"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-sm">No vaccination records yet.</p>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormData({
+                      ...formData,
+                      vaccinations: [
+                        ...formData.vaccinations,
+                        { vaccine: '', date: '', nextDue: '', administered: true }
+                      ]
+                    });
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <span className="text-lg">+</span>
+                  <span>Add Vaccination</span>
+                </button>
               </div>
             </div>
             

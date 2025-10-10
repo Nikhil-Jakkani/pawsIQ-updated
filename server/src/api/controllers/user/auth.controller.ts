@@ -50,7 +50,14 @@ export const userAuthController = {
   }),
 
   logout: catchAsync(async (req: any, res: Response) => {
-    await userAuthService.logout(req.body.refreshToken);
+    const refreshToken = req.body.refreshToken;
+    
+    // If no refresh token provided, consider already logged out
+    if (!refreshToken) {
+      return res.status(httpStatus.NO_CONTENT).send();
+    }
+    
+    await userAuthService.logout(refreshToken);
     res.status(httpStatus.NO_CONTENT).send();
   }),
 
@@ -67,8 +74,20 @@ export const userAuthController = {
   }),
 
   verifyEmail: catchAsync(async (req: Request, res: Response) => {
-    // await userAuthService.verifyEmail(req.query.token as string);
-    res.status(httpStatus.NO_CONTENT).send();
+    const token = req.query.token as string;
+    
+    if (!token) {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Verification token is required');
+    }
+    
+    // TODO: Implement email verification service method
+    // await userAuthService.verifyEmail(token);
+    
+    // For now, return not implemented
+    throw new ApiError(
+      httpStatus.NOT_IMPLEMENTED, 
+      'Email verification not yet implemented. Please contact support.'
+    );
   }),
 
   verifyOTP: catchAsync(async (req: Request, res: Response) => {

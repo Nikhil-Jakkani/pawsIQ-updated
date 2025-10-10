@@ -2,12 +2,7 @@ import httpStatus from 'http-status';
 import prisma from '../../../lib/prisma.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { notificationService } from '../notification/notification.service.js';
-
-const serializeBigInt = <T>(data: T): T => {
-  return JSON.parse(
-    JSON.stringify(data, (_key, value) => (typeof value === 'bigint' ? value.toString() : value))
-  ) as T;
-};
+import { serializeBigInt } from '../../utils/bigIntSerializer.js';
 
 export type BookingStatus = 'Pending' | 'Confirmed' | 'Cancelled' | 'Completed';
 
@@ -43,8 +38,14 @@ const createBooking = async (
 
   const booked = new Date(body.booked_dtm);
   if (isNaN(booked.getTime())) throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid booked_dtm');
-  if (booked.getTime() <= Date.now()) {
-    throw new ApiError(httpStatus.BAD_REQUEST, 'Date for booking needs to be a future date/time');
+  
+  // Allow 5-minute grace period to handle network latency
+  const GRACE_PERIOD = 5 * 60 * 1000; // 5 minutes
+  if (booked.getTime() <= (Date.now() - GRACE_PERIOD)) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST, 
+      'Booking date must be in the future. Please select a later date/time.'
+    );
   }
 
   // Create booking and appointment in a transaction
@@ -270,8 +271,14 @@ const rescheduleBooking = async (userId: bigint, id: number, newDate: string) =>
 const deleteBooking = async (userId: bigint, id: number) => {
   const existing = await prisma.pIQ_Bookings.findUnique({ where: { booking_id: id } });
   if (!existing || existing.user_id !== userId) throw new ApiError(httpStatus.NOT_FOUND, 'Booking not found');
-  await prisma.pIQ_Bookings.delete({ where: { booking_id: id } });
-  return { success: true };
+  
+  // Soft delete by marking as cancelled
+  const updated = await prisma.pIQ_Bookings.update({
+    where: { booking_id: id },
+    data: { booking_status: 'Cancelled' },
+  });
+  
+  return serializeBigInt(updated);
 };
 
 export const bookingService = {

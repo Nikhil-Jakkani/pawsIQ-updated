@@ -24,22 +24,41 @@ import {
 } from 'react-icons/fa';
 
 const BookingOverview = () => {
-  const api = useApi();
+  const { get } = useApi();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterService, setFilterService] = useState('all');
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Fetch appointments
+  // Fetch bookings for overview (admin route)
   useEffect(() => {
     let alive = true;
     const run = async () => {
       setLoading(true);
       try {
-        const data = await api.get('/appointments');
+        const data = await get('/admin/bookings?limit=50');
         if (!alive) return;
-        setAppointments(Array.isArray(data?.items) ? data.items : (Array.isArray(data) ? data : []));
+        const items = Array.isArray(data?.results) ? data.results : [];
+        const normalized = items.map((b) => {
+          const status = (b.booking_status || 'confirmed')
+            .split('_')
+            .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+            .join(' ');
+
+          return {
+            appointment_id: b.booking_id,
+            appointment_date: b.booked_dtm,
+            appointment_status: status,
+            appointment_type: b.PIQ_Service_Master?.service_title || b.PIQ_Service_Master?.service_type || 'Service',
+            customerName: b.PIQ_User?.user_full_name || 'Customer',
+            petName: b.PIQ_Pets?.pet_name || 'Pet',
+            providerName: b.PIQ_Service_Provider?.serv_provider_name || 'Provider',
+            price: Number(b.PIQ_Service_Master?.service_price_amt ?? 0),
+            location: b.PIQ_Service_Provider?.serv_provider_location || '—',
+          };
+        });
+        setAppointments(normalized);
       } catch (e) {
         console.error('Error loading appointments:', e);
       } finally {
@@ -48,7 +67,7 @@ const BookingOverview = () => {
     };
     run();
     return () => { alive = false; };
-  }, [api]);
+  }, [get]); // Add get to dependency array to prevent re-render loop
 
   // Calculate dynamic stats
   const today = new Date().toDateString();
@@ -63,52 +82,16 @@ const BookingOverview = () => {
 
   const recentBookings = appointments.slice(0, 10).map(a => ({
     id: `BK${String(a.appointment_id).padStart(3, '0')}`,
-    customerName: 'User',
-    petName: 'Pet',
+    customerName: a.customerName,
+    petName: a.petName,
     service: a.appointment_type || 'Service',
-    provider: 'Provider',
-    date: new Date(a.appointment_date).toLocaleDateString(),
-    time: new Date(a.appointment_date).toLocaleTimeString(),
+    provider: a.providerName,
+    date: a.appointment_date ? new Date(a.appointment_date).toLocaleDateString() : '—',
+    time: a.appointment_date ? new Date(a.appointment_date).toLocaleTimeString() : '—',
     status: a.appointment_status || 'Confirmed',
-    price: 0
+    price: a.price,
+    location: a.location,
   }));
-
-  // Keep sample data as fallback
-  const sampleBookings = [
-    {
-      id: 'BK001',
-      customerName: 'Sarah Johnson',
-      petName: 'Buddy',
-      service: 'Dog Walking',
-      provider: 'Mike Thompson',
-      date: '2025-06-15',
-      time: '10:00 AM',
-      status: 'Confirmed',
-      price: 25.00
-    },
-    {
-      id: 'BK002',
-      customerName: 'John Smith',
-      petName: 'Whiskers',
-      service: 'Pet Grooming',
-      provider: 'Pet Spa Plus',
-      date: '2025-06-16',
-      time: '2:00 PM',
-      status: 'In Progress',
-      price: 85.00
-    },
-    {
-      id: 'BK003',
-      customerName: 'Emily Davis',
-      petName: 'Max',
-      service: 'Veterinary Checkup',
-      provider: 'Dr. Anderson',
-      date: '2024-01-14',
-      time: '3:30 PM',
-      status: 'No Show',
-      price: 120.00
-    }
-  ];
 
   // Get status badge
   const getStatusBadge = (status) => {

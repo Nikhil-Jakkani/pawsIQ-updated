@@ -41,18 +41,36 @@ const Appointments = () => {
   const [limit] = useState(20);
   const [totalPages, setTotalPages] = useState(1);
   const [totalResults, setTotalResults] = useState(0);
+  const [bookingStats, setBookingStats] = useState({
+    totalBookings: 0,
+    upcomingBookings: 0,
+    completedToday: 0,
+    noShows: 0,
+    cancellations: 0,
+    disputes: 0,
+  });
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  // Fetch appointments from backend
+  // Fetch appointments and stats from backend
   useEffect(() => {
     let alive = true;
     const fetchAppointments = async () => {
-      setLoading(true);
       setError('');
+      setLoading(true);
       try {
         const qs = new URLSearchParams();
         qs.set('page', String(page));
         qs.set('limit', String(limit));
-        const data = await api.get(`/admin/appointments?${qs.toString()}`);
+        if (searchTerm) qs.set('search', searchTerm);
+        // Map UI status to backend expected values
+        const statusMap = {
+          inprogress: 'in_progress',
+          noshow: 'no_show',
+        };
+        const statusValue = statusMap[filterStatus] || filterStatus;
+        if (filterStatus && filterStatus !== 'all') qs.set('status', statusValue);
+        if (filterService && filterService !== 'all') qs.set('serviceType', filterService);
+        const data = await api.get(`/admin/bookings?${qs.toString()}`);
         if (!alive) return;
         setAppointments(data?.results || []);
         setTotalPages(Number(data?.totalPages) || 1);
@@ -70,40 +88,59 @@ const Appointments = () => {
     return () => {
       alive = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, limit]);
+  }, [page, limit, api, searchTerm, filterStatus, filterService, refreshKey]);
 
-  // Calculate stats from appointments
-  const bookingStats = {
-    totalBookings: totalResults,
-    upcomingBookings: appointments.filter(a => a.status === 'confirmed').length,
-    completedToday: appointments.filter(a => {
-      const today = new Date().toDateString();
-      const apptDate = a.date ? new Date(a.date).toDateString() : '';
-      return a.status === 'completed' && apptDate === today;
-    }).length,
-    noShows: 0,
-    cancellations: appointments.filter(a => a.status === 'cancelled').length,
-    disputes: 0
-  };
+  // Fetch booking statistics
+  useEffect(() => {
+    let alive = true;
+    const fetchStats = async () => {
+      try {
+        const stats = await api.get('/admin/bookings/stats');
+        if (!alive) return;
+        setBookingStats({
+          totalBookings: stats.totalBookings || 0,
+          upcomingBookings: stats.upcomingBookings || 0,
+          completedToday: stats.todayBookings || 0,
+          noShows: stats.noShowBookings || 0,
+          cancellations: stats.cancelledBookings || 0,
+          disputes: stats.disputedBookings || 0,
+        });
+      } catch (e) {
+        if (!alive) return;
+        console.error('Failed to load booking stats:', e);
+      }
+    };
+    fetchStats();
+    return () => {
+      alive = false;
+    };
+  }, [api, refreshKey]);
 
-  // Map appointments to booking format
-  const bookingsData = appointments.map(appt => ({
-    id: `APT${appt.id}`,
-    customerName: 'User',
-    petName: appt.petName || 'Pet',
-    service: appt.type || 'Appointment',
-    provider: 'Service Provider',
-    date: appt.date ? new Date(appt.date).toISOString().split('T')[0] : '',
-    time: appt.date ? new Date(appt.date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '',
-    duration: '—',
-    status: (appt.status || 'pending').charAt(0).toUpperCase() + (appt.status || 'pending').slice(1),
-    price: 0,
-    location: '—',
-    phone: '—',
-    notes: appt.comments || '',
-    petType: '—',
-    urgency: 'Normal'
+  // Map backend bookings to UI format
+  const bookingsData = appointments.map(booking => ({
+    id: `BK${String(booking.booking_id).padStart(4, '0')}`,
+    bookingId: booking.booking_id,
+    customerName: booking.PIQ_User?.user_full_name || 'Customer',
+    petName: booking.PIQ_Pets?.pet_name || 'Pet',
+    petType: booking.PIQ_Pets?.pet_type || 'Pet',
+    service: booking.PIQ_Service_Master?.service_title || 'Service',
+    provider: booking.PIQ_Service_Provider?.serv_provider_name || 'Provider',
+    date: booking.booked_dtm ? new Date(booking.booked_dtm).toISOString().split('T')[0] : '',
+    time: booking.booked_dtm ? new Date(booking.booked_dtm).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '',
+    duration: booking.PIQ_Service_Master?.service_duration ? `${booking.PIQ_Service_Master.service_duration} min` : '—',
+    status: (booking.booking_status || 'pending').split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+    price: Number(booking.PIQ_Service_Master?.service_price_amt || 0),
+    location: booking.PIQ_Service_Provider?.serv_provider_location || '—',
+    phone: booking.PIQ_User?.user_phone_number || '—',
+    notes: booking.booking_comments || '',
+    urgency: (() => {
+      if (!booking.booked_dtm || booking.booking_status === 'cancelled') return 'Normal';
+      const hours = (new Date(booking.booked_dtm) - new Date()) / 3600000;
+      if (hours < 0) return 'Low';
+      if (hours < 2) return 'Emergency';
+      if (hours < 24) return 'High';
+      return 'Normal';
+    })()
   }));
 
   // Filter and sort bookings
@@ -157,6 +194,7 @@ const Appointments = () => {
   // Get status badge
   const getStatusBadge = (status) => {
     const statusConfig = {
+      'Pending': { bg: 'bg-gray-100', text: 'text-gray-800', icon: FaClock },
       'Confirmed': { bg: 'bg-blue-100', text: 'text-blue-800', icon: FaCalendarCheck },
       'In Progress': { bg: 'bg-green-100', text: 'text-green-800', icon: FaClock },
       'Completed': { bg: 'bg-gray-100', text: 'text-gray-800', icon: FaCheck },
@@ -165,7 +203,7 @@ const Appointments = () => {
       'Disputed': { bg: 'bg-purple-100', text: 'text-purple-800', icon: FaExclamationCircle }
     };
     
-    const config = statusConfig[status] || statusConfig['Confirmed'];
+    const config = statusConfig[status] || { bg: 'bg-gray-100', text: 'text-gray-800', icon: FaClock };
     const IconComponent = config.icon;
     
     return (
@@ -182,12 +220,44 @@ const Appointments = () => {
     setShowRescheduleModal(true);
   };
 
+  // Submit reschedule to backend
+  const submitReschedule = async () => {
+    if (!selectedBooking) return;
+    const dateEl = document.getElementById('reschedule-date');
+    const timeEl = document.getElementById('reschedule-time');
+    const reasonEl = document.getElementById('reschedule-reason');
+    const newDate = dateEl?.value;
+    const newTime = timeEl?.value;
+    const reason = reasonEl?.value || '';
+
+    if (!newDate || !newTime) {
+      alert('Please select new date and time');
+      return;
+    }
+
+    try {
+      const iso = `${newDate}T${newTime}:00.000Z`;
+      await api.post(`/admin/bookings/${selectedBooking.bookingId}/reschedule`, { newDate: iso, reason });
+      alert('Booking rescheduled successfully');
+      setShowRescheduleModal(false);
+      // Trigger reload via refreshKey without full page reload
+      setRefreshKey((k) => k + 1);
+    } catch (e) {
+      console.error('Reschedule failed', e);
+      alert('Failed to reschedule booking');
+    }
+  };
+
   // Handle cancel booking
-  const handleCancel = (bookingId) => {
-    if (window.confirm('Are you sure you want to cancel this booking?')) {
-      console.log('Cancelling booking:', bookingId);
-      alert('Booking cancelled successfully!');
-      // In a real app, you would update the booking status via API
+  const handleCancel = async (booking) => {
+    const reason = prompt('Enter cancellation reason:');
+    if (!reason || !window.confirm('Cancel this booking?')) return;
+    try {
+      await api.post(`/admin/bookings/${booking.bookingId}/cancel`, { reason });
+      alert('Booking cancelled!');
+      setRefreshKey((k) => k + 1);
+    } catch (e) {
+      alert('Failed: ' + (e.response?.data?.message || e.message));
     }
   };
 
@@ -198,14 +268,36 @@ const Appointments = () => {
   };
 
   // Handle bulk actions
-  const handleBulkAction = (action) => {
+  const handleBulkAction = async (action) => {
     if (selectedBookings.length === 0) {
       alert('Please select bookings first');
       return;
     }
-    
-    console.log(`Performing ${action} on bookings:`, selectedBookings);
-    alert(`${action} action would be performed on ${selectedBookings.length} bookings`);
+
+    const bookingIds = selectedBookings
+      .map(id => {
+        const m = String(id).match(/\d+/);
+        return m ? Number(m[0]) : null;
+      })
+      .filter(Boolean);
+
+    if (bookingIds.length === 0) {
+      alert('Invalid selection');
+      return;
+    }
+
+    const reason = prompt(`Enter reason for ${action}:`) || '';
+
+    try {
+      const status = action.toLowerCase() === 'cancel' ? 'cancelled' : action.toLowerCase();
+      await api.post('/admin/bookings/bulk-update', { bookingIds, status, reason });
+      alert(`Updated ${bookingIds.length} bookings`);
+      setSelectedBookings([]);
+      setRefreshKey((k) => k + 1);
+    } catch (e) {
+      console.error('Bulk update failed', e);
+      alert('Bulk update failed');
+    }
   };
 
   return (
@@ -461,9 +553,33 @@ const Appointments = () => {
             </div>
           </div>
 
-          {/* Bookings Cards Grid - Fixed 3x3 Layout */}
+          {/* Loading State */}
+          {loading && (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading bookings...</p>
+            </div>
+          )}
+
+          {/* Error State */}
+          {error && !loading && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+              <FaExclamationTriangle className="text-red-500 text-3xl mx-auto mb-3" />
+              <h3 className="text-lg font-medium text-red-900 mb-2">Error Loading Bookings</h3>
+              <p className="text-red-700">{error}</p>
+              <button 
+                onClick={() => window.location.reload()}
+                className="mt-4 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+
+          {/* Bookings Cards Grid */}
+          {!loading && !error && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 min-h-0">
-            {filteredAndSortedBookings.slice(0, 9).map((booking) => {
+            {filteredAndSortedBookings.map((booking) => {
               // Get urgency color
               const getUrgencyColor = (urgency) => {
                 switch(urgency) {
@@ -588,7 +704,7 @@ const Appointments = () => {
                           <FaPercent className="text-sm" />
                         </button>
                         <button
-                          onClick={() => handleCancel(booking.id)}
+                          onClick={() => handleCancel(booking)}
                           className="text-red-600 hover:text-red-900 p-2 hover:bg-red-50 rounded-lg transition-colors"
                           title="Cancel Booking"
                         >
@@ -610,22 +726,70 @@ const Appointments = () => {
               );
             })}
           </div>
+          )}
 
-          {/* Pagination Info */}
-          {filteredAndSortedBookings.length > 9 && (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
-              <div className="flex items-center justify-center gap-4">
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-600">
-                  Showing 9 of {filteredAndSortedBookings.length} appointments
+                  Showing page {page} of {totalPages} ({totalResults} total bookings)
                 </div>
-                <button 
-                  onClick={() => {
-                    alert(`This would show the next set of appointments. Total available: ${filteredAndSortedBookings.length}`);
-                  }}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors text-sm"
-                >
-                  View All Appointments
-                </button>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => setPage(Math.max(1, page - 1))}
+                    disabled={page === 1}
+                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      page === 1 
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                        : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                    }`}
+                  >
+                    Previous
+                  </button>
+                  
+                  {/* Page Numbers */}
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (page <= 3) {
+                        pageNum = i + 1;
+                      } else if (page >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = page - 2 + i;
+                      }
+                      
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => setPage(pageNum)}
+                          className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                            page === pageNum
+                              ? 'bg-indigo-600 text-white'
+                              : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  
+                  <button 
+                    onClick={() => setPage(Math.min(totalPages, page + 1))}
+                    disabled={page === totalPages}
+                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      page === totalPages 
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                        : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                    }`}
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -653,6 +817,7 @@ const Appointments = () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">New Date</label>
                   <input
+                    id="reschedule-date"
                     type="date"
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                     defaultValue={selectedBooking.date}
@@ -661,6 +826,7 @@ const Appointments = () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">New Time</label>
                   <input
+                    id="reschedule-time"
                     type="time"
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                     defaultValue="10:00"
@@ -669,6 +835,7 @@ const Appointments = () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Reason for Rescheduling</label>
                   <textarea
+                    id="reschedule-reason"
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                     rows="3"
                     placeholder="Enter reason for rescheduling..."
@@ -683,10 +850,7 @@ const Appointments = () => {
                   Cancel
                 </button>
                 <button
-                  onClick={() => {
-                    alert(`Booking ${selectedBooking.id} has been rescheduled successfully!`);
-                    setShowRescheduleModal(false);
-                  }}
+                  onClick={submitReschedule}
                   className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
                 >
                   Reschedule Booking
@@ -695,8 +859,6 @@ const Appointments = () => {
             </div>
           </div>
         )}
-
-        {/* Discount Modal */}
         {showDiscountModal && selectedBooking && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-md">
@@ -704,7 +866,7 @@ const Appointments = () => {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Current Price</label>
-                  <p className="text-lg font-semibold text-gray-800">${selectedBooking.price.toFixed(2)}</p>
+                  <p className="text-lg font-semibold text-gray-800">₹{selectedBooking.price.toFixed(0)}</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Discount Type</label>
@@ -740,12 +902,13 @@ const Appointments = () => {
                 </button>
                 <button
                   onClick={() => {
-                    alert(`Discount has been applied to booking ${selectedBooking.id}!`);
+                    alert('Note: Discount feature is currently in development. Discounts should be applied during booking creation or through the payment system.');
                     setShowDiscountModal(false);
                   }}
-                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                  className="px-4 py-2 bg-gray-400 text-white rounded-md cursor-not-allowed"
+                  title="Feature coming soon"
                 >
-                  Apply Discount
+                  Apply Discount (Coming Soon)
                 </button>
               </div>
             </div>

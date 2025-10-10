@@ -5,11 +5,12 @@ import { providerAppointmentValidation } from '../../validations/provider/index.
 
 const router = express.Router();
 
-// Upcoming appointments for provider (mock-backed until schema adds provider link)
+// Upcoming appointments for provider
 router.get('/upcoming', auth('provider'), async (req: any, res, next) => {
   try {
     const id = req.user?.service_provider_id || req.user?.provider_id || req.user?.id;
-    const data = await (await import('../../services/provider/provider.service.js')).providerService.getUpcomingAppointments(Number(id));
+    // Get upcoming appointments (first page, status not completed/cancelled)
+    const data = await (await import('../../services/provider/provider.service.js')).providerService.getAppointments(Number(id), { page: 1, limit: 20 });
     res.json(data);
   } catch (e) {
     next(e);

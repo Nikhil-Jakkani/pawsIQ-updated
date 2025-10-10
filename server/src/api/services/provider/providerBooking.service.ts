@@ -2,12 +2,7 @@ import httpStatus from 'http-status';
 import prisma from '../../../lib/prisma.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { notificationService } from '../notification/notification.service.js';
-
-const serializeBigInt = <T>(data: T): T => {
-  return JSON.parse(
-    JSON.stringify(data, (_key, value) => (typeof value === 'bigint' ? value.toString() : value))
-  ) as T;
-};
+import { serializeBigInt } from '../../utils/bigIntSerializer.js';
 
 const getProvider = async (providerId: number) => {
   const prov = await prisma.pIQ_Service_Provider.findUnique({ where: { service_provider_id: providerId } });

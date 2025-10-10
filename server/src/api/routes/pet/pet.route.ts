@@ -69,6 +69,10 @@ router.post('/', userAuth as any, async (req: any, res) => {
     const microchipped = req.body?.microchipped;
     const microchipNumber = req.body?.microchipNumber ?? req.body?.microchip_number;
     const neutered = req.body?.neutered;
+    const vetName = req.body?.vetName ?? req.body?.vet_name;
+    const vetPhone = req.body?.vetPhone ?? req.body?.vet_phone;
+    const notes = req.body?.notes ?? req.body?.pet_notes;
+    const ageGroup = req.body?.ageGroup ?? req.body?.age_group;
     if (!name) return res.status(httpStatus.BAD_REQUEST).send({ message: 'name is required' });
 
     const insert: Record<string, any> = {
@@ -92,6 +96,13 @@ router.post('/', userAuth as any, async (req: any, res) => {
     if (microchipNumber !== undefined && microchipNumber !== null && microchipNumber !== '') {
       insert.microchip_number = String(microchipNumber);
     }
+    // Persist optional misc fields inside extras JSON
+    const extras: Record<string, any> = {};
+    if (ageGroup) extras.age_group = String(ageGroup);
+    if (vetName) extras.vet_name = String(vetName);
+    if (vetPhone) extras.vet_phone = String(vetPhone);
+    if (notes) extras.notes = String(notes);
+    if (Object.keys(extras).length > 0) insert.extras = extras;
 
     const { data: created, error } = await db
       .from('PIQ_Pets')
@@ -260,6 +271,20 @@ router.get('/:petId', userAuth as any, async (req: any, res) => {
       user_id: pet?.user_id != null ? Number(pet.user_id) : pet?.user_id,
     };
     const safePet = toJsonSafe(safePetPrimaries);
+    // Flatten extras JSON into top-level fields expected by frontend
+    try {
+      const ex = (pet as any)?.extras;
+      if (ex && typeof ex === 'object') {
+        if (ex.age_group !== undefined) (safePet as any).age_group = ex.age_group;
+        (safePet as any).vet_name = ex.vet_name ?? '';
+        (safePet as any).vet_phone = ex.vet_phone ?? '';
+        (safePet as any).notes = ex.notes ?? '';
+      } else {
+        (safePet as any).vet_name = '';
+        (safePet as any).vet_phone = '';
+        (safePet as any).notes = '';
+      }
+    } catch {}
     // Enrich from consolidated tables
     try {
       const [al, hc, vac] = await Promise.all([

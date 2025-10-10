@@ -20,14 +20,14 @@ const UserPetProfile = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [pet, setPet] = useState(null);
-  const [imageUrl, setImageUrl] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   // Extra lists
   const [vaccinations, setVaccinations] = useState([]);
   const [allergiesList, setAllergiesList] = useState([]);
   const [conditionsList, setConditionsList] = useState([]);
+  const [pet, setPet] = useState(null);
+  const [imageUrl, setImageUrl] = useState('');
 
   // Basic form state
   const [formData, setFormData] = useState({
@@ -136,6 +136,18 @@ const UserPetProfile = () => {
     });
   };
 
+  useEffect(() => {
+    const combined = [...selectedAllergies];
+    if (customAllergies.trim()) combined.push(customAllergies.trim());
+    setAllergiesList(combined);
+  }, [selectedAllergies, customAllergies]);
+
+  useEffect(() => {
+    const combined = [...selectedMedicalConditions];
+    if (customMedicalConditions.trim()) combined.push(customMedicalConditions.trim());
+    setConditionsList(combined);
+  }, [selectedMedicalConditions, customMedicalConditions]);
+  
   useEffect(() => {
     if (!authFetch || !petId) return;
     const load = async () => {
@@ -248,7 +260,6 @@ const UserPetProfile = () => {
         if (normalized.otherMedicalConditions) initMedical.push(normalized.otherMedicalConditions);
         setSelectedAllergies(initAllergies);
         setSelectedMedicalConditions(initMedical);
-
         // Fetch options
         await fetchHealthOptions();
 
@@ -268,21 +279,28 @@ const UserPetProfile = () => {
           }
           if (aRes && aRes.ok) {
             const payload = await aRes.json().catch(() => ({}));
-            // Consolidated row: { selected_allergies: string[], other_allergies: string|null }
-            const list = [];
-            if (Array.isArray(payload?.selected_allergies)) list.push(...payload.selected_allergies);
-            if (payload?.other_allergies) list.push(String(payload.other_allergies));
-            setAllergiesList(list);
+            // ✅ FIX: Properly separate selected (checkboxes) from custom (text input)
+            const selected = Array.isArray(payload?.selected_allergies) ? payload.selected_allergies : [];
+            const custom = payload?.other_allergies ? String(payload.other_allergies) : '';
+            setSelectedAllergies(selected);
+            setCustomAllergies(custom);
+            // Merge and set the display list
+            const mergedAllergies = [...selected];
+            if (custom) mergedAllergies.push(custom);
+            console.log('✅ Loaded Allergies from API:', { selected, custom });
           }
           if (cRes && cRes.ok) {
             const payload = await cRes.json().catch(() => ({}));
-            // Consolidated row: { selected_conditions: string[], other_conditions: string|null }
-            const list = [];
-            if (Array.isArray(payload?.selected_conditions)) list.push(...payload.selected_conditions);
-            if (payload?.other_conditions) list.push(String(payload.other_conditions));
-            setConditionsList(list);
-          }
-        } catch (e) {
+            // ✅ FIX: Properly separate selected (checkboxes) from custom (text input)
+            const selected = Array.isArray(payload?.selected_conditions) ? payload.selected_conditions : [];
+            const custom = payload?.other_conditions ? String(payload.other_conditions) : '';
+            setSelectedMedicalConditions(selected);
+            setCustomMedicalConditions(custom);
+            // Merge and set the display list
+            const mergedConditions = [...selected];
+            if (custom) mergedConditions.push(custom);
+            console.log('✅ Loaded Conditions from API:', { selected, custom });
+          }        } catch (e) {
           console.warn('Failed to fetch health lists', e);
         }
       } catch (e) {
@@ -341,7 +359,7 @@ const UserPetProfile = () => {
         bloodGroup: formData.bloodGroup || undefined,
         ageGroup: formData.ageGroup || undefined,
         microchipped: !!formData.microchipped,
-        microchipNumber: formData.microchipNumber || undefined,
+        microchipNumber: formData.microchipNumber && formData.microchipNumber.toString().trim() ? formData.microchipNumber.toString() : undefined,
         neutered: !!formData.neutered,
         // Legacy strings for backward-compat
         allergies: allAllergies.length > 0 ? allAllergies.join(', ') : undefined,

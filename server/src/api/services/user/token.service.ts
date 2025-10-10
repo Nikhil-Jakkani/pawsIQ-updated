@@ -130,10 +130,12 @@ const generateVerifyEmailToken = async (user: any, role: string) => {
 // Clean up expired tokens - should be called periodically
 const cleanupExpiredTokens = async () => {
   try {
+    // Use ISO string format for better PostgreSQL compatibility
+    const now = new Date().toISOString();
     const { error } = await db
       .from('tokens')
       .delete()
-      .lt('expires', new Date());
+      .lt('expires', now);
     
     if (error) {
       console.error('Failed to cleanup expired tokens:', error);
@@ -162,13 +164,14 @@ const blacklistToken = async (token: string) => {
 // Get user's active tokens count
 const getUserActiveTokensCount = async (userId: number) => {
   try {
+    const now = new Date().toISOString();
     const { count, error } = await db
       .from('tokens')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userId)
       .eq('type', tokenTypes.REFRESH)
       .eq('blacklisted', false)
-      .gt('expires', new Date());
+      .gt('expires', now);
     
     if (error) {
       return 0;

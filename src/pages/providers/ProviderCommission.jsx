@@ -1,13 +1,12 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { 
+import {
   FaArrowLeft,
   FaSearch,
   FaSort,
   FaSortUp,
   FaSortDown,
   FaEdit,
-  FaPercentage,
   FaDownload,
   FaPlus,
   FaCheck,
@@ -18,153 +17,162 @@ import {
   FaCut,
   FaDog,
   FaHome,
-  FaWalking
+  FaWalking,
 } from 'react-icons/fa';
 import DashboardLayout from '../../components/layout/DashboardLayout';
+import useApi from '../../hooks/useApi';
+
+const SERVICE_TYPE_LABELS = {
+  veterinary: 'Veterinary',
+  diagnostics: 'Diagnostic Services',
+  boarding: 'Boarding',
+  grooming: 'Grooming',
+  training: 'Training',
+  'physical activity': 'Physical Activity',
+};
+
+const normalizeServiceType = (rawType) => {
+  if (!rawType) return 'Other';
+  const value = rawType.toString().toLowerCase();
+  if (value.includes('vet')) return SERVICE_TYPE_LABELS.veterinary;
+  if (value.includes('diagn')) return SERVICE_TYPE_LABELS.diagnostics;
+  if (value.includes('board')) return SERVICE_TYPE_LABELS.boarding;
+  if (value.includes('groom')) return SERVICE_TYPE_LABELS.grooming;
+  if (value.includes('train')) return SERVICE_TYPE_LABELS.training;
+  if (value.includes('physical') || value.includes('sitter') || value.includes('walk')) {
+    return SERVICE_TYPE_LABELS['physical activity'];
+  }
+  return 'Other';
+};
+
+const formatDate = (value) => {
+  if (!value) return '—';
+  try {
+    return new Date(value).toLocaleDateString('en-IN', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  } catch (err) {
+    return value;
+  }
+};
 
 const ProviderCommission = () => {
+  const api = useApi();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
   const [sortField, setSortField] = useState('providerName');
   const [sortDirection, setSortDirection] = useState('asc');
   const [showEditModal, setShowEditModal] = useState(false);
   const [currentCommission, setCurrentCommission] = useState(null);
-  
-  // Sample data for commission rates
-  const commissionRatesData = [
-    { 
-      id: 1, 
-      providerName: 'Happy Paws Veterinary Clinic', 
-      providerEmail: 'info@happypawsvet.com',
-      category: 'Veterinary', 
-      baseRate: 15, 
-      volumeDiscount: true, 
-      specialRate: false, 
-      effectiveRate: 15, 
-      lastUpdated: '2023-11-15', 
-      nextReview: '2024-05-15',
-      notes: 'Standard rate for veterinary services'
-    },
-    { 
-      id: 2, 
-      providerName: 'Fluffy Cuts Grooming', 
-      providerEmail: 'appointments@fluffycuts.com',
-      category: 'Grooming', 
-      baseRate: 12, 
-      volumeDiscount: false, 
-      specialRate: false, 
-      effectiveRate: 12, 
-      lastUpdated: '2023-10-20', 
-      nextReview: '2024-04-20',
-      notes: 'Standard rate for grooming services'
-    },
-    { 
-      id: 3, 
-      providerName: 'Paws & Play Pet Sitting', 
-      providerEmail: 'care@pawsandplay.com',
-      category: 'Pet Sitting', 
-      baseRate: 10, 
-      volumeDiscount: true, 
-      specialRate: true, 
-      effectiveRate: 8, 
-      lastUpdated: '2023-12-01', 
-      nextReview: '2024-06-01',
-      notes: 'Reduced rate due to high volume of bookings'
-    },
-    { 
-      id: 4, 
-      providerName: 'Canine Academy', 
-      providerEmail: 'training@canineacademy.com',
-      category: 'Training', 
-      baseRate: 18, 
-      volumeDiscount: false, 
-      specialRate: false, 
-      effectiveRate: 18, 
-      lastUpdated: '2023-09-10', 
-      nextReview: '2024-03-10',
-      notes: 'Premium rate for specialized training services'
-    },
-    { 
-      id: 5, 
-      providerName: 'Pet Paradise Boarding', 
-      providerEmail: 'reservations@petparadise.com',
-      category: 'Boarding', 
-      baseRate: 14, 
-      volumeDiscount: true, 
-      specialRate: false, 
-      effectiveRate: 12, 
-      lastUpdated: '2023-11-05', 
-      nextReview: '2024-05-05',
-      notes: 'Volume discount applied for long-term partnership'
-    },
-    { 
-      id: 6, 
-      providerName: 'Whiskers & Paws Clinic', 
-      providerEmail: 'appointments@whiskerspaws.com',
-      category: 'Veterinary', 
-      baseRate: 15, 
-      volumeDiscount: false, 
-      specialRate: true, 
-      effectiveRate: 13, 
-      lastUpdated: '2023-10-15', 
-      nextReview: '2024-04-15',
-      notes: 'Special rate for new clinic partnership'
-    },
-    { 
-      id: 7, 
-      providerName: 'Pawfect Walkers', 
-      providerEmail: 'schedule@pawfectwalkers.com',
-      category: 'Dog Walking', 
-      baseRate: 8, 
-      volumeDiscount: false, 
-      specialRate: false, 
-      effectiveRate: 8, 
-      lastUpdated: '2023-12-05', 
-      nextReview: '2024-06-05',
-      notes: 'Standard rate for dog walking services'
-    },
-    { 
-      id: 8, 
-      providerName: 'Elite Pet Grooming', 
-      providerEmail: 'bookings@elitepetgrooming.com',
-      category: 'Grooming', 
-      baseRate: 12, 
-      volumeDiscount: false, 
-      specialRate: true, 
-      effectiveRate: 15, 
-      lastUpdated: '2023-11-20', 
-      nextReview: '2024-05-20',
-      notes: 'Premium rate for luxury grooming services'
-    },
-    { 
-      id: 9, 
-      providerName: 'Healthy Paws Veterinary', 
-      providerEmail: 'care@healthypaws.com',
-      category: 'Veterinary', 
-      baseRate: 15, 
-      volumeDiscount: true, 
-      specialRate: false, 
-      effectiveRate: 13, 
-      lastUpdated: '2023-09-25', 
-      nextReview: '2024-03-25',
-      notes: 'Volume discount applied based on patient referrals'
-    },
-    { 
-      id: 10, 
-      providerName: 'Home Pet Care', 
-      providerEmail: 'service@homepetcare.com',
-      category: 'Pet Sitting', 
-      baseRate: 10, 
-      volumeDiscount: false, 
-      specialRate: false, 
-      effectiveRate: 10, 
-      lastUpdated: '2023-10-10', 
-      nextReview: '2024-04-10',
-      notes: 'Standard rate for in-home pet sitting'
-    }
-  ];
+  const [commissions, setCommissions] = useState([]);
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Get category icon
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadData = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const [commissionResponse, statsResponse] = await Promise.all([
+          api.get('/admin/commissions'),
+          api.get('/admin/commissions/stats'),
+        ]);
+
+        if (!isMounted) return;
+
+        const commissionItems = commissionResponse?.data?.commissions ?? [];
+        const normalized = commissionItems.map((item) => {
+          const provider = item.provider || {};
+          const booking = item.booking || {};
+          const service = booking.service || {};
+
+          const bookingAmount = Number(item.booking_amount ?? 0);
+          const commissionAmount = Number(item.commission_amount ?? 0);
+          const commissionPercent = Number(item.commission_percent ?? 0);
+
+          const effectiveRate = bookingAmount > 0
+            ? Number(((commissionAmount / bookingAmount) * 100).toFixed(2))
+            : commissionPercent;
+
+          return {
+            id: item.commission_id,
+            providerName: provider.serv_provider_name || 'Unknown Provider',
+            providerEmail: provider.serv_provider_email || '—',
+            category: normalizeServiceType(provider.serv_provider_type || service.service_category),
+            baseRate: commissionPercent,
+            effectiveRate,
+            bookingAmount,
+            commissionAmount,
+            providerAmount: Number(item.provider_amount ?? 0),
+            status: item.status,
+            lastUpdated: item.settled_at || item.created_at,
+            nextReview: null,
+            notes: service.service_name ? `Service: ${service.service_name}` : undefined,
+            volumeDiscount: false,
+            specialRate: false,
+          };
+        });
+
+        setCommissions(normalized);
+        setStats(statsResponse?.data ?? null);
+      } catch (err) {
+        console.error('Failed to fetch commission data', err);
+        if (isMounted) {
+          setError(err?.message || 'Unable to load commission data');
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [api]);
+
+  const filteredAndSortedRates = useMemo(() => {
+    return commissions
+      .filter((rate) => {
+        const matchesSearch =
+          rate.providerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          rate.providerEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          rate.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (rate.notes || '').toLowerCase().includes(searchTerm.toLowerCase());
+
+        const matchesCategory =
+          filterCategory === 'all' || rate.category.toLowerCase() === filterCategory.toLowerCase();
+
+        return matchesSearch && matchesCategory;
+      })
+      .sort((a, b) => {
+        let comparison = 0;
+
+        if (sortField === 'providerName') {
+          comparison = a.providerName.localeCompare(b.providerName);
+        } else if (sortField === 'category') {
+          comparison = a.category.localeCompare(b.category);
+        } else if (sortField === 'baseRate') {
+          comparison = a.baseRate - b.baseRate;
+        } else if (sortField === 'effectiveRate') {
+          comparison = a.effectiveRate - b.effectiveRate;
+        } else if (sortField === 'lastUpdated') {
+          comparison = new Date(a.lastUpdated || 0) - new Date(b.lastUpdated || 0);
+        }
+
+        return sortDirection === 'asc' ? comparison : -comparison;
+      });
+  }, [commissions, filterCategory, searchTerm, sortDirection, sortField]);
+
   const getCategoryIcon = (category) => {
     switch (category.toLowerCase()) {
       case 'veterinary':
@@ -183,37 +191,6 @@ const ProviderCommission = () => {
         return <FaInfoCircle className="text-gray-500" />;
     }
   };
-
-  // Filter and sort commission rates
-  const filteredAndSortedRates = commissionRatesData
-    .filter(rate => {
-      const matchesSearch = 
-        rate.providerName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        rate.providerEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        rate.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        rate.notes.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesCategory = filterCategory === 'all' || rate.category.toLowerCase() === filterCategory.toLowerCase();
-      
-      return matchesSearch && matchesCategory;
-    })
-    .sort((a, b) => {
-      let comparison = 0;
-      
-      if (sortField === 'providerName') {
-        comparison = a.providerName.localeCompare(b.providerName);
-      } else if (sortField === 'category') {
-        comparison = a.category.localeCompare(b.category);
-      } else if (sortField === 'baseRate') {
-        comparison = a.baseRate - b.baseRate;
-      } else if (sortField === 'effectiveRate') {
-        comparison = a.effectiveRate - b.effectiveRate;
-      } else if (sortField === 'lastUpdated') {
-        comparison = new Date(a.lastUpdated) - new Date(b.lastUpdated);
-      }
-      
-      return sortDirection === 'asc' ? comparison : -comparison;
-    });
 
   // Handle sort click
   const handleSort = (field) => {

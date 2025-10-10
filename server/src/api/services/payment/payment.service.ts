@@ -6,10 +6,21 @@ import httpStatus from 'http-status';
 import { commissionService } from '../commission/commission.service.js';
 import { notificationService } from '../notification/notification.service.js';
 
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID || '',
-  key_secret: process.env.RAZORPAY_KEY_SECRET || '',
-});
+// Initialize Razorpay only if keys are provided
+const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID;
+const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET;
+
+let razorpay: Razorpay | null = null;
+
+if (RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRET) {
+  razorpay = new Razorpay({
+    key_id: RAZORPAY_KEY_ID,
+    key_secret: RAZORPAY_KEY_SECRET,
+  });
+  console.log('[Payment] Razorpay initialized successfully');
+} else {
+  console.warn('[Payment] Razorpay keys not configured. Payment features will be disabled.');
+}
 
 /**
  * Create Razorpay order for booking payment
@@ -40,6 +51,14 @@ const createPaymentOrder = async (
 
   if (existingPayment) {
     throw new ApiError(httpStatus.BAD_REQUEST, 'Payment already exists for this booking');
+  }
+
+  // Check if Razorpay is configured
+  if (!razorpay) {
+    throw new ApiError(
+      httpStatus.SERVICE_UNAVAILABLE, 
+      'Payment service not configured. Please contact administrator.'
+    );
   }
 
   // Create Razorpay order

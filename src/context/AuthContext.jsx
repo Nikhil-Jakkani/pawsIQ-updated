@@ -215,6 +215,31 @@ export const AuthProvider = ({ children }) => {
       : { phone: identifier, password };
 
     try {
+      // Try admin login first if identifier is email (admins only login with email)
+      if (isEmail) {
+        try {
+          const adminResp = await fetch(`${API_URL}/admin/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: identifier, password }),
+          });
+          
+          if (adminResp.ok) {
+            const adminData = await adminResp.json();
+            const { user, tokens } = adminData;
+            setCurrentUser({ ...user, role: 'admin' });
+            setTokens(tokens);
+            localStorage.setItem('user', JSON.stringify({ ...user, role: 'admin' }));
+            localStorage.setItem('authTokens', JSON.stringify(tokens));
+            clearLogoutFlag();
+            return { success: true, userType: 'admin' };
+          }
+        } catch (adminError) {
+          // Continue to user/provider login attempts
+          console.log('[Auth] Admin login attempt failed, trying user/provider...');
+        }
+      }
+
       let response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: {
@@ -394,6 +419,41 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const adminLogin = async (email, password) => {
+    setError('');
+    if (!email || !password) {
+      setError('Email and password are required');
+      return { success: false };
+    }
+    
+    try {
+      const response = await fetch(`${API_URL}/admin/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      
+      const data = await response.json().catch(() => ({}));
+      
+      if (response.ok) {
+        const { user, tokens } = data;
+        setCurrentUser({ ...user, role: 'admin' });
+        setTokens(tokens);
+        localStorage.setItem('user', JSON.stringify({ ...user, role: 'admin' }));
+        localStorage.setItem('authTokens', JSON.stringify(tokens));
+        clearLogoutFlag();
+        return { success: true, userType: 'admin' };
+      }
+      
+      setError(data?.message || 'Login failed. Please check your credentials.');
+      return { success: false };
+    } catch (err) {
+      console.error('Admin login error:', err);
+      setError('Login failed. Please check your credentials.');
+      return { success: false };
+    }
+  };
+
   const fetchUserDashboard = async () => {
     const now = Date.now();
     const ttlMs = 30_000; // 30s TTL to coalesce parallel requests across widgets
@@ -556,6 +616,7 @@ export const AuthProvider = ({ children }) => {
     currentUser,
     tokens,
     login,
+    adminLogin,
     providerLogin,
     providerRegister,
     providerForgotPassword,
