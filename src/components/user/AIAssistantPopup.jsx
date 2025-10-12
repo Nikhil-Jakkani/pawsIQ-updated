@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaTimes, FaRobot, FaStethoscope, FaHeart, FaPaw, FaSpinner } from 'react-icons/fa';
 import { analyzePetSymptoms } from '../../services/geminiService';
+import { extractAgeNumber, extractWeightNumber } from '../../utils/petDataUtils';
 
 const AIAssistantPopup = ({ isOpen, onClose, pets, initialActiveService = 'suggestions' }) => {
   const [activeService, setActiveService] = useState(initialActiveService);
@@ -83,8 +84,8 @@ const AIAssistantPopup = ({ isOpen, onClose, pets, initialActiveService = 'sugge
     const currentDate = new Date();
     const currentSeason = getCurrentSeason();
     const currentHour = currentDate.getHours();
-    const petAge = parseInt(selectedPet.age);
-    const petWeight = parseInt(selectedPet.weight);
+    const petAge = extractAgeNumber(selectedPet.age);
+    const petWeight = extractWeightNumber(selectedPet.weight);
     
     // Exercise & Activity
     if (selectedPet.type === 'dog') {
@@ -99,18 +100,18 @@ const AIAssistantPopup = ({ isOpen, onClose, pets, initialActiveService = 'sugge
     } else if (selectedPet.type === 'cat') {
       suggestions.push({
         title: `${selectedPet.name}'s Activity Time`,
-        tip: `${selectedPet.breed} cats are ${petAge < 3 ? 'young and energetic' : petAge > 7 ? 'mature - gentle activities recommended' : 'in their prime'}. Provide 15-20 minutes of interactive play ${currentHour < 12 ? 'this morning' : currentHour < 18 ? 'this afternoon' : 'this evening'}.`,
+        tip: `${selectedPet.breed} cats are ${petAge !== null && petAge < 3 ? 'young and energetic' : petAge !== null && petAge > 7 ? 'mature - gentle activities recommended' : 'in their prime'}. Provide 15-20 minutes of interactive play ${currentHour < 12 ? 'this morning' : currentHour < 18 ? 'this afternoon' : 'this evening'}.`,
         category: 'Activity',
         color: 'bg-purple-50 border-purple-200 text-purple-800'
       });
     }
 
     // Nutrition
-    const feedingSchedule = selectedPet.type === 'dog' ? (petAge < 1 ? '3-4 times daily' : '2 times daily') : 
-                           selectedPet.type === 'cat' ? (petAge < 1 ? '3-4 times daily' : '2-3 times daily') : '2 times daily';
+    const feedingSchedule = selectedPet.type === 'dog' ? (petAge !== null && petAge < 1 ? '3-4 times daily' : '2 times daily') : 
+                           selectedPet.type === 'cat' ? (petAge !== null && petAge < 1 ? '3-4 times daily' : '2-3 times daily') : '2 times daily';
     suggestions.push({
       title: `${selectedPet.name}'s Nutrition`,
-      tip: `For a ${petAge}-year-old ${selectedPet.breed} weighing ${selectedPet.weight}, feed ${feedingSchedule}. ${petWeight > 70 ? 'Monitor portions to maintain healthy weight.' : petWeight < 10 ? 'Small frequent meals are ideal.' : 'Current weight seems optimal.'}`,
+      tip: `For a ${selectedPet.age} ${selectedPet.breed} weighing ${selectedPet.weight}, feed ${feedingSchedule}. ${petWeight !== null && petWeight > 70 ? 'Monitor portions to maintain healthy weight.' : petWeight !== null && petWeight < 10 ? 'Small frequent meals are ideal.' : 'Current weight seems optimal.'}`,
       category: 'Nutrition',
       color: 'bg-green-50 border-green-200 text-green-800'
     });
@@ -124,23 +125,23 @@ const AIAssistantPopup = ({ isOpen, onClose, pets, initialActiveService = 'sugge
       color: 'bg-blue-50 border-blue-200 text-blue-800'
     });
 
-    // Health Monitoring
     if (selectedPet.lastCheckup) {
       const lastCheckupDate = new Date(selectedPet.lastCheckup);
       const daysSinceCheckup = Math.floor((currentDate - lastCheckupDate) / (1000 * 60 * 60 * 24));
+      const healthCheckupTip = daysSinceCheckup > 365 ? 'Annual checkup is overdue!' : daysSinceCheckup > 180 ? 'Consider scheduling next checkup soon.' : 'Health checkup is up to date.';
+      const seniorPetCheckupTip = petAge !== null && petAge > 7 ? 'Senior pets need bi-annual checkups.' : 'Monitor for changes in behavior or appetite.';
       suggestions.push({
         title: `${selectedPet.name}'s Health Check`,
-        tip: `Last checkup was ${daysSinceCheckup} days ago. ${daysSinceCheckup > 365 ? 'Annual checkup is overdue!' : daysSinceCheckup > 180 ? 'Consider scheduling next checkup soon.' : 'Health checkup is up to date.'} ${petAge > 7 ? 'Senior pets need bi-annual checkups.' : 'Monitor for changes in behavior or appetite.'}`,
+        tip: `Last checkup was ${daysSinceCheckup} days ago. ${healthCheckupTip} ${seniorPetCheckupTip}`,
         category: 'Health',
         color: 'bg-red-50 border-red-200 text-red-800'
       });
     }
-
     // Training (for dogs)
     if (selectedPet.type === 'dog') {
       suggestions.push({
         title: `${selectedPet.name}'s Training`,
-        tip: `${petAge < 2 ? 'Young dogs benefit from basic obedience and socialization.' : petAge < 5 ? 'Perfect age for advanced training and new tricks.' : 'Maintain mental stimulation with puzzle games.'} ${selectedPet.breed === 'Golden Retriever' ? 'Retrievers excel at fetch and water activities.' : 'Consistent positive reinforcement works best.'}`,
+        tip: `${petAge && petAge < 2 ? 'Young dogs benefit from basic obedience and socialization.' : petAge && petAge < 5 ? 'Perfect age for advanced training and new tricks.' : 'Maintain mental stimulation with puzzle games.'} ${selectedPet.breed === 'Golden Retriever' ? 'Retrievers excel at fetch and water activities.' : 'Consistent positive reinforcement works best.'}`,
         category: 'Training',
         color: 'bg-indigo-50 border-indigo-200 text-indigo-800'
       });

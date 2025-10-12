@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-
+import { extractAgeNumber, extractWeightNumber, formatWeight, calculateAgeFromDate } from '../../utils/petDataUtils';
 import { useNavigate } from 'react-router-dom';
 import { FaCalendarCheck, FaShoppingCart, FaPaw, FaDog, FaCat, FaBone, FaRobot, FaStethoscope, FaHeart, FaStar, FaBell, FaChartLine, FaMagic, FaArrowRight, FaRunning, FaUtensils, FaCut, FaHeartbeat, FaBrain, FaThermometerHalf, FaClock, FaTint, FaPlay, FaMinus, FaWeight, FaBirthdayCake, FaPlus } from 'react-icons/fa';
 
@@ -43,31 +43,6 @@ const UserDashboard = () => {
 
   // In-memory cache for signed image URLs with persistence to localStorage
   const imageCacheRef = useRef(new Map());
-
-  const formatWeight = (petLike = {}) => {
-    const candidates = [
-      petLike.weight,
-      petLike.pet_weight,
-      petLike.pet_weight_kg,
-      petLike.weight_kg,
-    ];
-
-    const raw = candidates.find((value) => {
-      if (value === undefined || value === null) return false;
-      const str = String(value).trim();
-      return str.length > 0 && str.toLowerCase() !== 'unknown';
-    });
-
-    if (raw === undefined) return null;
-
-    const numeric = Number(raw);
-    if (!Number.isNaN(numeric)) return `${numeric} kg`;
-
-    const stringValue = String(raw).trim();
-    if (!stringValue.length) return null;
-    if (/[a-zA-Z]/.test(stringValue)) return stringValue;
-    return `${stringValue} kg`;
-  };
 
   const petsCacheKey = React.useMemo(() => {
     if (!currentUser) return null;
@@ -242,15 +217,10 @@ const UserDashboard = () => {
           const cachedUrl = getCachedUrlIfFresh(imagePath);
           const placeholder = p.profileImage || `https://source.unsplash.com/random/400x300?${encodeURIComponent(p.pet_type || p.type || 'pet')}`;
           const legacy = typeof (p.image || '') === 'string' && /\/user\/\d+\/pet\/\d+\//.test(p.image || '');
-          const ageText = p.pet_birth_dtm
-            ? (() => {
-                const dob = new Date(p.pet_birth_dtm);
-                const now = new Date();
-                const years = Math.max(0, Math.floor((now.getTime() - dob.getTime()) / (1000 * 60 * 60 * 24 * 365.25)));
-                return `${years} years`;
-              })()
-            : (typeof p.age === 'number' ? `${p.age} years` : (p.pet_age != null ? `${p.pet_age} years` : 'Unknown'));
-          const weightDisplay = formatWeight(p);
+          const ageText = p.pet_birth_dtm 
+            ? calculateAgeFromDate(p.pet_birth_dtm)
+            : (p.age || p.pet_age || '-');
+          const weightDisplay = formatWeight(p.weight || p.pet_weight);
           const petId = Number(p.id || p.pet_id);
           const lastCompletedAppt = appointmentsMap.get(petId);
           
@@ -347,8 +317,8 @@ const UserDashboard = () => {
     const currentHour = currentDate.getHours();
     
     pets.forEach(pet => {
-      const petAge = parseInt(pet.age);
-      const petWeight = parseInt(pet.weight);
+      const petAge = extractAgeNumber(pet.age);
+      const petWeight = extractWeightNumber(pet.weight);
       
       // Walking & Activity Tips
       if (pet.type === 'dog') {
@@ -372,14 +342,14 @@ const UserDashboard = () => {
           icon: FaCat,
           color: 'blue',
           title: `${pet.name}'s Mental Stimulation`,
-          tip: `${pet.breed} cats like ${pet.name} are ${petAge < 3 ? 'young and energetic' : petAge > 7 ? 'mature and need gentle activities' : 'in their prime'}. Provide 15-20 minutes of interactive play ${currentHour < 12 ? 'this morning' : currentHour < 18 ? 'this afternoon' : 'this evening'} with feather toys or laser pointers.`,
+          tip: `${pet.breed} cats like ${pet.name} are ${petAge !== null && petAge < 3 ? 'young and energetic' : petAge !== null && petAge > 7 ? 'mature and need gentle activities' : 'in their prime'}. Provide 15-20 minutes of interactive play ${currentHour < 12 ? 'this morning' : currentHour < 18 ? 'this afternoon' : 'this evening'} with feather toys or laser pointers.`,
           aiGenerated: true
         });
       }
 
       // Nutrition Tips
-      const feedingSchedule = pet.type === 'dog' ? (petAge < 1 ? '3-4 times daily' : '2 times daily') : 
-                             pet.type === 'cat' ? (petAge < 1 ? '3-4 times daily' : '2-3 times daily') : '2 times daily';
+      const feedingSchedule = pet.type === 'dog' ? (petAge !== null && petAge < 1 ? '3-4 times daily' : '2 times daily') : 
+                             pet.type === 'cat' ? (petAge !== null && petAge < 1 ? '3-4 times daily' : '2-3 times daily') : '2 times daily';
       tips.push({
         id: `nutrition-${pet.id}`,
         petName: pet.name,
@@ -387,7 +357,7 @@ const UserDashboard = () => {
         icon: FaUtensils,
         color: 'green',
         title: `${pet.name}'s Nutrition Guide`,
-        tip: `For a ${petAge}-year-old ${pet.breed} weighing ${pet.weight}, feed ${feedingSchedule}. ${petWeight > 70 ? 'Monitor portion sizes to maintain healthy weight.' : petWeight < 10 ? 'Small frequent meals are ideal.' : 'Current weight seems optimal.'} ${currentSeason === 'winter' ? 'Pets may need slightly more calories in cold weather.' : 'Ensure fresh water is always available.'}`,
+        tip: `For a ${pet.age} ${pet.breed} weighing ${pet.weight}, feed ${feedingSchedule}. ${petWeight !== null && petWeight > 70 ? 'Monitor portion sizes to maintain healthy weight.' : petWeight !== null && petWeight < 10 ? 'Small frequent meals are ideal.' : 'Current weight seems optimal.'} ${currentSeason === 'winter' ? 'Pets may need slightly more calories in cold weather.' : 'Ensure fresh water is always available.'}`,
         aiGenerated: true
       });
 
@@ -414,7 +384,7 @@ const UserDashboard = () => {
         icon: FaHeartbeat,
         color: 'green',
         title: `${pet.name}'s Health Monitoring`,
-        tip: `Last checkup was ${daysSinceCheckup} days ago. ${daysSinceCheckup > 365 ? 'Annual checkup is overdue!' : daysSinceCheckup > 180 ? 'Consider scheduling next checkup soon.' : 'Health checkup is up to date.'} ${petAge > 7 ? 'Senior pets need bi-annual checkups.' : 'Watch for changes in appetite, energy, or behavior.'} Vaccinations: ${pet.vaccinations}.`,
+        tip: `Last checkup was ${daysSinceCheckup} days ago. ${daysSinceCheckup > 365 ? 'Annual checkup is overdue!' : daysSinceCheckup > 180 ? 'Consider scheduling next checkup soon.' : 'Health checkup is up to date.'} ${petAge !== null && petAge > 7 ? 'Senior pets need bi-annual checkups.' : 'Watch for changes in appetite, energy, or behavior.'} Vaccinations: ${pet.vaccinations}.`,
         aiGenerated: true
       });
 
@@ -427,7 +397,7 @@ const UserDashboard = () => {
           icon: FaBrain,
           color: 'blue',
           title: `${pet.name}'s Training Focus`,
-          tip: `${petAge < 2 ? 'Young dogs benefit from basic obedience training and socialization.' : petAge < 5 ? 'Perfect age for advanced training and new tricks.' : 'Maintain mental stimulation with puzzle games.'} ${pet.breed === 'Golden Retriever' ? 'Retrievers excel at fetch and water activities.' : pet.breed === 'Labrador' ? 'Labs love learning new commands and tasks.' : 'Consistent positive reinforcement works best.'}`,
+          tip: `${petAge !== null && petAge < 2 ? 'Young dogs benefit from basic obedience training and socialization.' : petAge !== null && petAge < 5 ? 'Perfect age for advanced training and new tricks.' : 'Maintain mental stimulation with puzzle games.'} ${pet.breed === 'Golden Retriever' ? 'Retrievers excel at fetch and water activities.' : pet.breed === 'Labrador' ? 'Labs love learning new commands and tasks.' : 'Consistent positive reinforcement works best.'}`,
           aiGenerated: true
         });
       }
@@ -657,7 +627,6 @@ const UserDashboard = () => {
                 {pets.map((pet) => {
                   const lastCheckupDate = new Date(pet.lastCheckup);
                   const daysSinceCheckup = Math.floor((new Date() - lastCheckupDate) / (1000 * 60 * 60 * 24));
-                  const age = parseInt(pet.age);
 
                   // Health status based on actual pet data
                   const healthStatus = daysSinceCheckup < 90 ? 'excellent' : daysSinceCheckup < 180 ? 'good' : 'needs-attention';
