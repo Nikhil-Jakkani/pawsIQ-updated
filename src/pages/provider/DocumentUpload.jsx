@@ -47,47 +47,60 @@ const DocumentUpload = () => {
       { id: 'businessLicense', label: 'Business License', required: false, description: 'If you operate as a registered business' }
     ];
     
-    // Add provider-specific required documents
+    // Add provider-specific required documents (Indian Standards)
     switch (providerType) {
       case 'Veterinarian':
         requiredDocs = [
           ...requiredDocs,
-          { id: 'veterinaryLicense', label: 'Veterinary License', required: true, description: 'Your current veterinary license from VCI' },
-          { id: 'stateCouncilRegistration', label: 'State Veterinary Council Registration', required: true, description: 'Your state veterinary council registration' },
-          { id: 'professionalLiability', label: 'Professional Liability Insurance', required: false, description: 'Proof of current malpractice insurance (optional)' }
+          { id: 'veterinaryLicense', label: 'VCI Registration Certificate', required: true, description: 'Your Veterinary Council of India (VCI) registration certificate' },
+          { id: 'stateCouncilRegistration', label: 'State Veterinary Council Registration', required: true, description: 'Your state veterinary council registration certificate' },
+          { id: 'degreeMarksheet', label: 'BVSc & AH Degree/Marksheet', required: true, description: 'Bachelor of Veterinary Science & Animal Husbandry degree certificate' },
+          { id: 'drugLicense', label: 'Drug License (if applicable)', required: false, description: 'Drug license for dispensing veterinary medicines' },
+          { id: 'shopEstablishment', label: 'Shop & Establishment License', required: false, description: 'For clinic/hospital premises' },
+          { id: 'professionalLiability', label: 'Professional Indemnity Insurance', required: false, description: 'Professional indemnity insurance (recommended)' },
+          { id: 'biomedicalWaste', label: 'Biomedical Waste Authorization', required: false, description: 'Authorization for biomedical waste management (if applicable)' }
         ];
         break;
       case 'Trainer':
         requiredDocs = [
           ...requiredDocs,
-          { id: 'certifications', label: 'Training Certifications', required: false, description: 'Any professional training certifications you hold' },
-          { id: 'liabilityInsurance', label: 'Liability Insurance', required: false, description: 'Proof of current liability insurance (optional)' }
+          { id: 'certifications', label: 'Training Certifications', required: false, description: 'Professional dog training certifications (KCI, AWBI, or international)' },
+          { id: 'experienceCertificate', label: 'Experience Certificate', required: false, description: 'Work experience certificates from previous employers/clients' },
+          { id: 'liabilityInsurance', label: 'Public Liability Insurance', required: false, description: 'Public liability insurance (recommended)' },
+          { id: 'firstAidCertificate', label: 'Pet First Aid Certificate', required: false, description: 'Pet first aid and CPR certification' }
         ];
         break;
       case 'Groomer':
         requiredDocs = [
           ...requiredDocs,
-          { id: 'groomerCertifications', label: 'Grooming Certifications', required: false, description: 'Any professional grooming certifications you hold' },
-          { id: 'liabilityInsurance', label: 'Liability Insurance', required: false, description: 'Proof of current liability insurance (optional)' }
+          { id: 'groomerCertifications', label: 'Grooming Certifications', required: false, description: 'Professional pet grooming certifications from recognized institutes' },
+          { id: 'experienceCertificate', label: 'Experience Certificate', required: false, description: 'Work experience certificates from previous employers/salons' },
+          { id: 'shopEstablishment', label: 'Shop & Establishment License', required: false, description: 'For salon/grooming facility (if applicable)' },
+          { id: 'liabilityInsurance', label: 'Public Liability Insurance', required: false, description: 'Public liability insurance (recommended)' },
+          { id: 'sanitationCertificate', label: 'Sanitation Certificate', required: false, description: 'Health and sanitation certificate for grooming facility' }
         ];
         break;
       case 'Pet Sitter':
         requiredDocs = [
           ...requiredDocs,
-          { id: 'bondingInsurance', label: 'Bonding Insurance', required: false, description: 'If you are bonded' },
-          { id: 'liabilityInsurance', label: 'Liability Insurance', required: false, description: 'Proof of current liability insurance (optional)' },
-          { id: 'backgroundCheck', label: 'Background Check', required: false, description: 'Recent background check results if available' }
+          { id: 'policeVerification', label: 'Police Verification Certificate', required: false, description: 'Police verification/character certificate (recommended)' },
+          { id: 'addressProof', label: 'Address Proof', required: true, description: 'Aadhaar card, utility bill, or rental agreement' },
+          { id: 'petCareCertificate', label: 'Pet Care Certification', required: false, description: 'Pet care and handling certification (AWBI or similar)' },
+          { id: 'liabilityInsurance', label: 'Public Liability Insurance', required: false, description: 'Public liability insurance (recommended)' },
+          { id: 'firstAidCertificate', label: 'Pet First Aid Certificate', required: false, description: 'Pet first aid and CPR certification' }
         ];
         break;
       default:
         break;
     }
     
-    // Add common documents for all providers
+    // Add common documents for all providers (Indian Standards)
     requiredDocs = [
       ...requiredDocs,
-      { id: 'w9Form', label: 'W-9 Form', required: true, description: 'For tax purposes' },
-      { id: 'additionalDocuments', label: 'Additional Documents', required: false, description: 'Any other relevant documents' }
+      { id: 'panCard', label: 'PAN Card', required: true, description: 'Permanent Account Number (PAN) card for tax purposes' },
+      { id: 'bankDetails', label: 'Cancelled Cheque/Bank Statement', required: true, description: 'For payment processing and verification' },
+      { id: 'gstCertificate', label: 'GST Registration Certificate', required: false, description: 'If your annual turnover exceeds ₹20 lakhs (optional)' },
+      { id: 'additionalDocuments', label: 'Additional Documents', required: false, description: 'Any other relevant documents (awards, memberships, etc.)' }
     ];
     
     setRequiredDocuments(requiredDocs);

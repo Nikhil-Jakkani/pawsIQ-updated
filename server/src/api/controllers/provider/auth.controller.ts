@@ -24,6 +24,7 @@ const login = catchAsync(async (req: Request, res: Response) => {
     name: provider.serv_provider_name,
     phone: provider.serv_provider_contact_nbr,
     role: 'provider' as const,
+    providerType: provider.serv_provider_type,
   };
   res.send({ user, tokens });
 });
@@ -90,6 +91,7 @@ const googleLogin = catchAsync(async (req: Request, res: Response) => {
     name: provider.serv_provider_name,
     role: 'provider' as const,
     avatar: payload.picture,
+    providerType: provider.serv_provider_type,
   };
   return res.json({ user, tokens });
 });
@@ -175,6 +177,7 @@ const facebookLogin = catchAsync(async (req: Request, res: Response) => {
     name: provider.serv_provider_name,
     role: 'provider' as const,
     avatar: data?.picture?.data?.url,
+    providerType: provider.serv_provider_type,
   };
   return res.json({ user, tokens });
 });
@@ -231,6 +234,7 @@ export const providerAuthController = {
       name: provider.serv_provider_name,
       phone: provider.serv_provider_contact_nbr,
       role: 'provider' as const,
+      providerType: provider.serv_provider_type,
     };
     return res.json({ user, tokens });
   }),

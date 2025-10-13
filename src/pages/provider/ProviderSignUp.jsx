@@ -231,49 +231,21 @@ const ProviderSignUp = () => {
         console.warn('Failed to send OTP via Firebase:', e);
       }
 
-      // Navigate to the appropriate onboarding step based on provider type
-      switch (formData.providerType) {
-        case 'Veterinarian':
-          navigate('/provider/VeterinarianDetails');
-          break;
-        case 'Trainer':
-          // Register provider and store provider ID
-          try {
-            const registrationResult = await providerRegister(registrationData);
-            console.log('registrationResult:', registrationResult);
-            const providerId = registrationResult?.provider_id;
+      // Store registration data in localStorage for use after OTP verification
+      localStorage.setItem('provider_registration', JSON.stringify({
+        ...registrationData,
+        providerType: formData.providerType,
+        registrationStep: 1
+      }));
 
-            if (providerId) {
-              localStorage.setItem('providerId', providerId);
-              console.log('providerId:', providerId);
-              navigate('/provider/onboarding/trainer-details');
-            } else {
-              throw new Error('Provider registration failed to return provider ID.');
-            }
-          } catch (error) {
-            console.error('Trainer registration error:', error);
-            setErrors(prev => ({
-              ...prev,
-              form: 'An error occurred during trainer registration. Please try again.'
-            }));
-          }
-          break;
-        case 'Groomer':
-          navigate('/provider/GroomerDetails');
-          break;
-        case 'Pet Sitter':
-          navigate('/provider/ProfessionalInfo');
-          break;
-        default:
-          navigate('/provider/ProviderOTPVerification', {
-            state: {
-              phoneNumber: formData.phoneNumber,
-              registrationData,
-              message: 'OTP sent successfully. Please verify your phone number to create your account.'
-            }
-          });
-          break;
-      }
+      // Navigate to OTP verification for all provider types
+      navigate('/provider/otp-verification', {
+        state: {
+          phoneNumber: formData.phoneNumber,
+          registrationData,
+          message: 'OTP sent successfully. Please verify your phone number to continue.'
+        }
+      });
       
     } catch (error) {
       console.error('Registration error:', error);

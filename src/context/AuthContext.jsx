@@ -375,7 +375,7 @@ export const AuthProvider = ({ children }) => {
         setTokens(tokens);
         localStorage.setItem('user', JSON.stringify(user));
         localStorage.setItem('authTokens', JSON.stringify(tokens));
-        return { success: true, userType: 'provider' };
+        return { success: true, userType: 'provider', user };
       }
     } catch (apiError) {
       // API failed

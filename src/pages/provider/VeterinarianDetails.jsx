@@ -326,8 +326,8 @@ const VeterinarianDetails = () => {
         registrationStep: 3
       }));
       
-      // Navigate to the provider onboarding page
-      navigate('/provider/onboarding');
+      // Navigate to document upload page
+      navigate('/provider/onboarding/document-upload');
     } catch (error) {
       console.error('Submission error:', error);
       setErrors(prev => ({

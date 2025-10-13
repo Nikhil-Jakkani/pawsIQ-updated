@@ -61,18 +61,37 @@ const ProviderOTPVerification = () => {
           throw new Error(regData?.message || 'Account creation failed after OTP verification');
         }
 
-        // Auto-login provider using the same credentials
-        const email = registrationData.provider_email || registrationData.email;
-        const password = registrationData.provider_password || registrationData.password;
-        if (email && password) {
-          const result = await providerLogin(email, password);
-          if (result?.success) {
-            toast.success('Account created! You are now logged in.');
-            setStatus({ loading: false, message: '', error: '' });
-            // Store providerType in local storage
-            localStorage.setItem('selectedService', registrationData.provider_type);
-            return navigate(`/provider/${registrationData.provider_type}/dashboard`);
-          }
+        // Store provider ID if returned
+        if (regData?.provider?.provider_id) {
+          localStorage.setItem('providerId', regData.provider.provider_id);
+        }
+
+        // Get provider type from registration data
+        const providerType = registrationData.provider_type || registrationData.providerType;
+        
+        // Update registration step in localStorage
+        const storedRegistration = JSON.parse(localStorage.getItem('provider_registration') || '{}');
+        localStorage.setItem('provider_registration', JSON.stringify({
+          ...storedRegistration,
+          registrationStep: 2,
+          phoneVerified: true
+        }));
+
+        toast.success('Phone verified successfully! Please complete your profile.');
+        setStatus({ loading: false, message: '', error: '' });
+
+        // Navigate to appropriate onboarding step based on provider type
+        switch (providerType) {
+          case 'Veterinarian':
+            return navigate('/provider/onboarding/veterinarian-details');
+          case 'Trainer':
+            return navigate('/provider/onboarding/trainer-details');
+          case 'Groomer':
+            return navigate('/provider/onboarding/groomer-details');
+          case 'Pet Sitter':
+            return navigate('/provider/onboarding/pet-sitter-details');
+          default:
+            return navigate('/provider/onboarding/professional-info');
         }
       }
 
