@@ -57,13 +57,23 @@ const createReview = async (
     );
   }
 
-  // Check if booking is completed
-  if (booking.booking_status !== 'Completed') {
+  // Check if booking is reviewable
+  // Allow reviews for any booking that belongs to the user and is not cancelled/rejected
+  const disallowedStatuses = ['Cancelled', 'Rejected'];
+
+  if (disallowedStatuses.includes(booking.booking_status)) {
     throw new ApiError(
       httpStatus.BAD_REQUEST,
-      'You can only review completed bookings'
+      'Cannot review cancelled or rejected bookings'
     );
   }
+
+  // Debug logging to help diagnose future issues (non-blocking)
+  console.log('[Review Validation]', {
+    bookingId,
+    booked_dtm: booking.booked_dtm,
+    booking_status: booking.booking_status,
+  });
 
   // Check if review already exists for this booking
   const existingReview = await prisma.pIQ_Provider_Reviews.findFirst({

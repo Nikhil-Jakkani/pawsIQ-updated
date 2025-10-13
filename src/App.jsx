@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Routes, Route, Link, Navigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -71,6 +71,9 @@ import VetLabReports from './pages/provider/VetLabReports.jsx';
 import VetAnalytics from './pages/provider/VetAnalytics.jsx';
 import VetNotifications from './pages/provider/VetNotifications.jsx';
 import VetSettings from './pages/provider/VetSettings.jsx';
+import VetProfile from './pages/provider/VetProfile.jsx';
+import VetPortfolio from './pages/provider/VetPortfolio.jsx';
+import VetReviews from './pages/provider/VetReviews.jsx';
 import ServiceForm from './pages/provider/ServiceForm.jsx';
 
 // Auth pages
@@ -266,6 +269,10 @@ function App() {
             <Route path="/provider/vet/prescriptions" element={<ProviderProtectedRoute><VetPrescriptions /></ProviderProtectedRoute>} />
             <Route path="/provider/vet/labs" element={<ProviderProtectedRoute><VetLabReports /></ProviderProtectedRoute>} />
             <Route path="/provider/vet/analytics" element={<ProviderProtectedRoute><VetAnalytics /></ProviderProtectedRoute>} />
+            <Route path="/provider/vet/reviews" element={<ProviderProtectedRoute><VetReviews /></ProviderProtectedRoute>} />
+            <Route path="/provider/:serviceType/reviews" element={<ProviderProtectedRoute><VetReviews /></ProviderProtectedRoute>} />
+            <Route path="/provider/vet/profile" element={<ProviderProtectedRoute><VetProfile /></ProviderProtectedRoute>} />
+            <Route path="/provider/vet/portfolio" element={<ProviderProtectedRoute><VetPortfolio /></ProviderProtectedRoute>} />
             <Route path="/provider/vet/notifications" element={<ProviderProtectedRoute><VetNotifications /></ProviderProtectedRoute>} />
             <Route path="/provider/vet/settings" element={<ProviderProtectedRoute><VetSettings /></ProviderProtectedRoute>} />
 

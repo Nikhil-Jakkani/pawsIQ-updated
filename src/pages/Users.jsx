@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   FaUsers, 
@@ -19,8 +19,10 @@ import {
   FaSortDown
 } from 'react-icons/fa';
 import DashboardLayout from '../components/layout/DashboardLayout';
+import useApi from '../hooks/useApi';
 
 const Users = () => {
+  const api = useApi();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterRole, setFilterRole] = useState('all');
@@ -28,122 +30,103 @@ const Users = () => {
   const [sortDirection, setSortDirection] = useState('asc');
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
-  
-  // Sample data for user statistics
-  const userStats = {
-    totalUsers: 5842,
-    activeUsers: 5650,
-    pendingApproval: 24,
-    suspendedUsers: 8
-  };
+  const [usersData, setUsersData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [userStats, setUserStats] = useState({
+    totalUsers: 0,
+    activeUsers: 0,
+    pendingApproval: 0,
+    suspendedUsers: 0
+  });
 
-  // Sample data for users - Updated with Indian standards for 2025
-  const usersData = [
-    { 
-      id: 1, 
-      name: 'Rajesh Kumar Sharma', 
-      email: 'rajesh.sharma@gmail.com', 
-      phone: '+91 98765 43210',
-      address: 'A-204, Sunrise Apartments, Sector 15, Noida, Uttar Pradesh - 201301',
-      role: 'Pet Owner', 
-      status: 'Active', 
-      lastActive: '2 hours ago', 
-      registeredDate: '05/12/2023', 
-      pets: 2,
-      totalSpent: '₹15,450'
-    },
-    { 
-      id: 2, 
-      name: 'Priya Patel', 
-      email: 'priya.patel@yahoo.in', 
-      phone: '+91 87654 32109',
-      address: 'B-12, Green Valley Society, Andheri West, Mumbai, Maharashtra - 400058',
-      role: 'Pet Owner', 
-      status: 'Active', 
-      lastActive: '1 day ago', 
-      registeredDate: '15/10/2023', 
-      pets: 1,
-      totalSpent: '₹8,750'
-    },
-    { 
-      id: 3, 
-      name: 'Arjun Singh Rajput', 
-      email: 'arjun.rajput@outlook.com', 
-      phone: '+91 76543 21098',
-      address: 'House No. 45, Malviya Nagar, Jaipur, Rajasthan - 302017',
-      role: 'Service Provider', 
-      status: 'Active', 
-      lastActive: '3 hours ago', 
-      registeredDate: '20/11/2023', 
-      pets: 0,
-      totalSpent: '₹0'
-    },
-    { 
-      id: 4, 
-      name: 'Sneha Agarwal', 
-      email: 'sneha.agarwal@rediffmail.com', 
-      phone: '+91 65432 10987',
-      address: 'Flat 3B, Shanti Niketan, Salt Lake, Kolkata, West Bengal - 700064',
-      role: 'Pet Owner', 
-      status: 'Pending', 
-      lastActive: 'Never', 
-      registeredDate: '01/12/2023', 
-      pets: 0,
-      totalSpent: '₹0'
-    },
-    { 
-      id: 5, 
-      name: 'Vikram Reddy', 
-      email: 'vikram.reddy@gmail.com', 
-      phone: '+91 54321 09876',
-      address: '12-3-456, Banjara Hills, Hyderabad, Telangana - 500034',
-      role: 'Service Provider', 
-      status: 'Active', 
-      lastActive: '5 hours ago', 
-      registeredDate: '18/09/2023', 
-      pets: 0,
-      totalSpent: '₹0'
-    },
-    { 
-      id: 6, 
-      name: 'Kavya Nair', 
-      email: 'kavya.nair@admin.pawsiq.in', 
-      phone: '+91 43210 98765',
-      address: 'TC 15/234, Vazhuthacaud, Thiruvananthapuram, Kerala - 695014',
-      role: 'Admin', 
-      status: 'Active', 
-      lastActive: '1 hour ago', 
-      registeredDate: '30/08/2023', 
-      pets: 0,
-      totalSpent: '₹0'
-    },
-    { 
-      id: 7, 
-      name: 'Rohit Gupta', 
-      email: 'rohit.gupta@hotmail.com', 
-      phone: '+91 32109 87654',
-      address: 'D-45, Lajpat Nagar II, New Delhi - 110024',
-      role: 'Pet Owner', 
-      status: 'Suspended', 
-      lastActive: '2 weeks ago', 
-      registeredDate: '12/07/2023', 
-      pets: 3,
-      totalSpent: '₹22,300'
-    },
-    { 
-      id: 8, 
-      name: 'Meera Iyer', 
-      email: 'meera.iyer@moderator.pawsiq.in', 
-      phone: '+91 21098 76543',
-      address: '23, 4th Cross, Jayanagar, Bengaluru, Karnataka - 560011',
-      role: 'Moderator', 
-      status: 'Active', 
-      lastActive: '4 hours ago', 
-      registeredDate: '05/10/2023', 
-      pets: 0,
-      totalSpent: '₹0'
-    }
-  ];
+  // Fetch users and stats from API
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        setLoading(true);
+        setError('');
+        
+        // Fetch users list
+        const response = await api.get('/admin/piq/users');
+        
+        if (response && response.users) {
+          const userIds = response.users.map(u => Number(u.user_id));
+          
+          // Fetch bulk user stats (pets, appointments)
+          let statsMap = {};
+          if (userIds.length > 0) {
+            try {
+              statsMap = await api.post('/admin/stats/bulk-user-stats', { userIds });
+            } catch (err) {
+              console.warn('Failed to load user stats:', err);
+            }
+          }
+          
+          // Transform API data to match component format
+          const transformedUsers = response.users.map(u => ({
+            id: Number(u.user_id),
+            name: u.user_full_name || u.user_email_id || 'Unknown',
+            email: u.user_email_id || '',
+            phone: u.user_mobile_no || 'N/A',
+            address: u.user_location || 'N/A',
+            role: 'Pet Owner',
+            status: u.user_status === 'active' ? 'Active' : u.user_status === 'inactive' ? 'Suspended' : 'Pending',
+            lastActive: formatLastActive(u.last_login),
+            registeredDate: formatDate(u.created_at),
+            pets: statsMap[u.user_id]?.pets || 0,
+            totalSpent: '₹0' // TODO: Calculate from payments
+          }));
+          
+          setUsersData(transformedUsers);
+          
+          // Calculate stats
+          const activeCount = transformedUsers.filter(u => u.status === 'Active').length;
+          const pendingCount = transformedUsers.filter(u => u.status === 'Pending').length;
+          const suspendedCount = transformedUsers.filter(u => u.status === 'Suspended').length;
+          
+          setUserStats({
+            totalUsers: transformedUsers.length,
+            activeUsers: activeCount,
+            pendingApproval: pendingCount,
+            suspendedUsers: suspendedCount
+          });
+        }
+      } catch (err) {
+        console.error('Failed to load users:', err);
+        setError('Failed to load users. Please try again.');
+        setUsersData([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchUsers();
+  }, [api]);
+  
+  // Helper functions
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  };
+  
+  const formatLastActive = (dateString) => {
+    if (!dateString) return 'Never';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} week${Math.floor(diffDays / 7) > 1 ? 's' : ''} ago`;
+    return formatDate(dateString);
+  };
 
   // Filter and sort users
   const filteredAndSortedUsers = usersData
@@ -211,11 +194,50 @@ const Users = () => {
     }
   };
 
+  // Handle user status update
+  const handleStatusChange = async (userId, newStatus) => {
+    try {
+      const apiStatus = newStatus === 'Active' ? 'active' : newStatus === 'Suspended' ? 'inactive' : 'pending';
+      await api.patch(`/admin/users/${userId}`, { user_status: apiStatus });
+      
+      // Update local state
+      setUsersData(prevUsers =>
+        prevUsers.map(user =>
+          user.id === userId ? { ...user, status: newStatus } : user
+        )
+      );
+      
+      alert(`User status updated successfully!`);
+    } catch (err) {
+      console.error('Failed to update user status:', err);
+      alert('Failed to update user status. Please try again.');
+    }
+  };
+  
   // Handle bulk actions
-  const handleBulkAction = (action) => {
-    console.log(`Performing ${action} on users:`, selectedUsers);
-    // In a real app, you would call an API to perform the action
-    alert(`${action} action would be performed on ${selectedUsers.length} users`);
+  const handleBulkAction = async (action) => {
+    if (selectedUsers.length === 0) return;
+    
+    const confirmed = confirm(`Are you sure you want to ${action.toLowerCase()} ${selectedUsers.length} user(s)?`);
+    if (!confirmed) return;
+    
+    try {
+      for (const userId of selectedUsers) {
+        if (action === 'Approve') {
+          await handleStatusChange(userId, 'Active');
+        } else if (action === 'Suspend') {
+          await handleStatusChange(userId, 'Suspended');
+        } else if (action === 'Delete') {
+          await api.delete(`/admin/users/${userId}`);
+        }
+      }
+      
+      // Refresh user list
+      window.location.reload();
+    } catch (err) {
+      console.error(`Failed to ${action} users:`, err);
+      alert(`Failed to ${action} users. Please try again.`);
+    }
   };
 
   return (
@@ -413,6 +435,32 @@ const Users = () => {
           </div>
         </div>
 
+        {/* Loading & Error States */}
+        {loading && (
+          <div className="bg-white rounded-lg shadow-sm p-8 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+            <p className="text-gray-500 mt-4">Loading users...</p>
+          </div>
+        )}
+        
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
+            <div className="text-red-600 text-xl">⚠️</div>
+            <div className="flex-grow">
+              <p className="text-red-800 font-medium">Error</p>
+              <p className="text-red-600 text-sm">{error}</p>
+            </div>
+            <button 
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+        
+        {!loading && !error && (
+          <>
         {/* Filters and Search */}
         <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
           <div className="flex flex-col md:flex-row md:items-center gap-4 flex-wrap">
@@ -613,7 +661,7 @@ const Users = () => {
                           <button 
                             className="text-red-600 hover:text-red-900" 
                             title="Suspend User"
-                            onClick={() => alert(`Suspend user ${user.name}`)}
+                            onClick={() => handleStatusChange(user.id, 'Suspended')}
                           >
                             <FaBan />
                           </button>
@@ -621,7 +669,7 @@ const Users = () => {
                           <button 
                             className="text-green-600 hover:text-green-900" 
                             title="Activate User"
-                            onClick={() => alert(`Activate user ${user.name}`)}
+                            onClick={() => handleStatusChange(user.id, 'Active')}
                           >
                             <FaCheck />
                           </button>
@@ -629,7 +677,7 @@ const Users = () => {
                           <button 
                             className="text-green-600 hover:text-green-900" 
                             title="Approve User"
-                            onClick={() => alert(`Approve user ${user.name}`)}
+                            onClick={() => handleStatusChange(user.id, 'Active')}
                           >
                             <FaCheck />
                           </button>
@@ -637,7 +685,18 @@ const Users = () => {
                         <button 
                           className="text-red-600 hover:text-red-900" 
                           title="Delete User"
-                          onClick={() => alert(`Delete user ${user.name}`)}
+                          onClick={async () => {
+                            if (confirm(`Are you sure you want to delete ${user.name}?`)) {
+                              try {
+                                await api.delete(`/admin/users/${user.id}`);
+                                setUsersData(prevUsers => prevUsers.filter(u => u.id !== user.id));
+                                alert('User deleted successfully!');
+                              } catch (err) {
+                                console.error('Failed to delete user:', err);
+                                alert('Failed to delete user. Please try again.');
+                              }
+                            }
+                          }}
                         >
                           <FaTrash />
                         </button>
@@ -700,6 +759,8 @@ const Users = () => {
             </div>
           </div>
         </div>
+        </>
+        )}
       </div>
     </DashboardLayout>
   );

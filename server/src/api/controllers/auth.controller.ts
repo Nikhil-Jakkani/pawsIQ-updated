@@ -211,8 +211,11 @@ export const facebookLogin = async (req: Request, res: Response) => {
       refreshToken: tokens.refresh.token,
       user: {
         id: existingUser.user_id,
+        user_id: Number(existingUser.user_id),
         email: existingUser.user_email_id,
+        user_email_id: existingUser.user_email_id,
         name: existingUser.user_full_name,
+        user_full_name: existingUser.user_full_name,
         role: 'user',
         avatar: data?.picture?.data?.url,
       },

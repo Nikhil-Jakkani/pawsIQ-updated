@@ -32,8 +32,8 @@ const UserAppointmentConfirmation = () => {
               <FaCheckCircle size={56} />
             </div>
           </div>
-          <h1 className="text-2xl font-bold text-gray-800">Appointment Confirmed</h1>
-          <p className="text-gray-600 mt-2">Thank you! Your booking has been successfully scheduled.</p>
+          <h1 className="text-2xl font-bold text-gray-800">Appointment Booked</h1>
+          <p className="text-gray-600 mt-2">Thank you! Your booking has been successfully scheduled and soon will be confirmed.</p>
 
           <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-green-50 px-4 py-1 border border-green-100">
             <span className="text-xs font-semibold text-green-700">Confirmation</span>

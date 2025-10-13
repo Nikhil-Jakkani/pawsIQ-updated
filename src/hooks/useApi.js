@@ -76,12 +76,20 @@ const useApi = () => {
 
           if (refreshResponse.ok) {
             const newTokens = await refreshResponse.json();
-            // Support both shapes: { accessToken } or { access: { token }, refresh: {...} }
-            let mergedTokens = { ...tokens };
-            if (newTokens?.accessToken) {
-              mergedTokens = { ...tokens, access: { ...(tokens.access || {}), token: newTokens.accessToken } };
+            // Support both shapes: { accessToken, refreshToken } or { access: { token }, refresh: {...} }
+            let mergedTokens;
+            if (newTokens?.accessToken && newTokens?.refreshToken) {
+              // Shape: { accessToken, refreshToken }
+              mergedTokens = {
+                access: { token: newTokens.accessToken },
+                refresh: { token: newTokens.refreshToken }
+              };
             } else if (newTokens?.access?.token) {
+              // Shape: { access: { token }, refresh: { token } }
               mergedTokens = newTokens;
+            } else {
+              // Fallback: only update access token
+              mergedTokens = { ...tokens, access: { ...(tokens.access || {}), token: newTokens.accessToken } };
             }
             setAuthTokens(mergedTokens);
             
