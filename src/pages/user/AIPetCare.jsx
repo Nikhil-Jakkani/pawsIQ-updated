@@ -7,6 +7,7 @@ import AISymptomChecker from '../../components/user/AISymptomChecker';
 import AINutritionAnalyzer from '../../components/user/AINutritionAnalyzer';
 import PetSelector from '../../components/user/PetSelector';
 import { useAuth } from '../../context/AuthContext';
+import { formatWeight, formatAge } from '../../utils/petDataUtils';
 
 const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
 
@@ -37,8 +38,8 @@ const AIPetCare = () => {
           name: p.pet_name ?? p.name ?? 'Pet',
           type: String(p.pet_type ?? p.type ?? '').toLowerCase(),
           breed: p.pet_breed ?? p.breed ?? '',
-          age: p.pet_age ? `${p.pet_age} years` : (p.pet_birthday || p.birthdate || ''),
-          weight: p.pet_weight ? `${p.pet_weight} kg` : (p.weight ? `${p.weight} kg` : ''),
+          age: formatAge(p.pet_age || p.age),
+          weight: formatWeight(p.pet_weight || p.weight),
           imagePath: p.pet_image ?? p.imagePath ?? '',
           image: 'https://placehold.co/200x200?text=Pet',
         }));

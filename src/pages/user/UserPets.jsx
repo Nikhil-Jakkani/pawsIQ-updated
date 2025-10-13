@@ -7,6 +7,7 @@ import { supabase } from '../../lib/supabaseClient';
 import MedicalRecordsPopup from '../../components/user/MedicalRecordsPopup';
 import VaccinationRecordsPopup from '../../components/user/VaccinationRecordsPopup';
 import { PetIcon } from '../../components/layout/PetIcons';
+import { formatWeight, calculateAgeFromDate } from '../../utils/petDataUtils';
 const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
 
 const UserPets = () => {
@@ -163,14 +164,11 @@ const UserPets = () => {
           .map((p) => {
           const imagePath = p.pet_image || p.imagePath || '';
           const cachedUrl = getCachedUrlIfFresh(imagePath);
-          const ageText = p.pet_birth_dtm
-            ? (() => {
-                const dob = new Date(p.pet_birth_dtm);
-                const now = new Date();
-                const years = Math.max(0, Math.floor((now.getTime() - dob.getTime()) / (1000 * 60 * 60 * 24 * 365.25)));
-                return `${years} years`;
-              })()
-            : (typeof p.age === 'number' ? `${p.age} years` : (p.pet_age != null ? `${p.pet_age} years` : 'Unknown'));
+          const ageText = p.pet_birth_dtm 
+            ? calculateAgeFromDate(p.pet_birth_dtm)
+            : (p.age || p.pet_age || '-');
+
+          const weightText = formatWeight(p.weight || p.pet_weight);
 
           return {
             id: Number(p.id || p.pet_id),
@@ -178,7 +176,7 @@ const UserPets = () => {
             type: (p.type || p.pet_type || '').toString().toLowerCase(),
             breed: p.breed || p.pet_breed || '',
             age: ageText,
-            weight: p.weight || (p.pet_weight != null && p.pet_weight !== '' && p.pet_weight !== 0 ? `${p.pet_weight} kg` : 'Unknown'),
+            weight: weightText,
             pet_weight: p.pet_weight,
             gender: (p.gender || p.pet_gender || ''),
             birthday: p.birthday || p.pet_birth_dtm || p.pet_birthday || null,
