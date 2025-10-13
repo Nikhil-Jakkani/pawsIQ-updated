@@ -5,10 +5,10 @@ import { providerService } from '../../services/provider/index.js';
 
 const getMyProfile = catchAsync(async (req: any, res: Response) => {
   const provider = await providerService.getProviderById(req.user.service_provider_id);
-  // Map serv_provider_type to providerType for frontend consistency
+  const typedProvider = provider as any;
   const userProfile = {
-    ...provider,
-    providerType: provider.serv_provider_type,
+    ...typedProvider,
+    providerType: typedProvider.serv_provider_type,
   };
   res.send(userProfile);
 });
