@@ -1,985 +1,872 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaCog, FaUser, FaLock, FaBell, FaCreditCard, FaAddressCard, FaShieldAlt, FaSignOutAlt, FaCamera, FaCheck, FaExclamationTriangle } from 'react-icons/fa';
+import {
+  FaAddressCard,
+  FaBell,
+  FaCamera,
+  FaCheck,
+  FaCog,
+  FaCreditCard,
+  FaExclamationTriangle,
+  FaLock,
+  FaShieldAlt,
+  FaSignOutAlt,
+  FaSpinner,
+  FaUser,
+} from 'react-icons/fa';
 import UserLayout from '../../components/layout/UserLayout';
 import { useAuth } from '../../context/AuthContext';
+import { uploadProfilePhoto } from '../../services/userPhotoService';
 
 const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
 
+const DEFAULT_NOTIFICATION_PREFS = Object.freeze({
+  email: {
+    orderUpdates: true,
+    promotions: false,
+    petReminders: true,
+    newsletter: false,
+  },
+  push: {
+    orderUpdates: true,
+    promotions: true,
+    petReminders: true,
+    newsletter: false,
+  },
+});
+
+const DEFAULT_ADDRESS = Object.freeze({
+  street: '',
+  city: '',
+  state: '',
+  zipCode: '',
+  country: '',
+});
+
+const mergeNotificationPrefs = (incoming) => ({
+  email: { ...DEFAULT_NOTIFICATION_PREFS.email, ...(incoming?.email || {}) },
+  push: { ...DEFAULT_NOTIFICATION_PREFS.push, ...(incoming?.push || {}) },
+});
+
 const UserSettings = () => {
   const navigate = useNavigate();
-  const { currentUser, logout, authFetch } = useAuth();
+  const { logout, authFetch, setCurrentUserData } = useAuth();
+
   const [activeTab, setActiveTab] = useState('profile');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [profileSubmitting, setProfileSubmitting] = useState(false);
+  const [passwordSubmitting, setPasswordSubmitting] = useState(false);
+  const [notificationSubmitting, setNotificationSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [originalEmail, setOriginalEmail] = useState('');
-  
-  // User profile data loaded from backend
+
   const [userData, setUserData] = useState({
     name: '',
     email: '',
     phone: '',
-    profileImage: 'https://randomuser.me/api/portraits/men/32.jpg',
-    address: {
-      street: '123 Main St',
-      city: 'Anytown',
-      state: 'CA',
-      zipCode: '12345',
-      country: 'United States'
-    },
-    notificationPreferences: {
-      email: {
-        orderUpdates: true,
-        promotions: false,
-        petReminders: true,
-        newsletter: false
-      },
-      push: {
-        orderUpdates: true,
-        promotions: true,
-        petReminders: true,
-        newsletter: false
-      }
-    },
-    paymentMethods: [
-      {
-        id: 1,
-        type: 'credit_card',
-        last4: '4242',
-        brand: 'Visa',
-        expMonth: 12,
-        expYear: 2025,
-        isDefault: true
-      },
-      {
-        id: 2,
-        type: 'credit_card',
-        last4: '1234',
-        brand: 'Mastercard',
-        expMonth: 8,
-        expYear: 2024,
-        isDefault: false
-      }
-    ]
+    profileImage: null,
+    address: { ...DEFAULT_ADDRESS },
+  });
+  const [notificationPrefs, setNotificationPrefs] = useState(DEFAULT_NOTIFICATION_PREFS);
+
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
   });
 
-  // Load profile from backend
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStatus, setUploadStatus] = useState('');
+  const fileInputRef = useRef(null);
+
+  const resetMessagesLater = () => {
+    window.setTimeout(() => {
+      setSuccessMessage('');
+      setErrorMessage('');
+    }, 3000);
+  };
+
   useEffect(() => {
-    let mounted = true;
+    let isMounted = true;
+
     (async () => {
       try {
         const res = await authFetch(`${API_URL}/user/profile`);
-        const data = await res.json().catch(() => ({}));
-        if (!mounted) return;
+        const data = await res.json().catch(() => null);
+        if (!isMounted) return;
+
         if (res.ok && data) {
           setUserData((prev) => ({
             ...prev,
-            name: data.user_full_name || prev.name || '',
-            email: data.user_email_id || prev.email || '',
-            phone: data.user_phone_number || prev.phone || '',
+            name: data.user_full_name || '',
+            email: data.user_email_id || '',
+            phone: data.user_phone_number || '',
+            profileImage: data.profile_picture_url || null,
+            address: {
+              ...DEFAULT_ADDRESS,
+              ...(data.user_address || {}),
+            },
           }));
+          setNotificationPrefs(mergeNotificationPrefs(data.notification_preferences));
           setOriginalEmail(String(data.user_email_id || ''));
         }
-      } catch (_) {
-        // ignore
+      } catch (error) {
+        console.error('Failed to load user profile', error);
+        setErrorMessage('Unable to load profile. Please try again.');
+        resetMessagesLater();
       }
     })();
-    return () => { mounted = false; };
-  }, []);
 
-  // Handle form input changes
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    
-    if (name.includes('.')) {
-      const [parent, child] = name.split('.');
-      setUserData({
-        ...userData,
-        [parent]: {
-          ...userData[parent],
-          [child]: value
-        }
-      });
-    } else {
-      setUserData({
-        ...userData,
-        [name]: value
-      });
+    return () => {
+      isMounted = false;
+    };
+  }, [authFetch]);
+
+  const tabs = useMemo(
+    () => [
+      { id: 'profile', label: 'Profile', icon: <FaUser /> },
+      { id: 'security', label: 'Security', icon: <FaLock /> },
+      { id: 'notifications', label: 'Notifications', icon: <FaBell /> },
+      { id: 'payment', label: 'Payment Methods', icon: <FaCreditCard /> },
+      { id: 'address', label: 'Addresses', icon: <FaAddressCard /> },
+      { id: 'privacy', label: 'Privacy', icon: <FaShieldAlt /> },
+    ],
+    []
+  );
+
+  const handleProfileInputChange = (event) => {
+    const { name, value } = event.target;
+    if (name.startsWith('address.')) {
+      const key = name.replace('address.', '');
+      setUserData((prev) => ({
+        ...prev,
+        address: {
+          ...prev.address,
+          [key]: value,
+        },
+      }));
+      return;
     }
+
+    setUserData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
-  
-  // Handle form submission
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+
+  const handleProfileSubmit = async (event) => {
+    event.preventDefault();
     setSuccessMessage('');
     setErrorMessage('');
+    setProfileSubmitting(true);
+
     try {
       const payload = {};
-      if (typeof userData.name === 'string') payload.user_full_name = userData.name;
-      // Only send email if it actually changed to avoid unique-email 400s
-      if (userData.email && userData.email !== originalEmail) payload.user_email_id = userData.email;
-      if (typeof userData.phone === 'string') payload.user_phone_number = userData.phone;
+      if (userData.name) payload.user_full_name = userData.name.trim();
+      if (userData.phone) payload.user_phone_number = userData.phone.trim();
+      if (userData.email && userData.email !== originalEmail) {
+        payload.user_email_id = userData.email.trim();
+      }
+
+      if (Object.keys(payload).length === 0) {
+        setSuccessMessage('No profile changes to save.');
+        resetMessagesLater();
+        return;
+      }
+
       const res = await authFetch(`${API_URL}/user/profile`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(json?.message || json?.error || 'Failed to update profile');
-      setSuccessMessage('Your settings have been updated successfully!');
-      setTimeout(() => setSuccessMessage(''), 3000);
+      const json = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        throw new Error(json?.message || json?.error || 'Failed to update profile');
+      }
+
       if (payload.user_email_id) setOriginalEmail(payload.user_email_id);
-    } catch (err) {
-      setErrorMessage(err.message || 'Failed to update profile');
+      setSuccessMessage('Profile updated successfully.');
+      resetMessagesLater();
+    } catch (error) {
+      console.error(error);
+      setErrorMessage(error.message || 'Unable to update profile.');
+      resetMessagesLater();
     } finally {
-      setIsSubmitting(false);
+      setProfileSubmitting(false);
     }
   };
-  
-  // Handle password change
-  const [passwordData, setPasswordData] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
-  });
-  
-  const handlePasswordChange = (e) => {
-    const { name, value } = e.target;
-    setPasswordData({
-      ...passwordData,
-      [name]: value
-    });
+
+  const handlePasswordChange = (event) => {
+    const { name, value } = event.target;
+    setPasswordData((prev) => ({ ...prev, [name]: value }));
   };
-  
-  const handlePasswordSubmit = (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+
+  const handlePasswordSubmit = async (event) => {
+    event.preventDefault();
     setSuccessMessage('');
     setErrorMessage('');
-    
-    // Validate passwords
+
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      setIsSubmitting(false);
-      setErrorMessage('New passwords do not match.');
+      setErrorMessage('New password and confirmation do not match.');
+      resetMessagesLater();
       return;
     }
-    
+
     if (passwordData.newPassword.length < 8) {
-      setIsSubmitting(false);
-      setErrorMessage('Password must be at least 8 characters long.');
+      setErrorMessage('New password must be at least 8 characters long.');
+      resetMessagesLater();
       return;
     }
-    
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setSuccessMessage('Your password has been updated successfully!');
-      
-      // Clear form and success message after 3 seconds
-      setPasswordData({
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
+
+    setPasswordSubmitting(true);
+    try {
+      const res = await authFetch(`${API_URL}/user/profile/change-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentPassword: passwordData.currentPassword,
+          newPassword: passwordData.newPassword,
+        }),
       });
-      
-      setTimeout(() => {
-        setSuccessMessage('');
-      }, 3000);
-    }, 1500);
-  };
-  
-  // Handle account deletion
-  const handleDeleteAccount = () => {
-    if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-      // In a real app, you would call an API to delete the account
-      alert('Account deletion would be processed here.');
+      const json = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        throw new Error(json?.message || json?.error || 'Failed to change password');
+      }
+
+      setSuccessMessage('Password updated successfully.');
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      resetMessagesLater();
+    } catch (error) {
+      console.error(error);
+      setErrorMessage(error.message || 'Unable to change password.');
+      resetMessagesLater();
+    } finally {
+      setPasswordSubmitting(false);
     }
   };
-  
-  // Handle logout
+
+  const handleNotificationToggle = (channel, key) => {
+    setNotificationPrefs((prev) => ({
+      ...prev,
+      [channel]: {
+        ...prev[channel],
+        [key]: !prev[channel][key],
+      },
+    }));
+  };
+
+  const handleNotificationSubmit = async (event) => {
+    event.preventDefault();
+    setSuccessMessage('');
+    setErrorMessage('');
+    setNotificationSubmitting(true);
+
+    try {
+      // Placeholder until backend endpoint exists
+      setSuccessMessage('Notification preferences saved locally.');
+      resetMessagesLater();
+    } catch (error) {
+      console.error(error);
+      setErrorMessage('Unable to save notification preferences.');
+      resetMessagesLater();
+    } finally {
+      setNotificationSubmitting(false);
+    }
+  };
+
+  const handleUploadChange = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setSuccessMessage('');
+    setErrorMessage('');
+    setIsUploading(true);
+    setUploadProgress(0);
+    setUploadStatus('Preparing upload...');
+
+    try {
+      const result = await uploadProfilePhoto(file, authFetch, (progress, status) => {
+        setUploadProgress(progress);
+        setUploadStatus(status);
+      });
+      setUserData((prev) => ({ ...prev, profileImage: result.profilePhotoUrl || null }));
+      if (result?.user) {
+        setCurrentUserData(result.user);
+      }
+      setSuccessMessage('Profile photo updated successfully.');
+      resetMessagesLater();
+    } catch (error) {
+      console.error(error);
+      setErrorMessage(error.message || 'Unable to upload profile photo.');
+      resetMessagesLater();
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+      setUploadStatus('');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   const handleLogout = () => {
     logout();
     navigate('/user/login');
   };
-  
-  // Tabs configuration
-  const tabs = [
-    { id: 'profile', label: 'Profile', icon: <FaUser /> },
-    { id: 'security', label: 'Security', icon: <FaLock /> },
-    { id: 'notifications', label: 'Notifications', icon: <FaBell /> },
-    { id: 'payment', label: 'Payment Methods', icon: <FaCreditCard /> },
-    { id: 'address', label: 'Addresses', icon: <FaAddressCard /> },
-    { id: 'privacy', label: 'Privacy', icon: <FaShieldAlt /> }
-  ];
-  
-  // Render tab content
-  const renderTabContent = () => {
-    switch(activeTab) {
-      case 'profile':
-        return (
-          <form onSubmit={handleSubmit}>
-            <div className="space-y-6">
-              {/* Profile Image */}
-              <div className="flex flex-col items-center">
-                <div className="relative">
-                  <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-gray-200">
-                    <img 
-                      src={userData.profileImage} 
-                      alt="Profile" 
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <label htmlFor="profile-image" className="absolute bottom-0 right-0 bg-indigo-600 text-white p-2 rounded-full cursor-pointer hover:bg-indigo-700 transition-colors">
-                    <FaCamera size={14} />
-                    <input 
-                      type="file" 
-                      id="profile-image" 
-                      className="hidden" 
-                      accept="image/*"
-                    />
-                  </label>
-                </div>
-                <p className="text-sm text-gray-500 mt-2">Click the camera icon to change your profile picture</p>
+
+  const profileTab = (
+    <form onSubmit={handleProfileSubmit} className="space-y-6">
+      <div className="flex flex-col items-center">
+        <div className="relative">
+          <div className="h-24 w-24 overflow-hidden rounded-full border-2 border-gray-200 bg-gray-100">
+            {userData.profileImage ? (
+              <img src={userData.profileImage} alt="Profile" className="h-full w-full object-cover" />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-indigo-100">
+                <FaUser className="text-3xl text-indigo-600" />
               </div>
-              
-              {/* Personal Information */}
-              <div>
-                <h3 className="text-lg font-medium text-gray-800 mb-4">Personal Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                      Full Name
-                    </label>
-                    <input
-                      type="text"
-                      id="name"
-                      name="name"
-                      value={userData.name}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                      Email Address
-                    </label>
-                    <input
-                      type="email"
-                      id="email"
-                      name="email"
-                      value={userData.email}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                      Phone Number
-                    </label>
-                    <input
-                      type="tel"
-                      id="phone"
-                      name="phone"
-                      value={userData.phone}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    />
-                  </div>
-                </div>
-              </div>
-              
-              {/* Form Actions */}
-              <div className="flex justify-end">
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className={`px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 flex items-center gap-2 ${
-                    isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
-                  }`}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      <span>Saving...</span>
-                    </>
-                  ) : (
-                    <>
-                      <FaCheck />
-                      <span>Save Changes</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </form>
-        );
-        
-      case 'security':
-        return (
-          <div className="space-y-8">
-            {/* Password Change */}
-            <div>
-              <h3 className="text-lg font-medium text-gray-800 mb-4 text-left">Change Password</h3>
-              <form onSubmit={handlePasswordSubmit} className="space-y-4">
-                <div>
-                  <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                    Current Password
-                  </label>
-                  <input
-                    type="password"
-                    id="currentPassword"
-                    name="currentPassword"
-                    value={passwordData.currentPassword}
-                    onChange={handlePasswordChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                    New Password
-                  </label>
-                  <input
-                    type="password"
-                    id="newPassword"
-                    name="newPassword"
-                    value={passwordData.newPassword}
-                    onChange={handlePasswordChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    required
-                    minLength={8}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Password must be at least 8 characters long</p>
-                </div>
-                
-                <div>
-                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                    Confirm New Password
-                  </label>
-                  <input
-                    type="password"
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    value={passwordData.confirmPassword}
-                    onChange={handlePasswordChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    required
-                  />
-                </div>
-                
-                <div className="flex justify-end">
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className={`px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 flex items-center gap-2 ${
-                      isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
-                    }`}
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        <span>Updating...</span>
-                      </>
-                    ) : (
-                      <>
-                        <FaLock />
-                        <span>Update Password</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </form>
-            </div>
-            
-            {/* Two-Factor Authentication */}
-            <div>
-              <h3 className="text-lg font-medium text-gray-800 mb-4">Two-Factor Authentication</h3>
-              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div className="bg-indigo-100 p-2 rounded-full">
-                    <FaShieldAlt className="text-indigo-600" />
-                  </div>
-                  <div className="flex items-center justify-between flex-1">
-                    <h4 className="font-medium text-gray-800 text-left">Enhance Your Account Security</h4>
-                    <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 text-sm">
-                      Enable Two-Factor Authentication
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-            {/* Login Sessions */}
-            <div>
-              <h3 className="text-lg font-medium text-gray-800 mb-4">Active Sessions</h3>
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <div className="p-4 border-b border-gray-200">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-green-100 p-2 rounded-full">
-                        <FaUser className="text-green-600" />
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-gray-800">Current Session</h4>
-                        <p className="text-gray-600 text-sm">Chrome on Windows • IP: 192.168.1.1</p>
-                      </div>
-                    </div>
-                    <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Active Now</span>
-                  </div>
-                </div>
-                <div className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-gray-100 p-2 rounded-full">
-                        <FaUser className="text-gray-600" />
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-gray-800">Safari on iPhone</h4>
-                        <p className="text-gray-600 text-sm">Last active: 2 days ago • IP: 192.168.1.2</p>
-                      </div>
-                    </div>
-                    <button className="text-red-600 hover:text-red-700 text-sm font-medium">
-                      Sign Out
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <div className="mt-3 flex justify-end">
-                <button 
-                  onClick={handleLogout}
-                  className="flex items-center gap-1 text-red-600 hover:text-red-700 text-sm font-medium"
-                >
-                  <FaSignOutAlt />
-                  <span>Sign Out of All Sessions</span>
-                </button>
-              </div>
-            </div>
+            )}
           </div>
-        );
-        
-      case 'notifications':
-        return (
-          <form onSubmit={handleSubmit}>
-            <div className="space-y-6">
-              <h3 className="text-lg font-medium text-gray-800 mb-4">Notification Preferences</h3>
-              <p className="text-sm text-gray-500 -mt-2 mb-4">Choose how you want to hear from us. Toggle each category on or off.</p>
-              
-              {/* Email Notifications */}
-              <div className="bg-white rounded-lg p-4 border border-gray-200">
-                <h4 className="font-medium text-gray-800 mb-3">Email Notifications</h4>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <p className="font-medium text-gray-700 whitespace-nowrap">Order Updates</p>
-                      <span className="text-xs text-green-700 bg-green-100 px-2 py-0.5 rounded-full whitespace-nowrap">Recommended</span>
-                      <span className="text-sm text-gray-500 truncate">• Receive updates about your orders</span>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        className="sr-only peer"
-                        checked={userData.notificationPreferences.email.orderUpdates}
-                        onChange={() => handleNotificationChange('email', 'orderUpdates')}
-                      />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                    </label>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <p className="font-medium text-gray-700 whitespace-nowrap">Promotions and Deals</p>
-                      <span className="text-sm text-gray-500 truncate">• Receive special offers and discounts</span>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        className="sr-only peer"
-                        checked={userData.notificationPreferences.email.promotions}
-                        onChange={() => handleNotificationChange('email', 'promotions')}
-                      />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                    </label>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <p className="font-medium text-gray-700 whitespace-nowrap">Pet Reminders</p>
-                      <span className="text-xs text-green-700 bg-green-100 px-2 py-0.5 rounded-full whitespace-nowrap">Recommended</span>
-                      <span className="text-sm text-gray-500 truncate">• Receive reminders about pet care</span>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        className="sr-only peer"
-                        checked={userData.notificationPreferences.email.petReminders}
-                        onChange={() => handleNotificationChange('email', 'petReminders')}
-                      />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                    </label>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <p className="font-medium text-gray-700 whitespace-nowrap">Newsletter</p>
-                      <span className="text-sm text-gray-500 truncate">• Receive our monthly newsletter</span>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        className="sr-only peer"
-                        checked={userData.notificationPreferences.email.newsletter}
-                        onChange={() => handleNotificationChange('email', 'newsletter')}
-                      />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                    </label>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Push Notifications */}
-              <div className="bg-white rounded-lg p-4 border border-gray-200">
-                <h4 className="font-medium text-gray-800 mb-3">Push Notifications</h4>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <p className="font-medium text-gray-700 whitespace-nowrap">Order Updates</p>
-                      <span className="text-xs text-green-700 bg-green-100 px-2 py-0.5 rounded-full whitespace-nowrap">Recommended</span>
-                      <span className="text-sm text-gray-500 truncate">• Receive updates about your orders</span>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        className="sr-only peer"
-                        checked={userData.notificationPreferences.push.orderUpdates}
-                        onChange={() => handleNotificationChange('push', 'orderUpdates')}
-                      />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                    </label>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <p className="font-medium text-gray-700 whitespace-nowrap">Promotions and Deals</p>
-                      <span className="text-sm text-gray-500 truncate">• Receive special offers and discounts</span>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        className="sr-only peer"
-                        checked={userData.notificationPreferences.push.promotions}
-                        onChange={() => handleNotificationChange('push', 'promotions')}
-                      />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                    </label>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <p className="font-medium text-gray-700 whitespace-nowrap">Pet Reminders</p>
-                      <span className="text-xs text-green-700 bg-green-100 px-2 py-0.5 rounded-full whitespace-nowrap">Recommended</span>
-                      <span className="text-sm text-gray-500 truncate">• Receive reminders about pet care</span>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        className="sr-only peer"
-                        checked={userData.notificationPreferences.push.petReminders}
-                        onChange={() => handleNotificationChange('push', 'petReminders')}
-                      />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                    </label>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <p className="font-medium text-gray-700 whitespace-nowrap">Newsletter</p>
-                      <span className="text-sm text-gray-500 truncate">• Receive our monthly newsletter</span>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        className="sr-only peer"
-                        checked={userData.notificationPreferences.push.newsletter}
-                        onChange={() => handleNotificationChange('push', 'newsletter')}
-                      />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                    </label>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Form Actions */}
-              <div className="flex justify-end">
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className={`px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 flex items-center gap-2 ${
-                    isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
-                  }`}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      <span>Saving...</span>
-                    </>
-                  ) : (
-                    <>
-                      <FaCheck />
-                      <span>Save Preferences</span>
-                    </>
-                  )}
-                </button>
-              </div>
+          <label
+            htmlFor="profile-image"
+            className={`absolute bottom-0 right-0 rounded-full p-2 text-white shadow transition-colors ${
+              isUploading ? 'bg-indigo-300 opacity-80' : 'bg-indigo-600 hover:bg-indigo-700'
+            }`}
+          >
+            {isUploading ? <FaSpinner className="animate-spin" size={14} /> : <FaCamera size={14} />}
+            <input
+              ref={fileInputRef}
+              type="file"
+              id="profile-image"
+              className="hidden"
+              accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+              onChange={handleUploadChange}
+              disabled={isUploading}
+            />
+          </label>
+        </div>
+        <p className="mt-2 text-sm text-gray-500">
+          {isUploading && uploadStatus
+            ? `${uploadStatus}${uploadProgress ? ` (${uploadProgress}%)` : ''}`
+            : 'Click the camera icon to change your profile picture'}
+        </p>
+        <p className="text-xs text-gray-400">Max size 5MB. Formats: JPG, PNG, WebP, GIF.</p>
+      </div>
+
+      <div>
+        <h3 className="mb-4 text-lg font-semibold text-gray-800">Personal Information</h3>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div>
+            <label htmlFor="name" className="mb-1 block text-sm font-medium text-gray-700">
+              Full Name
+            </label>
+            <input
+              type="text"
+              id="name"
+              name="name"
+              value={userData.name}
+              onChange={handleProfileInputChange}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              required
+            />
+          </div>
+
+          <div>
+            <label htmlFor="email" className="mb-1 block text-sm font-medium text-gray-700">
+              Email Address
+            </label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              value={userData.email}
+              onChange={handleProfileInputChange}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              required
+            />
+            <p className="mt-1 text-xs text-gray-500">Changing email requires verification if your account enforces it.</p>
+          </div>
+
+          <div>
+            <label htmlFor="phone" className="mb-1 block text-sm font-medium text-gray-700">
+              Phone Number
+            </label>
+            <input
+              type="tel"
+              id="phone"
+              name="phone"
+              value={userData.phone}
+              onChange={handleProfileInputChange}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-end">
+        <button
+          type="submit"
+          disabled={profileSubmitting}
+          className={`flex items-center gap-2 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+            profileSubmitting ? 'cursor-not-allowed bg-indigo-300' : 'bg-indigo-600 hover:bg-indigo-700'
+          }`}
+        >
+          {profileSubmitting ? (
+            <>
+              <FaSpinner className="h-5 w-5 animate-spin" />
+              <span>Saving...</span>
+            </>
+          ) : (
+            <>
+              <FaCheck />
+              <span>Save Changes</span>
+            </>
+          )}
+        </button>
+      </div>
+    </form>
+  );
+
+  const securityTab = (
+    <div className="space-y-8">
+      <div>
+        <h3 className="mb-4 text-lg font-semibold text-gray-800">Change Password</h3>
+        <form onSubmit={handlePasswordSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="currentPassword" className="mb-1 block text-sm font-medium text-gray-700">
+              Current Password
+            </label>
+            <input
+              type="password"
+              id="currentPassword"
+              name="currentPassword"
+              value={passwordData.currentPassword}
+              onChange={handlePasswordChange}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              required
+            />
+          </div>
+
+          <div>
+            <label htmlFor="newPassword" className="mb-1 block text-sm font-medium text-gray-700">
+              New Password
+            </label>
+            <input
+              type="password"
+              id="newPassword"
+              name="newPassword"
+              value={passwordData.newPassword}
+              onChange={handlePasswordChange}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              minLength={8}
+              required
+            />
+            <p className="mt-1 text-xs text-gray-500">Must be at least 8 characters.</p>
+          </div>
+
+          <div>
+            <label htmlFor="confirmPassword" className="mb-1 block text-sm font-medium text-gray-700">
+              Confirm New Password
+            </label>
+            <input
+              type="password"
+              id="confirmPassword"
+              name="confirmPassword"
+              value={passwordData.confirmPassword}
+              onChange={handlePasswordChange}
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              required
+            />
+          </div>
+
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              disabled={passwordSubmitting}
+              className={`flex items-center gap-2 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                passwordSubmitting ? 'cursor-not-allowed bg-indigo-300' : 'bg-indigo-600 hover:bg-indigo-700'
+              }`}
+            >
+              {passwordSubmitting ? (
+                <>
+                  <FaSpinner className="h-5 w-5 animate-spin" />
+                  <span>Updating...</span>
+                </>
+              ) : (
+                <>
+                  <FaLock />
+                  <span>Update Password</span>
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div>
+        <h3 className="mb-4 text-lg font-semibold text-gray-800">Two-Factor Authentication</h3>
+        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="rounded-full bg-indigo-100 p-2">
+              <FaShieldAlt className="text-indigo-600" />
             </div>
-          </form>
-        );
-        
-      case 'payment':
-        return (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-medium text-gray-800">Payment Methods</h3>
-              <button 
-                onClick={() => navigate('/user/settings/payment/add')}
-                className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 text-sm flex items-center gap-1"
-              >
-                <FaCreditCard />
-                <span>Add New</span>
+            <div className="flex flex-1 items-center justify-between">
+              <h4 className="text-left text-gray-800">Add an extra layer of security</h4>
+              <button className="rounded-lg bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                Enable 2FA
               </button>
             </div>
-            
-            {/* Payment Methods List */}
-            <div className="space-y-4">
-              {userData.paymentMethods.map(method => (
-                <div 
-                  key={method.id} 
-                  className={`bg-white rounded-lg p-4 border ${method.isDefault ? 'border-indigo-500' : 'border-gray-200'}`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-gray-100 p-2 rounded-lg">
-                        <FaCreditCard className="text-gray-600" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium text-gray-800">
-                            {method.brand} •••• {method.last4}
-                          </p>
-                          {method.isDefault && (
-                            <span className="px-2 py-0.5 bg-indigo-100 text-indigo-800 text-xs rounded-full">
-                              Default
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-500">Expires {method.expMonth}/{method.expYear}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {!method.isDefault && (
-                        <button 
-                          onClick={() => handleSetDefaultPayment(method.id)}
-                          className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
-                        >
-                          Set as Default
-                        </button>
-                      )}
-                      <button 
-                        onClick={() => handleRemovePayment(method.id)}
-                        className="text-red-600 hover:text-red-700 text-sm font-medium"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h3 className="mb-4 text-lg font-semibold text-gray-800">Active Sessions</h3>
+        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+          <div className="border-b border-gray-200 p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="rounded-full bg-green-100 p-2">
+                  <FaUser className="text-green-600" />
                 </div>
-              ))}
-              
-              {userData.paymentMethods.length === 0 && (
-                <div className="bg-gray-50 rounded-lg p-6 text-center border border-gray-200">
-                  <div className="bg-indigo-100 w-12 h-12 mx-auto rounded-full flex items-center justify-center mb-3">
-                    <FaCreditCard className="text-indigo-600" />
-                  </div>
-                  <h4 className="text-lg font-medium text-gray-800 mb-1">No Payment Methods</h4>
-                  <p className="text-gray-600 mb-4">You haven't added any payment methods yet.</p>
-                  <button 
-                    onClick={() => navigate('/user/settings/payment/add')}
-                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 text-sm inline-flex items-center gap-1"
-                  >
-                    <FaCreditCard />
-                    <span>Add Payment Method</span>
-                  </button>
+                <div>
+                  <h4 className="font-medium text-gray-800">Current Session</h4>
+                  <p className="text-sm text-gray-600">Chrome on Windows • IP: 192.168.1.1</p>
                 </div>
-              )}
+              </div>
+              <span className="rounded-full bg-green-100 px-2 py-1 text-xs text-green-800">Active now</span>
             </div>
           </div>
-        );
-        
+          <div className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="rounded-full bg-gray-100 p-2">
+                  <FaUser className="text-gray-600" />
+                </div>
+                <div>
+                  <h4 className="font-medium text-gray-800">Safari on iPhone</h4>
+                  <p className="text-sm text-gray-600">Last active: 2 days ago • IP: 192.168.1.2</p>
+                </div>
+              </div>
+              <button className="text-sm font-semibold text-red-600 hover:text-red-700">Sign out</button>
+            </div>
+          </div>
+        </div>
+        <div className="mt-3 flex justify-end">
+          <button onClick={handleLogout} className="flex items-center gap-1 text-sm font-semibold text-red-600 hover:text-red-700">
+            <FaSignOutAlt />
+            <span>Sign out of all sessions</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const notificationsTab = (
+    <form onSubmit={handleNotificationSubmit} className="space-y-6">
+      <div>
+        <h3 className="mb-4 text-lg font-semibold text-gray-800">Notification Preferences</h3>
+        <p className="-mt-2 mb-4 text-sm text-gray-500">Choose how you would like us to reach out to you.</p>
+
+        <div className="rounded-lg border border-gray-200 bg-white p-4">
+          <h4 className="mb-3 font-medium text-gray-800">Email Notifications</h4>
+          <div className="space-y-3">
+            {[
+              ['orderUpdates', 'Order updates', 'Recommended', 'Receive important updates about your bookings'],
+              ['promotions', 'Promotions & deals', '', 'Occasional offers, discounts and news'],
+              ['petReminders', 'Pet reminders', 'Recommended', 'Reminders for vaccinations, veterinary visits, etc.'],
+              ['newsletter', 'Newsletter', '', 'Monthly round-up of new services and tips'],
+            ].map(([key, label, tag, description]) => (
+              <div key={`email-${key}`} className="flex items-center justify-between">
+                <div className="flex min-w-0 flex-1 items-center gap-2">
+                  <p className="whitespace-nowrap font-medium text-gray-700">{label}</p>
+                  {tag && <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-700">{tag}</span>}
+                  <span className="truncate text-sm text-gray-500">• {description}</span>
+                </div>
+                <label className="relative inline-flex cursor-pointer items-center">
+                  <input
+                    type="checkbox"
+                    className="peer sr-only"
+                    checked={notificationPrefs.email[key]}
+                    onChange={() => handleNotificationToggle('email', key)}
+                  />
+                  <span className="h-6 w-11 rounded-full bg-gray-200 transition-all peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 peer-checked:bg-indigo-600 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all peer-checked:after:translate-x-full peer-checked:after:border-white" />
+                </label>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-gray-200 bg-white p-4">
+        <h4 className="mb-3 font-medium text-gray-800">Push Notifications</h4>
+        <div className="space-y-3">
+          {[
+            ['orderUpdates', 'Order updates', 'Recommended', 'Stay updated on booking changes in real-time'],
+            ['promotions', 'Promotions & deals', '', 'Be first to know about special offers'],
+            ['petReminders', 'Pet reminders', 'Recommended', "Remind me when my pet's care is due"],
+            ['newsletter', 'Newsletter', '', 'Occasional app updates and product announcements'],
+          ].map(([key, label, tag, description]) => (
+            <div key={`push-${key}`} className="flex items-center justify-between">
+              <div className="flex min-w-0 flex-1 items-center gap-2">
+                <p className="whitespace-nowrap font-medium text-gray-700">{label}</p>
+                {tag && <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-700">{tag}</span>}
+                <span className="truncate text-sm text-gray-500">• {description}</span>
+              </div>
+              <label className="relative inline-flex cursor-pointer items-center">
+                <input
+                  type="checkbox"
+                  className="peer sr-only"
+                  checked={notificationPrefs.push[key]}
+                  onChange={() => handleNotificationToggle('push', key)}
+                />
+                <span className="h-6 w-11 rounded-full bg-gray-200 transition-all peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 peer-checked:bg-indigo-600 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all peer-checked:after:translate-x-full peer-checked:after:border-white" />
+              </label>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex justify-end">
+        <button
+          type="submit"
+          disabled={notificationSubmitting}
+          className={`flex items-center gap-2 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+            notificationSubmitting ? 'cursor-not-allowed bg-indigo-300' : 'bg-indigo-600 hover:bg-indigo-700'
+          }`}
+        >
+          {notificationSubmitting ? (
+            <>
+              <FaSpinner className="h-5 w-5 animate-spin" />
+              <span>Saving...</span>
+            </>
+          ) : (
+            <>
+              <FaCheck />
+              <span>Save Preferences</span>
+            </>
+          )}
+        </button>
+      </div>
+    </form>
+  );
+
+  const addressTab = (
+    <form onSubmit={handleProfileSubmit} className="space-y-6">
+      <div>
+        <h3 className="mb-4 text-lg font-semibold text-gray-800">Address Information</h3>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {[
+            ['street', 'Street address'],
+            ['city', 'City'],
+            ['state', 'State / Province'],
+            ['zipCode', 'ZIP / Postal code'],
+            ['country', 'Country'],
+          ].map(([key, label]) => (
+            <div key={key}>
+              <label htmlFor={`address.${key}`} className="mb-1 block text-sm font-medium text-gray-700">
+                {label}
+              </label>
+              <input
+                type="text"
+                id={`address.${key}`}
+                name={`address.${key}`}
+                value={userData.address[key] || ''}
+                onChange={handleProfileInputChange}
+                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                required
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="rounded-lg border border-blue-100 bg-blue-50 p-4 text-sm text-blue-800">
+        Address updates will sync once backend support is available. For now, this information is stored locally in your session.
+      </div>
+      <div className="flex justify-end">
+        <button
+          type="submit"
+          disabled={profileSubmitting}
+          className={`flex items-center gap-2 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+            profileSubmitting ? 'cursor-not-allowed bg-indigo-300' : 'bg-indigo-600 hover:bg-indigo-700'
+          }`}
+        >
+          {profileSubmitting ? (
+            <>
+              <FaSpinner className="h-5 w-5 animate-spin" />
+              <span>Saving...</span>
+            </>
+          ) : (
+            <>
+              <FaCheck />
+              <span>Save Address</span>
+            </>
+          )}
+        </button>
+      </div>
+    </form>
+  );
+
+  const paymentTab = (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-gray-800">Payment Methods</h3>
+        <button
+          onClick={() => navigate('/user/settings/payment/add')}
+          className="flex items-center gap-1 rounded-lg bg-indigo-600 px-3 py-1.5 text-sm text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+        >
+          <FaCreditCard />
+          <span>Add new</span>
+        </button>
+      </div>
+      <div className="rounded-lg border border-gray-200 bg-gray-50 p-6 text-center">
+        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-indigo-100">
+          <FaCreditCard className="text-indigo-600" />
+        </div>
+        <h4 className="text-lg font-medium text-gray-800">No payment methods yet</h4>
+        <p className="mt-2 text-sm text-gray-600">
+          Add a card or wallet so you can check out faster next time.
+        </p>
+        <button
+          onClick={() => navigate('/user/settings/payment/add')}
+          className="mt-4 inline-flex items-center gap-1 rounded-lg bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+        >
+          <FaCreditCard />
+          <span>Add payment method</span>
+        </button>
+      </div>
+    </div>
+  );
+
+  const privacyTab = (
+    <div className="space-y-8">
+      <div>
+        <h3 className="mb-4 text-lg font-semibold text-gray-800">Privacy Settings</h3>
+        <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-4">
+          {[
+            ['Data collection', 'Help us improve by sharing anonymised usage data', true],
+            ['Personalised ads', 'Use your activity to tailor relevant offers', false],
+            ['Profile visibility', 'Allow other users to view your profile details', true],
+          ].map(([title, description, checked]) => (
+            <div key={title} className="flex items-center justify-between">
+              <div className="flex min-w-0 flex-1 flex-col">
+                <p className="font-medium text-gray-700">{title}</p>
+                <span className="text-sm text-gray-500">{description}</span>
+              </div>
+              <label className="relative inline-flex cursor-pointer items-center">
+                <input type="checkbox" className="peer sr-only" defaultChecked={checked} />
+                <span className="h-6 w-11 rounded-full bg-gray-200 transition-all peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 peer-checked:bg-indigo-600 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all peer-checked:after:translate-x-full peer-checked:after:border-white" />
+              </label>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4">
+          <div>
+            <h4 className="font-medium text-gray-800">Download your data</h4>
+            <p className="text-sm text-gray-500">Request a copy of everything we store about you and your pets.</p>
+          </div>
+          <button className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+            Request export
+          </button>
+        </div>
+
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="rounded-full bg-red-100 p-2">
+                <FaExclamationTriangle className="text-red-600" />
+              </div>
+              <div>
+                <h4 className="mb-1 font-semibold text-red-800">Delete account</h4>
+                <p className="text-sm text-red-700">
+                  Permanently remove your account and related data. This cannot be undone.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+                  alert('Account deletion workflow coming soon.');
+                }
+              }}
+              className="rounded-lg bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+            >
+              Delete account
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'profile':
+        return profileTab;
+      case 'security':
+        return securityTab;
+      case 'notifications':
+        return notificationsTab;
       case 'address':
-        return (
-          <form onSubmit={handleSubmit}>
-            <div className="space-y-6">
-              <h3 className="text-lg font-medium text-gray-800 mb-4">Address Information</h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="street" className="block text-sm font-medium text-gray-700 mb-1">
-                    Street Address
-                  </label>
-                  <input
-                    type="text"
-                    id="street"
-                    name="address.street"
-                    value={userData.address.street}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
-                    City
-                  </label>
-                  <input
-                    type="text"
-                    id="city"
-                    name="address.city"
-                    value={userData.address.city}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">
-                    State/Province
-                  </label>
-                  <input
-                    type="text"
-                    id="state"
-                    name="address.state"
-                    value={userData.address.state}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="zipCode" className="block text-sm font-medium text-gray-700 mb-1">
-                    ZIP/Postal Code
-                  </label>
-                  <input
-                    type="text"
-                    id="zipCode"
-                    name="address.zipCode"
-                    value={userData.address.zipCode}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
-                    Country
-                  </label>
-                  <input
-                    type="text"
-                    id="country"
-                    name="address.country"
-                    value={userData.address.country}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    required
-                  />
-                </div>
-              </div>
-              
-              {/* Form Actions */}
-              <div className="flex justify-end">
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className={`px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 flex items-center gap-2 ${
-                    isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
-                  }`}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      <span>Saving...</span>
-                    </>
-                  ) : (
-                    <>
-                      <FaCheck />
-                      <span>Save Address</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </form>
-        );
-        
+        return addressTab;
+      case 'payment':
+        return paymentTab;
       case 'privacy':
-        return (
-          <div className="space-y-8">
-            <div>
-              <h3 className="text-lg font-medium text-gray-800 mb-4">Privacy Settings</h3>
-              <p className="text-sm text-gray-500 -mt-2 mb-4">Control what data we collect and who can see your information.</p>
-              
-              <div className="bg-white rounded-lg p-4 border border-gray-200 space-y-4">
-                <div className="flex items-center justify-between privacy-item">
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <p className="font-medium text-gray-700 whitespace-nowrap">Data Collection</p>
-                    <span className="text-xs text-green-700 bg-green-100 px-2 py-0.5 rounded-full whitespace-nowrap">Recommended</span>
-                    <span className="text-sm text-gray-500 truncate">• Allow us to collect usage data to improve your experience</span>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" defaultChecked />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                  </label>
-                </div>
-                
-                <div className="flex items-center justify-between privacy-item">
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <p className="font-medium text-gray-700 whitespace-nowrap">Personalized Ads</p>
-                    <span className="text-sm text-gray-500 truncate">• Allow us to show personalized ads based on your activity</span>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                  </label>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center justify-between privacy-item">
-                    <p className="font-medium text-gray-700 whitespace-nowrap
-                    ">Profile Visibility</p>
-                    <span className="text-sm text-gray-500 truncate"> • Allow other users to see your profile information</span>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" defaultChecked />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                  </label>
-                </div>
-              </div>
-            </div>
-            
-            <div>
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-gray-800 mb-4">Data Management</h3>
-                
-              </div>
-              <div className="space-y-4">
-                <div className="bg-white p-4 rounded-lg border border-gray-200 flex items-center justify-between privacy-item">
-                  <h4 className="font-medium text-gray-800 mb-2">Download Your Data</h4>
-                  <p className="text-sm text-gray-600 mb-3">
-                    You can download a copy of all the data we have stored about you and your pets.
-                  </p>
-                  <button className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 text-sm">
-                    Request Data Export
-                  </button>
-                </div>
-                
-                <div className="bg-red-50 p-4 rounded-lg border border-red-200 privacy-item">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-red-100 p-2 rounded-full mt-1">
-                        <FaExclamationTriangle className="text-red-600" />
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-red-800 mb-2 text-left">Delete Account</h4>
-                        <p className="text-sm text-red-700 mb-3">
-                          Permanently delete your account and all associated data. This action cannot be undone.
-                        </p>
-                      </div>
-                    </div>
-                    <button onClick={handleDeleteAccount} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 text-sm">
-                      Delete Account
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-        
+        return privacyTab;
       default:
         return null;
     }
   };
-  
+
   return (
     <UserLayout>
       <div className="space-y-6">
         <div className="flex items-center gap-3">
-          <div className="bg-indigo-100 p-2 rounded-lg">
-            <FaCog className="text-indigo-600 text-2xl" />
+          <div className="rounded-lg bg-indigo-100 p-2">
+            <FaCog className="text-2xl text-indigo-600" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">Account Settings</h1>
-            <p className="text-gray-500 mt-1">Manage your account preferences and information</p>
+            <h1 className="text-2xl font-bold text-gray-800">Account settings</h1>
+            <p className="text-gray-500">Manage your profile, security and communication preferences.</p>
           </div>
         </div>
-        
-        {/* Success/Error Messages */}
+
         {successMessage && (
-          <div className="bg-green-100 border border-green-200 text-green-800 px-4 py-3 rounded-lg flex items-center gap-2">
-            <FaCheck className="text-green-500" />
+          <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-green-800">
+            <FaCheck className="text-green-600" />
             <span>{successMessage}</span>
           </div>
         )}
-        
+
         {errorMessage && (
-          <div className="bg-red-100 border border-red-200 text-red-800 px-4 py-3 rounded-lg flex items-center gap-2">
-            <FaExclamationTriangle className="text-red-500" />
+          <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-800">
+            <FaExclamationTriangle className="text-red-600" />
             <span>{errorMessage}</span>
           </div>
         )}
-        
-        <div className="bg-white rounded-xl overflow-hidden border border-gray-200 shadow-sm">
-          {/* Tabs */}
-          <div className="flex overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 border-b border-gray-200">
-            {tabs.map(tab => (
+
+        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+          <div className="flex overflow-x-auto border-b border-gray-200">
+            {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors
-                  ${activeTab === tab.id 
-                    ? 'text-indigo-600 border-b-2 border-indigo-600' 
-                    : 'text-gray-600 hover:text-indigo-600 hover:bg-indigo-50'}`}
+                className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold transition-colors focus:outline-none ${
+                  activeTab === tab.id
+                    ? 'border-b-2 border-indigo-600 text-indigo-600'
+                    : 'text-gray-600 hover:bg-indigo-50 hover:text-indigo-600'
+                }`}
               >
                 {tab.icon}
                 <span>{tab.label}</span>
               </button>
             ))}
           </div>
-          
-          {/* Tab Content */}
-          <div className="p-6">
-            {renderTabContent()}
-          </div>
+          <div className="p-6">{renderTabContent()}</div>
         </div>
       </div>
     </UserLayout>

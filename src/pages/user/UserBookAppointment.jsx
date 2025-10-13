@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation as useRouterLocation } from 'react-router-dom';
 import { FaCalendarAlt, FaArrowLeft, FaPaw, FaMapMarkerAlt, FaClock, FaMoneyBillWave, FaCheck, FaChevronRight, FaCalendarCheck, FaSearch, FaFilter, FaUserMd, FaCut, FaDog, FaHome, FaWalking } from 'react-icons/fa';
 import UserLayout from '../../components/layout/UserLayout';
 import { useAuth } from '../../context/AuthContext';
+import { useLocation as useUserLocation } from '../../hooks/useLocation';
 
 const SERVICE_CATEGORIES = [
   {
@@ -52,12 +53,12 @@ const SERVICE_CATEGORIES = [
 const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
 const UserBookAppointment = () => {
   const navigate = useNavigate();
-  const location = useLocation();
+  const routerLocation = useRouterLocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { tokens, currentUser, authFetch } = useAuth();
   const accessToken = tokens?.access?.token;
 
-  const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
+  const searchParams = useMemo(() => new URLSearchParams(routerLocation.search), [routerLocation.search]);
   const initialPrefill = useMemo(
     () => ({
       petId: searchParams.get('petId') || '',
@@ -119,8 +120,8 @@ const UserBookAppointment = () => {
   const notesSectionRef = useRef(null);
 
   useEffect(() => {
-    if (!location.state || typeof location.state !== 'object') return;
-    const payload = location.state.prefill || location.state;
+    if (!routerLocation.state || typeof routerLocation.state !== 'object') return;
+    const payload = routerLocation.state.prefill || routerLocation.state;
     if (!payload) return;
 
     setFormData((prev) => ({
@@ -132,7 +133,20 @@ const UserBookAppointment = () => {
       timeSlot: payload.timeSlot || payload.time || prev.timeSlot,
       notes: payload.notes || prev.notes,
     }));
-  }, [location.state]);
+  }, [routerLocation.state]);
+
+  const { getFormattedLocation, requestLocation, hasLocation, location: geoLocation } = useUserLocation();
+  const effectiveLocation = useMemo(() => {
+    const stored = getFormattedLocation?.();
+    if (stored) return stored;
+    if (currentUser?.user_location) return currentUser.user_location;
+    return null;
+  }, [currentUser?.user_location, getFormattedLocation]);
+
+  useEffect(() => {
+    if (effectiveLocation || hasLocation) return;
+    requestLocation?.();
+  }, [effectiveLocation, hasLocation, requestLocation]);
 
   useEffect(() => {
     const fetchPets = async () => {
@@ -315,7 +329,8 @@ const UserBookAppointment = () => {
     if (!serviceId) return;
     try {
       setLoadingProviders(true);
-      const res = await authFetch(`${API_URL}/services/${serviceId}/providers`);
+      const locationQuery = effectiveLocation || geoLocation?.formatted ? `?location=${encodeURIComponent(effectiveLocation || geoLocation?.formatted)}` : '';
+      const res = await authFetch(`${API_URL}/services/${serviceId}/providers${locationQuery}`);
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
         const items = Array.isArray(data?.items) ? data.items : [];
@@ -325,8 +340,8 @@ const UserBookAppointment = () => {
           name: p.serv_provider_name || 'Provider',
           title: p.serv_provider_type || 'Service Provider',
           image: 'https://placehold.co/128x128?text=Provider',
-          location: p.provider_src || 'â€”',
-          address: p.serv_provider_desc || 'â€”',
+          location: p.serv_provider_location || p.provider_src || '—',
+          address: p.serv_provider_desc || '—',
           rating: 4.8,
           reviewCount: 0,
         })));

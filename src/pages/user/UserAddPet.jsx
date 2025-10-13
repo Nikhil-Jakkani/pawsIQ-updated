@@ -6,6 +6,7 @@ import { GiRabbit } from 'react-icons/gi';
 import UserLayout from '../../components/layout/UserLayout';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabaseClient';
+import useMedicationExtraction from '../../hooks/useMedicationExtraction';
 
 const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
 
@@ -15,6 +16,17 @@ const UserAddPet = () => {
   const accessToken = tokens?.access?.token;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
+  const [medicationExtractionResult, setMedicationExtractionResult] = useState(null);
+  const [medicationExtractionFile, setMedicationExtractionFile] = useState(null);
+  const [isExtractModalOpen, setIsExtractModalOpen] = useState(false);
+
+  const {
+    extractFromFile,
+    status: extractionStatus,
+    progress: extractionProgress,
+    error: extractionError,
+    reset: resetExtraction,
+  } = useMedicationExtraction();
 
   // Form state
   const [formData, setFormData] = useState({
@@ -220,6 +232,41 @@ const UserAddPet = () => {
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleExtractionFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    resetExtraction();
+    setMedicationExtractionResult(null);
+    setMedicationExtractionFile(file);
+    setIsExtractModalOpen(true);
+    try {
+      const result = await extractFromFile(file);
+      setMedicationExtractionResult(result);
+    } catch (err) {
+      console.error('Medication extraction failed:', err);
+      setMedicationExtractionResult(null);
+    }
+  };
+
+  const handleApplyMedications = () => {
+    if (!medicationExtractionResult) return;
+    const extractedMedications = medicationExtractionResult.medications.join('\n');
+    setFormData((prev) => ({
+      ...prev,
+      medications: prev.medications
+        ? `${prev.medications}\n${extractedMedications}`.trim()
+        : extractedMedications,
+    }));
+    setIsExtractModalOpen(false);
+  };
+
+  const handleCloseExtraction = () => {
+    setIsExtractModalOpen(false);
+    resetExtraction();
+    setMedicationExtractionFile(null);
+    setMedicationExtractionResult(null);
   };
 
   // Handle form submission
@@ -523,8 +570,8 @@ const UserAddPet = () => {
                         key={type.value}
                         className={`flex flex-col items-center justify-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 transform hover:scale-105
                           ${formData.type === type.value 
-                            ? 'border-blue-500 text-white shadow-lg'
-                            : 'border-gray-200 hover:bg-gray-50 hover:border-blue-300 bg-white shadow-sm'}`}
+                            ? 'border-[#145ae6] bg-[#145ae6] text-white shadow-lg'
+                            : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50 hover:border-[#145ae6] shadow-sm'}`}
                       >
                         <div className="text-2xl mb-2">
                           {type.icon}
@@ -825,19 +872,49 @@ const UserAddPet = () => {
                   </div>
                 </div>
                 
-                <div className="md:col-span-2">
-                  <label htmlFor="medications" className="block text-sm font-medium text-gray-700 mb-1">
-                    Current Medications
-                  </label>
-                  <textarea
-                    id="medications"
-                    name="medications"
-                    value={formData.medications}
-                    onChange={handleChange}
-                    rows="2"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="List any current medications"
-                  />
+                <div className="md:col-span-2 space-y-4">
+                  <div>
+                    <label htmlFor="medications" className="block text-sm font-medium text-gray-700 mb-1">
+                      Current Medications
+                    </label>
+                    <textarea
+                      id="medications"
+                      name="medications"
+                      value={formData.medications}
+                      onChange={handleChange}
+                      rows="2"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="List any current medications"
+                    />
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <label
+                      htmlFor="medication-extractor"
+                      className="inline-flex items-center gap-2 px-3 py-2 border border-[#145ae6] text-[#145ae6] rounded-lg cursor-pointer hover:bg-blue-50 transition-colors"
+                    >
+                      <FaUpload />
+                      Extract from Image/PDF
+                      <input
+                        id="medication-extractor"
+                        type="file"
+                        accept="image/*,.pdf"
+                        className="hidden"
+                        onChange={handleExtractionFileChange}
+                      />
+                    </label>
+                    {medicationExtractionResult?.medications?.length ? (
+                      <span className="text-sm text-green-600 flex items-center gap-1">
+                        <FaCheck />
+                        Detected {medicationExtractionResult.medications.length} entries
+                      </span>
+                    ) : null}
+                    {extractionError ? (
+                      <span className="text-sm text-red-600 flex items-center gap-1">
+                        <FaTimes />
+                        {extractionError}
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
                 
                 <div className="md:col-span-2">
@@ -1249,6 +1326,106 @@ const UserAddPet = () => {
               )}
             </button>
           </div>
+          {isExtractModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 backdrop-blur-sm p-4">
+              <div className="w-full max-w-2xl rounded-2xl border border-gray-200 bg-white shadow-xl">
+                <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+                  <div className="flex items-center gap-2">
+                    <FaSyringe className="text-[#145ae6]" />
+                    <h3 className="text-lg font-semibold text-gray-800">Extract Medications</h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCloseExtraction}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    <FaTimes />
+                  </button>
+                </div>
+
+                <div className="space-y-4 px-6 py-5 max-h-[70vh] overflow-y-auto">
+                  <div className="space-y-1">
+                    <p className="text-sm text-gray-600">
+                      File: <span className="font-medium">{medicationExtractionFile?.name || 'N/A'}</span>
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Status: <span className="font-medium capitalize">{(extractionStatus || 'pending').replace(/-/g, ' ')}</span>
+                    </p>
+                    {extractionStatus !== 'completed' && extractionStatus !== 'error' && (
+                      <div className="w-full rounded-full bg-gray-200 h-2">
+                        <div
+                          className="h-2 rounded-full bg-[#145ae6] transition-all"
+                          style={{ width: `${Math.min(Math.max(extractionProgress || 0, 0), 100)}%` }}
+                        ></div>
+                      </div>
+                    )}
+                    {extractionError ? (
+                      <p className="text-sm text-red-600 flex items-center gap-1">
+                        <FaTimes className="text-xs" />
+                        {extractionError}
+                      </p>
+                    ) : null}
+                  </div>
+
+                  {medicationExtractionResult?.medications?.length ? (
+                    <div>
+                      <h4 className="mb-2 text-sm font-semibold text-gray-700">Detected Medications</h4>
+                      <ul className="space-y-2">
+                        {medicationExtractionResult.medications.map((line, idx) => (
+                          <li
+                            key={idx}
+                            className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700"
+                          >
+                            {line}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : extractionStatus === 'completed' && !extractionError ? (
+                    <p className="text-sm italic text-gray-500">
+                      No medication lines detected. You can still copy details manually from the extracted text below.
+                    </p>
+                  ) : (
+                    <p className="text-sm text-gray-500">
+                      Upload prescriptions or vet notes to auto-fill medications using on-device OCR (no data leaves your browser).
+                    </p>
+                  )}
+
+                  {medicationExtractionResult?.rawText ? (
+                    <div>
+                      <h4 className="mb-2 text-sm font-semibold text-gray-700">Full Extracted Text</h4>
+                      <textarea
+                        readOnly
+                        className="h-48 w-full rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700"
+                        value={medicationExtractionResult.rawText}
+                      />
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="flex justify-end gap-3 border-t border-gray-200 bg-gray-50 px-6 py-4">
+                  <button
+                    type="button"
+                    onClick={handleCloseExtraction}
+                    className="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-100"
+                  >
+                    Close
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleApplyMedications}
+                    disabled={!medicationExtractionResult?.medications?.length}
+                    className={`flex items-center gap-2 rounded-lg px-4 py-2 text-white ${
+                      medicationExtractionResult?.medications?.length ? 'bg-[#145ae6] hover:bg-[#0f47b5]' : 'bg-blue-300 cursor-not-allowed'
+                    }`}
+                  >
+                    <FaCheck />
+                    Apply to Form
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </form>
       </div>
     </UserLayout>

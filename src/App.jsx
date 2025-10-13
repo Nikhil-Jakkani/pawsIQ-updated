@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Routes, Route, Link, Navigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -26,6 +26,7 @@ import UserMarketplace from './pages/user/UserMarketplace.jsx';
 import UserOrders from './pages/user/UserOrders.jsx';
 import UserPayments from './pages/user/UserPayments.jsx';
 import UserSettings from './pages/user/UserSettings.jsx';
+import UserAddPaymentMethod from './pages/user/UserAddPaymentMethod.jsx';
 import UserNotifications from './pages/user/UserNotifications.jsx';
 import UserHelp from './pages/user/UserHelp.jsx';
 import UserCommunity from './pages/user/UserCommunity.jsx';
@@ -318,6 +319,7 @@ function App() {
             <Route path="/user/settings/profile" element={<UserProtectedRoute><UserSettings /></UserProtectedRoute>} />
             <Route path="/user/settings/notifications" element={<UserProtectedRoute><UserSettings /></UserProtectedRoute>} />
             <Route path="/user/settings/security" element={<UserProtectedRoute><UserSettings /></UserProtectedRoute>} />
+            <Route path="/user/settings/payment/add" element={<UserProtectedRoute><UserAddPaymentMethod /></UserProtectedRoute>} />
             
             {/* Help & Support Routes */}
             <Route path="/user/help" element={<UserProtectedRoute><UserHelp /></UserProtectedRoute>} />
