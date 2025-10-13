@@ -21,6 +21,7 @@ import {
 } from 'react-icons/fa';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import useApi from '../../hooks/useApi';
+import { useAuth } from '../../context/AuthContext';
 
 const SERVICE_TYPE_LABELS = {
   veterinary: 'Veterinary',
@@ -60,6 +61,7 @@ const formatDate = (value) => {
 
 const ProviderCommission = () => {
   const api = useApi();
+  const { currentUser } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
   const [sortField, setSortField] = useState('providerName');
@@ -75,14 +77,24 @@ const ProviderCommission = () => {
     let isMounted = true;
 
     const loadData = async () => {
+      if (!currentUser) return;
       setLoading(true);
       setError(null);
 
       try {
-        const [commissionResponse, statsResponse] = await Promise.all([
-          api.get('/admin/commissions'),
-          api.get('/admin/commissions/stats'),
-        ]);
+        const isAdmin = currentUser?.role === 'admin';
+
+        const requests = [];
+        if (isAdmin) {
+          requests.push(api.get('/admin/commissions'));
+          requests.push(api.get('/admin/commissions/stats'));
+        } else if (currentUser?.role === 'provider') {
+          requests.push(api.get('/provider/commissions'));
+        } else {
+          throw new Error('Insufficient permissions');
+        }
+
+        const [commissionResponse, statsResponse] = await Promise.all(requests);
 
         if (!isMounted) return;
 
@@ -120,7 +132,22 @@ const ProviderCommission = () => {
         });
 
         setCommissions(normalized);
-        setStats(statsResponse?.data ?? null);
+
+        if (currentUser?.role === 'admin') {
+          setStats(statsResponse?.data ?? null);
+        } else {
+          const providerStats = {
+            total_commissions: commissionItems.length,
+            calculated_commissions: commissionItems.filter((c) => c.status === 'calculated').length,
+            settled_commissions: commissionItems.filter((c) => c.status === 'settled').length,
+            total_commission_revenue: commissionItems.reduce(
+              (sum, c) => sum + Number(c.commission_amount ?? 0),
+              0
+            ),
+            currency: 'INR',
+          };
+          setStats(providerStats);
+        }
       } catch (err) {
         console.error('Failed to fetch commission data', err);
         if (isMounted) {
@@ -138,7 +165,7 @@ const ProviderCommission = () => {
     return () => {
       isMounted = false;
     };
-  }, [api]);
+  }, [api, currentUser]);
 
   const filteredAndSortedRates = useMemo(() => {
     return commissions

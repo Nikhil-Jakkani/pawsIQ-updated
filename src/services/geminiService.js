@@ -53,7 +53,7 @@ export const generatePetCareSuggestions = async (petData) => {
 
 export const analyzePetSymptoms = async (petData, symptoms) => {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
     const prompt = `
     As a professional veterinarian, analyze the following symptoms for this pet and provide guidance. 

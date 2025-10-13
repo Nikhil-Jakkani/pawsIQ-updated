@@ -612,6 +612,15 @@ export const AuthProvider = ({ children }) => {
     initializeAuth();
   }, [authFetch, tokens?.access?.token, tokens?.refresh?.token, refreshToken]);
 
+  const getAuthHeaders = useCallback(() => {
+    if (!tokens?.access?.token) {
+      return {};
+    }
+    return {
+      'Authorization': `Bearer ${tokens.access.token}`,
+    };
+  }, [tokens]);
+
   const value = {
     currentUser,
     tokens,
@@ -623,6 +632,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     setCurrentUserData,
     setAuthTokens,
+    setCurrentUser,
     isProvider,
     isUser,
     isAdmin,
@@ -630,6 +640,7 @@ export const AuthProvider = ({ children }) => {
     loading,
     authFetch,
     fetchUserDashboard,
+    getAuthHeaders,
   };
 
   return (

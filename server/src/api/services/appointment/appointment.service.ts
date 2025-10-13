@@ -205,21 +205,44 @@ const getUserAppointmentById = async (userId: bigint, id: number) => {
               serv_provider_name: true,
               serv_provider_type: true,
               serv_provider_location: true,
-            }
-          }
-        }
-      }
-    } 
+              serv_provider_contact_nbr: true,
+            },
+          },
+          PIQ_Service_Master: {
+            select: {
+              services_id: true,
+              service_title: true,
+              service_type: true,
+              service_description: true,
+              service_price_amt: true,
+              service_duration: true,
+            },
+          },
+        },
+      },
+    },
   });
-  if (!appt || appt.PIQ_Pets.user_id !== userId) throw new ApiError(httpStatus.NOT_FOUND, 'Appointment not found');
+  if (!appt || appt.PIQ_Pets?.user_id !== userId) throw new ApiError(httpStatus.NOT_FOUND, 'Appointment not found');
   
   // Flatten provider details for easier access
   const result = {
     ...appt,
+    booking_id: appt.Booking?.booking_id ?? null,
+    booking_status: appt.Booking?.booking_status ?? null,
+    booked_dtm: appt.Booking?.booked_dtm ?? appt.create_dtm ?? null,
     service_provider_id: appt.Booking?.PIQ_Service_Provider?.service_provider_id,
     provider_name: appt.Booking?.PIQ_Service_Provider?.serv_provider_name,
     provider_type: appt.Booking?.PIQ_Service_Provider?.serv_provider_type,
     provider_location: appt.Booking?.PIQ_Service_Provider?.serv_provider_location,
+    provider_contact: appt.Booking?.PIQ_Service_Provider?.serv_provider_contact_nbr ?? null,
+    services_id: appt.Booking?.services_id ?? null,
+    service_title: appt.Booking?.PIQ_Service_Master?.service_title ?? null,
+    service_type: appt.Booking?.PIQ_Service_Master?.service_type ?? appt.appointment_type,
+    service_description: appt.Booking?.PIQ_Service_Master?.service_description ?? null,
+    service_price: appt.Booking?.PIQ_Service_Master?.service_price_amt !== undefined && appt.Booking?.PIQ_Service_Master?.service_price_amt !== null
+      ? Number(appt.Booking.PIQ_Service_Master.service_price_amt)
+      : null,
+    service_duration: appt.Booking?.PIQ_Service_Master?.service_duration ?? null,
   };
   
   return serializeBigInt(result);

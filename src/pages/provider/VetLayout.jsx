@@ -10,6 +10,8 @@ const navItems = [
   { to: '/provider/vet/labs', label: 'Lab Reports' },
   { to: '/provider/vet/analytics', label: 'Analytics' },
   { to: '/provider/vet/reviews', label: 'Reviews' },
+  { to: '/provider/vet/profile', label: 'Profile' },
+  { to: '/provider/vet/portfolio', label: 'Portfolio' },
   { to: '/provider/vet/notifications', label: 'Notifications' },
   { to: '/provider/vet/settings', label: 'Settings' },
 ];

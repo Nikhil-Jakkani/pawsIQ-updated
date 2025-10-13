@@ -1,104 +1,66 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaMapMarkerAlt, FaSearch, FaStar, FaFilter, FaCalendarAlt, FaPhone, FaGlobe, FaHeart, FaRegHeart, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import UserLayout from '../../components/layout/UserLayout';
+import { useAuth } from '../../context/AuthContext';
+import useApi from '../../hooks/useApi';
 
 const UserServices = () => {
   const navigate = useNavigate();
+  const api = useApi();
+  const { currentUser } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [filterDistance, setFilterDistance] = useState('any');
   const [filterRating, setFilterRating] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
   const [favorites, setFavorites] = useState([2, 5]);
-  
-  // Mock service provider data
-  const serviceProviders = [
-    {
-      id: 1,
-      name: 'Happy Paws Veterinary Clinic',
-      type: 'vet',
-      image: 'https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80',
-      rating: 4.8,
-      reviewCount: 124,
-      distance: 1.2,
-      address: '123 Pet Care Lane, Pawsville',
-      phone: '(555) 123-4567',
-      website: 'www.happypawsvet.com',
-      services: ['Checkups', 'Vaccinations', 'Surgery', 'Dental Care'],
-      description: 'Full-service veterinary clinic providing comprehensive care for all pets. Our team of experienced veterinarians is dedicated to keeping your pets healthy and happy.'
-    },
-    {
-      id: 2,
-      name: 'Fluffy Paws Grooming',
-      type: 'grooming',
-      image: 'https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80',
-      rating: 4.7,
-      reviewCount: 98,
-      distance: 0.8,
-      address: '456 Grooming Street, Pawsville',
-      phone: '(555) 234-5678',
-      website: 'www.fluffypaws.com',
-      services: ['Bath & Brush', 'Full Grooming', 'Nail Trimming', 'De-shedding'],
-      description: 'Professional pet grooming services in a calm, stress-free environment. We use premium products and provide personalized care for each pet.'
-    },
-    {
-      id: 3,
-      name: 'Obedient Paws Training Center',
-      type: 'training',
-      image: 'https://images.unsplash.com/photo-1541599540903-216a46ca1dc0?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80',
-      rating: 4.9,
-      reviewCount: 76,
-      distance: 2.5,
-      address: '789 Training Road, Pawsville',
-      phone: '(555) 345-6789',
-      website: 'www.obedientpaws.com',
-      services: ['Basic Obedience', 'Advanced Training', 'Puppy Classes', 'Behavior Modification'],
-      description: 'Expert dog training using positive reinforcement techniques. Our certified trainers work with dogs of all ages and breeds to develop good behavior and strengthen the human-animal bond.'
-    },
-    {
-      id: 4,
-      name: 'Pawsome Pet Boarding',
-      type: 'boarding',
-      image: 'https://images.unsplash.com/photo-1601758125946-6ec2ef64daf8?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80',
-      rating: 4.6,
-      reviewCount: 112,
-      distance: 3.1,
-      address: '101 Boarding Blvd, Pawsville',
-      phone: '(555) 456-7890',
-      website: 'www.pawsomeboarding.com',
-      services: ['Overnight Boarding', 'Daycare', 'Playtime', 'Walks'],
-      description: 'Comfortable and safe boarding facility where your pets will feel at home while you\'re away. We provide 24/7 supervision, regular exercise, and lots of love and attention.'
-    },
-    {
-      id: 5,
-      name: 'Feline Friends Veterinary',
-      type: 'vet',
-      image: 'https://images.unsplash.com/photo-1511044568932-338cba0ad803?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80',
-      rating: 4.9,
-      reviewCount: 87,
-      distance: 1.7,
-      address: '321 Cat Avenue, Pawsville',
-      phone: '(555) 567-8901',
-      website: 'www.felinefriends.com',
-      services: ['Cat-Specific Care', 'Preventive Medicine', 'Dental', 'Geriatric Care'],
-      description: 'Veterinary practice specializing in feline medicine. Our cat-friendly clinic is designed to minimize stress and provide the best care for your feline companions.'
-    },
-    {
-      id: 6,
-      name: 'Woof Walkers',
-      type: 'walking',
-      image: 'https://images.unsplash.com/photo-1494947665470-20322015e3a8?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80',
-      rating: 4.7,
-      reviewCount: 64,
-      distance: 0.5,
-      address: '555 Walker Way, Pawsville',
-      phone: '(555) 678-9012',
-      website: 'www.woofwalkers.com',
-      services: ['Dog Walking', 'Pet Sitting', 'Puppy Visits', 'Adventure Hikes'],
-      description: 'Professional dog walking service providing exercise and companionship for your canine friends. Our reliable team ensures your dog gets the activity they need when youre busy.'
-    },
-  ];
+  const [serviceProviders, setServiceProviders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  // Fetch service providers from backend
+  useEffect(() => {
+    const fetchProviders = async () => {
+      try {
+        setLoading(true);
+        setError('');
+        
+        // Fetch all active providers
+        const response = await api.get('/admin/piq/providers');
+        
+        if (response && response.providers) {
+          // Transform API data to match component format
+          const transformedProviders = response.providers
+            .filter(p => p.serv_provider_status === 'active') // Only show active providers
+            .map(p => ({
+              id: Number(p.service_provider_id),
+              name: p.serv_provider_name || 'Service Provider',
+              type: (p.serv_provider_type || '').toLowerCase().trim(),
+              image: 'https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80',
+              rating: 4.8, // TODO: Calculate from reviews
+              reviewCount: 0, // TODO: Count from reviews
+              distance: 0, // TODO: Calculate from location
+              address: p.serv_provider_location || 'N/A',
+              phone: p.serv_provider_contact || 'N/A',
+              website: p.serv_provider_website || '',
+              services: [], // TODO: Fetch provider service offerings
+              description: p.serv_provider_desc || 'Professional pet care services'
+            }));
+          
+          setServiceProviders(transformedProviders);
+        }
+      } catch (err) {
+        console.error('Failed to load providers:', err);
+        setError('Failed to load service providers. Please try again.');
+        setServiceProviders([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchProviders();
+  }, [api]);
   
   // Filter service providers based on search and filters
   const filteredProviders = serviceProviders.filter(provider => {
@@ -126,15 +88,15 @@ const UserServices = () => {
     }
   };
   
-  // Service type options
+  // Service type options - standardized 6 types
   const serviceTypes = [
     { value: 'all', label: 'All Services' },
-    { value: 'vet', label: 'Veterinarians' },
+    { value: 'veterinary', label: 'Veterinary' },
+    { value: 'diagnostic services', label: 'Diagnostic Services' },
+    { value: 'boarding', label: 'Boarding' },
     { value: 'grooming', label: 'Grooming' },
     { value: 'training', label: 'Training' },
-    { value: 'boarding', label: 'Boarding' },
-    { value: 'walking', label: 'Dog Walking' },
-    { value: 'daycare', label: 'Daycare' }
+    { value: 'physical activity', label: 'Physical Activity' }
   ];
   
   // Distance options
@@ -249,8 +211,33 @@ const UserServices = () => {
           )}
         </div>
         
+        {/* Loading State */}
+        {loading && (
+          <div className="bg-white rounded-lg p-8 text-center border border-gray-200">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading service providers...</p>
+          </div>
+        )}
+        
+        {/* Error State */}
+        {error && !loading && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
+            <div className="text-red-600 text-xl">⚠️</div>
+            <div className="flex-grow">
+              <p className="text-red-800 font-medium">Error</p>
+              <p className="text-red-600 text-sm">{error}</p>
+            </div>
+            <button 
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+        
         {/* Service Provider Cards */}
-        {filteredProviders.length > 0 ? (
+        {!loading && !error && filteredProviders.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredProviders.map(provider => (
               <div 
@@ -334,7 +321,7 @@ const UserServices = () => {
               </div>
             ))}
           </div>
-        ) : (
+        ) : !loading && !error ? (
           <div className="bg-white rounded-lg p-8 text-center border border-gray-200">
             <div className="bg-green-100 w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4">
               <FaMapMarkerAlt className="text-green-600 text-2xl" />
@@ -358,7 +345,7 @@ const UserServices = () => {
               Reset Filters
             </button>
           </div>
-        )}
+        ) : null}
       </div>
     </UserLayout>
   );

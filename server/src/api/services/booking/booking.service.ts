@@ -86,7 +86,23 @@ const createBooking = async (
   notificationService.sendBookingConfirmationToUser(result.booking.booking_id).catch(console.error);
   notificationService.sendBookingNotificationToProvider(result.booking.booking_id).catch(console.error);
 
-  return serializeBigInt(result.booking);
+  // Fetch complete booking details with relationships for frontend confirmation page
+  const completeBooking = await prisma.pIQ_Bookings.findUnique({
+    where: { booking_id: result.booking.booking_id },
+    include: {
+      PIQ_Service_Master: true,
+      PIQ_Service_Provider: true,
+      PIQ_Pets: true,
+    },
+  });
+
+  return {
+    ...serializeBigInt(result.booking),
+    appointment: serializeBigInt(result.appointment),
+    service: completeBooking?.PIQ_Service_Master ? serializeBigInt(completeBooking.PIQ_Service_Master) : null,
+    provider: completeBooking?.PIQ_Service_Provider ? serializeBigInt(completeBooking.PIQ_Service_Provider) : null,
+    pet: completeBooking?.PIQ_Pets ? serializeBigInt(completeBooking.PIQ_Pets) : null,
+  };
 };
 
 const listBookings = async (
