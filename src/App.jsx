@@ -61,8 +61,11 @@ import ProviderLogin from './pages/provider/ProviderLogin.jsx';
 import ProviderForgotPassword from './pages/provider/ProviderForgotPassword.jsx';
 import ProviderOTPVerification from './pages/provider/ProviderOTPVerification.jsx';
 import ProviderOnboarding from './pages/provider/ProviderOnboarding.jsx';
-// import ProviderDashboard from './pages/provider/ProviderDashboard.jsx';
+import ProviderDashboardRouter from './pages/provider/ProviderDashboardRouter.jsx';
 import VetDashboard from './pages/provider/VetDashboard.jsx';
+import TrainerDashboard from './pages/provider/TrainerDashboard.jsx';
+import GroomerDashboard from './pages/provider/GroomerDashboard.jsx';
+import PetSitterDashboard from './pages/provider/PetSitterDashboard.jsx';
 import VetAppointments from './pages/provider/VetAppointments.jsx';
 import VetClients from './pages/provider/VetClients.jsx';
 import VetServices from './pages/provider/VetServices.jsx';
@@ -121,11 +124,44 @@ const AdminProtectedRoute = ({ children }) => {
   }
   if (currentUser.role !== 'admin') {
     // Redirect logged-in non-admins to their dashboards instead of login to avoid loops
-    const fallback = currentUser.role === 'user'
-      ? '/user/dashboard'
-      : currentUser.role === 'provider'
-      ? '/provider/vet/dashboard'
-      : '/';
+    let fallback = '/';
+    
+    if (currentUser.role === 'user') {
+      fallback = '/user/dashboard';
+    } else if (currentUser.role === 'provider') {
+      // Get provider type from user object first, fallback to localStorage
+      let providerType = currentUser.providerType;
+      
+      if (!providerType) {
+        const registration = localStorage.getItem('provider_registration');
+        providerType = localStorage.getItem('selectedService');
+        
+        if (!providerType && registration) {
+          try {
+            const parsedData = JSON.parse(registration);
+            providerType = parsedData.providerType;
+          } catch (e) {
+            console.error('Error parsing provider registration:', e);
+          }
+        }
+      }
+      
+      // Map provider types to route-friendly names
+      const typeMap = {
+        'Veterinarian': 'vet',
+        'Trainer': 'trainer',
+        'Groomer': 'groomer',
+        'Pet Sitter': 'petsitter',
+        'vet': 'vet',
+        'trainer': 'trainer',
+        'groomer': 'groomer',
+        'petsitter': 'petsitter'
+      };
+      
+      const routeType = typeMap[providerType] || 'vet';
+      fallback = `/provider/${routeType}/dashboard`;
+    }
+    
     return <Navigate to={fallback} replace />;
   }
   return children;
@@ -147,11 +183,40 @@ const Landing = () => {
   const { currentUser, tokens, loading } = useAuth();
   if (loading) return null;
   if (currentUser && tokens?.access?.token) {
-    const dest = currentUser.role === 'admin'
-      ? '/dashboard'
-      : currentUser.role === 'provider'
-      ? '/provider/vet/dashboard'
-      : '/user/dashboard';
+    let dest = '/user/dashboard';
+    
+    if (currentUser.role === 'admin') {
+      dest = '/dashboard';
+    } else if (currentUser.role === 'provider') {
+      // Get provider type from localStorage or user data
+      const registration = localStorage.getItem('provider_registration');
+      let providerType = localStorage.getItem('selectedService');
+      
+      if (!providerType && registration) {
+        try {
+          const parsedData = JSON.parse(registration);
+          providerType = parsedData.providerType;
+        } catch (e) {
+          console.error('Error parsing provider registration:', e);
+        }
+      }
+      
+      // Map provider types to route-friendly names
+      const typeMap = {
+        'Veterinarian': 'vet',
+        'Trainer': 'trainer',
+        'Groomer': 'groomer',
+        'Pet Sitter': 'petsitter',
+        'vet': 'vet',
+        'trainer': 'trainer',
+        'groomer': 'groomer',
+        'petsitter': 'petsitter'
+      };
+      
+      const routeType = typeMap[providerType] || 'vet';
+      dest = `/provider/${routeType}/dashboard`;
+    }
+    
     return <Navigate to={dest} replace />;
   }
   return <Home />;
@@ -256,8 +321,8 @@ function App() {
             <Route path="/provider/login" element={<ProviderLogin />} />
             <Route path="/provider/forgot-password" element={<ProviderForgotPassword />} />
             <Route path="/provider/otp-verification" element={<ProviderOTPVerification />} />
-            {/* Provider Routes */}
-            <Route path="/provider/:serviceType/dashboard" element={<ProviderProtectedRoute><VetDashboard /></ProviderProtectedRoute>} />
+            {/* Provider Dashboard Routes - Dynamic routing based on service type */}
+            <Route path="/provider/:serviceType/dashboard" element={<ProviderProtectedRoute><ProviderDashboardRouter /></ProviderProtectedRoute>} />
             <Route path="/provider/:serviceType/appointments" element={<ProviderProtectedRoute><VetAppointments /></ProviderProtectedRoute>} />
             <Route path="/provider/:serviceType/clients" element={<ProviderProtectedRoute><VetClients /></ProviderProtectedRoute>} />
             <Route path="/provider/vet/services" element={<ProviderProtectedRoute><VetServices /></ProviderProtectedRoute>} />

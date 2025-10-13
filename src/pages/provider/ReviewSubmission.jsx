@@ -159,6 +159,20 @@ const ReviewSubmission = () => {
       
       // Scroll to top
       window.scrollTo(0, 0);
+      
+      // Redirect to appropriate dashboard after 3 seconds
+      setTimeout(() => {
+        const typeMap = {
+          'Veterinarian': 'vet',
+          'Trainer': 'trainer',
+          'Groomer': 'groomer',
+          'Pet Sitter': 'petsitter'
+        };
+        
+        const providerType = registrationData?.providerType;
+        const routeType = typeMap[providerType] || 'vet';
+        navigate(`/provider/${routeType}/dashboard`);
+      }, 3000);
     } catch (error) {
       console.error('Submission error:', error);
       alert('An error occurred during submission. Please try again.');
@@ -234,6 +248,9 @@ const ReviewSubmission = () => {
               <h2 className="mt-4 text-xl font-medium text-gray-900">Application Submitted Successfully!</h2>
               <p className="mt-2 text-sm text-gray-500">
                 Thank you for applying to be a provider on PawsIQ. Your application has been received and is now under review.
+              </p>
+              <p className="mt-2 text-sm text-indigo-600 font-medium">
+                Redirecting you to your dashboard in a few seconds...
               </p>
               
               <div className="mt-6 bg-blue-50 border border-blue-200 rounded-md p-4">

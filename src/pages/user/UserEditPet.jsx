@@ -47,6 +47,11 @@ const UserEditPet = () => {
   vaccinations: [],
   });
   
+  // Vaccination state
+  const [vaccineData, setVaccineData] = useState([]);
+  const [filteredVaccines, setFilteredVaccines] = useState([]);
+  const [selectedVaccines, setSelectedVaccines] = useState({});
+  
   // State for breeds
   const [breeds, setBreeds] = useState([]);
   const [loadingBreeds, setLoadingBreeds] = useState(false);
@@ -186,6 +191,7 @@ const UserEditPet = () => {
         
         // Parse vaccinations data from backend
         let vaccinationsArray = [];
+        const selectedVaccinesMap = {};
         if (petData.vaccinations) {
           if (typeof petData.vaccinations === 'object' && petData.vaccinations.selected_vaccines) {
             // New format: { selected_vaccines: [], vaccination_dates: {}, next_due_dates: {} }
@@ -197,11 +203,33 @@ const UserEditPet = () => {
               notes: '',
               administered: true
             }));
+            
+            // Build selectedVaccines map for checkbox state
+            (selected_vaccines || []).forEach(vaccine => {
+              selectedVaccinesMap[vaccine] = {
+                vaccine,
+                date: vaccination_dates?.[vaccine] ? new Date(vaccination_dates[vaccine]).toISOString().slice(0, 10) : '',
+                nextDue: next_due_dates?.[vaccine] ? new Date(next_due_dates[vaccine]).toISOString().slice(0, 10) : '',
+                administered: true
+              };
+            });
           } else if (Array.isArray(petData.vaccinations)) {
             // Legacy format: array of vaccination objects
             vaccinationsArray = petData.vaccinations;
+            petData.vaccinations.forEach(vacc => {
+              if (vacc.vaccine) {
+                selectedVaccinesMap[vacc.vaccine] = {
+                  vaccine: vacc.vaccine,
+                  date: vacc.date ? new Date(vacc.date).toISOString().slice(0, 10) : '',
+                  nextDue: vacc.nextDue ? new Date(vacc.nextDue).toISOString().slice(0, 10) : '',
+                  administered: true
+                };
+              }
+            });
           }
         }
+        
+        setSelectedVaccines(selectedVaccinesMap);
         
         // Set image preview if pet has image
         if (petData.pet_image) {
@@ -279,6 +307,73 @@ const UserEditPet = () => {
     loadPetData();
   }, [petId, authFetch, navigate]);
 
+  // Load vaccine data from backend master based on current selections
+  useEffect(() => {
+    const fetchVaccineData = async () => {
+      try {
+        if (!formData.type || !formData.ageGroup) {
+          setVaccineData([]);
+          return;
+        }
+        const petType = formData.type.charAt(0).toUpperCase() + formData.type.slice(1);
+        const ageGroup = formData.ageGroup.charAt(0).toUpperCase() + formData.ageGroup.slice(1);
+        const params = new URLSearchParams();
+        params.set('petType', petType);
+        if (formData.breed) params.set('breed', formData.breed);
+        params.set('ageGroup', ageGroup);
+        const response = await authFetch(`${API_URL}/vaccines/master?${params.toString()}`);
+        const payload = await response.json().catch(() => ({}));
+        const items = Array.isArray(payload?.vaccines) ? payload.vaccines : [];
+        setVaccineData(items);
+      } catch (error) {
+        console.error('Error loading vaccine data:', error);
+        setVaccineData([]);
+      }
+    };
+
+    fetchVaccineData();
+  }, [API_URL, authFetch, formData.type, formData.breed, formData.ageGroup]);
+  
+  // Filter vaccines based on pet type, breed, and age group
+  useEffect(() => {
+    if (vaccineData.length === 0 || !formData.type || !formData.ageGroup) {
+      setFilteredVaccines([]);
+      return;
+    }
+    
+    // Convert to title case for matching with JSON data
+    const petType = formData.type.charAt(0).toUpperCase() + formData.type.slice(1);
+    const ageGroup = formData.ageGroup.charAt(0).toUpperCase() + formData.ageGroup.slice(1);
+    
+    // Filter vaccines based on pet type, breed (if available), and age group
+    let filtered = vaccineData.filter(vaccine => 
+      vaccine.pet_type === petType && 
+      vaccine.age_group === ageGroup
+    );
+    
+    // If breed is specified and there are breed-specific vaccines, prioritize those
+    if (formData.breed) {
+      const breedSpecificVaccines = filtered.filter((v) => {
+        const vBreed = (v.pet_breed || v.breed || '').toLowerCase();
+        const fBreed = (formData.breed || '').toLowerCase();
+        return vBreed && fBreed && vBreed === fBreed;
+      });
+      if (breedSpecificVaccines.length > 0) {
+        filtered = breedSpecificVaccines;
+      }
+    }
+    
+    // Group vaccines by name to avoid duplicates
+    const groupedVaccines = filtered.reduce((acc, vaccine) => {
+      if (!acc[vaccine.vaccine]) {
+        acc[vaccine.vaccine] = vaccine;
+      }
+      return acc;
+    }, {});
+    
+    setFilteredVaccines(Object.values(groupedVaccines));
+  }, [vaccineData, formData.type, formData.breed, formData.ageGroup]);
+
   // Handle form input changes
   const handleChange = async (e) => {
     const { name, value, type, checked, files } = e.target;
@@ -327,6 +422,62 @@ const UserEditPet = () => {
           : prev.medicalConditions.filter(item => item !== condition)
       };
       console.log('✅ Updated Conditions:', updated.medicalConditions);
+      return updated;
+    });
+  };
+
+  // Handle vaccine checkbox changes
+  const handleVaccineChange = (vaccineId, isSelected, vaccineData) => {
+    setSelectedVaccines(prev => {
+      const updated = { ...prev };
+      
+      if (isSelected) {
+        // Calculate next due date based on frequency
+        let nextDueDate = '';
+        const today = new Date();
+        
+        if (vaccineData.frequency.includes('Annually')) {
+          const nextYear = new Date(today);
+          nextYear.setFullYear(today.getFullYear() + 1);
+          nextDueDate = nextYear.toISOString().slice(0, 10);
+        } else if (vaccineData.frequency.includes('3 years')) {
+          const nextThreeYears = new Date(today);
+          nextThreeYears.setFullYear(today.getFullYear() + 3);
+          nextDueDate = nextThreeYears.toISOString().slice(0, 10);
+        } else if (vaccineData.frequency.includes('6–12 months')) {
+          const nextSixMonths = new Date(today);
+          nextSixMonths.setMonth(today.getMonth() + 6);
+          nextDueDate = nextSixMonths.toISOString().slice(0, 10);
+        }
+        
+        updated[vaccineId] = {
+          vaccine: vaccineData.vaccine,
+          date: today.toISOString().slice(0, 10),
+          notes: '',
+          administered: true,
+          nextDue: nextDueDate,
+          purpose: vaccineData.purpose,
+          is_core: vaccineData.is_core,
+          frequency: vaccineData.frequency,
+          recommended_age: vaccineData.recommended_age
+        };
+      } else {
+        delete updated[vaccineId];
+      }
+      
+      return updated;
+    });
+  };
+  
+  const handleVaccineDetailChange = (vaccineId, field, value) => {
+    setSelectedVaccines(prev => {
+      const updated = { ...prev };
+      if (updated[vaccineId]) {
+        updated[vaccineId] = {
+          ...updated[vaccineId],
+          [field]: value
+        };
+      }
       return updated;
     });
   };
@@ -419,13 +570,13 @@ const UserEditPet = () => {
         vetName: formData.vetName || undefined,
         vetPhone: formData.vetPhone || undefined,
         notes: formData.notes || undefined,
-        // Transform vaccinations array to backend format
-        selected_vaccines: formData.vaccinations.map(v => v.vaccine).filter(Boolean),
-        vaccination_dates: formData.vaccinations.reduce((acc, v) => {
+        // Transform selectedVaccines to backend format
+        selected_vaccines: Object.values(selectedVaccines).map(v => v.vaccine).filter(Boolean),
+        vaccination_dates: Object.values(selectedVaccines).reduce((acc, v) => {
           if (v.vaccine && v.date) acc[v.vaccine] = v.date;
           return acc;
         }, {}),
-        next_due_dates: formData.vaccinations.reduce((acc, v) => {
+        next_due_dates: Object.values(selectedVaccines).reduce((acc, v) => {
           if (v.vaccine && v.nextDue) acc[v.vaccine] = v.nextDue;
           return acc;
         }, {}),
@@ -939,86 +1090,142 @@ const UserEditPet = () => {
                 </div>
                 <h2 className="text-2xl font-bold text-gray-800">Vaccination Records</h2>
               </div>
-              <div className="space-y-4">
-                {formData.vaccinations && formData.vaccinations.length > 0 ? (
-                  <div className="space-y-3">
-                    {formData.vaccinations.map((vacc, index) => (
-                      <div key={index} className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div>
-                            <label className="block text-xs font-semibold text-gray-600 mb-1">Vaccine Name</label>
-                            <input
-                              type="text"
-                              value={vacc.vaccine || ''}
-                              onChange={(e) => {
-                                const updated = [...formData.vaccinations];
-                                updated[index] = { ...updated[index], vaccine: e.target.value };
-                                setFormData({ ...formData, vaccinations: updated });
-                              }}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                              placeholder="e.g., Rabies, Distemper"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-semibold text-gray-600 mb-1">Date Given</label>
-                            <input
-                              type="date"
-                              value={vacc.date ? vacc.date.split('T')[0] : ''}
-                              onChange={(e) => {
-                                const updated = [...formData.vaccinations];
-                                updated[index] = { ...updated[index], date: e.target.value };
-                                setFormData({ ...formData, vaccinations: updated });
-                              }}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-semibold text-gray-600 mb-1">Next Due</label>
-                            <input
-                              type="date"
-                              value={vacc.nextDue ? vacc.nextDue.split('T')[0] : ''}
-                              onChange={(e) => {
-                                const updated = [...formData.vaccinations];
-                                updated[index] = { ...updated[index], nextDue: e.target.value };
-                                setFormData({ ...formData, vaccinations: updated });
-                              }}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                            />
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const updated = formData.vaccinations.filter((_, i) => i !== index);
-                            setFormData({ ...formData, vaccinations: updated });
-                          }}
-                          className="mt-2 text-red-600 hover:text-red-700 text-sm font-medium"
-                        >
-                          Remove
-                        </button>
+              
+              <div className="mb-4 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
+                <p className="text-sm text-yellow-800">
+                  <strong>Important:</strong> Select the vaccines your pet has received. The list is based on your pet's type and age group.
+                </p>
+              </div>
+              
+              {formData.type && formData.ageGroup ? (
+                filteredVaccines.length > 0 ? (
+                  <div className="space-y-4">
+                    <div className="bg-blue-50 p-4 rounded-lg">
+                      <h3 className="text-md font-medium text-blue-800 mb-1 flex items-center gap-2">
+                        <FaShieldAlt />
+                        Recommended Vaccines for {formData.type.charAt(0).toUpperCase() + formData.type.slice(1)}s
+                      </h3>
+                      <p className="text-sm text-blue-700">
+                        Check the vaccines that your pet has received. Core vaccines are essential for all pets of this type.
+                      </p>
+                    </div>
+                    
+                    <div className="border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Vaccine Name
+                              </th>
+                              <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Purpose
+                              </th>
+                              <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Recommended Age
+                              </th>
+                              <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Frequency
+                              </th>
+                              <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Date Given
+                              </th>
+                              <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Next Due Date
+                              </th>
+                              <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Received
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {filteredVaccines.map((vaccine, index) => {
+                              const vaccineId = vaccine.vaccine;
+                              const isSelected = !!selectedVaccines[vaccineId];
+                              return (
+                                <tr 
+                                  key={index} 
+                                  className={`${vaccine.is_core ? 'bg-yellow-50' : ''} hover:bg-gray-50`}
+                                >
+                                  <td className="px-4 py-3">
+                                    <div className="text-sm font-medium text-gray-900 flex items-center gap-1">
+                                      {vaccine.vaccine}
+                                      {vaccine.is_core && (
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                                          Core
+                                        </span>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <div className="text-sm text-gray-500">{vaccine.purpose}</div>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <div className="text-sm text-gray-500">{vaccine.recommended_age}</div>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <div className="text-sm text-gray-500">{vaccine.frequency}</div>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <input
+                                      type="date"
+                                      value={selectedVaccines[vaccineId]?.date || ''}
+                                      onChange={(e) => {
+                                        if (!isSelected) {
+                                          handleVaccineChange(vaccineId, true, vaccine);
+                                        }
+                                        handleVaccineDetailChange(vaccineId, 'date', e.target.value);
+                                      }}
+                                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                      disabled={!isSelected}
+                                    />
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <input
+                                      type="date"
+                                      value={selectedVaccines[vaccineId]?.nextDue || ''}
+                                      onChange={(e) => {
+                                        if (!isSelected) {
+                                          handleVaccineChange(vaccineId, true, vaccine);
+                                        }
+                                        handleVaccineDetailChange(vaccineId, 'nextDue', e.target.value);
+                                      }}
+                                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                      disabled={!isSelected}
+                                    />
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <div className="flex items-center">
+                                      <input
+                                        type="checkbox"
+                                        id={`vaccine-${index}`}
+                                        checked={isSelected}
+                                        onChange={(e) => {
+                                          handleVaccineChange(vaccineId, e.target.checked, vaccine);
+                                        }}
+                                        className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                      />
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
                       </div>
-                    ))}
+                    </div>
                   </div>
                 ) : (
-                  <p className="text-gray-500 text-sm">No vaccination records yet.</p>
-                )}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFormData({
-                      ...formData,
-                      vaccinations: [
-                        ...formData.vaccinations,
-                        { vaccine: '', date: '', nextDue: '', administered: true }
-                      ]
-                    });
-                  }}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  <span className="text-lg">+</span>
-                  <span>Add Vaccination</span>
-                </button>
-              </div>
+                  <div className="p-8 text-center text-gray-500 bg-gray-50 rounded-lg">
+                    <p>No vaccines found for this pet type and age group.</p>
+                    <p className="text-sm mt-2">Please ensure pet type and age group are selected.</p>
+                  </div>
+                )
+              ) : (
+                <div className="p-8 text-center text-gray-500 bg-gray-50 rounded-lg">
+                  <p>Please select pet type and age group to view available vaccines.</p>
+                </div>
+              )}
             </div>
             
             {/* Veterinarian Information */}
