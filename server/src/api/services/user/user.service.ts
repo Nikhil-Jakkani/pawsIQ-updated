@@ -197,4 +197,44 @@ export const userService = {
       totalResults: count || 0,
     };
   },
+
+  /**
+   * Change user password
+   */
+  changePassword: async (userId: number, currentPassword: string, newPassword: string) => {
+    // Get user with password
+    const { data: user, error } = await db
+      .from('PIQ_User')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+
+    if (error || !user) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
+    }
+
+    // Verify current password
+    const isPasswordMatch = await bcryptjs.compare(currentPassword, user.user_password);
+    if (!isPasswordMatch) {
+      throw new ApiError(httpStatus.UNAUTHORIZED, 'Current password is incorrect');
+    }
+
+    // Hash new password
+    const hashedPassword = await bcryptjs.hash(newPassword, 10);
+
+    // Update password
+    const { error: updateError } = await db
+      .from('PIQ_User')
+      .update({
+        user_password: hashedPassword,
+        last_updated_dtm: new Date(),
+      })
+      .eq('user_id', userId);
+
+    if (updateError) {
+      throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Error updating password');
+    }
+
+    return true;
+  },
 };

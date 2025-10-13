@@ -10,6 +10,8 @@ const UserLayout = ({ children }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const { currentUser, logout } = useAuth();
 
+  const profileImage = currentUser?.profile_picture_url || currentUser?.profileImage;
+
   // Mock weather data (in a real app, this would come from a weather API)
   const weather = {
     temperature: 72,
@@ -150,8 +152,16 @@ const UserLayout = ({ children }) => {
             </button>
             <div className="flex items-center gap-2 max-w-[40vw] sm:max-w-none">
               <Link to="/user/settings" className="flex items-center gap-2 hover:opacity-90">
-                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <FaUser className="text-[#145ae6]" />
+                <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-blue-100">
+                  {profileImage ? (
+                    <img
+                      src={profileImage}
+                      alt="Profile"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <FaUser className="text-[#145ae6]" />
+                  )}
                 </div>
                 <span className="text-sm font-medium text-gray-700">
                   {currentUser?.user_full_name

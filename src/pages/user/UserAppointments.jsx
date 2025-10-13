@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaCalendarAlt, FaPlus, FaSearch, FaFilter, FaEye, FaTimes, FaCheck, FaClock, FaMapMarkerAlt, FaPaw, FaCalendarCheck } from 'react-icons/fa';
+import { FaCalendarAlt, FaPlus, FaSearch, FaFilter, FaEye, FaTimes, FaCheck, FaClock, FaMapMarkerAlt, FaPaw, FaCalendarCheck, FaStar } from 'react-icons/fa';
 import UserLayout from '../../components/layout/UserLayout';
 import { useAuth } from '../../context/AuthContext';
 const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
@@ -12,6 +12,13 @@ const UserAppointments = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('upcoming');
   const [appointments, setAppointments] = useState([]);
+  const [reviewForm, setReviewForm] = useState({
+    appointmentId: null,
+    rating: 5,
+    text: '',
+    error: '',
+    submitting: false,
+  });
   const [petsById, setPetsById] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -115,7 +122,34 @@ const UserAppointments = () => {
         const pet = petsById[String(a.pet_id)] || {};
         const { date, time } = formatDateTime(a.appointment_date);
         const ts = new Date(a.appointment_date).getTime() || 0;
-        const providerName = a.provider_name || '';
+        const providerInfo = a.provider || {};
+        const providerIdRaw = providerInfo?.service_provider_id ?? a.service_provider_id;
+        const providerId = providerIdRaw !== undefined && providerIdRaw !== null ? Number(providerIdRaw) : null;
+        const providerName = providerInfo?.serv_provider_name || a.provider_name || '';
+        const providerLocation = providerInfo?.serv_provider_location || a.provider_address || '';
+        const providerAverageRatingRaw = providerInfo?.average_rating ?? providerInfo?.averageRating ?? null;
+        const providerAverageRating = providerAverageRatingRaw !== null && providerAverageRatingRaw !== undefined
+          ? Number(providerAverageRatingRaw)
+          : 0;
+        const providerTotalReviewsRaw = providerInfo?.total_reviews ?? providerInfo?.totalReviews ?? null;
+        const providerTotalReviews = providerTotalReviewsRaw !== null && providerTotalReviewsRaw !== undefined
+          ? Number(providerTotalReviewsRaw)
+          : 0;
+        const bookingIdRaw = a.booking_id ?? a.Booking?.booking_id;
+        const bookingId = bookingIdRaw !== undefined && bookingIdRaw !== null ? Number(bookingIdRaw) : null;
+        const bookingStatus = a.booking_status ?? a.Booking?.booking_status ?? null;
+        const userReviewData = a.user_review || null;
+        const userReview = userReviewData
+          ? {
+              reviewId: userReviewData.review_id ? Number(userReviewData.review_id) : null,
+              rating: Number(userReviewData.rating ?? 0),
+              reviewText: userReviewData.review_text || '',
+              reviewedAt: userReviewData.reviewed_at || null,
+            }
+          : null;
+        const providerImage = providerName
+          ? `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(providerName)}`
+          : 'https://api.dicebear.com/7.x/shapes/svg?seed=paws';
         return {
           id: a.appointment_id,
           petId: a.pet_id,
@@ -127,9 +161,18 @@ const UserAppointments = () => {
           status: toUiStatus(a.appointment_status, a.appointment_date), // For filtering
           actualStatus: getActualStatus(a.appointment_status, a.appointment_date, a), // For badge display
           rawStatus: a.appointment_status, // Keep raw status for reference
+          bookingStatus,
+          bookingId,
           notes: a.appointment_comments || '',
           location: providerName || '—',
-          address: a.provider_address || '—',
+          address: providerLocation || '—',
+          providerAddress: providerLocation || '—',
+          providerId,
+          providerName,
+          providerAverageRating,
+          providerTotalReviews,
+          providerImage,
+          userReview,
           sortTs: ts,
           rawAppointment: a, // Keep full appointment data for debugging
         };
@@ -152,12 +195,84 @@ const UserAppointments = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accessToken]);
 
+  const resetReviewForm = () => {
+    setReviewForm({ appointmentId: null, rating: 5, text: '', error: '', submitting: false });
+  };
+
+  const openReviewForm = (appointmentId) => {
+    setReviewForm({ appointmentId, rating: 5, text: '', error: '', submitting: false });
+  };
+
+  const renderStars = (rating) => {
+    const safeRating = Number.isFinite(rating) ? rating : 0;
+    return [1, 2, 3, 4, 5].map((value) => {
+      const filled = safeRating >= value - 0.25;
+      return (
+        <FaStar
+          key={value}
+          className={`${filled ? 'text-yellow-400' : 'text-gray-300'} text-sm`}
+        />
+      );
+    });
+  };
+
+  const handleSubmitReview = async (event) => {
+    if (event?.preventDefault) {
+      event.preventDefault();
+    }
+    if (!reviewForm.appointmentId) return;
+    const appointment = appointments.find((a) => a.id === reviewForm.appointmentId);
+    if (!appointment) {
+      setReviewForm((prev) => ({ ...prev, error: 'Unable to find appointment details.' }));
+      return;
+    }
+    if (!appointment.providerId || !appointment.bookingId) {
+      setReviewForm((prev) => ({ ...prev, error: 'This appointment is not linked to a provider booking yet.' }));
+      return;
+    }
+    if (!reviewForm.rating || reviewForm.rating < 1 || reviewForm.rating > 5) {
+      setReviewForm((prev) => ({ ...prev, error: 'Select a rating between 1 and 5 stars.' }));
+      return;
+    }
+
+    setReviewForm((prev) => ({ ...prev, submitting: true, error: '' }));
+    try {
+      const res = await authFetch(`${API_URL}/providers/${appointment.providerId}/reviews`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          booking_id: Number(appointment.bookingId),
+          rating: Number(reviewForm.rating),
+          review_text: reviewForm.text.trim() ? reviewForm.text.trim() : null,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.message || 'Failed to submit review.');
+      }
+
+      await fetchAppointments();
+      resetReviewForm();
+      alert('Review submitted successfully.');
+    } catch (e) {
+      setReviewForm((prev) => ({
+        ...prev,
+        submitting: false,
+        error: e?.message || 'Unable to submit review right now.',
+      }));
+    }
+  };
+
   // Filter appointments based on search term and filter status
   const filteredAppointments = appointments.filter(appointment => {
     const matchesSearch = 
       appointment.petName.toLowerCase().includes(searchTerm.toLowerCase()) || 
       appointment.serviceType.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (appointment.providerName || '').toLowerCase().includes(searchTerm.toLowerCase());
+      (appointment.providerName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (appointment.address || '').toLowerCase().includes(searchTerm.toLowerCase());
 
     const now = Date.now();
     // More inclusive logic for upcoming appointments - include all future appointments
@@ -304,6 +419,24 @@ const UserAppointments = () => {
               const statusBadge = getStatusBadge(appointment.actualStatus);
               const appointmentDate = new Date(appointment.date);
               const isUpcoming = appointment.status === 'upcoming';
+              const isReviewEligible =
+                appointment.providerId &&
+                !appointment.userReview &&
+                (appointment.status === 'completed' || appointment.status === 'cancelled');
+              const isReviewFormOpen = reviewForm.appointmentId === appointment.id;
+              const providerAverage = typeof appointment.providerAverageRating === 'number'
+                ? appointment.providerAverageRating
+                : 0;
+              const providerTotalReviews = typeof appointment.providerTotalReviews === 'number'
+                ? appointment.providerTotalReviews
+                : 0;
+              const statusGradientClass = appointment.actualStatus === 'confirmed'
+                ? 'bg-gradient-to-r from-blue-400 to-blue-600'
+                : appointment.actualStatus === 'awaiting'
+                ? 'bg-gradient-to-r from-yellow-400 to-yellow-600'
+                : appointment.actualStatus === 'completed'
+                ? 'bg-gradient-to-r from-green-400 to-green-600'
+                : 'bg-gradient-to-r from-red-400 to-red-600';
 
               return (
                 <div 
@@ -311,13 +444,8 @@ const UserAppointments = () => {
                   className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
                 >
                   {/* Card Header with Status */}
-                  <div className={`h-2 ${
-                    appointment.actualStatus === 'confirmed' ? 'bg-gradient-to-r from-blue-400 to-blue-600' :
-                    appointment.actualStatus === 'awaiting' ? 'bg-gradient-to-r from-yellow-400 to-yellow-600' :
-                    appointment.actualStatus === 'completed' ? 'bg-gradient-to-r from-green-400 to-green-600' :
-                    'bg-gradient-to-r from-red-400 to-red-600'
-                  }`}></div>
-                  
+                  <div className={`h-2 ${statusGradientClass}`}></div>
+
                   <div className="p-6">
                     {/* Service Type & Pet Info */}
                     <div className="flex items-start justify-between mb-4">
@@ -381,20 +509,39 @@ const UserAppointments = () => {
 
                     {/* Provider Info */}
                     {appointment.providerName && (
-                      <div className="flex items-center gap-3 mb-4 p-3 bg-blue-50 rounded-lg">
-                        <div className="flex-shrink-0">
-                          <img 
-                            src={appointment.providerImage} 
-                            alt={appointment.providerName} 
-                            className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm"
-                          />
+                      <div className="flex flex-col gap-3 mb-4">
+                        <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
+                          <div className="flex-shrink-0">
+                            <img 
+                              src={appointment.providerImage}
+                              alt={appointment.providerName}
+                              className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm"
+                              onError={(e) => { e.target.src = 'https://api.dicebear.com/7.x/shapes/svg?seed=paws'; }}
+                            />
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-gray-800">{appointment.providerName}</p>
+                            <p className="text-xs text-blue-600 font-medium">Service Provider</p>
+                            {appointment.providerAddress && appointment.providerAddress !== '—' && (
+                              <p className="text-xs text-gray-500">{appointment.providerAddress}</p>
+                            )}
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm font-bold text-gray-800">{appointment.providerName}</p>
-                          <p className="text-xs text-blue-600 font-medium">Service Provider</p>
-                          {appointment.providerAddress && (
-                            <p className="text-xs text-gray-500">{appointment.providerAddress}</p>
-                          )}
+
+                        <div className="flex items-center justify-between bg-white border border-blue-100 rounded-lg px-3 py-2">
+                          <div className="flex items-center gap-2">
+                            <div className="flex gap-1">
+                              {renderStars(providerAverage)}
+                            </div>
+                            <span className="text-sm font-semibold text-gray-700">
+                              {providerAverage ? providerAverage.toFixed(1) : '—'}
+                            </span>
+                          </div>
+                          <span className="text-xs text-gray-500">
+                            {providerTotalReviews === 1
+                              ? '1 review overall'
+                              : `${providerTotalReviews} reviews overall`}
+                          </span>
                         </div>
                       </div>
                     )}
@@ -413,6 +560,109 @@ const UserAppointments = () => {
                       <div className="mb-4 text-sm text-gray-600 bg-yellow-50 p-3 rounded-lg border-l-4 border-yellow-400">
                         <p className="font-bold mb-1 text-yellow-800">Notes:</p>
                         <p className="text-gray-700">{appointment.notes}</p>
+                      </div>
+                    )}
+
+                    {/* Existing review */}
+                    {appointment.userReview && (
+                      <div className="mb-4 border border-green-100 bg-green-50 p-3 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <div className="flex gap-1">
+                            {renderStars(appointment.userReview.rating)}
+                          </div>
+                          <span className="text-sm font-semibold text-green-700">
+                            {appointment.userReview.rating.toFixed(1)} / 5
+                          </span>
+                        </div>
+                        {appointment.userReview.reviewText && (
+                          <p className="text-sm text-gray-700 mt-2">{appointment.userReview.reviewText}</p>
+                        )}
+                        {appointment.userReview.reviewedAt && (
+                          <p className="text-xs text-gray-500 mt-2">
+                            Reviewed on {new Date(appointment.userReview.reviewedAt).toLocaleDateString()}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    {/* Inline review form */}
+                    {isReviewEligible && (
+                      <div className="mb-4 border border-yellow-200 bg-yellow-50 rounded-lg p-3">
+                        {isReviewFormOpen ? (
+                          <form onSubmit={handleSubmitReview}>
+                            <div className="space-y-3">
+                              <div>
+                                <p className="text-sm font-semibold text-gray-700 mb-1">Rate this provider</p>
+                                <div className="flex items-center gap-2">
+                                  <div className="flex gap-1">
+                                    {[1, 2, 3, 4, 5].map((value) => (
+                                      <label key={value} className="flex items-center gap-1">
+                                        <input
+                                          type="radio"
+                                          name="rating"
+                                          value={value}
+                                          onChange={(e) => setReviewForm((prev) => ({ ...prev, rating: parseInt(e.target.value, 10) }))}
+                                          className="focus:outline-none"
+                                          disabled={reviewForm.submitting}
+                                          checked={reviewForm.rating === value}
+                                        />
+                                        <FaStar
+                                          className={`${value <= reviewForm.rating ? 'text-yellow-500' : 'text-gray-300'} text-lg`}
+                                        />
+                                      </label>
+                                    ))}
+                                  </div>
+                                  <span className="text-sm text-gray-600">{reviewForm.rating} / 5</span>
+                                </div>
+                              </div>
+                              <div>
+                                <label className="text-xs font-medium text-gray-600 uppercase tracking-wide">
+                                  Optional feedback
+                                </label>
+                                <textarea
+                                  value={reviewForm.text}
+                                  maxLength={1000}
+                                  onChange={(e) => setReviewForm((prev) => ({ ...prev, text: e.target.value }))}
+                                  placeholder="Share more about your experience (optional)"
+                                  rows={3}
+                                  className="mt-1 w-full rounded-lg border border-yellow-200 bg-white p-2 text-sm text-gray-700 focus:border-yellow-400 focus:ring-2 focus:ring-yellow-200"
+                                  disabled={reviewForm.submitting}
+                                />
+                                <div className="text-xs text-gray-400 mt-1 text-right">
+                                  {reviewForm.text.length}/1000
+                                </div>
+                              </div>
+                              {reviewForm.error && (
+                                <p className="text-sm text-red-600">{reviewForm.error}</p>
+                              )}
+                              <div className="flex justify-end gap-2">
+                                <button
+                                  type="button"
+                                  className="px-3 py-2 rounded-lg text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-gray-50"
+                                  onClick={resetReviewForm}
+                                  disabled={reviewForm.submitting}
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  type="submit"
+                                  className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-60"
+                                  disabled={reviewForm.submitting}
+                                >
+                                  {reviewForm.submitting ? 'Submitting...' : 'Submit Review'}
+                                </button>
+                              </div>
+                            </div>
+                          </form>
+                        ) : (
+                          <button
+                            type="button"
+                            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold text-yellow-700 border border-yellow-300 bg-white hover:bg-yellow-100"
+                            onClick={() => openReviewForm(appointment.id)}
+                          >
+                            <FaStar className="text-yellow-500" />
+                            Share your review of {appointment.providerName}
+                          </button>
+                        )}
                       </div>
                     )}
 

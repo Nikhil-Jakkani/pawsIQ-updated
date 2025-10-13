@@ -83,17 +83,108 @@ const getUserAppointments = async (
       orderBy: { appointment_date: 'desc' },
       skip,
       take: limit,
-      include: { PIQ_Pets: { select: { pet_name: true, pet_type: true } } },
+      include: {
+        PIQ_Pets: { select: { pet_name: true, pet_type: true } },
+        Booking: {
+          select: {
+            booking_id: true,
+            booking_status: true,
+            service_provider_id: true,
+            PIQ_Service_Provider: {
+              select: {
+                service_provider_id: true,
+                serv_provider_name: true,
+                serv_provider_type: true,
+                serv_provider_location: true,
+              },
+            },
+            PIQ_Provider_Reviews: {
+              where: { user_id: userId },
+              orderBy: { reviewed_at: 'desc' },
+              take: 1,
+              select: {
+                review_id: true,
+                rating: true,
+                review_text: true,
+                reviewed_at: true,
+              },
+            },
+          },
+        },
+      },
     }),
     prisma.pIQ_Appointments.count({ where: { PIQ_Pets: { user_id: userId } } }),
   ]);
 
+  const providerIds = Array.from(
+    new Set(
+      items
+        .map((it) => it.Booking?.service_provider_id)
+        .filter((id): id is number => typeof id === 'number' && Number.isFinite(id))
+    )
+  );
+
+  let providerRatingsMap: Record<number, { averageRating: number; totalReviews: number }> = {};
+
+  if (providerIds.length) {
+    const aggregates = await prisma.pIQ_Provider_Reviews.groupBy({
+      by: ['service_provider_id'],
+      where: { service_provider_id: { in: providerIds } },
+      _avg: { rating: true },
+      _count: { rating: true },
+    });
+
+    providerRatingsMap = aggregates.reduce((acc, item) => {
+      const id = item.service_provider_id ?? 0;
+      if (!id) return acc;
+      const avg = item._avg.rating ? Number(item._avg.rating) : 0;
+      acc[id] = {
+        averageRating: avg ? Math.round(avg * 10) / 10 : 0,
+        totalReviews: item._count.rating ?? 0,
+      };
+      return acc;
+    }, {} as Record<number, { averageRating: number; totalReviews: number }>);
+  }
+
+  const formattedItems = items.map((it) => {
+    const { PIQ_Pets, Booking, ...rest } = it;
+
+    const provider = Booking?.PIQ_Service_Provider;
+    const providerId = provider?.service_provider_id ?? null;
+    const providerSummary = providerId ? providerRatingsMap[providerId] : undefined;
+    const userReview = Booking?.PIQ_Provider_Reviews?.[0] ?? null;
+
+    const base = {
+      ...rest,
+      booking_id: it.booking_id ?? Booking?.booking_id ?? null,
+      booking_status: Booking?.booking_status ?? null,
+      pet_name: PIQ_Pets?.pet_name ?? null,
+      pet_type: PIQ_Pets?.pet_type ?? null,
+      provider: provider
+        ? {
+            service_provider_id: provider.service_provider_id,
+            serv_provider_name: provider.serv_provider_name,
+            serv_provider_type: provider.serv_provider_type,
+            serv_provider_location: provider.serv_provider_location,
+            average_rating: providerSummary?.averageRating ?? 0,
+            total_reviews: providerSummary?.totalReviews ?? 0,
+          }
+        : null,
+      user_review: userReview
+        ? {
+            review_id: userReview.review_id,
+            rating: userReview.rating,
+            review_text: userReview.review_text,
+            reviewed_at: userReview.reviewed_at,
+          }
+        : null,
+    };
+
+    return serializeBigInt(base);
+  });
+
   return {
-    items: items.map((it) => serializeBigInt({
-      ...it,
-      pet_name: it.PIQ_Pets?.pet_name ?? null,
-      pet_type: it.PIQ_Pets?.pet_type ?? null,
-    })),
+    items: formattedItems,
     page,
     limit,
     total,

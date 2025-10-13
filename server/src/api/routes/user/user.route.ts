@@ -14,6 +14,14 @@ router
   .get(userAuth, userController.getProfile)
   .patch(userAuth, validate(userValidation.updateProfile), userController.updateProfile);
 
+// User profile photo routes
+router.post('/profile/photo/upload', userAuth, userController.uploadProfilePhoto);
+router.post('/profile/photo/confirm', userAuth, userController.confirmProfilePhoto);
+router.get('/profile/photo/refresh', userAuth, userController.refreshProfilePhoto);
+
+// Password change
+router.post('/profile/change-password', userAuth, userController.changePassword);
+
 // Aggregated dashboard data for the current user
 router.get('/dashboard', userAuth, dashboardController.getDashboard);
 
