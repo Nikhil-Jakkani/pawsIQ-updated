@@ -19,6 +19,7 @@ const UserAppointments = () => {
     error: '',
     submitting: false,
   });
+  const [hoverRating, setHoverRating] = useState(0);
   const [petsById, setPetsById] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -197,10 +198,12 @@ const UserAppointments = () => {
 
   const resetReviewForm = () => {
     setReviewForm({ appointmentId: null, rating: 5, text: '', error: '', submitting: false });
+    setHoverRating(0);
   };
 
   const openReviewForm = (appointmentId) => {
     setReviewForm({ appointmentId, rating: 5, text: '', error: '', submitting: false });
+    setHoverRating(0);
   };
 
   const renderStars = (rating) => {
@@ -419,10 +422,13 @@ const UserAppointments = () => {
               const statusBadge = getStatusBadge(appointment.actualStatus);
               const appointmentDate = new Date(appointment.date);
               const isUpcoming = appointment.status === 'upcoming';
+              // Allow reviews for past appointments (completed status or past date)
+              const isPastAppointment = appointment.sortTs < Date.now();
               const isReviewEligible =
                 appointment.providerId &&
+                appointment.bookingId &&
                 !appointment.userReview &&
-                (appointment.status === 'completed' || appointment.status === 'cancelled');
+                isPastAppointment;
               const isReviewFormOpen = reviewForm.appointmentId === appointment.id;
               const providerAverage = typeof appointment.providerAverageRating === 'number'
                 ? appointment.providerAverageRating
@@ -591,27 +597,33 @@ const UserAppointments = () => {
                           <form onSubmit={handleSubmitReview}>
                             <div className="space-y-3">
                               <div>
-                                <p className="text-sm font-semibold text-gray-700 mb-1">Rate this provider</p>
-                                <div className="flex items-center gap-2">
+                                <p className="text-sm font-semibold text-gray-700 mb-2">Rate this provider</p>
+                                <div className="flex items-center gap-3">
                                   <div className="flex gap-1">
-                                    {[1, 2, 3, 4, 5].map((value) => (
-                                      <label key={value} className="flex items-center gap-1">
-                                        <input
-                                          type="radio"
-                                          name="rating"
-                                          value={value}
-                                          onChange={(e) => setReviewForm((prev) => ({ ...prev, rating: parseInt(e.target.value, 10) }))}
-                                          className="focus:outline-none"
+                                    {[1, 2, 3, 4, 5].map((value) => {
+                                      const isActive = value <= (hoverRating || reviewForm.rating);
+                                      return (
+                                        <button
+                                          key={value}
+                                          type="button"
+                                          onClick={() => setReviewForm((prev) => ({ ...prev, rating: value }))}
+                                          onMouseEnter={() => setHoverRating(value)}
+                                          onMouseLeave={() => setHoverRating(0)}
                                           disabled={reviewForm.submitting}
-                                          checked={reviewForm.rating === value}
-                                        />
-                                        <FaStar
-                                          className={`${value <= reviewForm.rating ? 'text-yellow-500' : 'text-gray-300'} text-lg`}
-                                        />
-                                      </label>
-                                    ))}
+                                          className="focus:outline-none transition-transform hover:scale-110 disabled:cursor-not-allowed"
+                                        >
+                                          <FaStar
+                                            className={`text-2xl transition-colors ${
+                                              isActive ? 'text-yellow-400' : 'text-gray-300'
+                                            }`}
+                                          />
+                                        </button>
+                                      );
+                                    })}
                                   </div>
-                                  <span className="text-sm text-gray-600">{reviewForm.rating} / 5</span>
+                                  <span className="text-base font-semibold text-gray-700">
+                                    {reviewForm.rating} / 5
+                                  </span>
                                 </div>
                               </div>
                               <div>
@@ -654,14 +666,17 @@ const UserAppointments = () => {
                             </div>
                           </form>
                         ) : (
-                          <button
-                            type="button"
-                            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold text-yellow-700 border border-yellow-300 bg-white hover:bg-yellow-100"
-                            onClick={() => openReviewForm(appointment.id)}
-                          >
-                            <FaStar className="text-yellow-500" />
-                            Share your review of {appointment.providerName}
-                          </button>
+                          <div>
+                            <button
+                              type="button"
+                              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold text-yellow-700 border border-yellow-300 bg-white hover:bg-yellow-100"
+                              onClick={() => openReviewForm(appointment.id)}
+                            >
+                              <FaStar className="text-yellow-500" />
+                              Rate this provider
+                            </button>
+                            <p className="text-xs text-yellow-600 mt-1 text-center">Share your experience with {appointment.providerName}</p>
+                          </div>
                         )}
                       </div>
                     )}

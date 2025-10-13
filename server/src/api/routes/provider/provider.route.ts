@@ -1,14 +1,24 @@
 import { Router } from 'express';
 import { auth } from '../../../middlewares/auth.js';
 import { validate } from '../../../middlewares/validate.js';
-import { providerController, providerReviewController, providerServiceOfferingController } from '../../controllers/provider/index.js';
-import { providerProfileValidation, providerReviewValidation, providerServiceOfferingValidation } from '../../validations/provider/index.js';
+import { providerController, providerReviewController, providerServiceOfferingController, providerSettingsController } from '../../controllers/provider/index.js';
+import { providerProfileValidation, providerReviewValidation, providerServiceOfferingValidation, providerSettingsValidation } from '../../validations/provider/index.js';
 
 const router = Router();
 
 // Profile routes
 router.get('/me', auth('provider'), providerController.getMyProfile);
-router.patch('/me', auth('provider'), validate(providerProfileValidation.update), providerController.updateMyProfile);
+router.patch('/me', auth('provider'), validate(providerSettingsValidation.updateProfile), providerController.updateMyProfile);
+
+// Settings routes
+router.post('/settings/photos/upload-url', auth('provider'), validate(providerSettingsValidation.generatePhotoUpload), providerSettingsController.generatePhotoUploadUrl);
+router.post('/settings/documents/upload-url', auth('provider'), validate(providerSettingsValidation.generateDocumentUpload), providerSettingsController.generateDocumentUploadUrl);
+router.post('/settings/password', auth('provider'), validate(providerSettingsValidation.updatePassword), providerSettingsController.updatePassword);
+
+// Document routes
+router.get('/documents', auth('provider'), providerSettingsController.listMyDocuments);
+router.post('/documents', auth('provider'), validate(providerSettingsValidation.saveDocument), providerSettingsController.saveDocument);
+router.delete('/documents/:documentId', auth('provider'), validate(providerSettingsValidation.deleteDocument), providerSettingsController.deleteDocument);
 
 // Reviews
 router.get('/reviews', auth('provider'), validate(providerReviewValidation.getMyReviews), providerReviewController.getMyReviews);

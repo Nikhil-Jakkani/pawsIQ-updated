@@ -42,19 +42,17 @@ const listProvidersForService = async (services_id: number, location?: string) =
   const service = await prisma.pIQ_Service_Master.findUnique({ where: { services_id } });
   if (!service) return [];
 
-  const type = (service.service_type || '').trim();
-  const sub = (service.service_sub_type || '').trim();
-
+  // Find providers who have explicitly added this service to their offerings
   const whereConditions: any = {
     AND: [
       { serv_provider_status: 'active' }, // Only show active providers
       {
-        OR: [
-          { serv_provider_type: { equals: type, mode: 'insensitive' } },
-          { serv_provider_type: { contains: type, mode: 'insensitive' } },
-          sub ? { serv_provider_type: { equals: sub, mode: 'insensitive' } } : undefined,
-          sub ? { serv_provider_type: { contains: sub, mode: 'insensitive' } } : undefined,
-        ].filter(Boolean) as any,
+        PIQ_Provider_ServiceOffering: {
+          some: {
+            services_id: services_id, // Provider must offer this specific service
+            is_active: true, // Service offering must be active
+          },
+        },
       },
     ],
   };
@@ -66,27 +64,12 @@ const listProvidersForService = async (services_id: number, location?: string) =
     });
   }
 
-  const primary = await prisma.pIQ_Service_Provider.findMany({
+  const providers = await prisma.pIQ_Service_Provider.findMany({
     where: whereConditions,
     orderBy: [{ serv_provider_name: 'asc' }],
   });
 
-  if (primary.length > 0) return primary.map(serializeBigInt);
-
-  // Fallback: if no match with type+location, try just active providers in location
-  const fallbackWhere: any = {
-    serv_provider_status: { equals: 'active', mode: 'insensitive' },
-  };
-  
-  if (location && location.trim().length > 0) {
-    fallbackWhere.serv_provider_location = { contains: location.trim(), mode: 'insensitive' };
-  }
-
-  const fallback = await prisma.pIQ_Service_Provider.findMany({
-    where: fallbackWhere,
-    orderBy: [{ serv_provider_name: 'asc' }],
-  });
-  return fallback.map(serializeBigInt);
+  return providers.map(serializeBigInt);
 };
 
 const removeService = async (services_id: number) => {

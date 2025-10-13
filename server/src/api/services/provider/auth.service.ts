@@ -80,7 +80,7 @@ const register = async (providerBody: any) => {
     serv_provider_password: hashedPassword,
     serv_provider_contact_nbr: phone,
     serv_provider_desc: providerBody.provider_desc || providerBody.serv_provider_desc || null,
-    serv_provider_status: 'active',
+    serv_provider_status: 'inactive',
     serv_provider_exp_years:
       providerBody.provider_experience_years || providerBody.serv_provider_exp_years || null,
     serv_provider_certificates:

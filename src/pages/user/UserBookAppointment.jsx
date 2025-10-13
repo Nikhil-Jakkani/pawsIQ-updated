@@ -1,54 +1,27 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useNavigate, useLocation as useRouterLocation } from 'react-router-dom';
-import { FaCalendarAlt, FaArrowLeft, FaPaw, FaMapMarkerAlt, FaClock, FaMoneyBillWave, FaCheck, FaChevronRight, FaCalendarCheck, FaSearch, FaFilter, FaUserMd, FaCut, FaDog, FaHome, FaWalking } from 'react-icons/fa';
+import { FaCalendarAlt, FaArrowLeft, FaPaw, FaMapMarkerAlt, FaClock, FaMoneyBillWave, FaCheck, FaChevronRight, FaCalendarCheck, FaSearch, FaFilter, FaUserMd, FaCut, FaDog, FaHome, FaWalking, FaTimesCircle } from 'react-icons/fa';
 import UserLayout from '../../components/layout/UserLayout';
 import { useAuth } from '../../context/AuthContext';
 import { useLocation as useUserLocation } from '../../hooks/useLocation';
 
-const SERVICE_CATEGORIES = [
-  {
-    id: 'vet',
-    label: 'Vet',
-    description: 'Health check-ups, consultations, and medical services',
-    icon: FaUserMd,
-    keywords: ['vet', 'veterinary', 'medical', 'health', 'consult'],
-  },
-  {
-    id: 'grooming',
-    label: 'Grooming',
-    description: 'Bathing, styling, and coat care services',
-    icon: FaCut,
-    keywords: ['groom', 'grooming', 'bath', 'spa', 'trim', 'nail', 'coat'],
-  },
-  {
-    id: 'sitter',
-    label: 'Pet Sitter',
-    description: 'Boarding, daycare, and in-home care services',
-    icon: FaHome,
-    keywords: ['sit', 'sitter', 'board', 'boarding', 'daycare', 'care', 'stay'],
-  },
-  {
-    id: 'walker',
-    label: 'Walker',
-    description: 'Exercise and walking services',
-    icon: FaWalking,
-    keywords: ['walk', 'walker', 'walking', 'exercise', 'outdoor'],
-  },
-  {
-    id: 'physical_activity',
-    label: 'Physical Activity',
-    description: 'Physical activity services',
-    icon: FaWalking,
-    keywords: ['physical', 'activity', 'exercise'],
-  },
-  {
-    id: 'diagnostic_services',
-    label: 'Diagnostic Services',
-    description: 'Diagnostic services',
-    icon: FaUserMd,
-    keywords: ['diagnostic', 'services', 'testing'],
-  },
-];
+// Service type icon mapping - matches backend 6 standardized types
+const SERVICE_TYPE_ICONS = {
+  veterinary: FaUserMd,
+  'diagnostic services': FaUserMd,
+  boarding: FaHome,
+  grooming: FaCut,
+  training: FaDog,
+  'physical activity': FaWalking,
+};
+
+const getServiceIcon = (serviceType) => {
+  const type = (serviceType || '').toLowerCase().trim();
+  return SERVICE_TYPE_ICONS[type] || FaPaw;
+};
+
+// Dynamic service categories - will be populated from backend
+const SERVICE_CATEGORIES = [];
 
 const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
 const UserBookAppointment = () => {
@@ -86,30 +59,36 @@ const UserBookAppointment = () => {
   const [error, setError] = useState('');
   // dynamic services/providers
   const [allServices, setAllServices] = useState([]);
+  const [serviceCategories, setServiceCategories] = useState([]);
   const [providers, setProviders] = useState([]);
   const [loadingProviders, setLoadingProviders] = useState(false);
+  const [useLocationFilter, setUseLocationFilter] = useState(true);
 
+  // Group services by service_type
   const filteredServicesByCategory = useMemo(() => {
-    const grouped = SERVICE_CATEGORIES.reduce((acc, category) => {
-      acc[category.id] = [];
-      return acc;
-    }, {});
-
-    const keywordMatcher = (serviceType = '', serviceName = '', serviceDescription = '') => {
-      const combined = `${serviceType} ${serviceName} ${serviceDescription}`.toLowerCase();
-      return SERVICE_CATEGORIES.find((category) =>
-        category.keywords.some((keyword) => combined.includes(keyword.toLowerCase()))
-      )?.id;
-    };
-
+    const grouped = {};
+    
     for (const service of allServices) {
-      const matchedCategoryId = keywordMatcher(service.service_type, service.service_name, service.service_description);
-      if (matchedCategoryId && grouped[matchedCategoryId]) {
-        grouped[matchedCategoryId].push(service);
+      const type = (service.service_type || '').toLowerCase().trim();
+      if (!grouped[type]) {
+        grouped[type] = [];
       }
+      grouped[type].push(service);
     }
-
+    
     return grouped;
+  }, [allServices]);
+  
+  // Generate category list from unique service types
+  useEffect(() => {
+    const types = [...new Set(allServices.map(s => (s.service_type || '').toLowerCase().trim()))];
+    const categories = types.map(type => ({
+      id: type,
+      label: type.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+      description: `${type.charAt(0).toUpperCase() + type.slice(1)} services`,
+      icon: getServiceIcon(type),
+    }));
+    setServiceCategories(categories);
   }, [allServices]);
 
   // useRefs for scrolling
@@ -309,7 +288,7 @@ const UserBookAppointment = () => {
   };
 
   // Handle specific service selection
-  const [selectedCategoryId, setSelectedCategoryId] = useState(SERVICE_CATEGORIES[0]?.id || '');
+  const [selectedCategoryId, setSelectedCategoryId] = useState('');
 
   const handleCategorySelect = (categoryId) => {
     setSelectedCategoryId(categoryId);
@@ -327,9 +306,17 @@ const UserBookAppointment = () => {
     });
     // load providers for this service
     if (!serviceId) return;
+    await fetchProviders(serviceId, useLocationFilter);
+  };
+
+  // Fetch providers with optional location filter
+  const fetchProviders = async (serviceId, applyLocationFilter = useLocationFilter) => {
+    if (!serviceId) return;
     try {
       setLoadingProviders(true);
-      const locationQuery = effectiveLocation || geoLocation?.formatted ? `?location=${encodeURIComponent(effectiveLocation || geoLocation?.formatted)}` : '';
+      const locationQuery = applyLocationFilter && (effectiveLocation || geoLocation?.formatted) 
+        ? `?location=${encodeURIComponent(effectiveLocation || geoLocation?.formatted)}` 
+        : '';
       const res = await authFetch(`${API_URL}/services/${serviceId}/providers${locationQuery}`);
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
@@ -466,7 +453,45 @@ const UserBookAppointment = () => {
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.message || 'Failed to create booking');
-      navigate('/user/appointments/confirmation');
+      
+      // Prepare appointment data for confirmation page
+      const selectedPet = pets.find(p => String(p.id) === String(formData.petId));
+      const selectedService = allServices.find(s => s.services_id === Number(formData.serviceId));
+      const selectedProvider = providers.find(p => p.id === Number(formData.providerId));
+      
+      const appointmentData = {
+        pet: selectedPet ? {
+          name: selectedPet.name,
+          breed: selectedPet.breed,
+          type: selectedPet.type,
+          image: selectedPet.image,
+        } : null,
+        service: selectedService ? {
+          name: selectedService.service_title || selectedService.service_type,
+          duration: selectedService.service_duration || 'N/A',
+        } : data.service ? {
+          name: data.service.service_title || data.service.service_type,
+          duration: data.service.service_duration || 'N/A',
+        } : null,
+        provider: selectedProvider ? {
+          name: selectedProvider.name,
+          title: selectedProvider.type,
+          image: selectedProvider.image,
+          location: selectedProvider.location || selectedProvider.address,
+          address: selectedProvider.address,
+        } : data.provider ? {
+          name: data.provider.serv_provider_name,
+          title: data.provider.serv_provider_type,
+          image: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(data.provider.serv_provider_name)}`,
+          location: data.provider.serv_provider_location,
+          address: data.provider.serv_provider_location,
+        } : null,
+        date: formData.date,
+        timeSlot: formData.timeSlot,
+        total: selectedService?.service_price || data.service?.service_price || 0,
+      };
+      
+      navigate('/user/appointments/confirmation', { state: { appointment: appointmentData } });
     } catch (err) {
       alert(err.message || 'Failed to create appointment');
     } finally {
@@ -590,7 +615,12 @@ const UserBookAppointment = () => {
             <div className="space-y-3">
               <h4 className="text-lg font-semibold text-gray-700">Main Service</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {SERVICE_CATEGORIES.map((category) => {
+                {serviceCategories.length === 0 && (
+                  <div className="col-span-full bg-gray-50 rounded-lg p-4 text-center text-gray-600">
+                    Loading service categories...
+                  </div>
+                )}
+                {serviceCategories.map((category) => {
                   const Icon = category.icon;
                   return (
                     <button
@@ -655,8 +685,47 @@ const UserBookAppointment = () => {
 
           {/* Choose a Provider */}
           <div ref={providerSectionRef} className="bg-white p-4 rounded-lg border border-gray-200 space-y-4">
-            <h3 className="text-lg font-semibold text-gray-700">Choose a Provider</h3>
-            <p className="text-gray-600">Select a service provider for your appointment</p>
+            <div className="flex justify-between items-start">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-700">Choose a Provider</h3>
+                <p className="text-gray-600">Select a service provider for your appointment</p>
+              </div>
+              
+              {/* Location Filter Toggle */}
+              {effectiveLocation && (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newValue = !useLocationFilter;
+                      setUseLocationFilter(newValue);
+                      // Refetch providers with new filter setting immediately
+                      if (formData.serviceId) {
+                        fetchProviders(formData.serviceId, newValue);
+                      }
+                    }}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all text-sm font-medium ${
+                      useLocationFilter
+                        ? 'bg-green-50 border-green-500 text-green-700 hover:bg-green-100'
+                        : 'bg-gray-50 border-gray-300 text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    {useLocationFilter ? (
+                      <>
+                        <FaMapMarkerAlt className="text-green-600" />
+                        <span>Location: {effectiveLocation}</span>
+                        <FaTimesCircle className="text-green-600" />
+                      </>
+                    ) : (
+                      <>
+                        <FaMapMarkerAlt className="text-gray-400" />
+                        <span>Show All Locations</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
 
             {loadingProviders && (
               <div className="bg-white rounded-lg p-4 border border-gray-200 text-sm text-gray-600">Loading providers...</div>

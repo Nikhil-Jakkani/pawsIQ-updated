@@ -118,6 +118,20 @@ model PIQ_Service_Provider {
   serv_provider_type             String?
   how_hear_about_us              String?                          @db.VarChar
   serv_provider_location         String?                          @db.VarChar
+  profile_photo_url              String?                          @db.VarChar(512)
+  cover_photo_url                String?                          @db.VarChar(512)
+  clinic_name                    String?                          @db.VarChar(255)
+  clinic_phone                   String?                          @db.VarChar(50)
+  clinic_website                 String?                          @db.VarChar(255)
+  clinic_hours                   String?                          @db.VarChar(255)
+  clinic_address_line1           String?                          @db.VarChar(255)
+  clinic_address_line2           String?                          @db.VarChar(255)
+  clinic_city                    String?                          @db.VarChar(100)
+  clinic_state                   String?                          @db.VarChar(100)
+  clinic_postal_code             String?                          @db.VarChar(30)
+  clinic_country                 String?                          @db.VarChar(100)
+  specializations                String?                          @db.VarChar(500)
+  languages_spoken               String?                          @db.VarChar(255)
   PIQ_Bookings                   PIQ_Bookings[]
   PIQ_Commission                 PIQ_Commission[]
   PIQ_Provider_Availability      PIQ_Provider_Availability[]
@@ -128,9 +142,38 @@ model PIQ_Service_Provider {
   PIQ_Provider_Reviews           PIQ_Provider_Reviews[]
   PIQ_Provider_ServiceOffering   PIQ_Provider_ServiceOffering[]
   PIQ_Provider_ServicePricing    PIQ_Provider_ServicePricing[]
+  PIQ_Provider_Billing           PIQ_Provider_Billing?
 
   @@index([serv_provider_email], map: "idx_provider_email")
   @@index([serv_provider_status], map: "idx_provider_status")
+}
+
+model PIQ_Provider_Billing {
+  billing_id           Int                  @id @default(autoincrement())
+  service_provider_id  Int                  @unique
+  payout_method        String?              @db.VarChar(30)
+  account_holder_name  String?              @db.VarChar(150)
+  account_number       String?              @db.VarChar(34)
+  bank_name            String?              @db.VarChar(150)
+  bank_branch          String?              @db.VarChar(150)
+  ifsc_code            String?              @db.VarChar(20)
+  upi_id               String?              @db.VarChar(100)
+  pan_number           String?              @db.VarChar(20)
+  gst_number           String?              @db.VarChar(20)
+  tax_status           String?              @db.VarChar(50)
+  payout_frequency     String?              @db.VarChar(30)
+  billing_address_line1 String?             @db.VarChar(255)
+  billing_address_line2 String?             @db.VarChar(255)
+  billing_city         String?              @db.VarChar(100)
+  billing_state        String?              @db.VarChar(100)
+  billing_postal_code  String?              @db.VarChar(30)
+  billing_country      String?              @db.VarChar(100)
+  notes                String?              @db.VarChar(500)
+  created_at           DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime             @updatedAt @db.Timestamptz(6)
+  PIQ_Service_Provider PIQ_Service_Provider @relation(fields: [service_provider_id], references: [service_provider_id], onDelete: Cascade, map: "fk_billing_provider")
+
+  @@index([payout_method], map: "idx_provider_billing_method")
 }
 
 model PIQ_User {

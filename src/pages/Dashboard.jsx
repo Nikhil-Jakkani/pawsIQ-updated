@@ -54,10 +54,10 @@ const Dashboard = () => {
         
         if (isMounted && statsData) {
           setStats({
-            users: Number(statsData.users) || 0,
+            users: Number(statsData.users?.total) || 0,
             pets: Number(statsData.pets) || 0,
             appointments: Number(statsData.appointments) || 0,
-            providers: Number(statsData.providers) || 0,
+            providers: Number(statsData.providers?.total) || 0,
           });
         }
         
