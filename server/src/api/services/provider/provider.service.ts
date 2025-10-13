@@ -981,6 +981,7 @@ const updateAppointmentStatus = async (
 };
 
 export const providerService = {
+  listProviders,
   getProviderById,
   updateProviderProfile,
   generateProviderPhotoUploadUrl,
@@ -999,4 +1000,5 @@ export const providerService = {
   listReviews,
   getAppointments,
   updateAppointmentStatus,
+  updateProviderStatus,
 };
