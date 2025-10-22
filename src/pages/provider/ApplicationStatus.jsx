@@ -108,30 +108,9 @@ const ApplicationStatus = () => {
 
   useEffect(() => {
     if (applicationStatus === 'approved') {
-      // Get provider type from registration data or localStorage
-      const registration = localStorage.getItem('provider_registration');
-      let providerType = localStorage.getItem('selectedService');
-      
-      if (!providerType && registration) {
-        const parsedData = JSON.parse(registration);
-        providerType = parsedData.providerType;
-      }
-      
-      if (providerType) {
-        // Map provider types to route-friendly names
-        const typeMap = {
-          'Veterinarian': 'vet',
-          'Trainer': 'trainer',
-          'Groomer': 'groomer',
-          'Pet Sitter': 'petsitter',
-          'vet': 'vet',
-          'trainer': 'trainer',
-          'groomer': 'groomer',
-          'petsitter': 'petsitter'
-        };
-        
-        const routeType = typeMap[providerType] || 'vet';
-        navigate(`/provider/${routeType}/dashboard`);
+      const serviceType = localStorage.getItem('selectedService');
+      if (serviceType) {
+        navigate(`/provider/${serviceType}/dashboard`);
       } else {
         // Handle case where serviceType is not found in local storage
         console.error('Service type not found in local storage');

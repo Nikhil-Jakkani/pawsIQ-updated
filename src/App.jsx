@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Routes, Route, Link, Navigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -61,11 +61,8 @@ import ProviderLogin from './pages/provider/ProviderLogin.jsx';
 import ProviderForgotPassword from './pages/provider/ProviderForgotPassword.jsx';
 import ProviderOTPVerification from './pages/provider/ProviderOTPVerification.jsx';
 import ProviderOnboarding from './pages/provider/ProviderOnboarding.jsx';
-import ProviderDashboardRouter from './pages/provider/ProviderDashboardRouter.jsx';
+// import ProviderDashboard from './pages/provider/ProviderDashboard.jsx';
 import VetDashboard from './pages/provider/VetDashboard.jsx';
-import TrainerDashboard from './pages/provider/TrainerDashboard.jsx';
-import GroomerDashboard from './pages/provider/GroomerDashboard.jsx';
-import PetSitterDashboard from './pages/provider/PetSitterDashboard.jsx';
 import VetAppointments from './pages/provider/VetAppointments.jsx';
 import VetClients from './pages/provider/VetClients.jsx';
 import VetServices from './pages/provider/VetServices.jsx';
@@ -74,9 +71,6 @@ import VetLabReports from './pages/provider/VetLabReports.jsx';
 import VetAnalytics from './pages/provider/VetAnalytics.jsx';
 import VetNotifications from './pages/provider/VetNotifications.jsx';
 import VetSettings from './pages/provider/VetSettings.jsx';
-import VetProfile from './pages/provider/VetProfile.jsx';
-import VetPortfolio from './pages/provider/VetPortfolio.jsx';
-import VetReviews from './pages/provider/VetReviews.jsx';
 import ServiceForm from './pages/provider/ServiceForm.jsx';
 
 // Auth pages
@@ -127,44 +121,11 @@ const AdminProtectedRoute = ({ children }) => {
   }
   if (currentUser.role !== 'admin') {
     // Redirect logged-in non-admins to their dashboards instead of login to avoid loops
-    let fallback = '/';
-    
-    if (currentUser.role === 'user') {
-      fallback = '/user/dashboard';
-    } else if (currentUser.role === 'provider') {
-      // Get provider type from user object first, fallback to localStorage
-      let providerType = currentUser.providerType;
-      
-      if (!providerType) {
-        const registration = localStorage.getItem('provider_registration');
-        providerType = localStorage.getItem('selectedService');
-        
-        if (!providerType && registration) {
-          try {
-            const parsedData = JSON.parse(registration);
-            providerType = parsedData.providerType;
-          } catch (e) {
-            console.error('Error parsing provider registration:', e);
-          }
-        }
-      }
-      
-      // Map provider types to route-friendly names
-      const typeMap = {
-        'Veterinarian': 'vet',
-        'Trainer': 'trainer',
-        'Groomer': 'groomer',
-        'Pet Sitter': 'petsitter',
-        'vet': 'vet',
-        'trainer': 'trainer',
-        'groomer': 'groomer',
-        'petsitter': 'petsitter'
-      };
-      
-      const routeType = typeMap[providerType] || 'vet';
-      fallback = `/provider/${routeType}/dashboard`;
-    }
-    
+    const fallback = currentUser.role === 'user'
+      ? '/user/dashboard'
+      : currentUser.role === 'provider'
+      ? '/provider/vet/dashboard'
+      : '/';
     return <Navigate to={fallback} replace />;
   }
   return children;
@@ -186,40 +147,11 @@ const Landing = () => {
   const { currentUser, tokens, loading } = useAuth();
   if (loading) return null;
   if (currentUser && tokens?.access?.token) {
-    let dest = '/user/dashboard';
-    
-    if (currentUser.role === 'admin') {
-      dest = '/dashboard';
-    } else if (currentUser.role === 'provider') {
-      // Get provider type from localStorage or user data
-      const registration = localStorage.getItem('provider_registration');
-      let providerType = localStorage.getItem('selectedService');
-      
-      if (!providerType && registration) {
-        try {
-          const parsedData = JSON.parse(registration);
-          providerType = parsedData.providerType;
-        } catch (e) {
-          console.error('Error parsing provider registration:', e);
-        }
-      }
-      
-      // Map provider types to route-friendly names
-      const typeMap = {
-        'Veterinarian': 'vet',
-        'Trainer': 'trainer',
-        'Groomer': 'groomer',
-        'Pet Sitter': 'petsitter',
-        'vet': 'vet',
-        'trainer': 'trainer',
-        'groomer': 'groomer',
-        'petsitter': 'petsitter'
-      };
-      
-      const routeType = typeMap[providerType] || 'vet';
-      dest = `/provider/${routeType}/dashboard`;
-    }
-    
+    const dest = currentUser.role === 'admin'
+      ? '/dashboard'
+      : currentUser.role === 'provider'
+      ? '/provider/vet/dashboard'
+      : '/user/dashboard';
     return <Navigate to={dest} replace />;
   }
   return <Home />;
@@ -324,8 +256,8 @@ function App() {
             <Route path="/provider/login" element={<ProviderLogin />} />
             <Route path="/provider/forgot-password" element={<ProviderForgotPassword />} />
             <Route path="/provider/otp-verification" element={<ProviderOTPVerification />} />
-            {/* Provider Dashboard Routes - Dynamic routing based on service type */}
-            <Route path="/provider/:serviceType/dashboard" element={<ProviderProtectedRoute><ProviderDashboardRouter /></ProviderProtectedRoute>} />
+            {/* Provider Routes */}
+            <Route path="/provider/:serviceType/dashboard" element={<ProviderProtectedRoute><VetDashboard /></ProviderProtectedRoute>} />
             <Route path="/provider/:serviceType/appointments" element={<ProviderProtectedRoute><VetAppointments /></ProviderProtectedRoute>} />
             <Route path="/provider/:serviceType/clients" element={<ProviderProtectedRoute><VetClients /></ProviderProtectedRoute>} />
             <Route path="/provider/vet/services" element={<ProviderProtectedRoute><VetServices /></ProviderProtectedRoute>} />
@@ -334,10 +266,6 @@ function App() {
             <Route path="/provider/vet/prescriptions" element={<ProviderProtectedRoute><VetPrescriptions /></ProviderProtectedRoute>} />
             <Route path="/provider/vet/labs" element={<ProviderProtectedRoute><VetLabReports /></ProviderProtectedRoute>} />
             <Route path="/provider/vet/analytics" element={<ProviderProtectedRoute><VetAnalytics /></ProviderProtectedRoute>} />
-            <Route path="/provider/vet/reviews" element={<ProviderProtectedRoute><VetReviews /></ProviderProtectedRoute>} />
-            <Route path="/provider/:serviceType/reviews" element={<ProviderProtectedRoute><VetReviews /></ProviderProtectedRoute>} />
-            <Route path="/provider/vet/profile" element={<ProviderProtectedRoute><VetProfile /></ProviderProtectedRoute>} />
-            <Route path="/provider/vet/portfolio" element={<ProviderProtectedRoute><VetPortfolio /></ProviderProtectedRoute>} />
             <Route path="/provider/vet/notifications" element={<ProviderProtectedRoute><VetNotifications /></ProviderProtectedRoute>} />
             <Route path="/provider/vet/settings" element={<ProviderProtectedRoute><VetSettings /></ProviderProtectedRoute>} />
 
