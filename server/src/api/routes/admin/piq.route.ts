@@ -30,11 +30,14 @@ router.get('/piq/providers', auth('admin'), adminPIQ.getProviders);
 // Appointments
 router.get('/appointments', auth('admin'), adminPIQ.getAppointments);
 
-// Provider management
-router.get('/providers', auth('admin'), providerController.getAllProviders);
-router.get('/providers/stats', auth('admin'), providerController.getProviderStats);
-router.get('/providers/:id', auth('admin'), providerController.getProviderById);
-router.patch('/providers/:id/status', auth('admin'), providerController.updateProviderStatus);
+// Provider management (nested under /piq)
+const providerRouter = Router();
+providerRouter.get('/', providerController.getAllProviders);
+providerRouter.get('/stats', providerController.getProviderStats);
+providerRouter.get('/:id', providerController.getProviderById);
+providerRouter.patch('/:id/status', providerController.updateProviderStatus);
+
+router.use('/piq/providers', auth('admin'), providerRouter);
 
 // Provider documents
 router.post('/providers/documents/upload-url', auth('admin'), providerDocumentsController.generateUploadUrl);

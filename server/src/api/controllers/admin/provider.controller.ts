@@ -32,11 +32,11 @@ const getProviderById = catchAsync(async (req: Request, res: Response) => {
 const updateProviderStatus = catchAsync(async (req: Request, res: Response) => {
   const providerId = parseInt(req.params.id);
   const { status, notes } = req.body;
-  
+
   if (!status) {
     return res.status(httpStatus.BAD_REQUEST).json({ message: 'Status is required' });
   }
-  
+
   const provider = await providerService.updateProviderStatus(providerId, status, notes);
   res.status(httpStatus.OK).json(provider);
 });
