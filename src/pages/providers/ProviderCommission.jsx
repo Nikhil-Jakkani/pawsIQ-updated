@@ -98,7 +98,7 @@ const ProviderCommission = () => {
 
         if (!isMounted) return;
 
-        const commissionItems = commissionResponse?.data?.commissions ?? [];
+        const commissionItems = commissionResponse?.data?.data?.commissions ?? commissionResponse?.data?.commissions ?? [];
         const normalized = commissionItems.map((item) => {
           const provider = item.provider || {};
           const booking = item.booking || {};
@@ -134,7 +134,7 @@ const ProviderCommission = () => {
         setCommissions(normalized);
 
         if (currentUser?.role === 'admin') {
-          setStats(statsResponse?.data ?? null);
+          setStats(statsResponse?.data?.data ?? statsResponse?.data ?? null);
         } else {
           const providerStats = {
             total_commissions: commissionItems.length,
@@ -310,6 +310,61 @@ const ProviderCommission = () => {
             </select>
           </div>
         </div>
+
+        {/* Stats Cards */}
+        {stats && (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Total Commissions</p>
+                  <p className="text-xl font-bold text-gray-800">{stats.total_commissions || 0}</p>
+                </div>
+                <div className="bg-indigo-100 p-2 rounded-full">
+                  <FaInfoCircle className="text-indigo-600" />
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Calculated</p>
+                  <p className="text-xl font-bold text-amber-600">{stats.calculated_commissions || 0}</p>
+                </div>
+                <div className="bg-amber-100 p-2 rounded-full">
+                  <FaInfoCircle className="text-amber-600" />
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Settled</p>
+                  <p className="text-xl font-bold text-green-600">{stats.settled_commissions || 0}</p>
+                </div>
+                <div className="bg-green-100 p-2 rounded-full">
+                  <FaCheck className="text-green-600" />
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Total Revenue</p>
+                  <p className="text-xl font-bold text-indigo-600">
+                    ₹{(stats.total_commission_revenue || 0).toFixed(2)}
+                  </p>
+                </div>
+                <div className="bg-indigo-100 p-2 rounded-full">
+                  <FaInfoCircle className="text-indigo-600" />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Commission Rates Table */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">

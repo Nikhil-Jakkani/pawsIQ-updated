@@ -116,8 +116,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       path: '/pets',
       items: [
         { path: '/pets/profiles', icon: <FaIdCard />, label: 'View Profiles' },
-        { path: '/pets/moderation', icon: <FaEdit />, label: 'Content Moderation' },
-        { path: '/pets/lost', icon: <FaExclamationTriangle />, label: 'Lost Pet Reports' }
+        { path: '/pets/moderation', icon: <FaEdit />, label: 'Content Moderation' }
       ]
     },
     {
