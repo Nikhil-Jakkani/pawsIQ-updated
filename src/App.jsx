@@ -43,16 +43,13 @@ import ProviderOnboardingBoarder from './pages/providers/ProviderOnboardingBoard
 import ProviderOnboardingDiagnostic from './pages/providers/ProviderOnboardingDiagnostic.jsx';
 import ProviderOnboardingPhysicalActivity from './pages/providers/ProviderOnboardingPhysicalActivity.jsx';
 import ProviderVerification from './pages/providers/ProviderVerification.jsx';
-import ProviderCommission from './pages/providers/ProviderCommission.jsx';
-import ProviderPerformance from './pages/providers/ProviderPerformance.jsx';
-import ProviderFlags from './pages/providers/ProviderFlags.jsx';
+
 
 // Auth pages
 import Login from './pages/auth/Login.jsx';
 import Appointments from './pages/Appointments.jsx';
 import Marketplace from './pages/Marketplace.jsx';
 import Transactions from './pages/Transactions.jsx';
-import ContentModeration from './pages/ContentModeration.jsx';
 import Analytics from './pages/Analytics.jsx';
 import UserMetrics from './pages/analytics/UserMetrics.jsx';
 import ServiceMetrics from './pages/analytics/ServiceMetrics.jsx';
@@ -64,7 +61,7 @@ import Security from './pages/Security.jsx';
 import Support from './pages/Support.jsx';
 import PetProfiles from './pages/pets/PetProfiles.jsx';
 import PetModeration from './pages/pets/PetModeration.jsx';
-import PetLostReports from './pages/pets/PetLostReports.jsx';
+
 import BookingOverview from './pages/appointments/BookingOverview.jsx';
 import AppointmentScheduler from './pages/appointments/AppointmentScheduler.jsx';
 import DisputeResolution from './pages/appointments/DisputeResolution.jsx';
@@ -172,13 +169,9 @@ function App() {
             <Route path="/providers/onboarding/diagnostic" element={<AdminProtectedRoute><ProviderOnboardingDiagnostic /></AdminProtectedRoute>} />
             <Route path="/providers/onboarding/physical-activity" element={<AdminProtectedRoute><ProviderOnboardingPhysicalActivity /></AdminProtectedRoute>} />
             <Route path="/providers/verification" element={<AdminProtectedRoute><ProviderVerification /></AdminProtectedRoute>} />
-            <Route path="/providers/commission" element={<AdminProtectedRoute><ProviderCommission /></AdminProtectedRoute>} />
-            <Route path="/providers/performance" element={<AdminProtectedRoute><ProviderPerformance /></AdminProtectedRoute>} />
-            <Route path="/providers/flags" element={<AdminProtectedRoute><ProviderFlags /></AdminProtectedRoute>} />
             <Route path="/pets" element={<AdminProtectedRoute><Dashboard /></AdminProtectedRoute>} />
             <Route path="/pets/profiles" element={<AdminProtectedRoute><PetProfiles /></AdminProtectedRoute>} />
             <Route path="/pets/moderation" element={<AdminProtectedRoute><PetModeration /></AdminProtectedRoute>} />
-            <Route path="/pets/lost" element={<AdminProtectedRoute><PetLostReports /></AdminProtectedRoute>} />
             <Route path="/appointments" element={<AdminProtectedRoute><Appointments /></AdminProtectedRoute>} />
             <Route path="/appointments/overview" element={<AdminProtectedRoute><BookingOverview /></AdminProtectedRoute>} />
             <Route path="/appointments/scheduler" element={<AdminProtectedRoute><AppointmentScheduler /></AdminProtectedRoute>} />
@@ -189,7 +182,6 @@ function App() {
             <Route path="/transactions" element={<AdminProtectedRoute><Transactions /></AdminProtectedRoute>} />
             <Route path="/transactions/payments" element={<AdminProtectedRoute><PaymentManagement /></AdminProtectedRoute>} />
             <Route path="/transactions/reports" element={<AdminProtectedRoute><FinancialReports /></AdminProtectedRoute>} />
-            <Route path="/content" element={<AdminProtectedRoute><ContentModeration /></AdminProtectedRoute>} />
             <Route path="/analytics" element={<AdminProtectedRoute><Analytics /></AdminProtectedRoute>} />
             <Route path="/analytics/users" element={<AdminProtectedRoute><UserMetrics /></AdminProtectedRoute>} />
             <Route path="/analytics/services" element={<AdminProtectedRoute><ServiceMetrics /></AdminProtectedRoute>} />

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaStethoscope, FaCut, FaGraduationCap, FaDog, FaShieldAlt, FaPercentage, FaStar, FaExclamationTriangle, FaMicroscope, FaRunning } from 'react-icons/fa';
+import { FaStethoscope, FaCut, FaGraduationCap, FaDog, FaShieldAlt, FaExclamationTriangle, FaMicroscope, FaRunning } from 'react-icons/fa';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   FaHome, 
@@ -104,9 +104,6 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         { path: '/providers/onboarding/trainer', icon: <FaGraduationCap />, label: 'Trainer Onboarding' },
         { path: '/providers/onboarding/physical-activity', icon: <FaRunning />, label: 'Physical Activity Onboarding' },
         { path: '/providers/verification', icon: <FaShieldAlt />, label: 'Verification' },
-        { path: '/providers/commission', icon: <FaPercentage />, label: 'Commission' },
-        { path: '/providers/performance', icon: <FaStar />, label: 'Performance' },
-        { path: '/providers/flags', icon: <FaExclamationTriangle />, label: 'Flags' },
       ]
     },
     {
@@ -116,8 +113,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       path: '/pets',
       items: [
         { path: '/pets/profiles', icon: <FaIdCard />, label: 'View Profiles' },
-        { path: '/pets/moderation', icon: <FaEdit />, label: 'Content Moderation' },
-        { path: '/pets/lost', icon: <FaExclamationTriangle />, label: 'Lost Pet Reports' }
+        { path: '/pets/moderation', icon: <FaEdit />, label: 'Content Moderation' }
       ]
     },
     {
