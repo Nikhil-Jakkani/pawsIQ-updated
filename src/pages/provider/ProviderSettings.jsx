@@ -1,0 +1,252 @@
+import React, { useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
+import ProviderDashboardLayout from './ProviderDashboardLayout';
+import { FaCog, FaSave, FaKey, FaBell, FaLock } from 'react-icons/fa';
+
+const SettingSection = ({ title, icon: Icon, children }) => (
+  <div className="bg-white rounded-lg shadow p-6 mb-6">
+    <h2 className="text-xl font-semibold text-gray-900 flex items-center mb-6">
+      <Icon className="mr-3 text-blue-600" />
+      {title}
+    </h2>
+    {children}
+  </div>
+);
+
+const ProviderSettings = () => {
+  const { currentUser } = useAuth();
+  const [settings, setSettings] = useState({
+    email: currentUser?.email || '',
+    phone: currentUser?.phone || '',
+    businessName: currentUser?.businessName || '',
+    availabilityStatus: 'available',
+    enableNotifications: true,
+    enableEmailAlerts: true,
+    enableSMSAlerts: false,
+    autoAcceptAppointments: false,
+    cancellationPolicy: 'flexible',
+  });
+
+  const [passwords, setPasswords] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+
+  const [saved, setSaved] = useState(false);
+
+  const handleSettingChange = (key, value) => {
+    setSettings((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+    setSaved(false);
+  };
+
+  const handlePasswordChange = (key, value) => {
+    setPasswords((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  };
+
+  const handleSaveSettings = () => {
+    console.log('Saving settings:', settings);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
+  };
+
+  const handleChangePassword = () => {
+    if (passwords.newPassword !== passwords.confirmPassword) {
+      alert('Passwords do not match');
+      return;
+    }
+    console.log('Changing password');
+    setPasswords({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  };
+
+  return (
+    <ProviderDashboardLayout>
+      <div className="p-6">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
+          <p className="text-gray-600 mt-2">Manage your account settings and preferences.</p>
+        </div>
+
+        {/* Success Message */}
+        {saved && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+            <p className="text-green-800">Settings saved successfully!</p>
+          </div>
+        )}
+
+        {/* Profile Settings */}
+        <SettingSection title="Profile Information" icon={FaCog}>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input
+                type="email"
+                value={settings.email}
+                onChange={(e) => handleSettingChange('email', e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+              <input
+                type="tel"
+                value={settings.phone}
+                onChange={(e) => handleSettingChange('phone', e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Business Name</label>
+              <input
+                type="text"
+                value={settings.businessName}
+                onChange={(e) => handleSettingChange('businessName', e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Availability Status</label>
+              <select
+                value={settings.availabilityStatus}
+                onChange={(e) => handleSettingChange('availabilityStatus', e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+              >
+                <option value="available">Available</option>
+                <option value="busy">Busy</option>
+                <option value="offline">Offline</option>
+              </select>
+            </div>
+          </div>
+        </SettingSection>
+
+        {/* Notification Settings */}
+        <SettingSection title="Notifications" icon={FaBell}>
+          <div className="space-y-4">
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={settings.enableNotifications}
+                onChange={(e) => handleSettingChange('enableNotifications', e.target.checked)}
+                className="rounded"
+              />
+              <span className="ml-3 text-gray-700">Enable all notifications</span>
+            </label>
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={settings.enableEmailAlerts}
+                onChange={(e) => handleSettingChange('enableEmailAlerts', e.target.checked)}
+                className="rounded"
+              />
+              <span className="ml-3 text-gray-700">Email alerts</span>
+            </label>
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={settings.enableSMSAlerts}
+                onChange={(e) => handleSettingChange('enableSMSAlerts', e.target.checked)}
+                className="rounded"
+              />
+              <span className="ml-3 text-gray-700">SMS alerts</span>
+            </label>
+          </div>
+        </SettingSection>
+
+        {/* Business Settings */}
+        <SettingSection title="Business Settings" icon={FaCog}>
+          <div className="space-y-4">
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={settings.autoAcceptAppointments}
+                onChange={(e) => handleSettingChange('autoAcceptAppointments', e.target.checked)}
+                className="rounded"
+              />
+              <span className="ml-3 text-gray-700">Auto-accept appointments</span>
+            </label>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Cancellation Policy
+              </label>
+              <select
+                value={settings.cancellationPolicy}
+                onChange={(e) => handleSettingChange('cancellationPolicy', e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+              >
+                <option value="flexible">Flexible</option>
+                <option value="moderate">Moderate</option>
+                <option value="strict">Strict</option>
+              </select>
+            </div>
+          </div>
+        </SettingSection>
+
+        {/* Save Button */}
+        <div className="mb-8">
+          <button
+            onClick={handleSaveSettings}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors flex items-center"
+          >
+            <FaSave className="mr-2" />
+            Save Settings
+          </button>
+        </div>
+
+        {/* Security Settings */}
+        <SettingSection title="Change Password" icon={FaLock}>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Current Password
+              </label>
+              <input
+                type="password"
+                value={passwords.currentPassword}
+                onChange={(e) => handlePasswordChange('currentPassword', e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                New Password
+              </label>
+              <input
+                type="password"
+                value={passwords.newPassword}
+                onChange={(e) => handlePasswordChange('newPassword', e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Confirm Password
+              </label>
+              <input
+                type="password"
+                value={passwords.confirmPassword}
+                onChange={(e) => handlePasswordChange('confirmPassword', e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+              />
+            </div>
+            <button
+              onClick={handleChangePassword}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors flex items-center"
+            >
+              <FaKey className="mr-2" />
+              Change Password
+            </button>
+          </div>
+        </SettingSection>
+      </div>
+    </ProviderDashboardLayout>
+  );
+};
+
+export default ProviderSettings;

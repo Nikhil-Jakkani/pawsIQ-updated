@@ -24,15 +24,40 @@ const ProviderOTPVerification = () => {
     if (!phoneNumber) return;
     setStatus({ loading: true, message: '', error: '' });
     try {
-      // Resend via Firebase
+      // Validate phone number
+      const cleanPhone = String(phoneNumber).replace(/\D/g, '');
+      if (cleanPhone.length !== 10) {
+        throw new Error('Invalid phone number format. Must be 10 digits.');
+      }
+
+      // Reset recaptcha for resend
+      if (window.recaptchaVerifier) {
+        try {
+          window.recaptchaVerifier.clear();
+        } catch (e) {
+          console.warn('Could not clear recaptcha:', e);
+        }
+        window.recaptchaVerifier = undefined;
+      }
+
+      const recaptchaContainer = document.getElementById('recaptcha-container');
+      if (!recaptchaContainer) {
+        throw new Error('reCAPTCHA container not found');
+      }
+
       setupRecaptcha('recaptcha-container');
       const verifier = window.recaptchaVerifier;
-      const e164 = `+91${String(phoneNumber).replace(/\D/g, '')}`;
+      if (!verifier) {
+        throw new Error('RecaptchaVerifier failed to initialize');
+      }
+
+      const e164 = `+91${cleanPhone}`;
       const confirmation = await signInWithPhoneNumber(auth, e164, verifier);
       window.confirmationResult = confirmation;
       setStatus({ loading: false, message: 'OTP sent successfully.', error: '' });
     } catch (e) {
-      setStatus({ loading: false, message: '', error: 'Failed to resend OTP. Try again.' });
+      console.error('Resend OTP error:', e);
+      setStatus({ loading: false, message: '', error: e.message || 'Failed to resend OTP. Try again.' });
     }
   };
 
@@ -51,14 +76,30 @@ const ProviderOTPVerification = () => {
 
       // If registration data is present, create the provider account now
       if (registrationData) {
+        // Clean and validate registration data
+        const cleanedPhone = String(registrationData.provider_contact_number).replace(/\s+/g, '');
+        const cleanedData = {
+          ...registrationData,
+          provider_contact_number: cleanedPhone,
+          provider_email: (registrationData.provider_email || '').toLowerCase().trim(),
+        };
+
+        console.log('[OTPVerification] Sending registration data:', {
+          ...cleanedData,
+          provider_password: '***' // Don't log password
+        });
+
         const regResp = await fetch(`${API_URL}/provider/auth/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(registrationData)
+          body: JSON.stringify(cleanedData)
         });
         const regData = await regResp.json().catch(() => ({}));
+        
         if (!regResp.ok) {
-          throw new Error(regData?.message || 'Account creation failed after OTP verification');
+          console.error('[OTPVerification] Registration failed:', regData);
+          const errorMessage = regData?.message || regData?.error || 'Account creation failed after OTP verification';
+          throw new Error(errorMessage);
         }
 
         // Store provider ID if returned

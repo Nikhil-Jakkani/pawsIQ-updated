@@ -273,9 +273,13 @@ const UserPetProfile = () => {
           if (vRes && vRes.ok) {
             const list = await vRes.json().catch(() => []);
             const vacList = Array.isArray(list) ? list : [];
+            console.log('🔍 Loading vaccination data from backend:', list);
+            console.log('✅ Found vaccination records:', vacList.length);
+            console.log('📋 Vaccination details:', vacList);
             setVaccinations(vacList);
             // Also update formData with vaccinations
             setFormData(prev => ({ ...prev, vaccinations: vacList }));
+            console.log('💾 Set vaccinations state with', vacList.length, 'records');
           }
           if (aRes && aRes.ok) {
             const payload = await aRes.json().catch(() => ({}));
@@ -858,80 +862,7 @@ const UserPetProfile = () => {
                       </section>
 
                       {/* Vaccinations Section */}
-                      <section>
-                        <header className="mb-4 flex items-center justify-between">
-                          <div>
-                            <h3 className={sectionTitleCls}>Vaccination History</h3>
-                            <p className={sectionDescCls}>Update your pet's vaccination records</p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={addVaccinationRow}
-                            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition"
-                          >
-                            <FaPlus /> Add Vaccination
-                          </button>
-                        </header>
-                        <div className="space-y-4">
-                          {(formData.vaccinations || []).map((v, idx) => (
-                            <div key={idx} className="grid grid-cols-1 md:grid-cols-5 gap-4 rounded-lg border border-gray-200 p-4 bg-white">
-                              <div>
-                                <label className={labelCls}>Vaccine Name</label>
-                                <input
-                                  type="text"
-                                  value={v.vaccination_name || ''}
-                                  onChange={(e) => handleVaccinationChange(idx, 'vaccination_name', e.target.value)}
-                                  className={inputCls}
-                                  placeholder="e.g., Rabies"
-                                />
-                              </div>
-                              <div>
-                                <label className={labelCls}>Given Date</label>
-                                <input
-                                  type="date"
-                                  value={v.vaccine_given_date ? String(v.vaccine_given_date).slice(0, 10) : ''}
-                                  onChange={(e) => handleVaccinationChange(idx, 'vaccine_given_date', e.target.value)}
-                                  className={inputCls}
-                                />
-                              </div>
-                              <div>
-                                <label className={labelCls}>Next Due</label>
-                                <input
-                                  type="date"
-                                  value={v.vaccine_due_date ? String(v.vaccine_due_date).slice(0, 10) : ''}
-                                  onChange={(e) => handleVaccinationChange(idx, 'vaccine_due_date', e.target.value)}
-                                  className={inputCls}
-                                />
-                              </div>
-                              <div>
-                                <label className={labelCls}>Status</label>
-                                <select
-                                  value={v.vaccine_status || ''}
-                                  onChange={(e) => handleVaccinationChange(idx, 'vaccine_status', e.target.value)}
-                                  className={inputCls}
-                                >
-                                  <option value="">Select</option>
-                                  <option value="completed">Completed</option>
-                                  <option value="pending">Pending</option>
-                                  <option value="overdue">Overdue</option>
-                                </select>
-                              </div>
-                              <div className="flex items-end">
-                                <button
-                                  type="button"
-                                  onClick={() => removeVaccinationRow(idx)}
-                                  className="w-full rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-red-700 transition"
-                                >
-                                  <FaTimes className="inline mr-1" /> Remove
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-                          {(!formData.vaccinations || formData.vaccinations.length === 0) && (
-                            <p className="text-sm text-gray-500 text-center py-4">No vaccinations added yet. Click "Add Vaccination" to add one.</p>
-                          )}
-                        </div>
-                      </section>
+                      
                       {/* Form actions at the end of the page (no sticky overlay) */}
                       <div className="pt-4 border-t border-gray-100 flex items-center justify-end gap-3">
                         <button
@@ -964,28 +895,60 @@ const UserPetProfile = () => {
                   {vaccinations.length === 0 ? (
                     <p className="text-sm text-gray-500">No vaccinations recorded.</p>
                   ) : (
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full w-full divide-y divide-gray-200">
-                        <thead>
-                          <tr className="bg-gray-50">
-                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Vaccine</th>
-                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Given</th>
-                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Next Due</th>
-                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Status</th>
-                         </tr>
-                       </thead>
-                       <tbody className="divide-y divide-gray-100">
-                         {vaccinations.map((v, idx) => (
-                           <tr key={v.id || idx}>
-                             <td className="px-4 py-2 text-sm text-gray-800">{v.vaccination_name || v.name}</td>
-                             <td className="px-4 py-2 text-sm text-gray-500">{v.vaccine_given_date || v.date ? String(v.vaccine_given_date || v.date).slice(0, 10) : '-'}</td>
-                             <td className="px-4 py-2 text-sm text-gray-500">{v.vaccine_due_date || v.next_due_date ? String(v.vaccine_due_date || v.next_due_date).slice(0, 10) : '-'}</td>
-                             <td className="px-4 py-2 text-sm text-gray-500 capitalize">{v.vaccine_status || v.status || '-'}</td>
+                    <>
+                      {/* Visual Summary Section */}
+                      <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="flex items-start gap-2">
+                          <FaCheckCircle className="text-green-600 mt-0.5 flex-shrink-0" />
+                          <div className="flex-1">
+                            <h4 className="text-sm font-semibold text-green-900 mb-2">
+                              Vaccination Records from Database ({vaccinations.length} {vaccinations.length === 1 ? 'record' : 'records'})
+                            </h4>
+                            <div className="space-y-1.5">
+                              {vaccinations.map((v, idx) => (
+                                <div key={v.id || idx} className="text-sm text-green-800">
+                                  <span className="font-medium">{v.vaccination_name || v.name}</span>
+                                  {(v.vaccine_given_date || v.date) && (
+                                    <span className="text-green-700">
+                                      {' '}- Given: {String(v.vaccine_given_date || v.date).slice(0, 10)}
+                                    </span>
+                                  )}
+                                  {(v.vaccine_due_date || v.next_due_date) && (
+                                    <span className="text-green-700">
+                                      {' '}- Next Due: {String(v.vaccine_due_date || v.next_due_date).slice(0, 10)}
+                                    </span>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Detailed Table */}
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full w-full divide-y divide-gray-200">
+                          <thead>
+                            <tr className="bg-gray-50">
+                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Vaccine</th>
+                             <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Given</th>
+                             <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Next Due</th>
+                             <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Status</th>
                            </tr>
-                         ))}
-                       </tbody>
-                      </table>
-                    </div>
+                         </thead>
+                         <tbody className="divide-y divide-gray-100">
+                           {vaccinations.map((v, idx) => (
+                             <tr key={v.id || idx}>
+                               <td className="px-4 py-2 text-sm text-gray-800">{v.vaccination_name || v.name}</td>
+                               <td className="px-4 py-2 text-sm text-gray-500">{v.vaccine_given_date || v.date ? String(v.vaccine_given_date || v.date).slice(0, 10) : '-'}</td>
+                               <td className="px-4 py-2 text-sm text-gray-500">{v.vaccine_due_date || v.next_due_date ? String(v.vaccine_due_date || v.next_due_date).slice(0, 10) : '-'}</td>
+                               <td className="px-4 py-2 text-sm text-gray-500 capitalize">{v.vaccine_status || v.status || '-'}</td>
+                             </tr>
+                           ))}
+                         </tbody>
+                        </table>
+                      </div>
+                    </>
                   )}
                 </section>
 

@@ -108,15 +108,8 @@ const ApplicationStatus = () => {
 
   useEffect(() => {
     if (applicationStatus === 'approved') {
-      const serviceType = localStorage.getItem('selectedService');
-      if (serviceType) {
-        navigate(`/provider/${serviceType}/dashboard`);
-      } else {
-        // Handle case where serviceType is not found in local storage
-        console.error('Service type not found in local storage');
-        // Optionally redirect to a default dashboard or an error page
-        navigate('/provider/login');
-      }
+      // Redirect to unified provider dashboard
+      navigate('/provider/dashboard');
     }
   }, [applicationStatus, navigate]);
 

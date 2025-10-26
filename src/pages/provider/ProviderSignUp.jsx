@@ -15,8 +15,6 @@ import {
   FaPaw
 } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
-import { signInWithPhoneNumber } from 'firebase/auth';
-import { auth, setupRecaptcha } from '../../firebaseClient';
 import DocumentUpload from './DocumentUpload';
 import GroomerDetails from './GroomerDetails';
 import ReviewSubmission from './ReviewSubmission';
@@ -58,15 +56,8 @@ const ProviderSignUp = () => {
   // Redirect if already logged in
   useEffect(() => {
     if (currentUser) {
-      const serviceType = localStorage.getItem('selectedService');
-      if (serviceType) {
-        navigate(`/provider/${serviceType}/dashboard`);
-      } else {
-        // Handle case where serviceType is not found in local storage
-        console.error('Service type not found in local storage');
-        // Optionally redirect to a default dashboard or an error page
-        navigate('/provider/login');
-      }
+      // Redirect to unified provider dashboard
+      navigate('/provider/dashboard');
     }
   }, [currentUser, navigate]);
   
@@ -203,13 +194,22 @@ const ProviderSignUp = () => {
     
     try {
       const registrationData = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email.toLowerCase().trim(),
+        password: formData.password,
+        phoneNumber: formData.phoneNumber.replace(/\s+/g, ''),
+        providerType: formData.providerType,
+        referralSource: formData.referralSource,
+        marketingOptIn: formData.marketingOptIn,
+        // API fields
         provider_name: `${formData.firstName} ${formData.lastName}`.trim(),
-        provider_email: formData.email,
+        provider_email: formData.email.toLowerCase().trim(),
         provider_password: formData.password,
-        provider_contact_number: formData.phoneNumber,
+        provider_contact_number: formData.phoneNumber.replace(/\s+/g, ''),
         services_offered: formData.providerType,
         provider_type: formData.providerType,
-        provider_src: 'email',
+        provider_src: 'email-password',
         how_hear_about_us: formData.referralSource,
         // Optional fields (left blank unless you add inputs later)
         provider_desc: '',
@@ -219,39 +219,28 @@ const ProviderSignUp = () => {
         provider_fb: '',
       };
 
-      // Send OTP via Firebase before navigating
-      try {
-        setupRecaptcha('recaptcha-container');
-        const verifier = window.recaptchaVerifier;
-        const e164 = `+91${String(formData.phoneNumber).replace(/\D/g, '')}`; // assume Indian numbers as per validation
-        const confirmation = await signInWithPhoneNumber(auth, e164, verifier);
-        window.confirmationResult = confirmation;
-      } catch (e) {
-        // Show a soft warning but still navigate to allow user to retry
-        console.warn('Failed to send OTP via Firebase:', e);
+      // Store registration data in localStorage FIRST (before async operations)
+      localStorage.setItem('provider_registration', JSON.stringify(registrationData));
+      localStorage.setItem('selectedService', formData.providerType);
+      
+      // Register provider with email and password
+      const result = await providerRegister(registrationData);
+      
+      if (result) {
+        // Navigate to first onboarding step directly
+        navigate('/provider/onboarding/professional-info');
+      } else {
+        // Clear localStorage on registration failure
+        localStorage.removeItem('provider_registration');
+        localStorage.removeItem('selectedService');
+        throw new Error(result?.message || 'Registration failed. Please try again.');
       }
-
-      // Store registration data in localStorage for use after OTP verification
-      localStorage.setItem('provider_registration', JSON.stringify({
-        ...registrationData,
-        providerType: formData.providerType,
-        registrationStep: 1
-      }));
-
-      // Navigate to OTP verification for all provider types
-      navigate('/provider/otp-verification', {
-        state: {
-          phoneNumber: formData.phoneNumber,
-          registrationData,
-          message: 'OTP sent successfully. Please verify your phone number to continue.'
-        }
-      });
       
     } catch (error) {
       console.error('Registration error:', error);
       setErrors(prev => ({
         ...prev,
-        form: 'An error occurred during registration. Please try again.'
+        form: error.message || 'An error occurred during registration. Please try again.'
       }));
     } finally {
       setIsSubmitting(false);
@@ -260,8 +249,6 @@ const ProviderSignUp = () => {
   
   return (
     <div className="min-h-screen bg-white flex flex-col justify-start pt-8 pb-12 sm:px-6 lg:px-8">
-      {/* Recaptcha container for Firebase Phone Auth */}
-      <div id="recaptcha-container" />
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md mb-6">
         <div className="flex justify-center">

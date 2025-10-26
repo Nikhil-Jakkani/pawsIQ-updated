@@ -67,23 +67,8 @@ const ProviderLogin = () => {
       const result = await providerLogin(formData.email, formData.password);
 
       if (result.success) {
-        // Get provider type from the returned user data
-        const providerType = result.user?.providerType;
-        
-        // Map provider types to route-friendly names
-        const typeMap = {
-          'Veterinarian': 'vet',
-          'Trainer': 'trainer',
-          'Groomer': 'groomer',
-          'Pet Sitter': 'petsitter',
-          'vet': 'vet',
-          'trainer': 'trainer',
-          'groomer': 'groomer',
-          'petsitter': 'petsitter'
-        };
-        
-        const routeType = typeMap[providerType] || 'vet';
-        navigate(`/provider/${routeType}/dashboard`);
+        // Navigate to unified provider dashboard
+        navigate('/provider/dashboard');
       } else {
         const registrationData = localStorage.getItem('provider_registration');
 
@@ -165,22 +150,10 @@ const ProviderLogin = () => {
         setAuthTokens(data.tokens);
         localStorage.setItem('authTokens', JSON.stringify(data.tokens));
         
-        // Get provider type and redirect to appropriate dashboard
-        const providerType = data.user?.providerType;
-        const typeMap = {
-          'Veterinarian': 'vet',
-          'Trainer': 'trainer',
-          'Groomer': 'groomer',
-          'Pet Sitter': 'petsitter',
-          'vet': 'vet',
-          'trainer': 'trainer',
-          'groomer': 'groomer',
-          'petsitter': 'petsitter'
-        };
-        const routeType = typeMap[providerType] || 'vet';
-        navigate(`/provider/${routeType}/dashboard`);
+        // Redirect to unified provider dashboard
+        navigate('/provider/dashboard');
       } else {
-        navigate('/provider/vet/dashboard');
+        navigate('/provider/dashboard');
       }
     } catch (error) {
       console.error('Provider Google login error:', error);
@@ -219,22 +192,10 @@ const ProviderLogin = () => {
         setAuthTokens(data.tokens);
         localStorage.setItem('authTokens', JSON.stringify(data.tokens));
         
-        // Get provider type and redirect to appropriate dashboard
-        const providerType = data.user?.providerType;
-        const typeMap = {
-          'Veterinarian': 'vet',
-          'Trainer': 'trainer',
-          'Groomer': 'groomer',
-          'Pet Sitter': 'petsitter',
-          'vet': 'vet',
-          'trainer': 'trainer',
-          'groomer': 'groomer',
-          'petsitter': 'petsitter'
-        };
-        const routeType = typeMap[providerType] || 'vet';
-        navigate(`/provider/${routeType}/dashboard`);
+        // Redirect to unified provider dashboard
+        navigate('/provider/dashboard');
       } else {
-        navigate('/provider/vet/dashboard');
+        navigate('/provider/dashboard');
       }
     } catch (error) {
       console.error('Provider Facebook login error:', error);

@@ -146,11 +146,11 @@ const ReviewSubmission = () => {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Update registration step
+      // Update registration step - automatically approve
       localStorage.setItem('provider_registration', JSON.stringify({
         ...registrationData,
-        registrationStep: 7,
-        applicationStatus: 'pending',
+        registrationStep: 8,
+        applicationStatus: 'approved',
         submissionDate: new Date().toISOString()
       }));
       
@@ -160,19 +160,10 @@ const ReviewSubmission = () => {
       // Scroll to top
       window.scrollTo(0, 0);
       
-      // Redirect to appropriate dashboard after 3 seconds
+      // Redirect to provider dashboard after 2 seconds
       setTimeout(() => {
-        const typeMap = {
-          'Veterinarian': 'vet',
-          'Trainer': 'trainer',
-          'Groomer': 'groomer',
-          'Pet Sitter': 'petsitter'
-        };
-        
-        const providerType = registrationData?.providerType;
-        const routeType = typeMap[providerType] || 'vet';
-        navigate(`/provider/${routeType}/dashboard`);
-      }, 3000);
+        navigate('/provider/dashboard');
+      }, 2000);
     } catch (error) {
       console.error('Submission error:', error);
       alert('An error occurred during submission. Please try again.');
@@ -245,28 +236,28 @@ const ReviewSubmission = () => {
               <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
                 <FaCheckCircle className="h-6 w-6 text-green-600" />
               </div>
-              <h2 className="mt-4 text-xl font-medium text-gray-900">Application Submitted Successfully!</h2>
+              <h2 className="mt-4 text-xl font-medium text-gray-900">Welcome to PawsIQ!</h2>
               <p className="mt-2 text-sm text-gray-500">
-                Thank you for applying to be a provider on PawsIQ. Your application has been received and is now under review.
+                Your profile has been created successfully. You're now ready to start offering services on PawsIQ.
               </p>
               <p className="mt-2 text-sm text-indigo-600 font-medium">
                 Redirecting you to your dashboard in a few seconds...
               </p>
               
-              <div className="mt-6 bg-blue-50 border border-blue-200 rounded-md p-4">
+              <div className="mt-6 bg-green-50 border border-green-200 rounded-md p-4">
                 <div className="flex">
                   <div className="flex-shrink-0">
-                    <FaInfoCircle className="h-5 w-5 text-blue-400" />
+                    <FaCheckCircle className="h-5 w-5 text-green-600" />
                   </div>
                   <div className="ml-3 text-left">
-                    <h3 className="text-sm font-medium text-blue-800">What happens next?</h3>
-                    <div className="mt-2 text-sm text-blue-700">
-                      <ol className="list-decimal pl-5 space-y-1">
-                        <li>Our team will review your application within 3-5 business days</li>
-                        <li>You may be contacted for additional information or verification</li>
-                        <li>Once approved, you'll receive an email with instructions to set up your provider dashboard</li>
-                        <li>You can check your application status anytime by logging in to your account</li>
-                      </ol>
+                    <h3 className="text-sm font-medium text-green-800">You're all set!</h3>
+                    <div className="mt-2 text-sm text-green-700">
+                      <ul className="list-disc pl-5 space-y-1">
+                        <li>Complete your profile and add services in your dashboard</li>
+                        <li>Upload portfolio items to showcase your work</li>
+                        <li>Set your availability and pricing</li>
+                        <li>Start accepting bookings from pet owners</li>
+                      </ul>
                     </div>
                   </div>
                 </div>
@@ -274,10 +265,10 @@ const ReviewSubmission = () => {
               
               <div className="mt-6">
                 <Link
-                  to="/provider/application-status"
+                  to="/provider/dashboard"
                   className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 >
-                  View Application Status
+                  Go to Dashboard
                 </Link>
               </div>
             </div>

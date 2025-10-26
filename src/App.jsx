@@ -61,7 +61,16 @@ import ProviderLogin from './pages/provider/ProviderLogin.jsx';
 import ProviderForgotPassword from './pages/provider/ProviderForgotPassword.jsx';
 import ProviderOTPVerification from './pages/provider/ProviderOTPVerification.jsx';
 import ProviderOnboarding from './pages/provider/ProviderOnboarding.jsx';
-// import ProviderDashboard from './pages/provider/ProviderDashboard.jsx';
+import ProviderOnboardingFlow from './pages/provider/ProviderOnboardingFlow.jsx';
+import ProviderDashboard from './pages/provider/ProviderDashboard.jsx';
+import ProviderAppointments from './pages/provider/ProviderAppointments.jsx';
+import ProviderClients from './pages/provider/ProviderClients.jsx';
+import ProviderServices from './pages/provider/ProviderServices.jsx';
+import ProviderAnalytics from './pages/provider/ProviderAnalytics.jsx';
+import ProviderPrescriptions from './pages/provider/ProviderPrescriptions.jsx';
+import ProviderLabReports from './pages/provider/ProviderLabReports.jsx';
+import ProviderNotifications from './pages/provider/ProviderNotifications.jsx';
+import ProviderSettings from './pages/provider/ProviderSettings.jsx';
 import VetDashboard from './pages/provider/VetDashboard.jsx';
 import VetAppointments from './pages/provider/VetAppointments.jsx';
 import VetClients from './pages/provider/VetClients.jsx';
@@ -124,7 +133,7 @@ const AdminProtectedRoute = ({ children }) => {
     const fallback = currentUser.role === 'user'
       ? '/user/dashboard'
       : currentUser.role === 'provider'
-      ? '/provider/vet/dashboard'
+      ? '/provider/dashboard'
       : '/';
     return <Navigate to={fallback} replace />;
   }
@@ -150,7 +159,7 @@ const Landing = () => {
     const dest = currentUser.role === 'admin'
       ? '/dashboard'
       : currentUser.role === 'provider'
-      ? '/provider/vet/dashboard'
+      ? '/provider/dashboard'
       : '/user/dashboard';
     return <Navigate to={dest} replace />;
   }
@@ -256,10 +265,22 @@ function App() {
             <Route path="/provider/login" element={<ProviderLogin />} />
             <Route path="/provider/forgot-password" element={<ProviderForgotPassword />} />
             <Route path="/provider/otp-verification" element={<ProviderOTPVerification />} />
-            {/* Provider Routes */}
-            <Route path="/provider/:serviceType/dashboard" element={<ProviderProtectedRoute><VetDashboard /></ProviderProtectedRoute>} />
-            <Route path="/provider/:serviceType/appointments" element={<ProviderProtectedRoute><VetAppointments /></ProviderProtectedRoute>} />
-            <Route path="/provider/:serviceType/clients" element={<ProviderProtectedRoute><VetClients /></ProviderProtectedRoute>} />
+            
+            {/* Unified Provider Dashboard Routes - Role-based UI */}
+            <Route path="/provider/dashboard" element={<ProviderProtectedRoute><ProviderDashboard /></ProviderProtectedRoute>} />
+            <Route path="/provider/appointments" element={<ProviderProtectedRoute><ProviderAppointments /></ProviderProtectedRoute>} />
+            <Route path="/provider/clients" element={<ProviderProtectedRoute><ProviderClients /></ProviderProtectedRoute>} />
+            <Route path="/provider/services" element={<ProviderProtectedRoute><ProviderServices /></ProviderProtectedRoute>} />
+            <Route path="/provider/analytics" element={<ProviderProtectedRoute><ProviderAnalytics /></ProviderProtectedRoute>} />
+            <Route path="/provider/prescriptions" element={<ProviderProtectedRoute><ProviderPrescriptions /></ProviderProtectedRoute>} />
+            <Route path="/provider/lab-reports" element={<ProviderProtectedRoute><ProviderLabReports /></ProviderProtectedRoute>} />
+            <Route path="/provider/notifications" element={<ProviderProtectedRoute><ProviderNotifications /></ProviderProtectedRoute>} />
+            <Route path="/provider/settings" element={<ProviderProtectedRoute><ProviderSettings /></ProviderProtectedRoute>} />
+            
+            {/* Vet Dashboard Routes (Legacy - for backward compatibility) */}
+            <Route path="/provider/vet/dashboard" element={<ProviderProtectedRoute><VetDashboard /></ProviderProtectedRoute>} />
+            <Route path="/provider/vet/appointments" element={<ProviderProtectedRoute><VetAppointments /></ProviderProtectedRoute>} />
+            <Route path="/provider/vet/clients" element={<ProviderProtectedRoute><VetClients /></ProviderProtectedRoute>} />
             <Route path="/provider/vet/services" element={<ProviderProtectedRoute><VetServices /></ProviderProtectedRoute>} />
             <Route path="/provider/vet/services/new" element={<ProviderProtectedRoute><ServiceForm /></ProviderProtectedRoute>} />
             <Route path="/provider/vet/services/:id/edit" element={<ProviderProtectedRoute><ServiceForm /></ProviderProtectedRoute>} />
@@ -327,10 +348,9 @@ function App() {
             <Route path="/user/help/contact" element={<UserProtectedRoute><UserHelp /></UserProtectedRoute>} />
             <Route path="/user/help/support" element={<UserProtectedRoute><UserHelp /></UserProtectedRoute>} />
 
-            {/* Provider Routes */}
-            <Route path="/provider/login" element={<ProviderLogin />} />
-            {/* Provider Onboarding Flow */}
+            {/* Provider Signup & Onboarding Flow */}
             <Route path="/provider/signup" element={<ProviderSignUp />} />
+            <Route path="/provider/onboarding/flow" element={<ProviderOnboardingFlow />} />
             <Route path="/provider/onboarding/professional-info" element={<ProfessionalInfo />} />
             <Route path="/provider/onboarding/veterinarian-details" element={<VeterinarianDetails />} />
             <Route path="/provider/onboarding/trainer-details" element={<TrainerDetails />} />

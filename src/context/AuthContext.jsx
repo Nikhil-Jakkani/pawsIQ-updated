@@ -215,31 +215,7 @@ export const AuthProvider = ({ children }) => {
       : { phone: identifier, password };
 
     try {
-      // Try admin login first if identifier is email (admins only login with email)
-      if (isEmail) {
-        try {
-          const adminResp = await fetch(`${API_URL}/admin/auth/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: identifier, password }),
-          });
-          
-          if (adminResp.ok) {
-            const adminData = await adminResp.json();
-            const { user, tokens } = adminData;
-            setCurrentUser({ ...user, role: 'admin' });
-            setTokens(tokens);
-            localStorage.setItem('user', JSON.stringify({ ...user, role: 'admin' }));
-            localStorage.setItem('authTokens', JSON.stringify(tokens));
-            clearLogoutFlag();
-            return { success: true, userType: 'admin' };
-          }
-        } catch (adminError) {
-          // Continue to user/provider login attempts
-          console.log('[Auth] Admin login attempt failed, trying user/provider...');
-        }
-      }
-
+      // Try unified login first (which now handles admin, provider, and user)
       let response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: {
@@ -251,7 +227,8 @@ export const AuthProvider = ({ children }) => {
 
       let data = await response.json().catch(() => ({}));
 
-      if (!response.ok) {
+      // Fallback to user-specific endpoint if unified login fails
+      if (!response.ok && isEmail) {
         const uResp = await fetch(`${API_URL}/user/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -261,6 +238,20 @@ export const AuthProvider = ({ children }) => {
         if (uResp.ok) {
           data = uData;
           response = uResp;
+        }
+      }
+
+      // If still failing and is email, try provider-specific endpoint
+      if (!response.ok && isEmail) {
+        const pResp = await fetch(`${API_URL}/provider/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ provider_email: identifier, provider_password: password }),
+        });
+        const pData = await pResp.json().catch(() => ({}));
+        if (pResp.ok) {
+          data = pData;
+          response = pResp;
         }
       }
 
@@ -390,18 +381,57 @@ export const AuthProvider = ({ children }) => {
   const providerRegister = async (registrationData) => {
     setError('');
     try {
+      // Validate required fields before sending
+      const requiredFields = ['provider_name', 'provider_email', 'provider_password', 'provider_contact_number', 'services_offered'];
+      const missingFields = requiredFields.filter(field => !registrationData[field]);
+      
+      if (missingFields.length > 0) {
+        const errorMsg = `Missing required fields: ${missingFields.join(', ')}`;
+        throw new Error(errorMsg);
+      }
+
+      // Clean and validate phone number format
+      const cleanPhone = String(registrationData.provider_contact_number).replace(/\s+/g, '');
+      if (!/^\d{10}$/.test(cleanPhone)) {
+        throw new Error('Phone number must be exactly 10 digits');
+      }
+
+      const cleanedData = {
+        provider_name: registrationData.provider_name,
+        provider_email: (registrationData.provider_email || '').toLowerCase().trim(),
+        provider_password: registrationData.provider_password,
+        provider_contact_number: cleanPhone,
+        services_offered: registrationData.services_offered,
+        provider_type: registrationData.provider_type,
+        provider_src: registrationData.provider_src,
+        provider_desc: registrationData.provider_desc || '',
+        provider_experience_years: registrationData.provider_experience_years || '',
+        provider_certificates: registrationData.provider_certificates || '',
+        provider_insta: registrationData.provider_insta || '',
+        provider_fb: registrationData.provider_fb || '',
+        how_hear_about_us: registrationData.how_hear_about_us || '',
+        is_provider_bgchecked: registrationData.is_provider_bgchecked || false,
+      };
+
       const response = await fetch(`${API_URL}/provider/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(registrationData),
+        body: JSON.stringify(cleanedData),
       });
+      
       const data = await response.json().catch(() => ({}));
+      
       if (!response.ok) {
-        throw new Error(data?.message || 'Provider registration failed');
+        console.error('Provider registration error:', data);
+        const errorMessage = data?.message || data?.error || 'Provider registration failed';
+        throw new Error(errorMessage);
       }
+      
       return data?.provider?.provider_id ? data.provider : true;
     } catch (err) {
-      setError(err.message || 'Provider registration failed');
+      const errorMessage = err.message || 'Provider registration failed';
+      console.error('[Auth] Provider registration failed:', errorMessage);
+      setError(errorMessage);
       throw err;
     }
   };

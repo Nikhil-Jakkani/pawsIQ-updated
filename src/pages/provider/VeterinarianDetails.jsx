@@ -28,30 +28,7 @@ const logoImage = "/1.svg";
 const VeterinarianDetails = () => {
   const navigate = useNavigate();
   
-  // Check if registration data exists
-  useEffect(() => {
-    const registrationData = localStorage.getItem('provider_registration');
-    if (!registrationData) {
-      // Redirect to sign up if no registration data
-      navigate('/provider/signup');
-      return;
-    }
-    
-    const parsedData = JSON.parse(registrationData);
-    if (parsedData.providerType !== 'Veterinarian') {
-      // Redirect to appropriate page if not a veterinarian
-      navigate('/provider/onboarding/professional-info');
-      return;
-    }
-    
-    // Load existing data if available
-    const vetData = localStorage.getItem('provider_veterinarian_details');
-    if (vetData) {
-      setFormData(JSON.parse(vetData));
-    }
-  }, [navigate]);
-  
-  // Form state
+  // Form state - MUST BE DECLARED FIRST
   const [formData, setFormData] = useState({
     // Veterinary Qualifications
     vciRegistrationNumber: '',
@@ -119,6 +96,34 @@ const VeterinarianDetails = () => {
   // Loading state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  
+  // Check if registration data exists and load data
+  useEffect(() => {
+    const registrationData = localStorage.getItem('provider_registration');
+    if (!registrationData) {
+      // Redirect to sign up if no registration data
+      navigate('/provider/signup');
+      return;
+    }
+    
+    try {
+      const parsedData = JSON.parse(registrationData);
+      if (parsedData.providerType !== 'Veterinarian') {
+        // Redirect to appropriate page if not a veterinarian
+        navigate('/provider/onboarding/professional-info');
+        return;
+      }
+      
+      // Load existing data if available
+      const vetData = localStorage.getItem('provider_veterinarian_details');
+      if (vetData) {
+        setFormData(JSON.parse(vetData));
+      }
+    } catch (error) {
+      console.error('Error loading registration data:', error);
+      navigate('/provider/signup');
+    }
+  }, [navigate]);
   
   // Handle input changes
   const handleChange = (e) => {

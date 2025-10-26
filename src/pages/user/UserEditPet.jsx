@@ -1176,7 +1176,7 @@ const UserEditPet = () => {
                                         }
                                         handleVaccineDetailChange(vaccineId, 'date', e.target.value);
                                       }}
-                                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                      className={`w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${!isSelected ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                                       disabled={!isSelected}
                                     />
                                   </td>
@@ -1190,7 +1190,7 @@ const UserEditPet = () => {
                                         }
                                         handleVaccineDetailChange(vaccineId, 'nextDue', e.target.value);
                                       }}
-                                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                      className={`w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${!isSelected ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                                       disabled={!isSelected}
                                     />
                                   </td>
