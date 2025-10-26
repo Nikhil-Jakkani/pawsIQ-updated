@@ -1,7 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
-import { FaArrowLeft, FaArrowRight, FaCheckCircle } from 'react-icons/fa';
+import {
+  FaArrowLeft,
+  FaArrowRight,
+  FaCheckCircle,
+  FaExclamationCircle,
+  FaSpinner,
+} from 'react-icons/fa';
+
+// Redux actions
+import {
+  setCurrentStep,
+  setProviderType,
+  updateFormData,
+  updateProviderInfo,
+  markStepComplete,
+  goToNextStep,
+  goToPreviousStep,
+  goToStep,
+  resetOnboarding,
+  PROVIDER_TYPES,
+} from '../../store/slices/providerOnboardingSlice';
 
 // Import all onboarding step components
 import ProfessionalInfo from './ProfessionalInfo';
@@ -14,75 +35,42 @@ import TermsAgreement from './TermsAgreement';
 import PaymentInfo from './PaymentInfo';
 import ReviewSubmission from './ReviewSubmission';
 
-// Define the onboarding steps
-const ONBOARDING_STEPS = {
-  professional_info: {
-    id: 'professional_info',
-    label: 'Professional Info',
-    component: ProfessionalInfo,
-    order: 1
-  },
-  service_details: {
-    id: 'service_details',
-    label: 'Service Details',
-    component: null, // Determined by provider type
-    order: 2
-  },
-  document_upload: {
-    id: 'document_upload',
-    label: 'Documents',
-    component: DocumentUpload,
-    order: 3
-  },
-  terms_agreement: {
-    id: 'terms_agreement',
-    label: 'Terms & Conditions',
-    component: TermsAgreement,
-    order: 4
-  },
-  payment_info: {
-    id: 'payment_info',
-    label: 'Payment Details',
-    component: PaymentInfo,
-    order: 5
-  },
-  review_submission: {
-    id: 'review_submission',
-    label: 'Review & Submit',
-    component: ReviewSubmission,
-    order: 6
-  }
+// Service details component mapping
+const SERVICE_DETAILS_COMPONENTS = {
+  [PROVIDER_TYPES.VETERINARIAN]: VeterinarianDetails,
+  [PROVIDER_TYPES.TRAINER]: TrainerDetails,
+  [PROVIDER_TYPES.GROOMER]: GroomerDetails,
+  [PROVIDER_TYPES.PET_SITTER]: PetSitterDetails,
 };
 
-// Get service-specific component based on provider type
-const getServiceDetailsComponent = (providerType) => {
-  switch (providerType) {
-    case 'Veterinarian':
-      return VeterinarianDetails;
-    case 'Trainer':
-      return TrainerDetails;
-    case 'Groomer':
-      return GroomerDetails;
-    case 'Pet Sitter':
-      return PetSitterDetails;
-    default:
-      return null;
-  }
-};
-
+/**
+ * Provider Onboarding Flow Component
+ * Multi-step onboarding with Redux state management and provider-specific steps
+ */
 const ProviderOnboardingFlow = () => {
   const navigate = useNavigate();
-  const [currentStep, setCurrentStep] = useState(1);
-  const [providerType, setProviderType] = useState(null);
-  const [steps, setSteps] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const dispatch = useDispatch();
+  const {
+    currentStep,
+    totalSteps,
+    steps,
+    completedSteps,
+    formData,
+    providerType,
+    loading,
+    error,
+    isCompleted,
+    validationErrors,
+  } = useSelector((state) => state.providerOnboarding);
 
-  // Initialize steps based on provider type
+  const [isLocalLoading, setIsLocalLoading] = useState(true);
+  const [showConfirmExit, setShowConfirmExit] = useState(false);
+
+  // Initialize onboarding
   useEffect(() => {
     const registrationData = localStorage.getItem('provider_registration');
-    
+
     if (!registrationData) {
-      // Redirect to sign up if no registration data
       navigate('/provider/signup');
       return;
     }
@@ -90,55 +78,145 @@ const ProviderOnboardingFlow = () => {
     try {
       const parsedData = JSON.parse(registrationData);
       const type = parsedData.providerType;
-      setProviderType(type);
+      
+      // Validate provider type
+      if (!Object.values(PROVIDER_TYPES).includes(type)) {
+        console.error('Invalid provider type:', type);
+        navigate('/provider/signup');
+        return;
+      }
 
-      // Create steps array with all required steps
-      const flowSteps = [
-        { ...ONBOARDING_STEPS.professional_info },
-        { 
-          ...ONBOARDING_STEPS.service_details, 
-          label: `${type} Details`,
-          component: getServiceDetailsComponent(type)
-        },
-        { ...ONBOARDING_STEPS.document_upload },
-        { ...ONBOARDING_STEPS.terms_agreement },
-        { ...ONBOARDING_STEPS.payment_info },
-        { ...ONBOARDING_STEPS.review_submission }
-      ];
-
-      setSteps(flowSteps);
-      setIsLoading(false);
+      dispatch(setProviderType(type));
+      dispatch(updateProviderInfo({
+        name: parsedData.name,
+        email: parsedData.email,
+        phone: parsedData.phone,
+      }));
+      setIsLocalLoading(false);
     } catch (error) {
       console.error('Error initializing onboarding:', error);
       navigate('/provider/signup');
     }
-  }, [navigate]);
+  }, [dispatch, navigate]);
 
-  if (isLoading || steps.length === 0) {
+  // Handle completion
+  useEffect(() => {
+    if (isCompleted) {
+      setTimeout(() => {
+        navigate('/provider/dashboard');
+      }, 1500);
+    }
+  }, [isCompleted, navigate]);
+
+  const handleNext = () => {
+    // Validate current step before proceeding
+    if (Object.keys(validationErrors).length === 0) {
+      dispatch(markStepComplete(steps[currentStep - 1]?.id));
+      dispatch(goToNextStep());
+      window.scrollTo(0, 0);
+    }
+  };
+
+  const handlePrevious = () => {
+    dispatch(goToPreviousStep());
+    window.scrollTo(0, 0);
+  };
+
+  const handleStepSubmit = (stepData) => {
+    // Save step data to Redux
+    dispatch(updateFormData({ [steps[currentStep - 1]?.id]: stepData }));
+    
+    if (currentStep === totalSteps) {
+      // Complete onboarding on final step
+      handleComplete();
+    } else {
+      handleNext();
+    }
+  };
+
+  const handleComplete = () => {
+    // Navigate to dashboard
+    navigate('/provider/dashboard');
+  };
+
+  const handleExit = () => {
+    setShowConfirmExit(true);
+  };
+
+  const confirmExit = () => {
+    dispatch(resetOnboarding());
+    localStorage.removeItem('provider_registration');
+    navigate('/provider/signup');
+  };
+
+  const handleStepClick = (stepNumber) => {
+    if (stepNumber < currentStep || completedSteps.includes(steps[stepNumber - 1]?.id)) {
+      dispatch(goToStep(stepNumber));
+      window.scrollTo(0, 0);
+    }
+  };
+
+  if (isLocalLoading || !providerType) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4">
         <div className="text-center">
-          <div className="inline-block">
-            <div className="w-12 h-12 bg-blue-500 rounded-full animate-spin"></div>
+          <div className="inline-block mb-4">
+            <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full animate-spin shadow-lg"></div>
           </div>
-          <p className="mt-4 text-gray-600">Loading onboarding flow...</p>
+          <p className="text-gray-700 font-medium text-lg">Initializing onboarding flow...</p>
         </div>
       </div>
     );
   }
 
   const currentStepData = steps[currentStep - 1];
-  const CurrentStepComponent = currentStepData?.component;
+  const ServiceDetailsComponent = SERVICE_DETAILS_COMPONENTS[providerType];
+  const progressPercentage = (currentStep / totalSteps) * 100;
+
+  // Determine which component to render
+  let CurrentStepComponent = null;
+  if (currentStepData?.id === 'professional_info') {
+    CurrentStepComponent = ProfessionalInfo;
+  } else if (
+    currentStepData?.id === 'service_details' ||
+    currentStepData?.id === 'clinic_info' ||
+    currentStepData?.id === 'specializations' ||
+    currentStepData?.id === 'training_specialization' ||
+    currentStepData?.id === 'grooming_specialization' ||
+    currentStepData?.id === 'pet_care_experience' ||
+    currentStepData?.id === 'services_offered'
+  ) {
+    CurrentStepComponent = ServiceDetailsComponent;
+  } else if (currentStepData?.id === 'document_upload') {
+    CurrentStepComponent = DocumentUpload;
+  } else if (currentStepData?.id === 'terms_agreement') {
+    CurrentStepComponent = TermsAgreement;
+  } else if (currentStepData?.id === 'payment_info') {
+    CurrentStepComponent = PaymentInfo;
+  } else if (currentStepData?.id === 'review_submission') {
+    CurrentStepComponent = ReviewSubmission;
+  } else if (
+    currentStepData?.id === 'experience_certification' ||
+    currentStepData?.id === 'availability'
+  ) {
+    // Placeholder for future components
+    CurrentStepComponent = () => (
+      <div className="p-8 text-center">
+        <p className="text-gray-600 font-medium mb-4">{currentStepData?.label}</p>
+        <p className="text-gray-500 text-sm">This step will be implemented shortly</p>
+      </div>
+    );
+  }
 
   if (!CurrentStepComponent) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center p-8 bg-white rounded-xl shadow-md">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">Step Not Found</h2>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4">
+        <div className="text-center p-8 bg-white rounded-xl shadow-lg max-w-md">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Step Not Found</h2>
           <p className="text-gray-600 mb-6">The requested onboarding step is not available.</p>
           <button
             onClick={() => navigate('/provider/signup')}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
           >
             Back to Sign Up
           </button>
@@ -147,79 +225,139 @@ const ProviderOnboardingFlow = () => {
     );
   }
 
-  const handleNext = () => {
-    if (currentStep < steps.length) {
-      setCurrentStep(currentStep + 1);
-      window.scrollTo(0, 0);
-    }
-  };
-
-  const handlePrevious = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-      window.scrollTo(0, 0);
-    }
-  };
-
-  const handleComplete = () => {
-    // After review submission completes, redirect to dashboard
-    navigate('/provider/dashboard');
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Progress Bar */}
-      <div className="bg-white border-b border-gray-200">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      {/* Exit Confirmation Modal */}
+      {showConfirmExit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black bg-opacity-50">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white rounded-lg shadow-2xl max-w-md p-6"
+          >
+            <h3 className="text-xl font-bold text-gray-900 mb-3">Exit Onboarding?</h3>
+            <p className="text-gray-600 mb-6">
+              Your progress has been saved. You can resume from where you left off.
+            </p>
+            <div className="flex gap-4">
+              <button
+                onClick={() => setShowConfirmExit(false)}
+                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+              >
+                Continue
+              </button>
+              <button
+                onClick={confirmExit}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+              >
+                Exit
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Progress Header */}
+      <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-40">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Progress Indicators */}
-          <div className="mb-6">
-            <div className="flex items-center justify-between mb-8">
+          {/* Progress Bar */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm font-medium text-gray-600">Progress</p>
+              <p className="text-sm font-medium text-blue-600">{currentStep} of {totalSteps}</p>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <motion.div
+                className="bg-gradient-to-r from-blue-500 to-indigo-600 h-2 rounded-full"
+                animate={{ width: `${progressPercentage}%` }}
+                transition={{ duration: 0.3 }}
+              />
+            </div>
+          </div>
+
+          {/* Step Indicators */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-8 overflow-x-auto pb-2">
               {steps.map((step, index) => (
-                <div key={step.id} className="flex items-center">
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className={`flex items-center justify-center w-10 h-10 rounded-full font-semibold ${
+                <motion.div
+                  key={step.id}
+                  className="flex items-center flex-shrink-0"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
+                  <button
+                    onClick={() => handleStepClick(index + 1)}
+                    disabled={index + 1 > currentStep && !completedSteps.includes(step.id)}
+                    className={`flex items-center justify-center w-10 h-10 rounded-full font-semibold text-sm transition-all ${
                       index + 1 === currentStep
-                        ? 'bg-blue-600 text-white'
-                        : index + 1 < currentStep
-                        ? 'bg-green-500 text-white'
-                        : 'bg-gray-300 text-gray-600'
+                        ? 'bg-blue-600 text-white ring-4 ring-blue-200 cursor-pointer'
+                        : index + 1 < currentStep || completedSteps.includes(step.id)
+                        ? 'bg-green-500 text-white cursor-pointer hover:bg-green-600'
+                        : 'bg-gray-300 text-gray-600 cursor-not-allowed'
                     }`}
+                    title={step.label}
                   >
-                    {index + 1 < currentStep ? <FaCheckCircle /> : index + 1}
-                  </motion.div>
+                    {index + 1 < currentStep || completedSteps.includes(step.id) ? (
+                      <FaCheckCircle />
+                    ) : (
+                      index + 1
+                    )}
+                  </button>
                   {index < steps.length - 1 && (
                     <div
-                      className={`flex-1 h-1 mx-2 ${
+                      className={`w-8 sm:w-12 h-1 mx-1 transition-colors ${
                         index + 1 < currentStep ? 'bg-green-500' : 'bg-gray-300'
                       }`}
-                      style={{ minWidth: '40px' }}
+                      style={{ minWidth: '20px' }}
                     ></div>
                   )}
-                </div>
+                </motion.div>
               ))}
             </div>
 
             {/* Step Labels */}
-            <div className="flex items-center justify-between">
-              {steps.map((step, index) => (
-                <div key={step.id} className="text-center flex-1">
-                  <p className="text-xs font-medium text-gray-700">{step.label}</p>
-                </div>
-              ))}
+            <div className="grid gap-1">
+              <p className="text-sm font-medium text-gray-700 truncate">
+                {currentStepData?.label}
+              </p>
+              <p className="text-xs text-gray-500">
+                Provider Type: <span className="font-semibold text-gray-700">{providerType}</span>
+              </p>
             </div>
           </div>
 
-          {/* Current Step Counter */}
-          <div className="text-center">
-            <p className="text-sm text-gray-600">
-              Step {currentStep} of {steps.length}
-            </p>
-            <h1 className="text-2xl font-bold text-gray-900 mt-2">
-              {currentStepData.label}
-            </h1>
-          </div>
+          {/* Error Display */}
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3"
+            >
+              <FaExclamationCircle className="text-red-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-red-700 text-sm font-medium">Error</p>
+                <p className="text-red-600 text-sm">{error}</p>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Validation Errors */}
+          {Object.keys(validationErrors).length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg"
+            >
+              <p className="text-yellow-700 text-sm font-medium mb-2">Please fix the following errors:</p>
+              <ul className="list-disc list-inside space-y-1">
+                {Object.entries(validationErrors).map(([field, message]) => (
+                  <li key={field} className="text-yellow-600 text-sm">
+                    {message}
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+          )}
         </div>
       </div>
 
@@ -231,57 +369,107 @@ const ProviderOnboardingFlow = () => {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.3 }}
+          className="bg-white rounded-xl shadow-lg p-8"
         >
-          <CurrentStepComponent onNext={handleNext} onComplete={handleComplete} />
+          {isCompleted ? (
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="text-center py-12"
+            >
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-6">
+                <FaCheckCircle className="text-4xl text-green-600" />
+              </div>
+              <h2 className="text-3xl font-bold text-gray-900 mb-3">
+                Onboarding Complete!
+              </h2>
+              <p className="text-gray-600 mb-8">
+                Your profile has been submitted successfully. You'll be redirected to your dashboard shortly.
+              </p>
+              <div className="flex items-center justify-center gap-2">
+                <FaSpinner className="animate-spin text-blue-600" />
+                <p className="text-gray-600">Redirecting...</p>
+              </div>
+            </motion.div>
+          ) : (
+            <CurrentStepComponent 
+              onNext={handleStepSubmit} 
+              onComplete={handleComplete}
+              formData={formData[steps[currentStep - 1]?.id] || {}}
+            />
+          )}
         </motion.div>
       </div>
 
       {/* Navigation Buttons */}
-      <div className="bg-white border-t border-gray-200">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <button
-              onClick={handlePrevious}
-              disabled={currentStep === 1}
-              className={`flex items-center px-6 py-3 rounded-lg font-medium transition-colors ${
-                currentStep === 1
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-            >
-              <FaArrowLeft className="mr-2" />
-              Previous
-            </button>
-
-            <div className="flex gap-4">
+      {!isCompleted && (
+        <div className="bg-white border-t border-gray-200 shadow-lg sticky bottom-0 z-40">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="flex items-center justify-between gap-4">
               <button
-                onClick={() => navigate('/provider/signup')}
-                className="px-6 py-3 rounded-lg font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                onClick={handlePrevious}
+                disabled={currentStep === 1 || loading}
+                className={`flex items-center px-6 py-3 rounded-lg font-medium transition-all ${
+                  currentStep === 1 || loading
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:scale-95'
+                }`}
               >
-                Exit
+                <FaArrowLeft className="mr-2" />
+                Previous
               </button>
 
-              {currentStep === steps.length ? (
+              <div className="flex gap-4">
                 <button
-                  onClick={handleComplete}
-                  className="flex items-center px-6 py-3 rounded-lg font-medium bg-green-600 text-white hover:bg-green-700 transition-colors"
+                  onClick={handleExit}
+                  disabled={loading}
+                  className="px-6 py-3 rounded-lg font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all active:scale-95 disabled:opacity-50"
                 >
-                  <FaCheckCircle className="mr-2" />
-                  Complete Onboarding
+                  Save & Exit
                 </button>
-              ) : (
-                <button
-                  onClick={handleNext}
-                  className="flex items-center px-6 py-3 rounded-lg font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-                >
-                  Next
-                  <FaArrowRight className="ml-2" />
-                </button>
-              )}
+
+                {currentStep === totalSteps ? (
+                  <button
+                    onClick={handleComplete}
+                    disabled={loading}
+                    className="flex items-center px-6 py-3 rounded-lg font-medium bg-green-600 text-white hover:bg-green-700 transition-all active:scale-95 disabled:opacity-50"
+                  >
+                    {loading ? (
+                      <>
+                        <FaSpinner className="mr-2 animate-spin" />
+                        Completing...
+                      </>
+                    ) : (
+                      <>
+                        <FaCheckCircle className="mr-2" />
+                        Complete Onboarding
+                      </>
+                    )}
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleNext}
+                    disabled={loading || Object.keys(validationErrors).length > 0}
+                    className="flex items-center px-6 py-3 rounded-lg font-medium bg-blue-600 text-white hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50"
+                  >
+                    {loading ? (
+                      <>
+                        <FaSpinner className="mr-2 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        Next
+                        <FaArrowRight className="ml-2" />
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

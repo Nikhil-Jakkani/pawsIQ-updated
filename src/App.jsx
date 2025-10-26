@@ -4,6 +4,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Dashboard from './pages/Dashboard.jsx';
 import Home from './pages/Home.jsx';
+import ProviderRoutes from './routes/providerRoutes.jsx';
 import UserLogin from './pages/user/UserLogin.jsx';
 import UserDashboard from './pages/user/UserDashboard.jsx';
 import UserSignIn from './pages/user/UserSignIn.jsx';
@@ -45,42 +46,6 @@ import ProviderVerification from './pages/providers/ProviderVerification.jsx';
 import ProviderCommission from './pages/providers/ProviderCommission.jsx';
 import ProviderPerformance from './pages/providers/ProviderPerformance.jsx';
 import ProviderFlags from './pages/providers/ProviderFlags.jsx';
-// Provider onboarding flow
-import ProviderSignUp from './pages/provider/ProviderSignUp.jsx';
-import ProfessionalInfo from './pages/provider/ProfessionalInfo.jsx';
-import VeterinarianDetails from './pages/provider/VeterinarianDetails.jsx';
-import TrainerDetails from './pages/provider/TrainerDetails.jsx';
-import GroomerDetails from './pages/provider/GroomerDetails.jsx';
-import PetSitterDetails from './pages/provider/PetSitterDetails.jsx';
-import DocumentUpload from './pages/provider/DocumentUpload.jsx';
-import TermsAgreement from './pages/provider/TermsAgreement.jsx';
-import PaymentInfo from './pages/provider/PaymentInfo.jsx';
-import ReviewSubmission from './pages/provider/ReviewSubmission.jsx';
-import ApplicationStatus from './pages/provider/ApplicationStatus.jsx';
-import ProviderLogin from './pages/provider/ProviderLogin.jsx';
-import ProviderForgotPassword from './pages/provider/ProviderForgotPassword.jsx';
-import ProviderOTPVerification from './pages/provider/ProviderOTPVerification.jsx';
-import ProviderOnboarding from './pages/provider/ProviderOnboarding.jsx';
-import ProviderOnboardingFlow from './pages/provider/ProviderOnboardingFlow.jsx';
-import ProviderDashboard from './pages/provider/ProviderDashboard.jsx';
-import ProviderAppointments from './pages/provider/ProviderAppointments.jsx';
-import ProviderClients from './pages/provider/ProviderClients.jsx';
-import ProviderServices from './pages/provider/ProviderServices.jsx';
-import ProviderAnalytics from './pages/provider/ProviderAnalytics.jsx';
-import ProviderPrescriptions from './pages/provider/ProviderPrescriptions.jsx';
-import ProviderLabReports from './pages/provider/ProviderLabReports.jsx';
-import ProviderNotifications from './pages/provider/ProviderNotifications.jsx';
-import ProviderSettings from './pages/provider/ProviderSettings.jsx';
-import VetDashboard from './pages/provider/VetDashboard.jsx';
-import VetAppointments from './pages/provider/VetAppointments.jsx';
-import VetClients from './pages/provider/VetClients.jsx';
-import VetServices from './pages/provider/VetServices.jsx';
-import VetPrescriptions from './pages/provider/VetPrescriptions.jsx';
-import VetLabReports from './pages/provider/VetLabReports.jsx';
-import VetAnalytics from './pages/provider/VetAnalytics.jsx';
-import VetNotifications from './pages/provider/VetNotifications.jsx';
-import VetSettings from './pages/provider/VetSettings.jsx';
-import ServiceForm from './pages/provider/ServiceForm.jsx';
 
 // Auth pages
 import Login from './pages/auth/Login.jsx';
@@ -261,34 +226,8 @@ function App() {
             />
             <Route path="/user/dashboard" element={<UserProtectedRoute><UserDashboard /></UserProtectedRoute>} />
             
-            {/* Provider Routes */}
-            <Route path="/provider/login" element={<ProviderLogin />} />
-            <Route path="/provider/forgot-password" element={<ProviderForgotPassword />} />
-            <Route path="/provider/otp-verification" element={<ProviderOTPVerification />} />
-            
-            {/* Unified Provider Dashboard Routes - Role-based UI */}
-            <Route path="/provider/dashboard" element={<ProviderProtectedRoute><ProviderDashboard /></ProviderProtectedRoute>} />
-            <Route path="/provider/appointments" element={<ProviderProtectedRoute><ProviderAppointments /></ProviderProtectedRoute>} />
-            <Route path="/provider/clients" element={<ProviderProtectedRoute><ProviderClients /></ProviderProtectedRoute>} />
-            <Route path="/provider/services" element={<ProviderProtectedRoute><ProviderServices /></ProviderProtectedRoute>} />
-            <Route path="/provider/analytics" element={<ProviderProtectedRoute><ProviderAnalytics /></ProviderProtectedRoute>} />
-            <Route path="/provider/prescriptions" element={<ProviderProtectedRoute><ProviderPrescriptions /></ProviderProtectedRoute>} />
-            <Route path="/provider/lab-reports" element={<ProviderProtectedRoute><ProviderLabReports /></ProviderProtectedRoute>} />
-            <Route path="/provider/notifications" element={<ProviderProtectedRoute><ProviderNotifications /></ProviderProtectedRoute>} />
-            <Route path="/provider/settings" element={<ProviderProtectedRoute><ProviderSettings /></ProviderProtectedRoute>} />
-            
-            {/* Vet Dashboard Routes (Legacy - for backward compatibility) */}
-            <Route path="/provider/vet/dashboard" element={<ProviderProtectedRoute><VetDashboard /></ProviderProtectedRoute>} />
-            <Route path="/provider/vet/appointments" element={<ProviderProtectedRoute><VetAppointments /></ProviderProtectedRoute>} />
-            <Route path="/provider/vet/clients" element={<ProviderProtectedRoute><VetClients /></ProviderProtectedRoute>} />
-            <Route path="/provider/vet/services" element={<ProviderProtectedRoute><VetServices /></ProviderProtectedRoute>} />
-            <Route path="/provider/vet/services/new" element={<ProviderProtectedRoute><ServiceForm /></ProviderProtectedRoute>} />
-            <Route path="/provider/vet/services/:id/edit" element={<ProviderProtectedRoute><ServiceForm /></ProviderProtectedRoute>} />
-            <Route path="/provider/vet/prescriptions" element={<ProviderProtectedRoute><VetPrescriptions /></ProviderProtectedRoute>} />
-            <Route path="/provider/vet/labs" element={<ProviderProtectedRoute><VetLabReports /></ProviderProtectedRoute>} />
-            <Route path="/provider/vet/analytics" element={<ProviderProtectedRoute><VetAnalytics /></ProviderProtectedRoute>} />
-            <Route path="/provider/vet/notifications" element={<ProviderProtectedRoute><VetNotifications /></ProviderProtectedRoute>} />
-            <Route path="/provider/vet/settings" element={<ProviderProtectedRoute><VetSettings /></ProviderProtectedRoute>} />
+            {/* Provider Routes - Organized with ProviderRoutes component */}
+            <Route path="/provider/*" element={<ProviderRoutes />} />
 
             {/* Pet Management Routes */}
             <Route path="/user/pets" element={<UserProtectedRoute><UserPets /></UserProtectedRoute>} />
@@ -348,22 +287,7 @@ function App() {
             <Route path="/user/help/contact" element={<UserProtectedRoute><UserHelp /></UserProtectedRoute>} />
             <Route path="/user/help/support" element={<UserProtectedRoute><UserHelp /></UserProtectedRoute>} />
 
-            {/* Provider Signup & Onboarding Flow */}
-            <Route path="/provider/signup" element={<ProviderSignUp />} />
-            <Route path="/provider/onboarding/flow" element={<ProviderOnboardingFlow />} />
-            <Route path="/provider/onboarding/professional-info" element={<ProfessionalInfo />} />
-            <Route path="/provider/onboarding/veterinarian-details" element={<VeterinarianDetails />} />
-            <Route path="/provider/onboarding/trainer-details" element={<TrainerDetails />} />
-            <Route path="/provider/onboarding/groomer-details" element={<GroomerDetails />} />
-            <Route path="/provider/onboarding/pet-sitter-details" element={<PetSitterDetails />} />
-            <Route path="/provider/onboarding/document-upload" element={<DocumentUpload />} />
-            <Route path="/provider/onboarding/terms" element={<TermsAgreement />} />
-            <Route path="/provider/onboarding/payment-info" element={<PaymentInfo />} />
-            <Route path="/provider/onboarding/review" element={<ReviewSubmission />} />
-            <Route path="/provider/application-status" element={<ApplicationStatus />} />
 
-            {/* Provider Onboarding */}
-            <Route path="/provider/onboarding" element={<ProviderOnboarding />} />
 
             {/* 404 */}
             <Route
