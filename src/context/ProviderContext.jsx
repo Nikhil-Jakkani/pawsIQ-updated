@@ -16,8 +16,12 @@ export const ProviderProvider = ({ children }) => {
 
   // Fetch provider info on mount or when currentUser changes
   useEffect(() => {
-    if (currentUser?.role && currentUser.role !== 'User') {
+    const role = currentUser?.role?.toLowerCase?.();
+    if (role === 'provider') {
       fetchProviderInfo();
+    } else {
+      setProviderInfo(null);
+      setProviderType(null);
     }
   }, [currentUser]);
 
@@ -28,12 +32,24 @@ export const ProviderProvider = ({ children }) => {
       setIsLoading(true);
       setError(null);
 
-      const response = await authFetch('/api/v1/providers/profile', {
+      const response = await authFetch('/api/v1/provider/me', {
         method: 'GET',
       });
 
-      setProviderInfo(response.data);
-      setProviderType(response.data.type);
+      if (!response.ok) {
+        if (response.status === 403 || response.status === 404) {
+          setProviderInfo(null);
+          setProviderType(null);
+          return;
+        }
+
+        const errorText = await response.text().catch(() => 'Failed to fetch provider info');
+        throw new Error(errorText || `Request failed with status ${response.status}`);
+      }
+
+      const data = await response.json();
+      setProviderInfo(data);
+      setProviderType(data?.providerType || data?.serv_provider_type || data?.type || null);
     } catch (err) {
       console.error('Failed to fetch provider info:', err);
       setError(err.message);
@@ -49,14 +65,21 @@ export const ProviderProvider = ({ children }) => {
       setIsLoading(true);
       setError(null);
 
-      const response = await authFetch('/api/v1/providers/profile', {
-        method: 'PUT',
+      const response = await authFetch('/api/v1/provider/me', {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates),
       });
 
-      setProviderInfo(response.data);
-      return response.data;
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => 'Failed to update provider info');
+        throw new Error(errorText || `Request failed with status ${response.status}`);
+      }
+
+      const data = await response.json();
+      setProviderInfo(data);
+      setProviderType(data?.providerType || data?.serv_provider_type || data?.type || providerType);
+      return data;
     } catch (err) {
       console.error('Failed to update provider info:', err);
       setError(err.message);
@@ -70,10 +93,19 @@ export const ProviderProvider = ({ children }) => {
     if (!authFetch) return null;
 
     try {
-      const response = await authFetch('/api/v1/providers/metrics', {
+      const response = await authFetch('/api/v1/provider/metrics', {
         method: 'GET',
       });
-      return response.data;
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          return null;
+        }
+        const errorText = await response.text().catch(() => 'Failed to fetch provider metrics');
+        throw new Error(errorText || `Request failed with status ${response.status}`);
+      }
+
+      return await response.json();
     } catch (err) {
       console.error('Failed to fetch provider metrics:', err);
       return null;

@@ -10,7 +10,7 @@ import {
   FaStar,
   FaChartLine,
   FaCheckCircle,
-  FaTrendingUp,
+  FaArrowUp,
   FaArrowRight,
   FaStethoscope,
   FaDumbbell,
@@ -45,7 +45,7 @@ const StatCard = ({ icon: Icon, label, value, trend, trendUp = true, color = 'bl
           <p className="text-3xl font-bold text-gray-900 mt-3">{value}</p>
           {trend && (
             <div className={`flex items-center mt-3 text-sm font-medium ${trendUp ? 'text-green-600' : 'text-red-600'}`}>
-              <FaTrendingUp className={`mr-1 ${!trendUp && 'rotate-180'}`} />
+              <FaArrowUp className={`mr-1 ${!trendUp && 'rotate-180'}`} />
               {trend}
             </div>
           )}

@@ -1,4 +1,6 @@
 import httpStatus from 'http-status';
+import { Prisma } from '@prisma/client';
+import prisma from '../../../lib/prisma.js';
 import { db } from '../../../config/db.js';
 import { ApiError } from '../../utils/ApiError.js';
 
@@ -66,10 +68,10 @@ const calculateCommission = async (
       booking_id: payment.booking_id,
       payment_id: paymentId,
       service_provider_id: payment.PIQ_Bookings.service_provider_id,
-      booking_amount: new Decimal(bookingAmount),
-      commission_percent: new Decimal(commissionPercent),
-      commission_amount: new Decimal(commissionAmount),
-      provider_amount: new Decimal(providerAmount),
+      booking_amount: new Prisma.Decimal(bookingAmount),
+      commission_percent: new Prisma.Decimal(commissionPercent),
+      commission_amount: new Prisma.Decimal(commissionAmount),
+      provider_amount: new Prisma.Decimal(providerAmount),
       status: 'calculated',
     },
   });
@@ -240,10 +242,10 @@ const getAllCommissions = async (
           booking_id: 1,
           payment_id: 1,
           service_provider_id: 1,
-          booking_amount: new Decimal('5000.00'),
-          commission_percent: new Decimal('15.00'),
-          commission_amount: new Decimal('750.00'),
-          provider_amount: new Decimal('4250.00'),
+          booking_amount: new Prisma.Decimal('5000.00'),
+          commission_percent: new Prisma.Decimal('15.00'),
+          commission_amount: new Prisma.Decimal('750.00'),
+          provider_amount: new Prisma.Decimal('4250.00'),
           status: 'calculated',
           created_at: new Date(),
           updated_at: new Date(),

@@ -7,6 +7,7 @@ import './index.css'
 import App from './App.jsx'
 import { AuthProvider } from './context/AuthContext'
 import { ProviderProvider } from './context/ProviderContext'
+import { ToastProvider } from './components/common/Toast'
 
 // Simple error boundary
 class ErrorBoundary extends React.Component {
@@ -92,7 +93,9 @@ try {
         <ErrorBoundary>
           <AuthProvider>
             <ProviderProvider>
-              <App />
+              <ToastProvider>
+                <App />
+              </ToastProvider>
             </ProviderProvider>
           </AuthProvider>
         </ErrorBoundary>
