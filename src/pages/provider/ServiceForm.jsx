@@ -121,21 +121,17 @@ export default function ServiceForm() {
             isActive: data.is_active !== false,
           });
         } catch (apiError) {
-          console.warn('API not available, using mock data:', apiError);
-          // Fallback to mock data
-          const mockService = MOCK_SERVICES.find(s => s.id === parseInt(id));
-          if (mockService) {
-            setFormData({
-              name: mockService.name,
-              description: mockService.description,
-              price: mockService.price,
-              gst: mockService.gst,
-              duration: mockService.duration,
-              isActive: mockService.isActive,
-            });
-          } else {
-            throw new Error('Service not found');
-          }
+          console.error('Failed to load service data:', apiError);
+          setError('Failed to load service data. Please check your connection and try again.');
+          // Set default form data for new services
+          setFormData({
+            name: '',
+            description: '',
+            price: 0,
+            gst: 18,
+            duration: 30,
+            isActive: true,
+          });
         }
       } catch (err) {
         console.error('Error loading service:', err);

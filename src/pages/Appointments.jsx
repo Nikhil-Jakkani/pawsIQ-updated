@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import useApi from '../hooks/useApi';
+import Modal from '../components/common/Modal';
+import ConfirmDialog from '../components/common/ConfirmDialog';
+import { useToast } from '../components/common/Toast';
 import { 
   FaCalendarAlt, 
   FaSearch, 
@@ -25,6 +28,7 @@ import {
 
 const Appointments = () => {
   const api = useApi();
+  const toast = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterService, setFilterService] = useState('all');

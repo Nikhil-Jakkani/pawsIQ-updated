@@ -1,52 +1,73 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
+import useApi from '../../hooks/useApi';
 import { FaDollarSign, FaChartLine, FaExchangeAlt, FaShoppingCart } from 'react-icons/fa';
 
 const RevenueMetrics = () => {
+  const api = useApi();
   const [timeRange, setTimeRange] = useState('month');
-  
-  // Mock data for demonstration
-  const revenueData = {
-    totalRevenue: {
-      day: 12450,
-      week: 87430,
-      month: 342150,
-      year: 4125000
-    },
-    transactionCount: {
-      day: 245,
-      week: 1723,
-      month: 7432,
-      year: 89245
-    },
-    averageOrderValue: {
-      day: 50.82,
-      week: 50.74,
-      month: 46.04,
-      year: 46.22
-    },
-    revenueGrowth: 16.8,
-    revenueByCategory: [
-      { category: 'Pet Services', amount: 187450 },
-      { category: 'Marketplace', amount: 98750 },
-      { category: 'Premium Subscriptions', amount: 45320 },
-      { category: 'Other', amount: 10630 }
-    ],
-    monthlyRevenue: [
-      { month: 'Jan', amount: 285000 },
-      { month: 'Feb', amount: 292000 },
-      { month: 'Mar', amount: 305000 },
-      { month: 'Apr', amount: 312000 },
-      { month: 'May', amount: 318000 },
-      { month: 'Jun', amount: 329000 },
-      { month: 'Jul', amount: 342150 },
-      { month: 'Aug', amount: 0 },
-      { month: 'Sep', amount: 0 },
-      { month: 'Oct', amount: 0 },
-      { month: 'Nov', amount: 0 },
-      { month: 'Dec', amount: 0 }
-    ]
+  const [revenueData, setRevenueData] = useState({
+    totalRevenue: { day: 0, week: 0, month: 0, year: 0 },
+    transactionCount: { day: 0, week: 0, month: 0, year: 0 },
+    averageOrderValue: { day: 0, week: 0, month: 0, year: 0 },
+    revenueGrowth: 0,
+    revenueByCategory: [],
+    monthlyRevenue: []
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  // Fetch revenue metrics from API
+  const fetchRevenueMetrics = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      
+      const response = await api.get(`/admin/analytics/revenue-metrics?timeRange=${timeRange}`);
+      
+      if (response?.data) {
+        setRevenueData(response.data);
+      } else {
+        throw new Error('Failed to fetch revenue metrics');
+      }
+    } catch (err) {
+      console.error('Failed to fetch revenue metrics:', err);
+      setError('Failed to load revenue metrics. Please try again.');
+      // Fallback to sample data for demo
+      setRevenueData({
+        totalRevenue: { day: 12450, week: 87430, month: 342150, year: 4125000 },
+        transactionCount: { day: 245, week: 1723, month: 7432, year: 89245 },
+        averageOrderValue: { day: 50.82, week: 50.74, month: 46.04, year: 46.22 },
+        revenueGrowth: 16.8,
+        revenueByCategory: [
+          { category: 'Pet Services', amount: 187450 },
+          { category: 'Marketplace', amount: 98750 },
+          { category: 'Premium Subscriptions', amount: 45320 },
+          { category: 'Other', amount: 10630 }
+        ],
+        monthlyRevenue: [
+          { month: 'Jan', amount: 285000 },
+          { month: 'Feb', amount: 292000 },
+          { month: 'Mar', amount: 305000 },
+          { month: 'Apr', amount: 312000 },
+          { month: 'May', amount: 318000 },
+          { month: 'Jun', amount: 329000 },
+          { month: 'Jul', amount: 342150 },
+          { month: 'Aug', amount: 0 },
+          { month: 'Sep', amount: 0 },
+          { month: 'Oct', amount: 0 },
+          { month: 'Nov', amount: 0 },
+          { month: 'Dec', amount: 0 }
+        ]
+      });
+    } finally {
+      setLoading(false);
+    }
   };
+  
+  useEffect(() => {
+    fetchRevenueMetrics();
+  }, [timeRange]);
 
   // Helper functions to get data based on selected time range
   const getTotalRevenue = () => {

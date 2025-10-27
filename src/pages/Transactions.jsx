@@ -1,5 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../components/layout/DashboardLayout';
+import useApi from '../hooks/useApi';
+import Modal from '../components/common/Modal';
+import ConfirmDialog from '../components/common/ConfirmDialog';
+import { useToast } from '../components/common/Toast';
 import { 
   FaCreditCard, 
   FaSearch, 
@@ -28,6 +32,8 @@ import {
 } from 'react-icons/fa';
 
 const Transactions = () => {
+  const api = useApi();
+  const toast = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterType, setFilterType] = useState('all');
@@ -38,6 +44,11 @@ const Transactions = () => {
   const [showPayoutModal, setShowPayoutModal] = useState(false);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [transactionsData, setTransactionsData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, action: null });
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Sample financial data
   const financialStats = {
@@ -56,8 +67,30 @@ const Transactions = () => {
     { id: 3, name: 'Professional', price: 39.99, features: ['Unlimited Profiles', '24/7 Support', 'Unlimited Bookings', 'Custom Reports', 'API Access'] }
   ];
 
-  // Sample transactions data
-  const transactionsData = [
+  // Fetch transactions from API
+  useEffect(() => {
+    fetchTransactions();
+  }, []);
+
+  const fetchTransactions = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const data = await api.get('/admin/transactions');
+      const results = Array.isArray(data) ? data : data?.results || [];
+      setTransactionsData(results.length > 0 ? results : sampleTransactionsData);
+    } catch (err) {
+      console.error('Failed to load transactions:', err);
+      setError('Failed to load transactions');
+      toast.error('Failed to load transactions. Using sample data.');
+      setTransactionsData(sampleTransactionsData);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Sample transactions data as fallback
+  const sampleTransactionsData = [
     {
       id: 'TXN001',
       type: 'Payment',

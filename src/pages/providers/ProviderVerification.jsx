@@ -83,8 +83,9 @@ const ProviderVerification = () => {
       } catch (e) {
         if (!alive) return;
         console.error('Failed to fetch providers:', e);
-        setError('Failed to load providers');
-        setProvidersData([]);
+        setError('Using sample data - API permissions required');
+        // Use sample data as fallback
+        setProvidersData(sampleProvidersData);
       } finally {
         if (alive) setLoading(false);
       }
@@ -345,6 +346,20 @@ const ProviderVerification = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
+        {/* Sample Data Warning */}
+        {error && error.includes('sample data') && (
+          <div className="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-md">
+            <div className="flex items-center">
+              <FaExclamationTriangle className="text-amber-400 mr-3" />
+              <div>
+                <p className="text-sm text-amber-700">
+                  <strong>Demo Mode:</strong> {error}. Configure admin permissions to access live data.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+        
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="flex items-center gap-3">

@@ -45,32 +45,15 @@ import {
   FaUserPlus
 } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
+import { useSidebar } from '../../context/SidebarContext';
 import logoImage from '/7.png';
 
-const Sidebar = ({ isOpen, toggleSidebar }) => {
+const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { currentUser, logout } = useAuth();
+  const { isOpen, minimized, toggleSidebar, toggleMinimized } = useSidebar();
   const [expandedCategory, setExpandedCategory] = useState(null);
-  const [minimized, setMinimized] = useState(false);
-  
-  // Load minimized state from localStorage on component mount
-  useEffect(() => {
-    const savedMinimizedState = localStorage.getItem('sidebarMinimized');
-    if (savedMinimizedState !== null) {
-      setMinimized(JSON.parse(savedMinimizedState));
-    }
-  }, []);
-  
-  // Toggle minimized state and save to localStorage
-  const toggleMinimized = () => {
-    const newMinimizedState = !minimized;
-    setMinimized(newMinimizedState);
-    localStorage.setItem('sidebarMinimized', JSON.stringify(newMinimizedState));
-    
-    // Dispatch a custom event to notify other components about the change
-    window.dispatchEvent(new CustomEvent('sidebarMinimizedChange'));
-  };
   
   const menuCategories = [
     {

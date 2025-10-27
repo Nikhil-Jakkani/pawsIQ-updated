@@ -58,10 +58,11 @@ const settleCommission = catchAsync(async (req: any, res: Response) => {
  */
 const getMyCommissions = catchAsync(async (req: any, res: Response) => {
   const providerId = req.user.service_provider_id;
-  const { page, limit } = req.query;
+  const { status, page, limit } = req.query;
 
   const result = await commissionService.getProviderCommissions(
     providerId,
+    status as string,
     Number(page) || 1,
     Number(limit) || 20
   );

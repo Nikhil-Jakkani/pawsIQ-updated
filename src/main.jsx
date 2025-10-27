@@ -4,6 +4,7 @@ import { BrowserRouter as Router } from 'react-router-dom'
 import './index.css'
 import App from './App.jsx'
 import { AuthProvider } from './context/AuthContext'
+import { ToastProvider } from './components/common/Toast'
 
 // Simple error boundary
 class ErrorBoundary extends React.Component {
@@ -87,7 +88,9 @@ try {
     <Router>
       <ErrorBoundary>
         <AuthProvider>
-          <App />
+          <ToastProvider>
+            <App />
+          </ToastProvider>
         </AuthProvider>
       </ErrorBoundary>
     </Router>

@@ -44,15 +44,17 @@ const auth = (...requiredRights: string[]) => {
         throw new ApiError(httpStatus.UNAUTHORIZED, 'Invalid token: Role is missing');
       }
 
+      const normalizedRole = typeof role === 'string' ? role.trim().toLowerCase() : role;
+
       // Check if the user's role is allowed
-      if (requiredRights.length && !requiredRights.includes(role)) {
+      if (requiredRights.length && !requiredRights.includes(normalizedRole)) {
         throw new ApiError(httpStatus.FORBIDDEN, 'Forbidden');
       }
 
       let entity: any;
       let entityError: any;
 
-      switch (role) {
+      switch (normalizedRole) {
         case 'user': {
           const { data, error } = await db.from('PIQ_User').select('*').eq('user_id', payload.sub).single();
           entity = data;
@@ -101,6 +103,7 @@ const auth = (...requiredRights: string[]) => {
       // Attach user/admin/provider entity to the request object
       req.user = entity;
       req.token = token;
+      req.userRole = normalizedRole;
 
       next();
     } catch (error) {

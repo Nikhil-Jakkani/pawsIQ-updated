@@ -43,8 +43,40 @@ const useApi = () => {
     // Add auth header if required
     if (requiresAuth) {
       if (!tokens?.access?.token) {
+        console.error('[useApi] ❌ No access token found!');
         throw new Error('No authentication token found. Please log in again.');
       }
+      
+      // Decode token to check role (for debugging) - only log issues
+      let decodedPayload = null;
+      try {
+        const tokenParts = tokens.access.token.split('.');
+        if (tokenParts.length === 3) {
+          decodedPayload = JSON.parse(atob(tokenParts[1]));
+          
+          // Check if token is expired
+          if (decodedPayload.exp && Date.now() / 1000 > decodedPayload.exp) {
+            console.error('[useApi] ⚠️ Token is EXPIRED!', {
+              endpoint,
+              exp: new Date(decodedPayload.exp * 1000).toISOString()
+            });
+          }
+          
+          // Check if role matches what's needed for admin endpoints
+          if (endpoint.includes('/admin/') && decodedPayload.role !== 'admin') {
+            console.error(`[useApi] ❌ ROLE MISMATCH! Endpoint requires 'admin' but token has role: '${decodedPayload.role}'`, {
+              endpoint,
+              tokenRole: decodedPayload.role,
+              requiredRole: 'admin'
+            });
+          }
+        } else {
+          console.error('[useApi] ❌ Invalid token format - expected 3 parts, got:', tokenParts.length);
+        }
+      } catch (e) {
+        console.error('[useApi] ❌ Could not decode token:', e);
+      }
+      
       interceptedOptions.headers['Authorization'] = `Bearer ${tokens.access.token}`;
     }
 

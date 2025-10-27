@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { SidebarProvider } from '../../context/SidebarContext';
 import Sidebar from './Sidebar';
 import { FaBell, FaSearch, FaUser } from 'react-icons/fa';
 
-const DashboardLayout = ({ children }) => {
+const DashboardLayoutContent = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarMinimized, setSidebarMinimized] = useState(false);
   const { currentUser, logout } = useAuth();
@@ -61,6 +62,14 @@ const DashboardLayout = ({ children }) => {
         </footer>
       </div>
     </div>
+  );
+};
+
+const DashboardLayout = ({ children }) => {
+  return (
+    <SidebarProvider>
+      <DashboardLayoutContent>{children}</DashboardLayoutContent>
+    </SidebarProvider>
   );
 };
 
