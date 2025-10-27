@@ -9,6 +9,7 @@ import { tokenService } from '../services/user/token.service.js';
 import { tokenTypes } from '../../config/tokens.js';
 import { authService as adminAuthService } from '../services/admin/auth.service.js';
 import { userAuthService } from '../services/user/auth.service.js';
+import { providerAuthService } from '../services/provider/auth.service.js';
 import { adminAuth } from '../../config/firebaseAdmin.js';
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID;
@@ -44,7 +45,7 @@ export const whoAmI = async (req: Request, res: Response) => {
   }
 };
 
-// Unified credentials login: tries admin first, then user
+// Unified credentials login: tries admin first, then provider, then user
 export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body as { email: string; password: string };
@@ -56,6 +57,22 @@ export const login = async (req: Request, res: Response) => {
     try {
       const adminResult = await adminAuthService.login(email, password);
       return res.status(200).json(adminResult); // { user, tokens }
+    } catch (e) {
+      // fall through to provider login
+    }
+
+    // Then try provider login
+    try {
+      const { provider, tokens } = await providerAuthService.login(email, password);
+      const user = {
+        id: provider.service_provider_id,
+        email: provider.serv_provider_email,
+        name: provider.serv_provider_name,
+        phone: provider.serv_provider_contact_nbr,
+        role: 'provider' as const,
+        providerType: provider.serv_provider_type,
+      };
+      return res.status(200).json({ user, tokens });
     } catch (e) {
       // fall through to user login
     }

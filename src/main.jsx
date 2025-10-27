@@ -1,10 +1,12 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter as Router } from 'react-router-dom'
+import { Provider } from 'react-redux'
+import store from './store/store'
 import './index.css'
 import App from './App.jsx'
 import { AuthProvider } from './context/AuthContext'
-import { ToastProvider } from './components/common/Toast'
+import { ProviderProvider } from './context/ProviderContext'
 
 // Simple error boundary
 class ErrorBoundary extends React.Component {
@@ -85,15 +87,17 @@ try {
   
   // Render the app with proper routing
   const AppTree = (
-    <Router>
-      <ErrorBoundary>
-        <AuthProvider>
-          <ToastProvider>
-            <App />
-          </ToastProvider>
-        </AuthProvider>
-      </ErrorBoundary>
-    </Router>
+    <Provider store={store}>
+      <Router>
+        <ErrorBoundary>
+          <AuthProvider>
+            <ProviderProvider>
+              <App />
+            </ProviderProvider>
+          </AuthProvider>
+        </ErrorBoundary>
+      </Router>
+    </Provider>
   );
 
   // In development, avoid StrictMode to prevent double effects (duplicate API calls)

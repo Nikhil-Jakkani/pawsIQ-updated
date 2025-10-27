@@ -11,6 +11,7 @@
     "ensure-types": "test -d node_modules/@types/node || npm i @types/node@^20 -S",
     "start": "node dist/server/index.js",
     "render-build": "npm run ensure-types && npm run build && prisma generate --schema ../prisma/schema.prisma",
+    "seed:providers": "tsx -r dotenv/config scripts/seed-providers.ts",
     "postinstall": "prisma generate --schema ../prisma/schema.prisma"
   },
   "dependencies": {

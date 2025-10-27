@@ -19,6 +19,7 @@ export default defineConfig(({ mode }) => {
       injectRegister: null,
       workbox: {
         globPatterns: ['**/*.{js,css,html,json,ico,png,svg,webp,woff,woff2,webmanifest}'],
+        globIgnores: ['**/node_modules/**/*', 'sw.js', 'workbox-*.js'],
         skipWaiting: true,
         clientsClaim: true,
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB limit
@@ -82,19 +83,19 @@ export default defineConfig(({ mode }) => {
         start_url: '/',
         icons: [
           {
-            src: 'pwa-192x192.png',
+            src: 'pwa-192x192.svg',
             sizes: '192x192',
-            type: 'image/png'
+            type: 'image/svg+xml'
           },
           {
-            src: 'pwa-512x512.png',
+            src: 'pwa-512x512.svg',
             sizes: '512x512',
-            type: 'image/png'
+            type: 'image/svg+xml'
           },
           {
-            src: 'pwa-512x512.png',
+            src: 'pwa-512x512.svg',
             sizes: '512x512',
-            type: 'image/png',
+            type: 'image/svg+xml',
             purpose: 'any maskable'
           }
         ],
@@ -157,7 +158,6 @@ export default defineConfig(({ mode }) => {
           // Separate vendor dependencies
           vendor: ['react', 'react-dom'],
           router: ['react-router-dom'],
-          icons: ['react-icons/fa'],
           supabase: ['@supabase/supabase-js'],
           charts: ['chart.js', 'react-chartjs-2'],
           ai: ['@google/generative-ai'],
