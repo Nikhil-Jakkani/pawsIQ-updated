@@ -38,6 +38,7 @@ const router = Router();
 router.use('', authRoutes);
 
 router.use('/admin/auth', adminAuthRoutes);
+router.use('/admin/analytics', adminAnalyticsRoutes); // MUST be before /admin
 router.use('/admin/users', adminUserRoutes);
 router.use('/admin/bookings', adminBookingRoutes);
 router.use('/admin/reviews', adminReviewRoutes);
@@ -70,7 +71,6 @@ router.use('/provider/payouts', providerPayoutRoutes);
 router.use('/admin/payouts', adminPayoutRoutes);
 router.use('/provider/commissions', providerCommissionRoutes);
 router.use('/admin/commissions', adminCommissionRoutes);
-router.use('/admin/analytics', adminAnalyticsRoutes);
 router.use('/providers', providerRatingsRoutes);
 router.use('/admin/users/:userId/spending', (req, res) => {
   // User spending endpoint

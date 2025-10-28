@@ -6,7 +6,7 @@ export const fetchAnalytics = createAsyncThunk(
   'analytics/fetchAnalytics',
   async ({ dateRange = 'month', authFetch }, { rejectWithValue }) => {
     try {
-      const response = await authFetch(`${API_URL}/analytics?dateRange=${dateRange}`);
+      const response = await authFetch(`${API_URL}/admin/analytics/user-metrics?timeRange=${dateRange}`);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch analytics');
@@ -18,7 +18,7 @@ export const fetchRevenueMetrics = createAsyncThunk(
   'analytics/fetchRevenue',
   async ({ dateRange = 'month', authFetch }, { rejectWithValue }) => {
     try {
-      const response = await authFetch(`${API_URL}/analytics/revenue?dateRange=${dateRange}`);
+      const response = await authFetch(`${API_URL}/admin/analytics/revenue-metrics?timeRange=${dateRange}`);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch revenue');
@@ -28,19 +28,19 @@ export const fetchRevenueMetrics = createAsyncThunk(
 
 const initialState = {
   metrics: {
-    totalAppointments: 0,
-    completedAppointments: 0,
-    cancelledAppointments: 0,
-    totalClients: 0,
-    newClients: 0,
-    averageRating: 0,
-    totalReviews: 0,
+    totalUsers: 0,
+    activeUsers: 0,
+    newUsers: 0,
+    retentionRate: 0,
+    userGrowth: 0,
   },
   revenue: {
     totalRevenue: 0,
-    pendingAmount: 0,
-    withdrawnAmount: 0,
-    chartData: [],
+    transactionCount: 0,
+    averageOrderValue: 0,
+    revenueGrowth: 0,
+    revenueByCategory: [],
+    monthlyRevenue: [],
   },
   loading: false,
   error: null,

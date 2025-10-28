@@ -815,7 +815,7 @@ const Providers = () => {
         message={confirmDialog.data?.config?.message || 'Are you sure?'}
         type={confirmDialog.data?.config?.type || 'warning'}
         onConfirm={executeBulkAction}
-        onCancel={() => setConfirmDialog({ isOpen: false, action: null, data: null })}
+        onClose={() => setConfirmDialog({ isOpen: false, action: null, data: null })}
         isProcessing={isProcessing}
       />
     </DashboardLayout>

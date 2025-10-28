@@ -1,6 +1,6 @@
 import express from 'express';
 import { analyticsController } from '../../controllers/admin/analytics.controller.js';
-import { auth } from '../../../middlewares/auth.js';
+import { auth } from '../../../middlewares/auth.js'; // Correct auth middleware
 
 const router = express.Router();
 
@@ -26,6 +26,13 @@ router.get(
   '/revenue-metrics',
   auth('admin'),
   analyticsController.getRevenueMetrics
+);
+
+// Service metrics
+router.get(
+  '/service-metrics',
+  auth('admin'),
+  analyticsController.getServiceMetrics
 );
 
 export default router;

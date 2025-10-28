@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { auth } from '../../../api/middlewares/auth.js';
+import { auth } from '../../../middlewares/auth.js'; // Use correct auth middleware
 import suggestionController from '../../../api/controllers/user/suggestion.controller.js';
 
 const router = Router();

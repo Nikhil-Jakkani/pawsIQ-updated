@@ -7,42 +7,57 @@ const getProviderRatings = catchAsync(async (req: Request, res: Response) => {
   const { providerId } = req.params;
   
   try {
-    // This would integrate with reviews/ratings tables
-    // For now, return sample data based on provider ID
-    const ratings = {
-      averageRating: 4.2 + (Math.random() * 0.8), // 4.2 - 5.0 range
-      totalReviews: Math.floor(Math.random() * 100) + 10, // 10-110 reviews
-      ratingDistribution: {
-        5: Math.floor(Math.random() * 50) + 20,
-        4: Math.floor(Math.random() * 30) + 15,
-        3: Math.floor(Math.random() * 15) + 5,
-        2: Math.floor(Math.random() * 8) + 2,
-        1: Math.floor(Math.random() * 5) + 1
-      },
-      recentReviews: [
-        {
-          id: 1,
-          rating: 5,
-          comment: "Excellent service! Very professional and caring.",
-          userName: "Sarah M.",
-          date: new Date().toISOString()
-        },
-        {
-          id: 2,
-          rating: 4,
-          comment: "Good experience overall. Would recommend.",
-          userName: "John D.",
-          date: new Date(Date.now() - 86400000).toISOString() // 1 day ago
-        }
-      ]
-    };
+    // Get all reviews for the provider
+    const { data: reviews, error: reviewsError } = await db
+      .from('PIQ_Provider_Reviews')
+      .select(`
+        review_id,
+        rating,
+        review_text,
+        reviewed_at,
+        PIQ_User (
+          user_id,
+          user_full_name
+        )
+      `)
+      .eq('service_provider_id', providerId)
+      .order('reviewed_at', { ascending: false });
+    
+    if (reviewsError) throw reviewsError;
+    
+    // Calculate average rating
+    const totalReviews = reviews?.length || 0;
+    const averageRating = totalReviews > 0
+      ? reviews.reduce((sum, r) => sum + (Number(r.rating) || 0), 0) / totalReviews
+      : 0;
+    
+    // Calculate rating distribution
+    const ratingDistribution: { [key: number]: number } = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    reviews?.forEach(r => {
+      const rating = Number(r.rating);
+      if (rating >= 1 && rating <= 5) {
+        ratingDistribution[rating]++;
+      }
+    });
+    
+    // Get recent reviews (top 10)
+    const recentReviews = reviews?.slice(0, 10).map(r => {
+      const user = Array.isArray(r.PIQ_User) ? r.PIQ_User[0] : r.PIQ_User;
+      return {
+        id: r.review_id,
+        rating: Number(r.rating),
+        comment: r.review_text || '',
+        userName: user?.user_full_name || 'Anonymous',
+        date: r.reviewed_at
+      };
+    }) || [];
     
     res.status(httpStatus.OK).send({ 
       data: {
-        averageRating: Math.round(ratings.averageRating * 10) / 10,
-        totalReviews: ratings.totalReviews,
-        ratingDistribution: ratings.ratingDistribution,
-        recentReviews: ratings.recentReviews
+        averageRating: Math.round(averageRating * 10) / 10,
+        totalReviews,
+        ratingDistribution,
+        recentReviews
       }
     });
   } catch (error) {

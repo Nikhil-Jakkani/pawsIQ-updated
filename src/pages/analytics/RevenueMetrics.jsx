@@ -7,9 +7,9 @@ const RevenueMetrics = () => {
   const api = useApi();
   const [timeRange, setTimeRange] = useState('month');
   const [revenueData, setRevenueData] = useState({
-    totalRevenue: { day: 0, week: 0, month: 0, year: 0 },
-    transactionCount: { day: 0, week: 0, month: 0, year: 0 },
-    averageOrderValue: { day: 0, week: 0, month: 0, year: 0 },
+    totalRevenue: 0,
+    transactionCount: 0,
+    averageOrderValue: 0,
     revenueGrowth: 0,
     revenueByCategory: [],
     monthlyRevenue: []
@@ -26,6 +26,7 @@ const RevenueMetrics = () => {
       const response = await api.get(`/admin/analytics/revenue-metrics?timeRange=${timeRange}`);
       
       if (response?.data) {
+        // Backend returns: { data: { totalRevenue, transactionCount, ... } }
         setRevenueData(response.data);
       } else {
         throw new Error('Failed to fetch revenue metrics');
@@ -33,32 +34,14 @@ const RevenueMetrics = () => {
     } catch (err) {
       console.error('Failed to fetch revenue metrics:', err);
       setError('Failed to load revenue metrics. Please try again.');
-      // Fallback to sample data for demo
+      // Set empty state on error
       setRevenueData({
-        totalRevenue: { day: 12450, week: 87430, month: 342150, year: 4125000 },
-        transactionCount: { day: 245, week: 1723, month: 7432, year: 89245 },
-        averageOrderValue: { day: 50.82, week: 50.74, month: 46.04, year: 46.22 },
-        revenueGrowth: 16.8,
-        revenueByCategory: [
-          { category: 'Pet Services', amount: 187450 },
-          { category: 'Marketplace', amount: 98750 },
-          { category: 'Premium Subscriptions', amount: 45320 },
-          { category: 'Other', amount: 10630 }
-        ],
-        monthlyRevenue: [
-          { month: 'Jan', amount: 285000 },
-          { month: 'Feb', amount: 292000 },
-          { month: 'Mar', amount: 305000 },
-          { month: 'Apr', amount: 312000 },
-          { month: 'May', amount: 318000 },
-          { month: 'Jun', amount: 329000 },
-          { month: 'Jul', amount: 342150 },
-          { month: 'Aug', amount: 0 },
-          { month: 'Sep', amount: 0 },
-          { month: 'Oct', amount: 0 },
-          { month: 'Nov', amount: 0 },
-          { month: 'Dec', amount: 0 }
-        ]
+        totalRevenue: 0,
+        transactionCount: 0,
+        averageOrderValue: 0,
+        revenueGrowth: 0,
+        revenueByCategory: [],
+        monthlyRevenue: []
       });
     } finally {
       setLoading(false);
@@ -69,22 +52,29 @@ const RevenueMetrics = () => {
     fetchRevenueMetrics();
   }, [timeRange]);
 
-  // Helper functions to get data based on selected time range
+  // Helper functions to get data (now directly from state)
   const getTotalRevenue = () => {
-    return revenueData.totalRevenue[timeRange];
+    return revenueData.totalRevenue || 0;
   };
 
   const getTransactionCount = () => {
-    return revenueData.transactionCount[timeRange];
+    return revenueData.transactionCount || 0;
   };
 
   const getAverageOrderValue = () => {
-    return revenueData.averageOrderValue[timeRange];
+    return revenueData.averageOrderValue || 0;
   };
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
+        {/* Error Alert */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg flex items-center gap-2">
+            <span className="font-medium">⚠️ {error}</span>
+          </div>
+        )}
+
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="bg-indigo-100 p-2 rounded-lg">
@@ -192,7 +182,7 @@ const RevenueMetrics = () => {
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div 
                       className="bg-indigo-600 h-2 rounded-full" 
-                      style={{ width: `${(category.amount / revenueData.totalRevenue.month) * 100}%` }}
+                      style={{ width: `${revenueData.totalRevenue > 0 ? (category.amount / revenueData.totalRevenue) * 100 : 0}%` }}
                     ></div>
                   </div>
                 </div>
