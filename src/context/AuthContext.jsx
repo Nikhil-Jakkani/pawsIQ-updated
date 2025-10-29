@@ -215,7 +215,7 @@ export const AuthProvider = ({ children }) => {
       : { phone: identifier, password };
 
     try {
-      // Try unified login first (which now handles admin, provider, and user)
+      // Try unified login first (user-only endpoint)
       let response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: {
@@ -228,7 +228,7 @@ export const AuthProvider = ({ children }) => {
       let data = await response.json().catch(() => ({}));
 
       // Fallback to user-specific endpoint if unified login fails
-      if (!response.ok && isEmail) {
+      if (!response.ok) {
         const uResp = await fetch(`${API_URL}/user/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -238,20 +238,6 @@ export const AuthProvider = ({ children }) => {
         if (uResp.ok) {
           data = uData;
           response = uResp;
-        }
-      }
-
-      // If still failing and is email, try provider-specific endpoint
-      if (!response.ok && isEmail) {
-        const pResp = await fetch(`${API_URL}/provider/auth/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ provider_email: identifier, provider_password: password }),
-        });
-        const pData = await pResp.json().catch(() => ({}));
-        if (pResp.ok) {
-          data = pData;
-          response = pResp;
         }
       }
 

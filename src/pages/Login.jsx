@@ -14,7 +14,7 @@ const Login = () => {
   const [userType, setUserType] = useState('user'); // 'user', 'provider', or 'admin'
   const [isLoading, setIsLoading] = useState(false);
   const [localError, setLocalError] = useState('');
-  const { login, currentUser } = useAuth();
+  const { login, adminLogin, providerLogin, currentUser } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -53,10 +53,19 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      const result = await login(email, password);
+      let result;
       
-      if (result.success) {
-        const { userType } = result;
+      // Call appropriate login function based on user type
+      if (userType === 'admin') {
+        result = await adminLogin(email, password);
+      } else if (userType === 'provider') {
+        result = await providerLogin(email, password);
+      } else {
+        // Default to user login
+        result = await login(email, password);
+      }
+      
+      if (result && result.success) {
         // Show success message
         toast.success('Login successful! Redirecting...');
         

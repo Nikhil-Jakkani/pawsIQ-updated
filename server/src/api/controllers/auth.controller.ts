@@ -45,41 +45,25 @@ export const whoAmI = async (req: Request, res: Response) => {
   }
 };
 
-// Unified credentials login: tries admin first, then provider, then user
+// User-only credentials login (providers and admins must use their dedicated endpoints)
 export const login = async (req: Request, res: Response) => {
   try {
-    const { email, password } = req.body as { email: string; password: string };
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
+    const { email, phone, password } = req.body as { email?: string; phone?: string; password: string };
+    
+    if (!password) {
+      return res.status(400).json({ message: 'Password is required' });
+    }
+    
+    if (!email && !phone) {
+      return res.status(400).json({ message: 'Email or phone number is required' });
     }
 
-    // Try admin login first
+    // Only try user login
     try {
-      const adminResult = await adminAuthService.login(email, password);
-      return res.status(200).json(adminResult); // { user, tokens }
-    } catch (e) {
-      // fall through to provider login
-    }
-
-    // Then try provider login
-    try {
-      const { provider, tokens } = await providerAuthService.login(email, password);
-      const user = {
-        id: provider.service_provider_id,
-        email: provider.serv_provider_email,
-        name: provider.serv_provider_name,
-        phone: provider.serv_provider_contact_nbr,
-        role: 'provider' as const,
-        providerType: provider.serv_provider_type,
-      };
-      return res.status(200).json({ user, tokens });
-    } catch (e) {
-      // fall through to user login
-    }
-
-    // Then try user login
-    try {
-      const userResult = await userAuthService.loginUserWithEmailAndPassword(email, password);
+      const userResult = email
+        ? await userAuthService.loginUserWithEmailAndPassword(email.toLowerCase(), password)
+        : await userAuthService.loginUserWithPhoneAndPassword(phone!, password);
+      
       // Ensure role is present
       return res.status(200).json({
         user: { ...userResult.user, role: 'user' },
