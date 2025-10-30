@@ -10,9 +10,16 @@ export const fetchProviderClients = createAsyncThunk(
   async ({ authFetch }, { rejectWithValue }) => {
     try {
       const response = await authFetch(`${API_URL}/provider/dashboard/clients`);
-      return response.data;
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        const message = payload?.message || 'Failed to fetch clients';
+        throw new Error(message);
+      }
+
+      return payload?.data || payload || [];
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch clients');
+      return rejectWithValue(error.message || 'Failed to fetch clients');
     }
   }
 );

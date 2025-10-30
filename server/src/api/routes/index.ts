@@ -51,8 +51,8 @@ router.use('/user/activities', userActivityRoutes);
 router.use('/user', userRoutes);
 
 router.use('/provider/auth', providerAuthRoutes);
-router.use('/provider', providerRoutes);
 router.use('/provider/appointments', providerAppointmentRoutes);
+router.use('/provider', providerRoutes);
 router.use('/provider/bookings', providerBookingRoutes);
 router.use('/appointments', appointmentRoutes);
 router.use('/media', mediaRoutes);
