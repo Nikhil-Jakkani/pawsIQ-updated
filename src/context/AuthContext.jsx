@@ -84,6 +84,34 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  const logout = async () => {
+    try {
+      if (tokens?.refresh?.token) {
+        await fetch(`${API_URL}/user/auth/logout`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            ...(tokens?.access?.token ? { Authorization: `Bearer ${tokens.access.token}` } : {})
+          },
+          body: JSON.stringify({ refreshToken: tokens.refresh.token })
+        });
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setCurrentUser(null);
+      setTokens(null);
+      localStorage.removeItem('user');
+      localStorage.removeItem('authTokens');
+      // Remove any legacy keys that may be used by older code paths
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      // Set a flag to prevent silent re-login via refresh until user explicitly logs in
+      setLogoutFlag();
+      navigate('/login');
+    }
+  };
+
   const refreshToken = useCallback(async () => {
     if (!tokens?.refresh?.token) {
       console.warn('[Auth] No refresh token available for refresh');
@@ -97,27 +125,33 @@ export const AuthProvider = ({ children }) => {
       return null;
     }
 
+    // Detect user role from current user to use correct refresh endpoint
+    const userRole = currentUser?.role || 'user';
+    console.log('[Auth] Attempting token refresh for role:', userRole);
+
     try {
       console.log('[Auth] Attempting token refresh...');
-      let response = await fetch(`${API_URL}/user/auth/refresh-tokens`, {
+      
+      // Always use unified endpoint for all roles
+      const refreshEndpoint = `${API_URL}/auth/refresh-token`;
+      
+      const response = await fetch(refreshEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refreshToken: tokens.refresh.token })
       });
 
-      // Fallback to legacy endpoint if primary fails
-      if (!response.ok) {
-        console.log('[Auth] Primary refresh endpoint failed, trying fallback...');
-        response = await fetch(`${API_URL}/auth/refresh-token`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refreshToken: tokens.refresh.token })
-        });
-      }
-
       if (!response.ok) {
         const errorText = await response.text();
         console.error('[Auth] Token refresh failed:', response.status, errorText);
+        
+        // Force logout on 401/403 to prevent infinite loops
+        if (response.status === 401 || response.status === 403) {
+          console.error('[Auth] Invalid refresh token - forcing logout');
+          logout();
+          return null;
+        }
+        
         throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
 
@@ -145,13 +179,9 @@ export const AuthProvider = ({ children }) => {
       return nextTokens.access?.token || null;
     } catch (error) {
       console.error('[Auth] Token refresh failed:', error);
-      // Only logout if it's a token-related error, not network issues
-      if (error.message.includes('HTTP 401') || error.message.includes('HTTP 403')) {
-        logout();
-      }
       return null;
     }
-  }, [tokens]);
+  }, [tokens, currentUser, logout]);
 
   const authFetch = useCallback(async (url, options = {}, requiresAuth = true) => {
     if (requiresAuth && !tokens?.access?.token) {
@@ -274,34 +304,6 @@ export const AuthProvider = ({ children }) => {
 
     setError('Login failed. Please check your credentials.');
     return { success: false };
-  };
-
-  const logout = async () => {
-    try {
-      if (tokens?.refresh?.token) {
-        await fetch(`${API_URL}/user/auth/logout`, {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            ...(tokens?.access?.token ? { Authorization: `Bearer ${tokens.access.token}` } : {})
-          },
-          body: JSON.stringify({ refreshToken: tokens.refresh.token })
-        });
-      }
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      setCurrentUser(null);
-      setTokens(null);
-      localStorage.removeItem('user');
-      localStorage.removeItem('authTokens');
-      // Remove any legacy keys that may be used by older code paths
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      // Set a flag to prevent silent re-login via refresh until user explicitly logs in
-      setLogoutFlag();
-      navigate('/login');
-    }
   };
 
   const setCurrentUserData = (userData) => {

@@ -1,10 +1,18 @@
 import { Router } from 'express';
 import { auth } from '../../../middlewares/auth.js';
 import { validate } from '../../../middlewares/validate.js';
-import { providerController, providerReviewController, providerServiceOfferingController, providerSettingsController } from '../../controllers/provider/index.js';
+import { providerController, providerReviewController, providerServiceOfferingController, providerSettingsController, providerDashboardController } from '../../controllers/provider/index.js';
 import { providerProfileValidation, providerReviewValidation, providerServiceOfferingValidation, providerSettingsValidation } from '../../validations/provider/index.js';
 
 const router = Router();
+
+// Dashboard routes
+router.get('/dashboard/metrics', auth('provider'), providerDashboardController.getDashboardMetrics);
+router.get('/dashboard/revenue', auth('provider'), providerDashboardController.getRevenueMetrics);
+router.get('/dashboard/appointments', auth('provider'), providerDashboardController.getRecentAppointments);
+router.get('/dashboard/clients', auth('provider'), providerDashboardController.getClients);
+router.get('/dashboard/type-metrics', auth('provider'), providerDashboardController.getTypeSpecificMetrics);
+router.get('/dashboard/overview', auth('provider'), providerDashboardController.getDashboardOverview);
 
 // Profile routes
 router.get('/me', auth('provider'), providerController.getMyProfile);
