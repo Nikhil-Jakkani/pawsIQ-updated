@@ -7,7 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 const logoImage = "/1.svg";
 
 const UserLogin = () => {
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [localError, setLocalError] = useState('');
@@ -36,11 +36,11 @@ const UserLogin = () => {
     setLocalError('');
     
     try {
-      const success = await login(email, password);
-      if (success) {
+      const result = await login(identifier, password);
+      if (result && result.success) {
         navigate('/user/dashboard');
       } else {
-        setLocalError('Invalid email or password. Please try again.');
+        setLocalError('Invalid email/phone or password. Please try again.');
         setIsLoading(false);
       }
     } catch (err) {
@@ -70,20 +70,20 @@ const UserLogin = () => {
           
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                Email Address
+              <label htmlFor="identifier" className="block text-sm font-medium text-gray-700 mb-1">
+                Email or Phone Number
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <FaEnvelope className="text-gray-400" />
                 </div>
                 <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  id="identifier"
+                  type="text"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
                   className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter your email"
+                  placeholder="Enter your email or phone number"
                   required
                 />
               </div>

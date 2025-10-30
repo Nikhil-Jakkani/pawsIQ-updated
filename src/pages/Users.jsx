@@ -20,9 +20,23 @@ import {
 } from 'react-icons/fa';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import useApi from '../hooks/useApi';
+import ConfirmDialog from '../components/common/ConfirmDialog';
+import { useToast } from '../components/common/Toast';
 
 const Users = () => {
   const api = useApi();
+  const toast = useToast();
+  
+  // Calculate user total spending from payments/bookings
+  const calculateUserSpending = async (userId) => {
+    try {
+      const response = await api.get(`/admin/users/${userId}/spending`);
+      return `₹${(response?.data?.totalSpent || 0).toLocaleString()}`;
+    } catch (error) {
+      console.warn('Could not fetch user spending:', error);
+      return '₹0';
+    }
+  };
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterRole, setFilterRole] = useState('all');
@@ -39,6 +53,8 @@ const Users = () => {
     pendingApproval: 0,
     suspendedUsers: 0
   });
+  const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, action: null, userId: null, count: 0 });
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Fetch users and stats from API
   useEffect(() => {
@@ -64,7 +80,7 @@ const Users = () => {
           }
           
           // Transform API data to match component format
-          const transformedUsers = response.users.map(u => ({
+          const transformedUsers = await Promise.all(response.users.map(async u => ({
             id: Number(u.user_id),
             name: u.user_full_name || u.user_email_id || 'Unknown',
             email: u.user_email_id || '',
@@ -75,8 +91,8 @@ const Users = () => {
             lastActive: formatLastActive(u.last_login),
             registeredDate: formatDate(u.created_at),
             pets: statsMap[u.user_id]?.pets || 0,
-            totalSpent: '₹0' // TODO: Calculate from payments
-          }));
+            totalSpent: await calculateUserSpending(u.user_id)
+          })));
           
           setUsersData(transformedUsers);
           
@@ -207,36 +223,92 @@ const Users = () => {
         )
       );
       
-      alert(`User status updated successfully!`);
+      toast.success(`User status updated to ${newStatus} successfully!`);
     } catch (err) {
       console.error('Failed to update user status:', err);
-      alert('Failed to update user status. Please try again.');
+      toast.error('Failed to update user status. Please try again.');
     }
   };
   
   // Handle bulk actions
-  const handleBulkAction = async (action) => {
-    if (selectedUsers.length === 0) return;
+  const handleBulkAction = (action) => {
+    if (selectedUsers.length === 0) {
+      toast.warning('Please select at least one user');
+      return;
+    }
     
-    const confirmed = confirm(`Are you sure you want to ${action.toLowerCase()} ${selectedUsers.length} user(s)?`);
-    if (!confirmed) return;
+    setConfirmDialog({
+      isOpen: true,
+      action,
+      userId: null,
+      count: selectedUsers.length
+    });
+  };
+  
+  // Execute bulk action after confirmation
+  const executeBulkAction = async () => {
+    const { action } = confirmDialog;
+    setIsProcessing(true);
     
     try {
+      let successCount = 0;
+      let failCount = 0;
+      
       for (const userId of selectedUsers) {
-        if (action === 'Approve') {
-          await handleStatusChange(userId, 'Active');
-        } else if (action === 'Suspend') {
-          await handleStatusChange(userId, 'Suspended');
-        } else if (action === 'Delete') {
-          await api.delete(`/admin/users/${userId}`);
+        try {
+          if (action === 'Approve') {
+            const apiStatus = 'active';
+            await api.patch(`/admin/users/${userId}`, { user_status: apiStatus });
+            setUsersData(prevUsers =>
+              prevUsers.map(user =>
+                user.id === userId ? { ...user, status: 'Active' } : user
+              )
+            );
+          } else if (action === 'Suspend') {
+            const apiStatus = 'inactive';
+            await api.patch(`/admin/users/${userId}`, { user_status: apiStatus });
+            setUsersData(prevUsers =>
+              prevUsers.map(user =>
+                user.id === userId ? { ...user, status: 'Suspended' } : user
+              )
+            );
+          } else if (action === 'Delete') {
+            await api.delete(`/admin/users/${userId}`);
+            setUsersData(prevUsers => prevUsers.filter(user => user.id !== userId));
+          }
+          successCount++;
+        } catch (err) {
+          console.error(`Failed to ${action} user ${userId}:`, err);
+          failCount++;
         }
       }
       
-      // Refresh user list
-      window.location.reload();
+      // Clear selection
+      setSelectedUsers([]);
+      setSelectAll(false);
+      
+      // Show results
+      if (failCount === 0) {
+        toast.success(`Successfully ${action.toLowerCase()}ed ${successCount} user(s)`);
+      } else {
+        toast.warning(`${action} completed: ${successCount} succeeded, ${failCount} failed`);
+      }
+      
+      // Refresh stats
+      const activeCount = usersData.filter(u => u.status === 'Active').length;
+      const pendingCount = usersData.filter(u => u.status === 'Pending').length;
+      const suspendedCount = usersData.filter(u => u.status === 'Suspended').length;
+      setUserStats({
+        totalUsers: usersData.length,
+        activeUsers: activeCount,
+        pendingApproval: pendingCount,
+        suspendedUsers: suspendedCount
+      });
     } catch (err) {
       console.error(`Failed to ${action} users:`, err);
-      alert(`Failed to ${action} users. Please try again.`);
+      toast.error(`Failed to ${action} users. Please try again.`);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -685,17 +757,14 @@ const Users = () => {
                         <button 
                           className="text-red-600 hover:text-red-900" 
                           title="Delete User"
-                          onClick={async () => {
-                            if (confirm(`Are you sure you want to delete ${user.name}?`)) {
-                              try {
-                                await api.delete(`/admin/users/${user.id}`);
-                                setUsersData(prevUsers => prevUsers.filter(u => u.id !== user.id));
-                                alert('User deleted successfully!');
-                              } catch (err) {
-                                console.error('Failed to delete user:', err);
-                                alert('Failed to delete user. Please try again.');
-                              }
-                            }
+                          onClick={() => {
+                            setSelectedUsers([user.id]);
+                            setConfirmDialog({
+                              isOpen: true,
+                              action: 'Delete',
+                              userId: user.id,
+                              count: 1
+                            });
                           }}
                         >
                           <FaTrash />
@@ -762,6 +831,18 @@ const Users = () => {
         </>
         )}
       </div>
+      
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog({ isOpen: false, action: null, userId: null, count: 0 })}
+        onConfirm={executeBulkAction}
+        title={`${confirmDialog.action} Users`}
+        message={`Are you sure you want to ${confirmDialog.action?.toLowerCase()} ${confirmDialog.count} user(s)? This action cannot be undone.`}
+        confirmText={confirmDialog.action}
+        type={confirmDialog.action === 'Delete' ? 'danger' : 'warning'}
+        isLoading={isProcessing}
+      />
     </DashboardLayout>
   );
 };

@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import httpStatus from 'http-status';
 import jwt from 'jsonwebtoken';
 import { db } from '../config/db.js';
+import prisma from '../lib/prisma.js';
 import { ApiError } from '../api/utils/ApiError.js';
 import { tokenTypes } from '../config/tokens.js';
 import config from '../config/config.js';
@@ -44,15 +45,18 @@ const auth = (...requiredRights: string[]) => {
         throw new ApiError(httpStatus.UNAUTHORIZED, 'Invalid token: Role is missing');
       }
 
+      const normalizedRole = typeof role === 'string' ? role.trim().toLowerCase() : role;
+
       // Check if the user's role is allowed
-      if (requiredRights.length && !requiredRights.includes(role)) {
+      if (requiredRights.length && !requiredRights.includes(normalizedRole)) {
+        console.warn('[Auth] Access denied - Role mismatch:', { role: normalizedRole, required: requiredRights });
         throw new ApiError(httpStatus.FORBIDDEN, 'Forbidden');
       }
 
       let entity: any;
       let entityError: any;
 
-      switch (role) {
+      switch (normalizedRole) {
         case 'user': {
           const { data, error } = await db.from('PIQ_User').select('*').eq('user_id', payload.sub).single();
           entity = data;
@@ -70,9 +74,16 @@ const auth = (...requiredRights: string[]) => {
           break;
         }
         case 'admin': {
-          const { data, error } = await db.from('PIQ_Admins').select('*').eq('admin_id', payload.sub).single();
-          entity = data;
-          entityError = error;
+          try {
+            const adminId = BigInt(payload.sub);
+            entity = await prisma.pIQ_Admins.findUnique({
+              where: { admin_id: adminId }
+            });
+            entityError = null;
+          } catch (error) {
+            console.error('[Auth] Admin lookup error:', error);
+            entityError = error;
+          }
           // No admin_status column in schema; skip status checks
           break;
         }
@@ -95,12 +106,14 @@ const auth = (...requiredRights: string[]) => {
       }
 
       if (entityError || !entity) {
+        console.error('[Auth] Entity not found:', { role: normalizedRole, error: entityError?.message });
         throw new ApiError(httpStatus.UNAUTHORIZED, 'User not found');
       }
 
       // Attach user/admin/provider entity to the request object
       req.user = entity;
       req.token = token;
+      req.userRole = normalizedRole;
 
       next();
     } catch (error) {

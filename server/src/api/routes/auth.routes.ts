@@ -9,7 +9,7 @@ router.post('/auth/google/login', googleLogin);
 // Facebook OAuth login
 router.post('/auth/facebook/login', facebookLogin);
 
-// Unified credentials login (tries admin then user)
+// User-only credentials login (providers use /provider/auth/login, admins use /admin/auth/login)
 router.post('/auth/login', login);
 
 // Refresh access token

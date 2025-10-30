@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useProvider } from '../../context/ProviderContext';
 import ProviderDashboardLayout from './ProviderDashboardLayout';
@@ -10,7 +11,7 @@ import {
   FaStar,
   FaChartLine,
   FaCheckCircle,
-  FaTrendingUp,
+  FaArrowUp,
   FaArrowRight,
   FaStethoscope,
   FaDumbbell,
@@ -19,9 +20,9 @@ import {
   FaFileAlt,
   FaClipboard,
 } from 'react-icons/fa';
-import { fetchAnalytics, fetchRevenueMetrics } from '../../store/slices/analyticsSlice';
-import { fetchAppointments } from '../../store/slices/appointmentsSlice';
-import { fetchClients } from '../../store/slices/clientsSlice';
+import { fetchProviderDashboardOverview, fetchProviderMetrics, fetchProviderRevenue, fetchProviderTypeMetrics } from '../../store/slices/providerAnalyticsSlice';
+import { fetchProviderAppointments } from '../../store/slices/providerAppointmentsSlice';
+import { fetchProviderClients } from '../../store/slices/providerClientsSlice';
 import { PROVIDER_TYPES } from '../../store/slices/providerOnboardingSlice';
 
 /**
@@ -45,7 +46,7 @@ const StatCard = ({ icon: Icon, label, value, trend, trendUp = true, color = 'bl
           <p className="text-3xl font-bold text-gray-900 mt-3">{value}</p>
           {trend && (
             <div className={`flex items-center mt-3 text-sm font-medium ${trendUp ? 'text-green-600' : 'text-red-600'}`}>
-              <FaTrendingUp className={`mr-1 ${!trendUp && 'rotate-180'}`} />
+              <FaArrowUp className={`mr-1 ${!trendUp && 'rotate-180'}`} />
               {trend}
             </div>
           )}
@@ -205,28 +206,65 @@ const PetSitterWidget = ({ metrics }) => (
  */
 const ProviderDashboard = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { currentUser, authFetch } = useAuth();
   const { providerType, providerInfo } = useProvider();
 
-  // Redux state
-  const { metrics = {}, revenue = {} } = useSelector((state) => state.analytics || {});
-  const { appointments = [] } = useSelector((state) => state.appointments || {});
-  const { clients = [] } = useSelector((state) => state.clients || {});
+  // Redux state - using provider-specific slices
+  const { 
+    metrics = {}, 
+    revenue = {}, 
+    typeMetrics = {},
+    recentAppointments: fetchedAppointments = [],
+    clients = [],
+    loading,
+    error 
+  } = useSelector((state) => state.providerAnalytics || {});
 
-  const [providerMetrics, setProviderMetrics] = useState(null);
-
-  // Fetch data on mount
+  // Check if user is actually a provider
   useEffect(() => {
-    if (authFetch) {
-      dispatch(fetchAnalytics({ authFetch }));
-      dispatch(fetchRevenueMetrics({ authFetch }));
-      dispatch(fetchAppointments({ authFetch }));
-      dispatch(fetchClients({ authFetch }));
+    if (currentUser && currentUser.role !== 'provider') {
+      console.error('[ProviderDashboard] Access denied: User is not a provider', currentUser);
+      alert('Access Denied: You must be logged in as a provider to access this page.');
+      navigate('/provider/login');
     }
-  }, [dispatch, authFetch]);
+  }, [currentUser, navigate]);
 
-  // Mock recent appointments (replace with real data from Redux)
-  const recentAppointments = [
+  // Fetch data on mount - using single overview call for better performance
+  useEffect(() => {
+    // Only fetch if user is a provider
+    if (authFetch && currentUser && currentUser.role === 'provider') {
+      // Fetch all dashboard data in one call
+      dispatch(fetchProviderDashboardOverview({ authFetch }));
+    }
+  }, [dispatch, authFetch, currentUser]);
+
+  // Early return if not a provider
+  if (currentUser && currentUser.role !== 'provider') {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <div className="text-center p-8 bg-white rounded-lg shadow-md">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h2>
+          <p className="text-gray-700 mb-4">You must be logged in as a provider to access this page.</p>
+          <p className="text-gray-500">Redirecting to provider login...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Use fetched appointments or fallback to mock data
+  const recentAppointments = fetchedAppointments.length > 0 ? fetchedAppointments.map(apt => ({
+    id: apt.id,
+    clientName: apt.clientName,
+    petName: apt.petName,
+    date: new Date(apt.date).toLocaleString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      hour: 'numeric', 
+      minute: '2-digit' 
+    }),
+    status: apt.status,
+  })) : [
     {
       id: 1,
       clientName: 'John Doe',
@@ -260,15 +298,18 @@ const ProviderDashboard = () => {
 
   // Get provider-specific widget
   const getProviderWidget = () => {
+    const providerTypeKey = providerType?.toLowerCase().replace(/[^a-z]/g, '_');
+    const specificMetrics = typeMetrics[providerTypeKey] || typeMetrics.veterinarian || typeMetrics.trainer || typeMetrics.groomer || typeMetrics.pet_sitter;
+    
     switch (providerType) {
       case PROVIDER_TYPES.VETERINARIAN:
-        return <VeterinarianWidget metrics={providerMetrics} />;
+        return <VeterinarianWidget metrics={specificMetrics} />;
       case PROVIDER_TYPES.TRAINER:
-        return <TrainerWidget metrics={providerMetrics} />;
+        return <TrainerWidget metrics={specificMetrics} />;
       case PROVIDER_TYPES.GROOMER:
-        return <GroomerWidget metrics={providerMetrics} />;
+        return <GroomerWidget metrics={specificMetrics} />;
       case PROVIDER_TYPES.PET_SITTER:
-        return <PetSitterWidget metrics={providerMetrics} />;
+        return <PetSitterWidget metrics={specificMetrics} />;
       default:
         return null;
     }

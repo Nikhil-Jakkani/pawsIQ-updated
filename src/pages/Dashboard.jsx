@@ -42,7 +42,8 @@ const Dashboard = () => {
 
   useEffect(() => {
     let isMounted = true;
-    (async () => {
+    
+    const loadDashboardData = async () => {
       try {
         const [statsData, providerTypesData, revenueSummaryRes, engagementRes, bookingBreakdownRes] = await Promise.all([
           api.get('/admin/stats'),
@@ -86,18 +87,21 @@ const Dashboard = () => {
       } finally {
         if (isMounted) setLoading(false);
       }
-    })();
+    };
+    
+    loadDashboardData();
+    
     return () => {
       isMounted = false;
     };
-  }, [api]);
+  }, []); // Remove api dependency to prevent infinite loop
 
   useEffect(() => {
     let isMounted = true;
     setTrendLoading(true);
     setTrendError('');
 
-    (async () => {
+    const loadTrendData = async () => {
       try {
         const points = trendInterval === 'daily' ? 30 : 12;
         const seriesRes = await api.get(`/admin/stats/revenue/series?interval=${trendInterval}&points=${points}`);
@@ -122,12 +126,14 @@ const Dashboard = () => {
           setTrendLoading(false);
         }
       }
-    })();
+    };
+    
+    loadTrendData();
 
     return () => {
       isMounted = false;
     };
-  }, [api, trendInterval]);
+  }, [trendInterval]); // Remove api dependency to prevent infinite loop
 
   return (
     <DashboardLayout>

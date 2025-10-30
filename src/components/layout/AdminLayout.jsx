@@ -2,12 +2,15 @@ import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import { FaPaw } from 'react-icons/fa';
+import { useSidebar } from '../../context/SidebarContext';
 
 const AdminLayout = () => {
+  const { minimized } = useSidebar();
+  
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
       <Sidebar />
-      <div className="flex-1 ml-72 relative">
+      <div className={`flex-1 transition-all duration-300 ${minimized ? 'ml-20' : 'ml-72'} relative`}>
         <Header />
         <main className="p-8 mt-20 overflow-y-auto max-h-[calc(100vh-5rem)] rounded-tl-3xl bg-indigo-50/50">
           {/* Decorative paw prints */}

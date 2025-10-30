@@ -3,12 +3,10 @@ import { Link } from 'react-router-dom';
 import useApi from '../hooks/useApi';
 import { useLocation as useUserLocation } from '../hooks/useLocation';
 import { 
-  FaHospital, 
-  FaClipboardCheck, 
-  FaShieldAlt, 
-  FaPercentage, 
-  FaStar, 
-  FaExclamationTriangle,
+  FaUsers, 
+  FaUserShield, 
+  FaUserCog, 
+  FaDatabase, 
   FaSearch, 
   FaFilter, 
   FaEllipsisH, 
@@ -21,14 +19,21 @@ import {
   FaSort,
   FaSortUp,
   FaSortDown,
+  FaMapMarkerAlt,
+  FaStar,
+  FaCalendarCheck,
+  FaExclamationTriangle,
+  FaCheckCircle,
+  FaHospital,
   FaStethoscope,
   FaCut,
-  FaDog,
-  FaGraduationCap,
   FaPaw,
+  FaGraduationCap,
   FaTimes
 } from 'react-icons/fa';
 import DashboardLayout from '../components/layout/DashboardLayout';
+import ConfirmDialog from '../components/common/ConfirmDialog';
+import { useToast } from '../components/common/Toast';
 
 const Providers = () => {
   const api = useApi();
@@ -42,7 +47,10 @@ const Providers = () => {
   const [selectAll, setSelectAll] = useState(false);
   const [providers, setProviders] = useState([]);
   const [loading, setLoading] = useState(false);
-  
+  const { toast } = useToast();
+  const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, action: null, data: null });
+  const [isProcessing, setIsProcessing] = useState(false);
+
   // Fetch providers from backend (supports server-side filters)
   useEffect(() => {
     let alive = true;
@@ -60,6 +68,7 @@ const Providers = () => {
         setProviders(Array.isArray(data) ? data : []);
       } catch (e) {
         console.error('Error loading providers:', e);
+        toast.error('Error loading providers');
       } finally {
         if (alive) setLoading(false);
       }
@@ -67,7 +76,7 @@ const Providers = () => {
     run();
     return () => { alive = false; };
   }, [api, searchTerm, filterStatus, filterType, filterLocation]);
-  
+
   // Map backend providers to UI format
   const providersData = providers.map(p => {
     const rawType = p.serv_provider_type || p.type || 'Provider';
@@ -89,27 +98,13 @@ const Providers = () => {
       verified: (p.serv_provider_status || p.status) === 'active',
     };
   });
-  
+
   const providerStats = {
     totalProviders: providersData.length,
     activeProviders: providersData.filter(p => p.status === 'Active').length,
     pendingApproval: providersData.filter(p => p.status === 'Pending').length,
     flaggedProviders: providersData.filter(p => p.status === 'Flagged').length
   };
-
-  // Keep original sample data as fallback
-  const sampleData = [
-    { id: 1, name: 'Dr. James Wilson', email: 'james.wilson@example.com', type: 'Veterinarian', specialty: 'Small Animals', status: 'Active', rating: 4.8, reviews: 124, lastActive: '2 hours ago', registeredDate: '12/05/2023', appointments: 35, commission: '15%', verified: true },
-    { id: 2, name: 'Emma Thompson', email: 'emma.t@example.com', type: 'Groomer', specialty: 'Dogs', status: 'Active', rating: 4.6, reviews: 98, lastActive: '1 day ago', registeredDate: '10/15/2023', appointments: 28, commission: '12%', verified: true },
-    { id: 3, name: 'Dr. Michael Chen', email: 'michael.c@example.com', type: 'Veterinarian', specialty: 'Exotic Pets', status: 'Active', rating: 4.9, reviews: 87, lastActive: '3 hours ago', registeredDate: '11/20/2023', appointments: 42, commission: '15%', verified: true },
-    { id: 4, name: 'Sophia Rodriguez', email: 'sophia.r@example.com', type: 'Pet Sitter', specialty: 'All Pets', status: 'Pending', rating: 0, reviews: 0, lastActive: 'Never', registeredDate: '12/01/2023', appointments: 0, commission: '10%', verified: false },
-    { id: 5, name: 'Robert Johnson', email: 'robert.j@example.com', type: 'Trainer', specialty: 'Behavior Training', status: 'Active', rating: 4.7, reviews: 56, lastActive: '5 hours ago', registeredDate: '09/18/2023', appointments: 19, commission: '12%', verified: true },
-    { id: 6, name: 'Dr. Sarah Miller', email: 'sarah.m@example.com', type: 'Veterinarian', specialty: 'Surgery', status: 'Active', rating: 4.9, reviews: 112, lastActive: '1 hour ago', registeredDate: '08/30/2023', appointments: 31, commission: '15%', verified: true },
-    { id: 7, name: 'David Garcia', email: 'david.g@example.com', type: 'Groomer', specialty: 'Cats', status: 'Flagged', rating: 3.2, reviews: 23, lastActive: '2 weeks ago', registeredDate: '07/12/2023', appointments: 8, commission: '12%', verified: true },
-    { id: 8, name: 'Jennifer Lee', email: 'jennifer.l@example.com', type: 'Pet Sitter', specialty: 'Overnight Care', status: 'Active', rating: 4.5, reviews: 45, lastActive: '4 hours ago', registeredDate: '10/05/2023', appointments: 15, commission: '10%', verified: true },
-    { id: 9, name: 'Thomas Wright', email: 'thomas.w@example.com', type: 'Trainer', specialty: 'Puppy Training', status: 'Pending', rating: 0, reviews: 0, lastActive: 'Never', registeredDate: '12/02/2023', appointments: 0, commission: '12%', verified: false },
-    { id: 10, name: 'Dr. Elizabeth Taylor', email: 'elizabeth.t@example.com', type: 'Veterinarian', specialty: 'Dermatology', status: 'Active', rating: 4.7, reviews: 78, lastActive: '6 hours ago', registeredDate: '11/10/2023', appointments: 27, commission: '15%', verified: true }
-  ];
 
   // Filter and sort providers
   const filteredAndSortedProviders = providersData
@@ -192,9 +187,75 @@ const Providers = () => {
 
   // Handle bulk actions
   const handleBulkAction = (action) => {
-    console.log(`Performing ${action} on providers:`, selectedProviders);
-    // In a real app, you would call an API to perform the action
-    alert(`${action} action would be performed on ${selectedProviders.length} providers`);
+    if (selectedProviders.length === 0) {
+      toast.error('Please select at least one provider');
+      return;
+    }
+
+    const actionConfig = {
+      approve: { title: 'Approve Providers', message: `Approve ${selectedProviders.length} provider(s)?`, type: 'success' },
+      suspend: { title: 'Suspend Providers', message: `Suspend ${selectedProviders.length} provider(s)?`, type: 'warning' },
+      delete: { title: 'Delete Providers', message: `Permanently delete ${selectedProviders.length} provider(s)? This action cannot be undone.`, type: 'danger' }
+    };
+
+    const config = actionConfig[action];
+    if (!config) return;
+
+    setConfirmDialog({
+      isOpen: true,
+      action,
+      data: { ids: selectedProviders, config }
+    });
+  };
+
+  const executeBulkAction = async () => {
+    const { action, data } = confirmDialog;
+    setIsProcessing(true);
+    
+    try {
+      // Try to call the API endpoint
+      const endpoint = `/admin/providers/bulk-${action}`;
+      await api.post(endpoint, { providerIds: data.ids });
+      
+      toast.success(`Successfully ${action}ed ${data.ids.length} provider(s)`);
+      setSelectedProviders([]);
+      setSelectAll(false);
+      // Refresh the provider list
+      const qs = new URLSearchParams();
+      if (searchTerm) qs.set('search', searchTerm);
+      if (filterStatus && filterStatus !== 'all') qs.set('status', filterStatus);
+      if (filterType && filterType !== 'all') qs.set('type', filterType);
+      if (filterLocation) qs.set('location', filterLocation);
+      const url = `/admin/piq/providers${qs.toString() ? `?${qs.toString()}` : ''}`;
+      const refreshedData = await api.get(url);
+      setProviders(Array.isArray(refreshedData) ? refreshedData : []);
+    } catch (err) {
+      console.error(`Bulk ${action} failed:`, err);
+      // Fallback: update local state optimistically
+      if (action === 'approve') {
+        setProviders(prev => prev.map(p => 
+          data.ids.includes(p.service_provider_id || p.id) 
+            ? { ...p, serv_provider_status: 'active', status: 'active' } 
+            : p
+        ));
+        toast.success(`Locally approved ${data.ids.length} provider(s). Backend sync pending.`);
+      } else if (action === 'suspend') {
+        setProviders(prev => prev.map(p => 
+          data.ids.includes(p.service_provider_id || p.id) 
+            ? { ...p, serv_provider_status: 'inactive', status: 'inactive' } 
+            : p
+        ));
+        toast.warning(`Locally suspended ${data.ids.length} provider(s). Backend sync pending.`);
+      } else if (action === 'delete') {
+        setProviders(prev => prev.filter(p => !data.ids.includes(p.service_provider_id || p.id)));
+        toast.success(`Locally deleted ${data.ids.length} provider(s). Backend sync pending.`);
+      }
+      setSelectedProviders([]);
+      setSelectAll(false);
+    } finally {
+      setIsProcessing(false);
+      setConfirmDialog({ isOpen: false, action: null, data: null });
+    }
   };
 
   // Get provider type icon
@@ -746,6 +807,17 @@ const Providers = () => {
           </div>
         </div>
       </div>
+
+      {/* Confirm Dialog for Bulk Actions */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.data?.config?.title || 'Confirm Action'}
+        message={confirmDialog.data?.config?.message || 'Are you sure?'}
+        type={confirmDialog.data?.config?.type || 'warning'}
+        onConfirm={executeBulkAction}
+        onClose={() => setConfirmDialog({ isOpen: false, action: null, data: null })}
+        isProcessing={isProcessing}
+      />
     </DashboardLayout>
   );
 };

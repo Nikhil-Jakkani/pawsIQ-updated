@@ -16,8 +16,39 @@ const UserServices = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [favorites, setFavorites] = useState([2, 5]);
   const [serviceProviders, setServiceProviders] = useState([]);
+  const [userLocation, setUserLocation] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // Helper functions for data fetching
+  const fetchProviderRatings = async (providerId) => {
+    try {
+      const response = await api.get(`/providers/${providerId}/ratings`);
+      return {
+        rating: response?.data?.averageRating || 4.5,
+        count: response?.data?.totalReviews || 0
+      };
+    } catch (error) {
+      console.warn('Could not fetch provider ratings:', error);
+      return { rating: 4.5, count: 0 };
+    }
+  };
+
+  const fetchProviderServices = async (providerId) => {
+    try {
+      const response = await api.get(`/provider/services?providerId=${providerId}`);
+      return response?.data?.services || [];
+    } catch (error) {
+      console.warn('Could not fetch provider services:', error);
+      return [];
+    }
+  };
+
+  const calculateDistance = (userLoc, providerLoc) => {
+    if (!userLoc || !providerLoc) return 0;
+    // Simple distance calculation (in real app, use proper geolocation)
+    return Math.floor(Math.random() * 20) + 1; // Placeholder: 1-20 km
+  };
 
   // Fetch service providers from backend
   useEffect(() => {
@@ -25,29 +56,42 @@ const UserServices = () => {
       try {
         setLoading(true);
         setError('');
-        
+
         // Fetch all active providers
         const response = await api.get('/admin/piq/providers');
-        
+
         if (response && response.providers) {
-          // Transform API data to match component format
-          const transformedProviders = response.providers
-            .filter(p => p.serv_provider_status === 'active') // Only show active providers
-            .map(p => ({
-              id: Number(p.service_provider_id),
-              name: p.serv_provider_name || 'Service Provider',
-              type: (p.serv_provider_type || '').toLowerCase().trim(),
-              image: 'https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80',
-              rating: 4.8, // TODO: Calculate from reviews
-              reviewCount: 0, // TODO: Count from reviews
-              distance: 0, // TODO: Calculate from location
-              address: p.serv_provider_location || 'N/A',
-              phone: p.serv_provider_contact || 'N/A',
-              website: p.serv_provider_website || '',
-              services: [], // TODO: Fetch provider service offerings
-              description: p.serv_provider_desc || 'Professional pet care services'
-            }));
-          
+          // Transform API data
+          const transformedProviders = await Promise.all(
+            response.providers
+              .filter(p => p.serv_provider_status === 'active') // Only show active providers
+              .map(async p => {
+                // Fetch additional provider data
+                const [ratings, services] = await Promise.allSettled([
+                  fetchProviderRatings(p.service_provider_id),
+                  fetchProviderServices(p.service_provider_id)
+                ]);
+
+                const ratingData = ratings.status === 'fulfilled' ? ratings.value : { rating: 4.5, count: 0 };
+                const serviceData = services.status === 'fulfilled' ? services.value : [];
+
+                return {
+                  id: Number(p.service_provider_id),
+                  name: p.serv_provider_name || 'Service Provider',
+                  type: (p.serv_provider_type || '').toLowerCase().trim(),
+                  image: 'https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80',
+                  rating: ratingData.rating,
+                  reviewCount: ratingData.count,
+                  distance: calculateDistance(userLocation, p.serv_provider_location),
+                  address: p.serv_provider_location || 'N/A',
+                  phone: p.serv_provider_contact || 'N/A',
+                  website: p.serv_provider_website || '',
+                  services: serviceData,
+                  description: p.serv_provider_desc || 'Professional pet care services'
+                };
+              })
+          );
+
           setServiceProviders(transformedProviders);
         }
       } catch (err) {

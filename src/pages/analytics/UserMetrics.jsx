@@ -1,37 +1,81 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
+import useApi from '../../hooks/useApi';
 import { FaUsers, FaChartLine, FaCalendarAlt, FaMapMarkerAlt } from 'react-icons/fa';
 
 const UserMetrics = () => {
+  const api = useApi();
   const [timeRange, setTimeRange] = useState('month');
-  
-  // Mock data for demonstration
-  const userData = {
-    totalUsers: 12458,
-    activeUsers: 8743,
-    newUsers: {
-      day: 42,
-      week: 287,
-      month: 1243,
-      year: 5621
-    },
-    retentionRate: 76,
-    userGrowth: 18.7,
-    demographics: {
-      age: [
-        { group: '18-24', percentage: 22 },
-        { group: '25-34', percentage: 38 },
-        { group: '35-44', percentage: 24 },
-        { group: '45-54', percentage: 10 },
-        { group: '55+', percentage: 6 }
-      ],
-      gender: [
-        { type: 'Male', percentage: 48 },
-        { type: 'Female', percentage: 51 },
-        { type: 'Other', percentage: 1 }
-      ]
+  const [userData, setUserData] = useState({
+    totalUsers: 0,
+    activeUsers: 0,
+    newUsers: { day: 0, week: 0, month: 0, year: 0 },
+    retentionRate: 0,
+    userGrowth: 0,
+    demographics: { age: [], gender: [] }
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  // Fetch user metrics from API
+  const fetchUserMetrics = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      
+      const [metricsResponse, demographicsResponse] = await Promise.allSettled([
+        api.get(`/admin/analytics/user-metrics?timeRange=${timeRange}`),
+        api.get('/admin/analytics/user-demographics')
+      ]);
+      
+      const metrics = metricsResponse.status === 'fulfilled' ? metricsResponse.value?.data : null;
+      const demographics = demographicsResponse.status === 'fulfilled' ? demographicsResponse.value?.data : null;
+      
+      if (metrics) {
+        setUserData({
+          totalUsers: metrics.totalUsers || 0,
+          activeUsers: metrics.activeUsers || 0,
+          newUsers: metrics.newUsers || { day: 0, week: 0, month: 0, year: 0 },
+          retentionRate: metrics.retentionRate || 0,
+          userGrowth: metrics.userGrowth || 0,
+          demographics: demographics || { age: [], gender: [] }
+        });
+      } else {
+        throw new Error('Failed to fetch user metrics');
+      }
+    } catch (err) {
+      console.error('Failed to fetch user metrics:', err);
+      setError('Failed to load user metrics. Please try again.');
+      // Fallback to sample data for demo
+      setUserData({
+        totalUsers: 12458,
+        activeUsers: 8743,
+        newUsers: { day: 42, week: 287, month: 1243, year: 5621 },
+        retentionRate: 76,
+        userGrowth: 18.7,
+        demographics: {
+          age: [
+            { group: '18-24', percentage: 22 },
+            { group: '25-34', percentage: 38 },
+            { group: '35-44', percentage: 24 },
+            { group: '45-54', percentage: 10 },
+            { group: '55+', percentage: 6 }
+          ],
+          gender: [
+            { type: 'Male', percentage: 48 },
+            { type: 'Female', percentage: 51 },
+            { type: 'Other', percentage: 1 }
+          ]
+        }
+      });
+    } finally {
+      setLoading(false);
     }
   };
+  
+  useEffect(() => {
+    fetchUserMetrics();
+  }, [timeRange]);
 
   // Helper function to get new users based on selected time range
   const getNewUsers = () => {

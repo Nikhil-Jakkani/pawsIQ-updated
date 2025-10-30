@@ -11,7 +11,8 @@ export const userAuthController = {
     // Support both email and phone login
     let user;
     if (email) {
-      user = await userAuthService.loginUserWithEmailAndPassword(email, password);
+      // Ensure email is lowercase for case-insensitive comparison
+      user = await userAuthService.loginUserWithEmailAndPassword(email.toLowerCase(), password);
     } else if (phone) {
       user = await userAuthService.loginUserWithPhoneAndPassword(phone, password);
     } else {

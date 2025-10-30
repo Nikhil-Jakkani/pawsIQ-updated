@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import useApi from '../../hooks/useApi';
 import { 
   FaHospital, 
   FaShieldAlt, 
@@ -31,6 +32,7 @@ import {
 import DashboardLayout from '../../components/layout/DashboardLayout';
 
 const ProviderVerification = () => {
+  const api = useApi();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -40,9 +42,60 @@ const ProviderVerification = () => {
   const [activeTab, setActiveTab] = useState('documents');
   const [showDocumentModal, setShowDocumentModal] = useState(false);
   const [currentDocument, setCurrentDocument] = useState(null);
-  
-  // Sample data for providers
-  const providersData = [
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [providersData, setProvidersData] = useState([]);
+
+  // Fetch providers from backend
+  useEffect(() => {
+    let alive = true;
+    const fetchProviders = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await api.get('/admin/piq/providers');
+        if (!alive) return;
+        const providers = response?.data?.providers || response?.providers || [];
+
+        // Map backend data to UI format
+        const mapped = providers.map(p => ({
+          id: p.service_provider_id,
+          name: p.serv_provider_name || 'Unknown Provider',
+          email: p.serv_provider_email || '',
+          phone: p.serv_provider_phone || '',
+          type: p.serv_provider_type || 'Other',
+          specialty: p.serv_provider_specialization || 'General',
+          status: p.serv_provider_status === 'active' ? 'Fully Verified' : 
+                  p.serv_provider_status === 'inactive' ? 'Pending Verification' : 
+                  p.serv_provider_status === 'rejected' ? 'Verification Failed' : 'Pending Verification',
+          date: p.created_at ? new Date(p.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          address: p.serv_provider_location || 'Not provided',
+          documents: [],
+          background: {
+            status: 'pending',
+            checkDate: null,
+            notes: 'Background check pending'
+          },
+          references: []
+        }));
+
+        setProvidersData(mapped);
+      } catch (e) {
+        if (!alive) return;
+        console.error('Failed to fetch providers:', e);
+        setError('Using sample data - API permissions required');
+        // Use sample data as fallback
+        setProvidersData(sampleProvidersData);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    };
+    fetchProviders();
+    return () => { alive = false; };
+  }, [api]);
+
+  // Sample data for providers (fallback)
+  const sampleProvidersData = [
     { 
       id: 1, 
       name: 'Dr. James Wilson', 
@@ -293,6 +346,20 @@ const ProviderVerification = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
+        {/* Sample Data Warning */}
+        {error && error.includes('sample data') && (
+          <div className="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-md">
+            <div className="flex items-center">
+              <FaExclamationTriangle className="text-amber-400 mr-3" />
+              <div>
+                <p className="text-sm text-amber-700">
+                  <strong>Demo Mode:</strong> {error}. Configure admin permissions to access live data.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+        
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -314,7 +381,32 @@ const ProviderVerification = () => {
           </div>
         </div>
 
+        {/* Loading State */}
+        {loading && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading providers...</p>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && !loading && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+            <FaExclamationTriangle className="text-red-500 text-3xl mx-auto mb-3" />
+            <h3 className="text-lg font-medium text-red-900 mb-2">Error Loading Providers</h3>
+            <p className="text-red-700">{error}</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="mt-4 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
         {/* Stats Cards */}
+        {!loading && !error && (
+        <>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
             <div className="flex items-center justify-between">
@@ -812,6 +904,8 @@ const ProviderVerification = () => {
             )}
           </div>
         </div>
+        </>
+        )}
       </div>
 
       {/* Document View Modal */}

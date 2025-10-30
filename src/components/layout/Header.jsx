@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FaBell, FaSearch, FaEnvelope, FaQuestionCircle, FaPaw, FaBone, FaDog, FaCat, FaSun, FaCloud, FaCloudRain, FaSnowflake, FaClock, FaCalendarAlt } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
+import { useSidebar } from '../../context/SidebarContext';
 import { PetIcon, PetIconButton } from './PetIcons';
 
 const Header = () => {
   const { currentUser } = useAuth();
+  const { minimized } = useSidebar();
+  const navigate = useNavigate();
   const [notifications] = useState(3);
   const [messages] = useState(5);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -48,7 +52,7 @@ const Header = () => {
   const WeatherIcon = getWeatherIcon(weather.condition);
 
   return (
-    <header className="bg-white shadow-md h-20 fixed top-0 right-0 left-72 z-10 rounded-bl-2xl">
+    <header className={`bg-white shadow-md h-20 fixed top-0 right-0 transition-all duration-300 ${minimized ? 'left-20' : 'left-72'} z-10 rounded-bl-2xl`}>
       <div className="flex items-center justify-between h-full px-8">
         <div className="w-1/4">
           <div className="relative">
@@ -102,7 +106,11 @@ const Header = () => {
           </div>
 
           <div className="relative">
-            <button className="p-3 rounded-full hover:bg-indigo-50 transition-colors bg-indigo-100 text-indigo-600">
+            <button 
+              onClick={() => navigate('/notifications')}
+              className="p-3 rounded-full hover:bg-indigo-50 transition-colors bg-indigo-100 text-indigo-600"
+              title="Notifications"
+            >
               <FaBell className="w-5 h-5" />
               {notifications > 0 && (
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center border-2 border-white">
@@ -113,7 +121,11 @@ const Header = () => {
           </div>
           
           <div className="relative">
-            <button className="p-3 rounded-full hover:bg-indigo-50 transition-colors bg-indigo-100 text-indigo-600">
+            <button 
+              onClick={() => navigate('/support/chat')}
+              className="p-3 rounded-full hover:bg-indigo-50 transition-colors bg-indigo-100 text-indigo-600"
+              title="Messages"
+            >
               <FaEnvelope className="w-5 h-5" />
               {messages > 0 && (
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center border-2 border-white">
@@ -123,7 +135,11 @@ const Header = () => {
             </button>
           </div>
           
-          <button className="p-3 rounded-full hover:bg-indigo-50 transition-colors bg-indigo-100 text-indigo-600">
+          <button 
+            onClick={() => navigate('/support')}
+            className="p-3 rounded-full hover:bg-indigo-50 transition-colors bg-indigo-100 text-indigo-600"
+            title="Help & Support"
+          >
             <FaQuestionCircle className="w-5 h-5" />
           </button>
           
