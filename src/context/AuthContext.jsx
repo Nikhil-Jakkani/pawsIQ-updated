@@ -245,56 +245,72 @@ export const AuthProvider = ({ children }) => {
       : { phone: identifier, password };
 
     try {
-      // Try unified login first (user-only endpoint)
-      let response = await fetch(`${API_URL}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const attempts = [
+        {
+          endpoint: `${API_URL}/auth/login`,
+          transform: (data) => ({ user: data?.user, tokens: data?.tokens, raw: data }),
         },
-        credentials: 'include',
-        body: JSON.stringify(payload),
-      });
+        {
+          endpoint: `${API_URL}/user/auth/login`,
+          transform: (data) => ({ user: data?.user, tokens: data?.tokens, raw: data }),
+        },
+        {
+          endpoint: `${API_URL}/admin/auth/login`,
+          transform: (data) => ({
+            user: data?.admin
+              ? { ...data.admin, role: 'admin' }
+              : data?.user
+              ? { ...data.user, role: data.user.role || 'admin' }
+              : null,
+            tokens: data?.tokens ||
+              (data?.accessToken || data?.refreshToken
+                ? {
+                    access: { token: data.accessToken, expires: data.accessExpires },
+                    refresh: { token: data.refreshToken, expires: data.refreshExpires },
+                  }
+                : null),
+            raw: data,
+          }),
+        },
+      ];
 
-      let data = await response.json().catch(() => ({}));
-
-      // Fallback to user-specific endpoint if unified login fails
-      if (!response.ok) {
-        const uResp = await fetch(`${API_URL}/user/auth/login`, {
+      let authResult = null;
+      for (const attempt of attempts) {
+        const response = await fetch(attempt.endpoint, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
           body: JSON.stringify(payload),
         });
-        const uData = await uResp.json().catch(() => ({}));
-        if (uResp.ok) {
-          data = uData;
-          response = uResp;
+
+        const data = await response.json().catch(() => ({}));
+        if (response.ok) {
+          authResult = attempt.transform(data);
+          break;
         }
       }
 
-      if (response.ok) {
-        const user = data?.user || null;
-        // Normalize tokens shape
-        const normalizedTokens = data?.tokens
-          ? data.tokens
-          : (data?.accessToken || data?.refreshToken)
-            ? {
-                access: { token: data.accessToken },
-                refresh: { token: data.refreshToken },
-              }
-            : null;
+      if (authResult?.user && authResult?.tokens) {
+        const normalizedTokens = authResult.tokens?.access
+          ? authResult.tokens
+          : authResult.tokens
+          ? authResult.tokens
+          : null;
 
-        if (!normalizedTokens) {
+        if (!normalizedTokens?.access?.token || !normalizedTokens?.refresh?.token) {
           throw new Error('Invalid token response');
         }
 
-        const role = user?.role || 'user';
-        setCurrentUser(user);
+        const role = authResult.user.role || 'user';
+        const normalizedUser = { ...authResult.user, role };
+
+        setCurrentUser(normalizedUser);
         setTokens(normalizedTokens);
-        localStorage.setItem('user', JSON.stringify(user));
+        localStorage.setItem('user', JSON.stringify(normalizedUser));
         localStorage.setItem('authTokens', JSON.stringify(normalizedTokens));
-        // Clear any explicit logout flag
         clearLogoutFlag();
-        // Signal that location should be requested (handled by LocationPrompt component)
         sessionStorage.removeItem('location_prompt_dismissed');
         return { success: true, userType: role };
       }
