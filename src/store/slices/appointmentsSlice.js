@@ -28,7 +28,7 @@ const normalizeAppointment = (item = {}) => {
 
   const rawStatus = item.status ?? item.appointment_status ?? item.booking_status ?? null;
   const status = rawStatus ? String(rawStatus) : null;
-  const statusKey = status ? status.toLowerCase() : null;
+  const statusKey = status ? status.toLowerCase().replace(/\s+/g, '-') : null;
 
   return {
     id,
@@ -134,12 +134,12 @@ export const updateAppointment = createAsyncThunk(
 
 export const cancelAppointment = createAsyncThunk(
   'appointments/cancel',
-  async ({ id, reason, authFetch }, { rejectWithValue }) => {
+  async ({ id, authFetch }, { rejectWithValue }) => {
     try {
       const response = await authFetch(`${API_URL}/provider/appointments/${id}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'Cancelled', reason }),
+        body: JSON.stringify({ status: 'Cancelled' }),
       });
       const raw = await parseResponse(response, 'Failed to cancel appointment');
       return normalizeAppointment(raw);

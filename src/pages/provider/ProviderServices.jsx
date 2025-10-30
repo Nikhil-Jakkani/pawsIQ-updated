@@ -14,6 +14,7 @@ import {
 } from 'react-icons/fa';
 import {
   fetchServices,
+  fetchAvailableServices,
   createService,
   updateService,
   deleteService,
@@ -78,103 +79,158 @@ const ServiceCard = ({ service, onEdit, onDelete, onToggle }) => (
   </div>
 );
 
-const ServiceForm = ({ service, onSubmit, onCancel }) => {
-  const [formData, setFormData] = useState(
-    service || {
-      name: '',
-      description: '',
-      price: '',
-      duration: '',
-    }
+const ServiceForm = ({ service, availableServices = [], onSubmit, onCancel }) => {
+  const isEditing = Boolean(service);
+  const [formData, setFormData] = useState({
+    serviceId: service?.serviceId ?? '',
+    customTitle: service?.customTitle ?? '',
+    customDescription: service?.customDescription ?? '',
+    isActive: service?.active ?? true,
+  });
+
+  const selectedService = availableServices.find(
+    (item) => item.services_id === Number(formData.serviceId)
   );
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: type === 'checkbox' ? checked : value,
     }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(formData);
+    if (!isEditing && !formData.serviceId) return;
+
+    const payload = isEditing
+      ? {
+          custom_title: formData.customTitle || undefined,
+          custom_description: formData.customDescription || undefined,
+          is_active: formData.isActive,
+        }
+      : {
+          services_id: Number(formData.serviceId),
+          custom_title: formData.customTitle || undefined,
+          custom_description: formData.customDescription || undefined,
+          is_active: formData.isActive,
+        };
+
+    onSubmit(payload);
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
+      <div className="bg-white rounded-lg shadow-lg w-full max-w-xl p-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">
-          {service ? 'Edit Service' : 'Add New Service'}
+          {isEditing ? 'Edit Service' : 'Add New Service'}
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {!isEditing && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Select Service from Master List
+              </label>
+              <select
+                name="serviceId"
+                value={formData.serviceId}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+                required
+              >
+                <option value="">-- Select a service --</option>
+                {availableServices.map((item) => (
+                  <option key={item.services_id} value={item.services_id}>
+                    {item.service_title} — ₹{item.service_price_amt}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                Choose a service from the master list to add it to your offerings.
+              </p>
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Service Name
+              Custom Title <span className="text-gray-400 text-xs">(optional)</span>
             </label>
             <input
               type="text"
-              name="name"
-              value={formData.name}
+              name="customTitle"
+              value={formData.customTitle}
               onChange={handleChange}
-              required
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-              placeholder="e.g., Vaccination"
+              placeholder="Override default title"
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description
+              Custom Description <span className="text-gray-400 text-xs">(optional)</span>
             </label>
             <textarea
-              name="description"
-              value={formData.description}
+              name="customDescription"
+              value={formData.customDescription}
               onChange={handleChange}
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-              placeholder="Service description..."
+              placeholder="Provide additional details"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-lg p-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Price (₹)
-              </label>
-              <input
-                type="number"
-                name="price"
-                value={formData.price}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-                placeholder="0"
-              />
+              <p className="text-sm text-gray-600">Active</p>
+              <p className="text-xs text-gray-500">Toggle to show or hide this service to customers.</p>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Duration (min)
-              </label>
+            <label className="inline-flex items-center cursor-pointer">
               <input
-                type="number"
-                name="duration"
-                value={formData.duration}
+                type="checkbox"
+                name="isActive"
+                checked={formData.isActive}
                 onChange={handleChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-                placeholder="30"
+                className="sr-only"
               />
-            </div>
+              <span
+                className={`w-11 h-6 flex items-center rounded-full p-1 duration-300 ${
+                  formData.isActive ? 'bg-green-500' : 'bg-gray-300'
+                }`}
+              >
+                <span
+                  className={`bg-white w-4 h-4 rounded-full shadow-md transform duration-300 ${
+                    formData.isActive ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </span>
+            </label>
           </div>
+
+          {(isEditing || selectedService) && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-blue-50 border border-blue-100 rounded-lg p-4">
+              <div>
+                <p className="text-xs text-blue-600 uppercase tracking-wide">Base Price</p>
+                <p className="text-lg font-semibold text-blue-900">
+                  ₹{(isEditing ? service?.price : selectedService?.service_price_amt) ?? 0}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-blue-600 uppercase tracking-wide">Duration</p>
+                <p className="text-lg font-semibold text-blue-900">
+                  {(isEditing ? service?.duration : selectedService?.service_duration) ?? 0} mins
+                </p>
+              </div>
+            </div>
+          )}
 
           <div className="flex space-x-3 mt-6">
             <button
               type="submit"
               className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg transition-colors font-semibold"
             >
-              {service ? 'Update' : 'Create'}
+              {isEditing ? 'Update Service' : 'Add Service'}
             </button>
             <button
               type="button"
@@ -193,19 +249,28 @@ const ServiceForm = ({ service, onSubmit, onCancel }) => {
 const ProviderServices = () => {
   const dispatch = useDispatch();
   const { authFetch } = useAuth();
-  const { services = [], loading = false, error = null } = useSelector((state) => state.services || {});
+  const {
+    services = [],
+    availableServices = [],
+    loading = false,
+    error = null,
+  } = useSelector((state) => state.services || {});
+
   const [showForm, setShowForm] = useState(false);
   const [editingService, setEditingService] = useState(null);
 
   useEffect(() => {
     if (authFetch) {
       dispatch(fetchServices({ authFetch }));
+      dispatch(fetchAvailableServices({ authFetch }));
     }
   }, [dispatch, authFetch]);
 
-  const handleCreate = (formData) => {
-    dispatch(createService({ data: formData, authFetch }));
-    setShowForm(false);
+  const handleCreate = (payload) => {
+    dispatch(createService({ data: payload, authFetch }))
+      .unwrap()
+      .then(() => setShowForm(false))
+      .catch(() => {});
   };
 
   const handleEdit = (id) => {
@@ -214,16 +279,21 @@ const ProviderServices = () => {
     setShowForm(true);
   };
 
-  const handleUpdate = (formData) => {
+  const handleUpdate = (payload) => {
+    if (!editingService) return;
     dispatch(
       updateService({
         id: editingService.id,
-        data: formData,
+        data: payload,
         authFetch,
       })
-    );
-    setShowForm(false);
-    setEditingService(null);
+    )
+      .unwrap()
+      .then(() => {
+        setShowForm(false);
+        setEditingService(null);
+      })
+      .catch(() => {});
   };
 
   const handleDelete = (id) => {
@@ -237,7 +307,7 @@ const ProviderServices = () => {
     dispatch(
       updateService({
         id,
-        data: { ...service, active: !service.active },
+        data: { is_active: !service.active },
         authFetch,
       })
     );
@@ -280,16 +350,56 @@ const ProviderServices = () => {
             <p className="text-gray-500 text-sm mt-2">Create your first service to get started</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {services.map((service) => (
-              <ServiceCard
-                key={service.id}
-                service={service}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                onToggle={handleToggle}
-              />
-            ))}
+          <div className="space-y-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {services.map((service) => (
+                <ServiceCard
+                  key={service.id}
+                  service={service}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onToggle={handleToggle}
+                />
+              ))}
+            </div>
+
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-gray-900">Available Services to Add</h2>
+                <span className="text-sm text-gray-500">{availableServices.length} available</span>
+              </div>
+              {availableServices.length === 0 ? (
+                <p className="text-gray-500 text-sm">
+                  You have already added every service from the master list.
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {availableServices.map((svc) => (
+                    <div key={svc.services_id} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900">{svc.service_title}</h3>
+                          <p className="text-sm text-gray-600 mt-1">
+                            {svc.service_description || 'No description provided.'}
+                          </p>
+                        </div>
+                        <span className="px-2 py-1 text-xs rounded bg-blue-100 text-blue-600">
+                          {svc.service_type || 'Service'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-6 mt-4 text-sm text-gray-700">
+                        <span className="flex items-center gap-1">
+                          <FaRupeeSign className="text-green-600" />₹{svc.service_price_amt}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <FaClock className="text-blue-600" />{svc.service_duration} mins
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -297,6 +407,7 @@ const ProviderServices = () => {
         {showForm && (
           <ServiceForm
             service={editingService}
+            availableServices={availableServices}
             onSubmit={editingService ? handleUpdate : handleCreate}
             onCancel={() => {
               setShowForm(false);
