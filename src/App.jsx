@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Routes, Route, Link, Navigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -75,6 +75,7 @@ import LiveChat from './pages/support/LiveChat.jsx';
 import KnowledgeBase from './pages/support/KnowledgeBase.jsx';
 import SupportDisputeResolution from './pages/support/DisputeResolution.jsx';
 import TicketAssignment from './pages/support/TicketAssignment.jsx';
+import CommonCapabilities from './pages/common/CommonCapabilities.jsx';
 import { useAuth } from './context/AuthContext';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import PWAUpdateNotification from './components/PWAUpdateNotification';
@@ -196,6 +197,7 @@ function App() {
             <Route path="/support/knowledge" element={<AdminProtectedRoute><KnowledgeBase /></AdminProtectedRoute>} />
             <Route path="/support/disputes" element={<AdminProtectedRoute><SupportDisputeResolution /></AdminProtectedRoute>} />
             <Route path="/support/assignment" element={<AdminProtectedRoute><TicketAssignment /></AdminProtectedRoute>} />
+            <Route path="/common/capabilities" element={<AdminProtectedRoute><CommonCapabilities /></AdminProtectedRoute>} />
 
             {/* User Routes */}
             {/* Top-level aliases for SEO/direct links */}

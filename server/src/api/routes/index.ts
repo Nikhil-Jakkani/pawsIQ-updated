@@ -31,6 +31,8 @@ import { providerRouter as providerPayoutRoutes, adminRouter as adminPayoutRoute
 import { providerRouter as providerCommissionRoutes, adminRouter as adminCommissionRoutes } from './commission/commission.route.js';
 import adminAnalyticsRoutes from './admin/analytics.route.js';
 import providerRatingsRoutes from './provider/ratings.route.js';
+import supportTicketRoutes from './support/ticket.route.js';
+import supportChatRoutes from './support/chat.route.js';
 
 const router = Router();
 
@@ -72,6 +74,8 @@ router.use('/admin/payouts', adminPayoutRoutes);
 router.use('/provider/commissions', providerCommissionRoutes);
 router.use('/admin/commissions', adminCommissionRoutes);
 router.use('/providers', providerRatingsRoutes);
+router.use('/support/tickets', supportTicketRoutes);
+router.use('/support/chat', supportChatRoutes);
 router.use('/admin/users/:userId/spending', (req, res) => {
   // User spending endpoint
   const totalSpent = Math.floor(Math.random() * 10000);

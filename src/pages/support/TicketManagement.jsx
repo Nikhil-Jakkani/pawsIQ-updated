@@ -1,71 +1,13 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { FaTicketAlt, FaSearch, FaFilter, FaSort, FaEye, FaEdit, FaTrash, FaPlus, FaExclamationTriangle, FaCheckCircle, FaClock } from 'react-icons/fa';
+import useSupportTickets from '../../hooks/useSupportTickets';
 
 const TicketManagement = () => {
-  // Sample ticket data
-  const [tickets, setTickets] = useState([
-    { 
-      id: 'TKT-1001', 
-      customer: 'John Smith', 
-      email: 'john.smith@example.com',
-      subject: 'Unable to book appointment', 
-      status: 'Open', 
-      priority: 'High', 
-      category: 'Booking',
-      created: '2025-06-10T14:30:00',
-      lastUpdated: '2025-06-10T15:45:00',
-      assignedTo: 'Sarah Johnson'
-    },
-    { 
-      id: 'TKT-1002', 
-      customer: 'Emily Davis', 
-      email: 'emily.davis@example.com',
-      subject: 'Payment not processed', 
-      status: 'In Progress', 
-      priority: 'Medium', 
-      category: 'Payments',
-      created: '2025-06-09T09:15:00',
-      lastUpdated: '2025-06-10T11:20:00',
-      assignedTo: 'Michael Brown'
-    },
-    { 
-      id: 'TKT-1003', 
-      customer: 'Robert Johnson', 
-      email: 'robert.johnson@example.com',
-      subject: 'Pet profile not updating', 
-      status: 'Pending', 
-      priority: 'Low', 
-      category: 'Profiles',
-      created: '2025-06-08T16:45:00',
-      lastUpdated: '2025-06-09T10:30:00',
-      assignedTo: 'Unassigned'
-    },
-    { 
-      id: 'TKT-1004', 
-      customer: 'Lisa Williams', 
-      email: 'lisa.williams@example.com',
-      subject: 'Refund request for canceled service', 
-      status: 'Closed', 
-      priority: 'High', 
-      category: 'Refunds',
-      created: '2025-06-07T11:20:00',
-      lastUpdated: '2025-06-08T14:15:00',
-      assignedTo: 'David Miller'
-    },
-    { 
-      id: 'TKT-1005', 
-      customer: 'Michael Thompson', 
-      email: 'michael.thompson@example.com',
-      subject: 'Provider not showing up for appointment', 
-      status: 'Open', 
-      priority: 'Critical', 
-      category: 'Complaints',
-      created: '2025-06-10T08:30:00',
-      lastUpdated: '2025-06-10T09:45:00',
-      assignedTo: 'Sarah Johnson'
-    },
-  ]);
+  const { listAdminTickets } = useSupportTickets();
+  const [ticketsResponse, setTicketsResponse] = useState({ items: [], pagination: { page: 1, pages: 1, total: 0 } });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -73,20 +15,89 @@ const TicketManagement = () => {
   const [priorityFilter, setPriorityFilter] = useState('All');
   const [categoryFilter, setCategoryFilter] = useState('All');
 
-  // Filtered tickets
-  const filteredTickets = tickets.filter(ticket => {
-    const matchesSearch = 
-      ticket.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ticket.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ticket.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ticket.email.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'All' || ticket.status === statusFilter;
-    const matchesPriority = priorityFilter === 'All' || ticket.priority === priorityFilter;
-    const matchesCategory = categoryFilter === 'All' || ticket.category === categoryFilter;
-    
-    return matchesSearch && matchesStatus && matchesPriority && matchesCategory;
-  });
+  const serverFilters = useMemo(() => ({
+    status: statusFilter === 'All' ? undefined : statusFilter.toLowerCase(),
+    priority: priorityFilter === 'All' ? undefined : priorityFilter.toLowerCase(),
+    category: categoryFilter === 'All' ? undefined : categoryFilter,
+  }), [statusFilter, priorityFilter, categoryFilter]);
+
+  const fetchTickets = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const data = await listAdminTickets(serverFilters);
+      setTicketsResponse(data || { items: [], pagination: { page: 1, pages: 1, total: 0 } });
+    } catch (err) {
+      setError(err?.message || 'Failed to load tickets');
+      setTicketsResponse({ items: [], pagination: { page: 1, pages: 1, total: 0 } });
+    } finally {
+      setLoading(false);
+    }
+  }, [listAdminTickets, serverFilters]);
+
+  useEffect(() => {
+    fetchTickets();
+  }, [fetchTickets]);
+
+  const filteredTickets = useMemo(() => {
+    return (ticketsResponse.items || []).filter((ticket) => {
+      const requesterName = ticket?.requester?.user_full_name || '';
+      const requesterEmail = ticket?.requester?.user_email_id || '';
+      const subject = ticket?.subject || '';
+      const ticketId = ticket?.ticket_id ? `TKT-${String(ticket.ticket_id).padStart(4, '0')}` : '';
+
+      const matchesSearch =
+        ticketId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        requesterName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        requesterEmail.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchesCategory =
+        categoryFilter === 'All' || (ticket.category || '').toLowerCase() === categoryFilter.toLowerCase();
+
+      return matchesSearch && matchesCategory;
+    });
+  }, [ticketsResponse.items, searchTerm, categoryFilter]);
+
+  const computedStats = useMemo(() => {
+    const base = { open: 0, critical: 0, resolvedToday: 0, averageResponseHours: 0 };
+    if (!filteredTickets.length) {
+      return base;
+    }
+
+    const now = new Date();
+    const totals = filteredTickets.reduce((acc, ticket) => {
+      const status = (ticket.status || '').toLowerCase();
+      const priority = (ticket.priority || '').toLowerCase();
+      if (status === 'open' || status === 'in_progress' || status === 'pending') {
+        acc.open += 1;
+      }
+      if (priority === 'critical') {
+        acc.critical += 1;
+      }
+      const resolvedAt = ticket.resolved_at ? new Date(ticket.resolved_at) : null;
+      if (resolvedAt && resolvedAt.toDateString() === now.toDateString()) {
+        acc.resolvedToday += 1;
+      }
+      if (ticket.first_response_at && ticket.created_at) {
+        const firstResponse = new Date(ticket.first_response_at);
+        const created = new Date(ticket.created_at);
+        const diffHours = Math.abs(firstResponse.getTime() - created.getTime()) / (1000 * 60 * 60);
+        acc.responseTotals += diffHours;
+        acc.responseCount += 1;
+      }
+      return acc;
+    }, { open: 0, critical: 0, resolvedToday: 0, responseTotals: 0, responseCount: 0 });
+
+    return {
+      open: totals.open,
+      critical: totals.critical,
+      resolvedToday: totals.resolvedToday,
+      averageResponseHours: totals.responseCount ? (totals.responseTotals / totals.responseCount).toFixed(1) : 0,
+    };
+  }, [filteredTickets]);
+
+  const formatTicketId = (ticketId) => `TKT-${String(ticketId).padStart(4, '0')}`;
 
   // Status badge color
   const getStatusBadgeColor = (status) => {
@@ -140,7 +151,7 @@ const TicketManagement = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-500 text-sm">Open Tickets</p>
-                <h3 className="text-2xl font-bold text-indigo-600">12</h3>
+                <h3 className="text-2xl font-bold text-indigo-600">{computedStats.open}</h3>
               </div>
               <div className="bg-indigo-100 p-3 rounded-full">
                 <FaTicketAlt className="text-indigo-600" />
@@ -152,7 +163,7 @@ const TicketManagement = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-500 text-sm">Critical Issues</p>
-                <h3 className="text-2xl font-bold text-red-600">3</h3>
+                <h3 className="text-2xl font-bold text-red-600">{computedStats.critical}</h3>
               </div>
               <div className="bg-red-100 p-3 rounded-full">
                 <FaExclamationTriangle className="text-red-600" />
@@ -164,7 +175,7 @@ const TicketManagement = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-500 text-sm">Resolved Today</p>
-                <h3 className="text-2xl font-bold text-green-600">8</h3>
+                <h3 className="text-2xl font-bold text-green-600">{computedStats.resolvedToday}</h3>
               </div>
               <div className="bg-green-100 p-3 rounded-full">
                 <FaCheckCircle className="text-green-600" />
@@ -176,7 +187,7 @@ const TicketManagement = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-500 text-sm">Avg. Response Time</p>
-                <h3 className="text-2xl font-bold text-yellow-600">2.5h</h3>
+                <h3 className="text-2xl font-bold text-yellow-600">{computedStats.averageResponseHours}h</h3>
               </div>
               <div className="bg-yellow-100 p-3 rounded-full">
                 <FaClock className="text-yellow-600" />
@@ -282,37 +293,49 @@ const TicketManagement = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredTickets.length > 0 ? (
+                {loading ? (
+                  <tr>
+                    <td colSpan="9" className="px-6 py-6 text-center text-sm text-gray-500">
+                      Loading tickets...
+                    </td>
+                  </tr>
+                ) : error ? (
+                  <tr>
+                    <td colSpan="9" className="px-6 py-6 text-center text-sm text-red-500">
+                      {error}
+                    </td>
+                  </tr>
+                ) : filteredTickets.length > 0 ? (
                   filteredTickets.map((ticket) => (
-                    <tr key={ticket.id} className="hover:bg-gray-50">
+                    <tr key={ticket.ticket_id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-indigo-600">
-                        {ticket.id}
+                        {formatTicketId(ticket.ticket_id)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        <div>{ticket.customer}</div>
-                        <div className="text-xs text-gray-500">{ticket.email}</div>
+                        <div>{ticket?.requester?.user_full_name || 'Unknown User'}</div>
+                        <div className="text-xs text-gray-500">{ticket?.requester?.user_email_id || '—'}</div>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">
-                        {ticket.subject}
+                        {ticket.subject || '—'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeColor(ticket.status)}`}>
-                          {ticket.status}
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeColor((ticket.status || '').replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase()))}`}>
+                          {(ticket.status || 'unknown').replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getPriorityBadgeColor(ticket.priority)}`}>
-                          {ticket.priority}
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getPriorityBadgeColor((ticket.priority || 'unknown').replace(/\b\w/g, (l) => l.toUpperCase()))}`}>
+                          {(ticket.priority || 'unknown').replace(/\b\w/g, (l) => l.toUpperCase())}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {ticket.category}
+                        {ticket.category || '—'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatDate(ticket.created)}
+                        {formatDate(ticket.created_at || ticket.created)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {ticket.assignedTo}
+                        {ticket?.provider?.serv_provider_name || 'Unassigned'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex justify-end space-x-2">
@@ -345,8 +368,8 @@ const TicketManagement = () => {
             <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm text-gray-700">
-                  Showing <span className="font-medium">1</span> to <span className="font-medium">{filteredTickets.length}</span> of{' '}
-                  <span className="font-medium">{filteredTickets.length}</span> results
+                  Showing <span className="font-medium">{filteredTickets.length ? 1 : 0}</span> to <span className="font-medium">{filteredTickets.length}</span> of{' '}
+                  <span className="font-medium">{ticketsResponse?.pagination?.total || 0}</span> results
                 </p>
               </div>
               <div>
