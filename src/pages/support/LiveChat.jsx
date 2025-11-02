@@ -1,120 +1,582 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
-import { FaComments, FaUser, FaPaperPlane, FaSmile, FaPaperclip, FaEllipsisV, FaCircle, FaSearch, FaPhone, FaVideo, FaInfoCircle } from 'react-icons/fa';
+import { FaComments, FaPaperPlane, FaSearch, FaSpinner } from 'react-icons/fa';
+import useChat from '../../hooks/useChat.js';
+import { useAuth } from '../../context/AuthContext.jsx';
+import useChatSocket from '../../hooks/useChatSocket.js';
+
+const normalizeRole = (role) => (role || '').toLowerCase();
+
+const toComparable = (value) => {
+  if (value === null || value === undefined) return undefined;
+  return String(value);
+};
+
+const formatTimestamp = (value) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const shortDate = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  const shortTime = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+  return `${shortDate} · ${shortTime}`;
+};
+
+const getParticipantLabel = (participant) => {
+  if (!participant) return 'Unknown';
+  const role = normalizeRole(participant.role);
+
+  if (role === 'user') {
+    return (
+      participant.user?.user_full_name ||
+      participant.user?.user_email_id ||
+      `User #${participant.user_id}`
+    );
+  }
+
+  if (role === 'provider') {
+    return (
+      participant.provider?.serv_provider_name ||
+      `Provider #${participant.provider_id}`
+    );
+  }
+
+  return (
+    participant.admin?.admin_full_name ||
+    `Admin #${participant.admin_id}`
+  );
+};
+
+const buildConversationTitle = (conversation, currentUser) => {
+  const participants = conversation?.participants || [];
+  const currentRole = normalizeRole(currentUser?.role);
+
+  const relevantParticipants = participants.filter((participant) => {
+    const role = normalizeRole(participant.role);
+    if (role !== currentRole) return true;
+
+    if (role === 'user') {
+      return toComparable(participant.user_id) !== toComparable(currentUser?.user_id);
+    }
+    if (role === 'provider') {
+      return toComparable(participant.provider_id) !== toComparable(currentUser?.service_provider_id || currentUser?.provider_id);
+    }
+    if (role === 'admin') {
+      return toComparable(participant.admin_id) !== toComparable(currentUser?.admin_id);
+    }
+    return true;
+  });
+
+  if (!relevantParticipants.length) {
+    return conversation?.topic || `Conversation #${conversation?.conversation_id}`;
+  }
+
+  return relevantParticipants.map(getParticipantLabel).join(', ');
+};
+
+const lastMessagePreview = (conversation) => {
+  const lastMessage = conversation?.messages?.[0];
+  return lastMessage?.message_body || conversation?.topic || 'No messages yet';
+};
+
+const messageFromCurrentUser = (message, currentUser) => {
+  const role = normalizeRole(message?.author_role);
+  if (!role) return false;
+
+  if (role === 'user') {
+    return toComparable(message.author_user_id) === toComparable(currentUser?.user_id);
+  }
+  if (role === 'provider') {
+    const currentProviderId = currentUser?.service_provider_id || currentUser?.provider_id;
+    return toComparable(message.author_provider_id) === toComparable(currentProviderId);
+  }
+  if (role === 'admin') {
+    return toComparable(message.author_admin_id) === toComparable(currentUser?.admin_id);
+  }
+  return false;
+};
+
+const serializeConversation = (conversation) => {
+  if (!conversation) {
+    return conversation;
+  }
+  return {
+    ...conversation,
+    participants: Array.isArray(conversation.participants) ? conversation.participants : [],
+    messages: Array.isArray(conversation.messages) ? conversation.messages : [],
+  };
+};
 
 const LiveChat = () => {
-  const [activeChat, setActiveChat] = useState(0);
-  const [message, setMessage] = useState('');
+  const { currentUser } = useAuth();
+  const { listConversations, listMessages, sendMessage, markRead } = useChat();
+  const { connected: socketConnected, on, joinConversation, leaveConversation, emitTyping, disconnect: disconnectSocket } = useChatSocket();
+
   const [searchTerm, setSearchTerm] = useState('');
+  const [conversations, setConversations] = useState([]);
+  const [conversationsLoading, setConversationsLoading] = useState(false);
+  const [conversationsError, setConversationsError] = useState('');
+  const [activeConversationId, setActiveConversationId] = useState(null);
 
-  // Sample chat data
-  const chats = [
-    {
-      id: 1,
-      customer: {
-        name: 'Emily Davis',
-        email: 'emily.davis@example.com',
-        avatar: 'https://randomuser.me/api/portraits/women/12.jpg',
-        status: 'online'
-      },
-      messages: [
-        { id: 1, sender: 'customer', text: 'Hi, I need help with my booking.', time: '10:30 AM' },
-        { id: 2, sender: 'agent', text: 'Hello Emily, I\'d be happy to help you with your booking. Could you please provide me with your booking reference number?', time: '10:32 AM' },
-        { id: 3, sender: 'customer', text: 'Sure, it\'s BK-78945.', time: '10:33 AM' },
-        { id: 4, sender: 'agent', text: 'Thank you. I can see your booking for pet grooming on June 15th at 2:00 PM. What seems to be the issue?', time: '10:35 AM' },
-        { id: 5, sender: 'customer', text: 'I need to reschedule it to next week. Is that possible?', time: '10:36 AM' },
-      ],
-      unread: 0,
-      issue: 'Booking Rescheduling',
-      lastActive: '2 min ago'
-    },
-    {
-      id: 2,
-      customer: {
-        name: 'Michael Thompson',
-        email: 'michael.thompson@example.com',
-        avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
-        status: 'online'
-      },
-      messages: [
-        { id: 1, sender: 'customer', text: 'The provider didn\'t show up for our appointment today.', time: '9:45 AM' },
-        { id: 2, sender: 'agent', text: 'I\'m very sorry to hear that, Michael. This is unacceptable. Let me look into this right away.', time: '9:47 AM' },
-      ],
-      unread: 2,
-      issue: 'Provider No-Show',
-      lastActive: '15 min ago'
-    },
-    {
-      id: 3,
-      customer: {
-        name: 'Sarah Wilson',
-        email: 'sarah.wilson@example.com',
-        avatar: 'https://randomuser.me/api/portraits/women/22.jpg',
-        status: 'offline'
-      },
-      messages: [
-        { id: 1, sender: 'customer', text: 'I\'m having trouble updating my pet\'s profile information.', time: 'Yesterday' },
-        { id: 2, sender: 'agent', text: 'Hello Sarah, I\'d be happy to help. What specific information are you trying to update?', time: 'Yesterday' },
-        { id: 3, sender: 'customer', text: 'I\'m trying to update my dog\'s vaccination records, but I keep getting an error.', time: 'Yesterday' },
-      ],
-      unread: 0,
-      issue: 'Profile Update Issue',
-      lastActive: '1 day ago'
-    },
-    {
-      id: 4,
-      customer: {
-        name: 'Robert Johnson',
-        email: 'robert.johnson@example.com',
-        avatar: 'https://randomuser.me/api/portraits/men/42.jpg',
-        status: 'offline'
-      },
-      messages: [
-        { id: 1, sender: 'customer', text: 'I need a refund for a service I paid for but didn\'t receive.', time: '2 days ago' },
-      ],
-      unread: 1,
-      issue: 'Refund Request',
-      lastActive: '2 days ago'
-    },
-    {
-      id: 5,
-      customer: {
-        name: 'Jennifer Brown',
-        email: 'jennifer.brown@example.com',
-        avatar: 'https://randomuser.me/api/portraits/women/56.jpg',
-        status: 'online'
-      },
-      messages: [
-        { id: 1, sender: 'customer', text: 'How do I change my payment method?', time: '3 days ago' },
-        { id: 2, sender: 'agent', text: 'Hello Jennifer, you can update your payment method in your account settings under "Payment Methods". Would you like me to guide you through the process?', time: '3 days ago' },
-      ],
-      unread: 0,
-      issue: 'Payment Method Update',
-      lastActive: '3 days ago'
-    },
-  ];
+  const [messages, setMessages] = useState([]);
+  const [messagesLoading, setMessagesLoading] = useState(false);
+  const [messagesError, setMessagesError] = useState('');
+  const [messageInput, setMessageInput] = useState('');
+  const [sending, setSending] = useState(false);
+  const [typingParticipants, setTypingParticipants] = useState({});
 
-  // Filter chats based on search term
-  const filteredChats = chats.filter(chat => 
-    chat.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    chat.issue.toLowerCase().includes(searchTerm.toLowerCase())
+  const previousConversationRef = useRef(null);
+  const typingStateRef = useRef(false);
+  const typingTimeoutRef = useRef(null);
+
+  const currentActorId = useMemo(() => {
+    const role = normalizeRole(currentUser?.role);
+    if (role === 'user') {
+      return currentUser?.user_id !== undefined && currentUser?.user_id !== null
+        ? String(currentUser.user_id)
+        : undefined;
+    }
+    if (role === 'provider') {
+      const providerId = currentUser?.service_provider_id ?? currentUser?.provider_id;
+      return providerId !== undefined && providerId !== null ? String(providerId) : undefined;
+    }
+    if (role === 'admin') {
+      return currentUser?.admin_id !== undefined && currentUser?.admin_id !== null
+        ? String(currentUser.admin_id)
+        : undefined;
+    }
+    return undefined;
+  }, [currentUser]);
+
+  const loadConversations = useCallback(async () => {
+    setConversationsLoading(true);
+    setConversationsError('');
+    try {
+      const response = await listConversations();
+      const items = response?.data?.items || [];
+      setConversations(items);
+
+      if (!items.some((item) => item.conversation_id === activeConversationId)) {
+        setActiveConversationId(items[0]?.conversation_id ?? null);
+      }
+    } catch (error) {
+      setConversationsError(error?.message || 'Unable to load conversations right now.');
+    } finally {
+      setConversationsLoading(false);
+    }
+  }, [listConversations, activeConversationId]);
+
+  useEffect(() => {
+    loadConversations();
+  }, [loadConversations]);
+
+  const upsertConversation = useCallback(
+    (incoming) => {
+      if (!incoming?.conversation_id) {
+        return;
+      }
+
+      setConversations((prev) => {
+        const existingIndex = prev.findIndex(
+          (item) => item.conversation_id === incoming.conversation_id
+        );
+
+        const mergedConversation = existingIndex === -1
+          ? serializeConversation(incoming)
+          : {
+              ...prev[existingIndex],
+              ...serializeConversation(incoming),
+            };
+
+        const withoutExisting = existingIndex === -1 ? prev : prev.filter((_, idx) => idx !== existingIndex);
+        return [mergedConversation, ...withoutExisting];
+      });
+    },
+    []
   );
 
-  // Handle sending a new message
-  const handleSendMessage = (e) => {
-    e.preventDefault();
-    if (message.trim() === '') return;
-    
-    // In a real app, you would send this message to your backend
-    console.log('Sending message:', message);
-    
-    // Clear the input field
-    setMessage('');
+  const filteredConversations = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return conversations;
+    return conversations.filter((conversation) => {
+      const title = buildConversationTitle(conversation, currentUser).toLowerCase();
+      const preview = lastMessagePreview(conversation).toLowerCase();
+      return title.includes(term) || preview.includes(term);
+    });
+  }, [conversations, currentUser, searchTerm]);
+
+  const activeConversation = useMemo(
+    () => conversations.find((conversation) => conversation.conversation_id === activeConversationId) || null,
+    [conversations, activeConversationId]
+  );
+
+  const loadMessages = useCallback(async (conversationId) => {
+    if (!conversationId) {
+      setMessages([]);
+      return;
+    }
+    setMessagesLoading(true);
+    setMessagesError('');
+    try {
+      const response = await listMessages(conversationId, { limit: 100 });
+      const items = response?.data?.items || [];
+      setMessages(items);
+      await markRead(conversationId);
+    } catch (error) {
+      setMessagesError(error?.message || 'Unable to load messages for this conversation.');
+    } finally {
+      setMessagesLoading(false);
+    }
+  }, [listMessages, markRead]);
+
+  useEffect(() => {
+    loadMessages(activeConversationId);
+  }, [activeConversationId, loadMessages]);
+
+  useEffect(() => {
+    const prev = previousConversationRef.current;
+    if (prev && prev !== activeConversationId) {
+      leaveConversation(prev);
+      setTypingParticipants((state) => {
+        if (!state[prev]) {
+          return state;
+        }
+        const next = { ...state };
+        delete next[prev];
+        return next;
+      });
+    }
+    if (activeConversationId) {
+      joinConversation(activeConversationId);
+    }
+    previousConversationRef.current = activeConversationId;
+
+    return () => {
+      if (activeConversationId) {
+        leaveConversation(activeConversationId);
+      }
+    };
+  }, [activeConversationId, joinConversation, leaveConversation]);
+
+  useEffect(() => {
+    const prev = previousConversationRef.current;
+    if (prev && typingStateRef.current) {
+      emitTyping(prev, false);
+      typingStateRef.current = false;
+    }
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
+    }
+  }, [activeConversationId, emitTyping]);
+
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      const lastConversation = previousConversationRef.current;
+      if (lastConversation && typingStateRef.current) {
+        emitTyping(lastConversation, false);
+      }
+      disconnectSocket();
+    };
+  }, [disconnectSocket, emitTyping]);
+
+  useEffect(() => {
+    const unsubscribes = [];
+
+    const handleConversationUpdated = (conversation) => {
+      upsertConversation(conversation);
+    };
+
+    const handleMessageCreated = (message) => {
+      if (!message || !message.conversation_id) {
+        return;
+      }
+
+      const conversationId = Number(message.conversation_id);
+
+      setMessages((prev) => {
+        if (conversationId !== activeConversationId) {
+          return prev;
+        }
+        if (prev.some((item) => item.message_id === message.message_id)) {
+          return prev;
+        }
+        return [...prev, message];
+      });
+
+      setConversations((prev) => {
+        const index = prev.findIndex((item) => item.conversation_id === conversationId);
+        if (index === -1) {
+          return prev;
+        }
+        const updatedConversation = {
+          ...prev[index],
+          messages: [message],
+          last_message_at: message.created_at,
+        };
+        const others = prev.filter((_, idx) => idx !== index);
+        return [updatedConversation, ...others];
+      });
+    };
+
+    const handleParticipantRead = (payload) => {
+      const { conversationId, actor } = payload || {};
+      if (!conversationId || !actor) {
+        return;
+      }
+
+      setConversations((prev) => prev.map((item) => {
+        if (item.conversation_id !== conversationId) {
+          return item;
+        }
+        if (!Array.isArray(item.participants)) {
+          return item;
+        }
+        const participants = item.participants.map((participant) => {
+          const role = normalizeRole(participant?.role);
+          const matches =
+            (role === 'user' && participant.user_id !== null && participant.user_id !== undefined && String(participant.user_id) === actor.id) ||
+            (role === 'provider' && participant.provider_id !== null && participant.provider_id !== undefined && String(participant.provider_id) === actor.id) ||
+            (role === 'admin' && participant.admin_id !== null && participant.admin_id !== undefined && String(participant.admin_id) === actor.id);
+          if (!matches) {
+            return participant;
+          }
+          return {
+            ...participant,
+            last_read_at: payload.timestamp,
+          };
+        });
+        return {
+          ...item,
+          participants,
+        };
+      }));
+    };
+
+    const handleTyping = (payload) => {
+      if (!payload || !payload.conversationId || !payload.actor) {
+        return;
+      }
+
+      const conversationId = Number(payload.conversationId);
+      if (conversationId !== activeConversationId) {
+        return;
+      }
+
+      if (payload.actor.id === currentActorId && normalizeRole(payload.actor.role) === normalizeRole(currentUser?.role)) {
+        return;
+      }
+
+      const conversation = conversations.find((item) => item.conversation_id === conversationId);
+      let label = 'Someone';
+      if (conversation && Array.isArray(conversation.participants)) {
+        const participantMatch = conversation.participants.find((participant) => {
+          const role = normalizeRole(participant?.role);
+          if (role !== normalizeRole(payload.actor.role)) {
+            return false;
+          }
+          if (role === 'user') {
+            return participant?.user_id !== null && participant?.user_id !== undefined && String(participant.user_id) === payload.actor.id;
+          }
+          if (role === 'provider') {
+            return participant?.provider_id !== null && participant?.provider_id !== undefined && String(participant.provider_id) === payload.actor.id;
+          }
+          if (role === 'admin') {
+            return participant?.admin_id !== null && participant?.admin_id !== undefined && String(participant.admin_id) === payload.actor.id;
+          }
+          return false;
+        });
+        if (participantMatch) {
+          label = getParticipantLabel(participantMatch);
+        } else {
+          const normalizedRole = normalizeRole(payload.actor.role);
+          label = normalizedRole === 'admin' ? 'Admin' : normalizedRole === 'provider' ? 'Provider' : 'User';
+        }
+      }
+
+      setTypingParticipants((prev) => {
+        const existing = prev[conversationId] || [];
+        const filtered = existing.filter((item) => item.role !== payload.actor.role || item.id !== payload.actor.id);
+        if (!payload.typing) {
+          if (!filtered.length) {
+            if (!prev[conversationId]) {
+              return prev;
+            }
+            const next = { ...prev };
+            delete next[conversationId];
+            return next;
+          }
+          return {
+            ...prev,
+            [conversationId]: filtered,
+          };
+        }
+
+        return {
+          ...prev,
+          [conversationId]: [...filtered, { role: payload.actor.role, id: payload.actor.id, label }],
+        };
+      });
+    };
+
+    unsubscribes.push(on('conversation:updated', handleConversationUpdated));
+    unsubscribes.push(on('conversation:created', handleConversationUpdated));
+    unsubscribes.push(on('message:created', handleMessageCreated));
+    unsubscribes.push(on('participant:read', handleParticipantRead));
+    unsubscribes.push(on('participant:typing', handleTyping));
+
+    return () => {
+      unsubscribes.forEach((unsubscribe) => {
+        if (typeof unsubscribe === 'function') {
+          unsubscribe();
+        }
+      });
+    };
+  }, [on, activeConversationId, upsertConversation, conversations, currentUser, currentActorId]);
+
+  const handleSelectConversation = (conversationId) => {
+    setActiveConversationId(conversationId);
   };
 
-  // Get status color
-  const getStatusColor = (status) => {
-    return status === 'online' ? 'text-green-500' : 'text-gray-400';
+  const handleSendMessage = useCallback(async (event) => {
+    event.preventDefault();
+    if (!activeConversationId) return;
+    const trimmed = messageInput.trim();
+    if (!trimmed) return;
+
+    setSending(true);
+    setMessagesError('');
+    try {
+      const response = await sendMessage(activeConversationId, { message_body: trimmed });
+      const newMessage = response?.data;
+      if (newMessage) {
+        setMessages((prev) => {
+          if (prev.some((item) => item.message_id === newMessage.message_id)) {
+            return prev;
+          }
+          return [...prev, newMessage];
+        });
+        setConversations((prev) => {
+          const index = prev.findIndex((item) => item.conversation_id === activeConversationId);
+          if (index === -1) {
+            return prev;
+          }
+          const updated = {
+            ...prev[index],
+            messages: [newMessage],
+            last_message_at: newMessage.created_at,
+          };
+          const others = prev.filter((_, idx) => idx !== index);
+          return [updated, ...others];
+        });
+      }
+      setMessageInput('');
+      if (typingStateRef.current) {
+        emitTyping(activeConversationId, false);
+        typingStateRef.current = false;
+      }
+    } catch (error) {
+      setMessagesError(error?.message || 'Unable to send message right now.');
+    } finally {
+      setSending(false);
+    }
+  }, [activeConversationId, messageInput, sendMessage, emitTyping]);
+
+  const handleMessageInputChange = (event) => {
+    const value = event.target.value;
+    setMessageInput(value);
+    if (!activeConversationId) {
+      return;
+    }
+
+    if (!typingStateRef.current) {
+      emitTyping(activeConversationId, true);
+      typingStateRef.current = true;
+    }
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    typingTimeoutRef.current = setTimeout(() => {
+      if (typingStateRef.current) {
+        emitTyping(activeConversationId, false);
+        typingStateRef.current = false;
+      }
+    }, 2500);
+  };
+
+  const activeTypingParticipants = activeConversationId ? typingParticipants[activeConversationId] || [] : [];
+
+  const renderMessages = () => {
+    if (!activeConversationId) {
+      return (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <FaComments className="text-indigo-300 text-5xl mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900">No conversation selected</h3>
+            <p className="text-gray-500 mt-1">Select a conversation from the list to start chatting.</p>
+          </div>
+        </div>
+      );
+    }
+
+    if (messagesLoading) {
+      return (
+        <div className="flex-1 flex items-center justify-center">
+          <FaSpinner className="animate-spin text-indigo-500 text-2xl" />
+        </div>
+      );
+    }
+
+    if (messagesError) {
+      return (
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-red-500 text-sm">{messagesError}</p>
+        </div>
+      );
+    }
+
+    if (!messages.length) {
+      return (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center text-gray-500 text-sm">No messages yet. Start the conversation below.</div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex-1 p-4 overflow-y-auto bg-gray-50">
+        <div className="space-y-4">
+          {messages.map((message) => {
+            const fromCurrentUser = messageFromCurrentUser(message, currentUser);
+            return (
+              <div
+                key={message.message_id}
+                className={`flex ${fromCurrentUser ? 'justify-end' : 'justify-start'}`}
+              >
+                <div
+                  className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg shadow-sm ${
+                    fromCurrentUser
+                      ? 'bg-indigo-600 text-white rounded-br-none'
+                      : 'bg-white text-gray-800 rounded-bl-none'
+                  }`}
+                >
+                  <p className="text-sm whitespace-pre-wrap">{message.message_body}</p>
+                  <span
+                    className={`text-xs block mt-1 ${fromCurrentUser ? 'text-indigo-200' : 'text-gray-500'}`}
+                  >
+                    {formatTimestamp(message.created_at)}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -128,184 +590,131 @@ const LiveChat = () => {
             <h1 className="text-2xl font-bold text-gray-800">Live Chat Support</h1>
             <p className="text-gray-500">Manage real-time customer conversations</p>
           </div>
-        </div>
-        
-        <div className="bg-white rounded-xl shadow-sm border border-indigo-100 overflow-hidden">
-          <div className="flex h-[calc(100vh-220px)]">
-            {/* Chat List */}
-            <div className="w-1/3 border-r border-gray-200 flex flex-col">
-              <div className="p-4 border-b border-gray-200">
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FaSearch className="text-gray-400" />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Search conversations..."
-                    className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-              </div>
-              
-              <div className="overflow-y-auto flex-1">
-                {filteredChats.length > 0 ? (
-                  filteredChats.map((chat, index) => (
-                    <div 
-                      key={chat.id}
-                      className={`p-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 ${activeChat === index ? 'bg-indigo-50' : ''}`}
-                      onClick={() => setActiveChat(index)}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="relative">
-                          <img 
-                            src={chat.customer.avatar} 
-                            alt={chat.customer.name} 
-                            className="w-10 h-10 rounded-full object-cover"
-                          />
-                          <span className={`absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full ring-2 ring-white ${getStatusColor(chat.customer.status)}`}></span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex justify-between items-start">
-                            <h3 className="text-sm font-medium text-gray-900 truncate">{chat.customer.name}</h3>
-                            <span className="text-xs text-gray-500">{chat.lastActive}</span>
-                          </div>
-                          <p className="text-xs text-gray-500 truncate">{chat.issue}</p>
-                          <p className="text-sm text-gray-600 truncate mt-1">
-                            {chat.messages[chat.messages.length - 1].text}
-                          </p>
-                        </div>
-                        {chat.unread > 0 && (
-                          <div className="bg-indigo-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                            {chat.unread}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="p-4 text-center text-gray-500">
-                    No conversations found.
-                  </div>
-                )}
-              </div>
-            </div>
-            
-            {/* Chat Window */}
-            <div className="w-2/3 flex flex-col">
-              {filteredChats.length > 0 ? (
-                <>
-                  {/* Chat Header */}
-                  <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="relative">
-                        <img 
-                          src={filteredChats[activeChat].customer.avatar} 
-                          alt={filteredChats[activeChat].customer.name} 
-                          className="w-10 h-10 rounded-full object-cover"
-                        />
-                        <span className={`absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full ring-2 ring-white ${getStatusColor(filteredChats[activeChat].customer.status)}`}></span>
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-900">{filteredChats[activeChat].customer.name}</h3>
-                        <p className="text-xs text-gray-500">{filteredChats[activeChat].issue}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <button className="text-gray-500 hover:text-indigo-600">
-                        <FaPhone />
-                      </button>
-                      <button className="text-gray-500 hover:text-indigo-600">
-                        <FaVideo />
-                      </button>
-                      <button className="text-gray-500 hover:text-indigo-600">
-                        <FaInfoCircle />
-                      </button>
-                      <button className="text-gray-500 hover:text-indigo-600">
-                        <FaEllipsisV />
-                      </button>
-                    </div>
-                  </div>
-                  
-                  {/* Chat Messages */}
-                  <div className="flex-1 p-4 overflow-y-auto bg-gray-50">
-                    <div className="space-y-4">
-                      {filteredChats[activeChat].messages.map((msg) => (
-                        <div 
-                          key={msg.id} 
-                          className={`flex ${msg.sender === 'agent' ? 'justify-end' : 'justify-start'}`}
-                        >
-                          <div 
-                            className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                              msg.sender === 'agent' 
-                                ? 'bg-indigo-600 text-white rounded-br-none' 
-                                : 'bg-white text-gray-800 rounded-bl-none shadow-sm'
-                            }`}
-                          >
-                            <p>{msg.text}</p>
-                            <span 
-                              className={`text-xs block mt-1 ${
-                                msg.sender === 'agent' ? 'text-indigo-200' : 'text-gray-500'
-                              }`}
-                            >
-                              {msg.time}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  {/* Chat Input */}
-                  <div className="p-4 border-t border-gray-200">
-                    <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-                      <button 
-                        type="button" 
-                        className="text-gray-500 hover:text-indigo-600"
-                        title="Attach file"
-                      >
-                        <FaPaperclip />
-                      </button>
-                      <input
-                        type="text"
-                        placeholder="Type your message..."
-                        className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500"
-                        value={message}
-                        onChange={(e) => setMessage(e.target.value)}
-                      />
-                      <button 
-                        type="button" 
-                        className="text-gray-500 hover:text-indigo-600"
-                        title="Insert emoji"
-                      >
-                        <FaSmile />
-                      </button>
-                      <button
-                        type="submit"
-                        className="bg-indigo-600 text-white p-2 rounded-lg hover:bg-indigo-700 transition-colors"
-                        title="Send message"
-                      >
-                        <FaPaperPlane />
-                      </button>
-                    </form>
-                  </div>
-                </>
-              ) : (
-                <div className="flex-1 flex items-center justify-center">
-                  <div className="text-center">
-                    <FaComments className="text-indigo-300 text-5xl mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900">No conversation selected</h3>
-                    <p className="text-gray-500 mt-1">Select a conversation from the list to start chatting</p>
-                  </div>
-                </div>
-              )}
-            </div>
+          <div className="ml-auto text-xs">
+            <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full border ${socketConnected ? 'border-green-200 text-green-600 bg-green-50' : 'border-gray-200 text-gray-500 bg-gray-50'}`}>
+              <span className={`w-2 h-2 rounded-full ${socketConnected ? 'bg-green-500' : 'bg-gray-400'}`} />
+              {socketConnected ? 'Live updates on' : 'Live updates offline'}
+            </span>
           </div>
         </div>
+
+        {conversations.length ? (
+          <div className="bg-white rounded-xl shadow-sm border border-indigo-100 overflow-hidden">
+            <div className="flex h-[calc(100vh-220px)]">
+              <div className="w-1/3 border-r border-gray-200 flex flex-col">
+                <div className="p-4 border-b border-gray-200">
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <FaSearch className="text-gray-400" />
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Search conversations..."
+                      className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                      value={searchTerm}
+                      onChange={(event) => setSearchTerm(event.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="overflow-y-auto flex-1">
+                  {conversationsLoading ? (
+                    <div className="p-6 flex justify-center"><FaSpinner className="animate-spin text-indigo-500" /></div>
+                  ) : conversationsError ? (
+                    <div className="p-4 text-sm text-red-500 text-center">{conversationsError}</div>
+                  ) : filteredConversations.length ? (
+                    filteredConversations.map((conversation) => {
+                      const isActive = conversation.conversation_id === activeConversationId;
+                      return (
+                        <button
+                          key={conversation.conversation_id}
+                          type="button"
+                          className={`w-full text-left p-4 border-b border-gray-200 transition-colors ${
+                            isActive ? 'bg-indigo-50' : 'hover:bg-gray-50'
+                          }`}
+                          onClick={() => handleSelectConversation(conversation.conversation_id)}
+                        >
+                          <h3 className="text-sm font-semibold text-gray-800 truncate">
+                            {buildConversationTitle(conversation, currentUser)}
+                          </h3>
+                          <p className="text-xs text-gray-500 truncate mt-1">
+                            {lastMessagePreview(conversation)}
+                          </p>
+                          <p className="text-xs text-gray-400 mt-2">
+                            {formatTimestamp(conversation.last_message_at || conversation.updated_at)}
+                          </p>
+                        </button>
+                      );
+                    })
+                  ) : (
+                    <div className="p-6 text-center text-gray-500 text-sm">No conversations found.</div>
+                  )}
+                </div>
+              </div>
+
+              <div className="w-2/3 flex flex-col">
+                {activeConversation ? (
+                  <div className="border-b border-gray-200 p-4">
+                    <h2 className="text-sm font-semibold text-gray-800">
+                      {buildConversationTitle(activeConversation, currentUser)}
+                    </h2>
+                    {activeConversation.context_type && (
+                      <p className="text-xs text-gray-500 mt-1">{activeConversation.context_type}</p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="border-b border-gray-200 p-4 text-sm text-gray-500">
+                    Select a conversation to view messages.
+                  </div>
+                )}
+
+                {renderMessages()}
+
+                <div className="p-4 border-t border-gray-200">
+                  {activeConversationId && activeTypingParticipants.length ? (
+                    <div className="text-xs text-indigo-500 mb-2">
+                      {activeTypingParticipants.map((participant, index) => (
+                        <span key={`${participant.role}-${participant.id}`}>
+                          {participant.label || 'Someone'}
+                          {index === activeTypingParticipants.length - 1 ? ' is typing…' : ', '}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+                  <form onSubmit={handleSendMessage} className="flex items-center gap-3">
+                    <input
+                      type="text"
+                      placeholder={activeConversationId ? 'Type your message...' : 'Select a conversation to send messages'}
+                      className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:text-gray-400"
+                      value={messageInput}
+                      onChange={handleMessageInputChange}
+                      disabled={!activeConversationId || sending}
+                    />
+                    <button
+                      type="submit"
+                      className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                      disabled={!activeConversationId || sending || !messageInput.trim()}
+                    >
+                      {sending ? 'Sending…' : (
+                        <span className="flex items-center gap-2"><FaPaperPlane /> Send</span>
+                      )}
+                    </button>
+                  </form>
+                  {messagesError && (
+                    <p className="text-xs text-red-500 mt-2">{messagesError}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl shadow-sm border border-dashed border-gray-200 p-10 text-center text-gray-500 text-sm">
+            No conversations yet.
+          </div>
+        )}
       </div>
-    </DashboardLayout>
-  );
+  </DashboardLayout>
+);
 };
 
 export default LiveChat;

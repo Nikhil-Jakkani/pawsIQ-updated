@@ -30,16 +30,22 @@ try {
   });
 
   // After environment is loaded, dynamically import modules that use env/config
+  const { createServer } = await import('node:http');
   const { default: config } = await import('./config/config.js');
   const { default: app } = await import('./app.js');
+  const { initChatSocket } = await import('./socket/chatSocket.js');
   const { tokenCleanupService } = await import('./services/tokenCleanup.service.js');
 
   const port = config.port;
   const host = '0.0.0.0';
 
-  app.listen(port, host, () => {
+  const server = createServer(app);
+
+  initChatSocket(server);
+
+  server.listen(port, host, () => {
     console.log(`PawsIQ Backend listening on http://${host}:${port}`);
-    
+
     // Start token cleanup service
     tokenCleanupService.start();
     console.log('[Server] Token cleanup service started');

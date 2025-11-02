@@ -1,5 +1,6 @@
 import httpStatus from 'http-status';
 import prisma from '../../../lib/prisma.js';
+import { chatEvents } from '../../../events/chatEvents.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { serializeBigInt } from '../../utils/bigIntSerializer.js';
 
@@ -33,7 +34,7 @@ const buildActorFilter = (actor: ChatActor) => {
   }
 };
 
-const ensureAccess = async (conversationId: number, actor: ChatActor) => {
+export const ensureAccess = async (conversationId: number, actor: ChatActor) => {
   if (actor.role === 'admin') {
     return;
   }
@@ -51,8 +52,57 @@ const ensureAccess = async (conversationId: number, actor: ChatActor) => {
 
   const participant = await prisma.chatParticipant.findFirst({ where: participantWhere });
   if (!participant) {
-    throw new ApiError(httpStatus.FORBIDDEN, 'Access denied to this conversation');
+    throw new ApiError(httpStatus.FORBIDDEN, 'You do not have access to this conversation');
   }
+};
+
+type NormalizedAttachment = {
+  id?: string;
+  bucket: string;
+  path: string;
+  name: string;
+  mime_type?: string | null;
+  size: number;
+  url?: string | null;
+};
+
+export const normalizeAttachments = (attachments: unknown): NormalizedAttachment[] => {
+  if (!attachments || !Array.isArray(attachments)) {
+    return [];
+  }
+
+  return attachments.reduce<NormalizedAttachment[]>((acc, raw) => {
+    if (!raw || typeof raw !== 'object') {
+      return acc;
+    }
+
+    const attachment = raw as Record<string, unknown>;
+    const bucket = typeof attachment.bucket === 'string' ? attachment.bucket : 'chat-attachments';
+    const path = typeof attachment.path === 'string' ? attachment.path : null;
+    const name = typeof attachment.name === 'string' ? attachment.name : null;
+    const mimeType =
+      typeof attachment.mime_type === 'string' && attachment.mime_type.length <= 150
+        ? attachment.mime_type
+        : null;
+    const size = typeof attachment.size === 'number' && Number.isFinite(attachment.size) ? attachment.size : null;
+    const url = typeof attachment.url === 'string' ? attachment.url : null;
+
+    if (!path || !name || size === null) {
+      return acc;
+    }
+
+    acc.push({
+      id: typeof attachment.id === 'string' ? attachment.id : undefined,
+      bucket,
+      path,
+      name,
+      mime_type: mimeType,
+      size,
+      url,
+    });
+
+    return acc;
+  }, []);
 };
 
 const normalizeParticipant = (participant: { role: 'user' | 'provider' | 'admin'; id: number | string }) => {
@@ -179,8 +229,11 @@ const createConversation = async (actor: ChatActor, payload: CreateConversationP
       },
     },
   });
-
-  return serializeBigInt(conversation);
+  const serialized = serializeBigInt(conversation);
+  if (serialized) {
+    chatEvents.emit('conversation:created', serialized);
+  }
+  return serialized;
 };
 
 const listConversations = async (actor: ChatActor, query: any) => {
@@ -298,13 +351,34 @@ const sendMessage = async (
       ...authorFields,
     },
   });
-
-  await prisma.chatConversation.update({
+  const conversation = await prisma.chatConversation.update({
     where: { conversation_id: conversationId },
     data: { last_message_at: new Date() },
+    include: {
+      participants: {
+        include: {
+          user: true,
+          provider: true,
+          admin: true,
+        },
+      },
+      messages: {
+        orderBy: { created_at: 'desc' },
+        take: 1,
+      },
+    },
   });
 
-  return serializeBigInt(message);
+  const serializedMessage = serializeBigInt(message);
+  const serializedConversation = serializeBigInt(conversation);
+
+  chatEvents.emit('message:created', {
+    conversationId,
+    message: serializedMessage,
+    conversation: serializedConversation,
+  });
+
+  return serializedMessage;
 };
 
 const updateConversation = async (
@@ -318,8 +392,23 @@ const updateConversation = async (
     data: {
       ...(data.is_archived !== undefined ? { is_archived: Boolean(data.is_archived) } : {}),
     },
+    include: {
+      participants: {
+        include: {
+          user: true,
+          provider: true,
+          admin: true,
+        },
+      },
+      messages: {
+        orderBy: { created_at: 'desc' },
+        take: 1,
+      },
+    },
   });
-  return serializeBigInt(updated);
+  const serialized = serializeBigInt(updated);
+  chatEvents.emit('conversation:updated', { conversation: serialized });
+  return serialized;
 };
 
 const markRead = async (actor: ChatActor, conversationId: number) => {
@@ -336,6 +425,26 @@ const markRead = async (actor: ChatActor, conversationId: number) => {
     where,
     data: { last_read_at: new Date() },
   });
+
+  const actorId =
+    actor.role === 'user'
+      ? actor.userId?.toString()
+      : actor.role === 'provider'
+      ? actor.providerId !== undefined && actor.providerId !== null
+        ? String(actor.providerId)
+        : undefined
+      : actor.adminId?.toString();
+
+  if (actorId) {
+    chatEvents.emit('participant:read', {
+      conversationId,
+      actor: {
+        role: actor.role,
+        id: actorId,
+      },
+      timestamp: new Date().toISOString(),
+    });
+  }
 };
 
 export const chatService = {

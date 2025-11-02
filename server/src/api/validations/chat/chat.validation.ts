@@ -5,9 +5,19 @@ const pagination = {
   limit: Joi.number().integer().min(1).max(100).default(20),
 };
 
-const roleValues = ['user', 'provider', 'admin'] as const;
+const MAX_ATTACHMENT_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 
-type ParticipantRole = (typeof roleValues)[number];
+const attachmentSchema = Joi.object({
+  id: Joi.string().max(200).optional(),
+  bucket: Joi.string().max(100).default('chat-attachments'),
+  path: Joi.string().max(512).required(),
+  name: Joi.string().max(200).required(),
+  mime_type: Joi.string().max(150).allow(null, ''),
+  size: Joi.number().integer().min(0).max(MAX_ATTACHMENT_SIZE_BYTES).required(),
+  url: Joi.string().uri().allow(null, ''),
+}).unknown(false);
+
+const roleValues = ['user', 'provider', 'admin'] as const;
 
 const participantSchema = Joi.object({
   role: Joi.string()
@@ -26,7 +36,7 @@ export const chatValidation = {
       participants: Joi.array().items(participantSchema).default([]),
       initial_message: Joi.object({
         message_body: Joi.string().max(4000).required(),
-        attachments: Joi.array().items(Joi.object()).default([]),
+        attachments: Joi.array().items(attachmentSchema).max(5).default([]),
       }).allow(null),
     }),
   },
@@ -60,7 +70,7 @@ export const chatValidation = {
     }),
     body: Joi.object({
       message_body: Joi.string().max(4000).required(),
-      attachments: Joi.array().items(Joi.object()).default([]),
+      attachments: Joi.array().items(attachmentSchema).max(5).default([]),
     }),
   },
 
@@ -77,5 +87,16 @@ export const chatValidation = {
     params: Joi.object({
       conversationId: Joi.number().integer().positive().required(),
     }),
+  },
+
+  requestAttachmentUpload: {
+    params: Joi.object({
+      conversationId: Joi.number().integer().positive().required(),
+    }),
+    body: Joi.object({
+      file_name: Joi.string().max(200).required(),
+      file_size: Joi.number().integer().min(1).max(MAX_ATTACHMENT_SIZE_BYTES).required(),
+      file_type: Joi.string().max(150).allow(null, ''),
+    }).required(),
   },
 };
