@@ -30,4 +30,6 @@ export type TypingPayload = {
 class ChatEventEmitter extends EventEmitter {}
 
 export const chatEvents = new ChatEventEmitter();
-chatEvents.setMaxListeners(100);
+// Dynamic listener limit based on expected load (5 event types × max connections)
+const maxConnections = parseInt(process.env.MAX_SOCKET_CONNECTIONS || '1000', 10);
+chatEvents.setMaxListeners(Math.max(100, maxConnections * 5));

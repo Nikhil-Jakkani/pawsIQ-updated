@@ -217,10 +217,35 @@ const createConversation = async (actor: ChatActor, payload: CreateConversationP
     where: { conversation_id: created },
     include: {
       participants: {
-        include: {
-          user: true,
-          provider: true,
-          admin: true,
+        select: {
+          participant_id: true,
+          role: true,
+          user_id: true,
+          provider_id: true,
+          admin_id: true,
+          last_read_at: true,
+          joined_at: true,
+          user: {
+            select: {
+              user_id: true,
+              user_full_name: true,
+              user_email_id: true,
+            },
+          },
+          provider: {
+            select: {
+              service_provider_id: true,
+              serv_provider_name: true,
+              serv_provider_email: true,
+            },
+          },
+          admin: {
+            select: {
+              admin_id: true,
+              name: true,
+              email: true,
+            },
+          },
         },
       },
       messages: {
@@ -258,10 +283,35 @@ const listConversations = async (actor: ChatActor, query: any) => {
       take: limit,
       include: {
         participants: {
-          include: {
-            user: true,
-            provider: true,
-            admin: true,
+          select: {
+            participant_id: true,
+            role: true,
+            user_id: true,
+            provider_id: true,
+            admin_id: true,
+            last_read_at: true,
+            joined_at: true,
+            user: {
+              select: {
+                user_id: true,
+                user_full_name: true,
+                user_email_id: true,
+              },
+            },
+            provider: {
+              select: {
+                service_provider_id: true,
+                serv_provider_name: true,
+                serv_provider_email: true,
+              },
+            },
+            admin: {
+              select: {
+                admin_id: true,
+                name: true,
+                email: true,
+              },
+            },
           },
         },
         messages: {
@@ -290,10 +340,35 @@ const getConversation = async (actor: ChatActor, conversationId: number) => {
     where: { conversation_id: conversationId },
     include: {
       participants: {
-        include: {
-          user: true,
-          provider: true,
-          admin: true,
+        select: {
+          participant_id: true,
+          role: true,
+          user_id: true,
+          provider_id: true,
+          admin_id: true,
+          last_read_at: true,
+          joined_at: true,
+          user: {
+            select: {
+              user_id: true,
+              user_full_name: true,
+              user_email_id: true,
+            },
+          },
+          provider: {
+            select: {
+              service_provider_id: true,
+              serv_provider_name: true,
+              serv_provider_email: true,
+            },
+          },
+          admin: {
+            select: {
+              admin_id: true,
+              name: true,
+              email: true,
+            },
+          },
         },
       },
       messages: {
@@ -317,13 +392,12 @@ const listMessages = async (actor: ChatActor, conversationId: number, query: any
 
   const messages = await prisma.chatMessage.findMany({
     where: { conversation_id: conversationId, ...(cursor ? { message_id: { lt: cursor } } : {}) },
-    orderBy: { message_id: 'desc' },
+    orderBy: { message_id: 'asc' },
     take: limit,
   });
 
-  const reordered = messages.slice().reverse();
   return serializeBigInt({
-    items: reordered,
+    items: messages,
     nextCursor: messages.length === limit ? messages[messages.length - 1].message_id : null,
   });
 };
@@ -356,10 +430,35 @@ const sendMessage = async (
     data: { last_message_at: new Date() },
     include: {
       participants: {
-        include: {
-          user: true,
-          provider: true,
-          admin: true,
+        select: {
+          participant_id: true,
+          role: true,
+          user_id: true,
+          provider_id: true,
+          admin_id: true,
+          last_read_at: true,
+          joined_at: true,
+          user: {
+            select: {
+              user_id: true,
+              user_full_name: true,
+              user_email_id: true,
+            },
+          },
+          provider: {
+            select: {
+              service_provider_id: true,
+              serv_provider_name: true,
+              serv_provider_email: true,
+            },
+          },
+          admin: {
+            select: {
+              admin_id: true,
+              name: true,
+              email: true,
+            },
+          },
         },
       },
       messages: {
@@ -394,10 +493,35 @@ const updateConversation = async (
     },
     include: {
       participants: {
-        include: {
-          user: true,
-          provider: true,
-          admin: true,
+        select: {
+          participant_id: true,
+          role: true,
+          user_id: true,
+          provider_id: true,
+          admin_id: true,
+          last_read_at: true,
+          joined_at: true,
+          user: {
+            select: {
+              user_id: true,
+              user_full_name: true,
+              user_email_id: true,
+            },
+          },
+          provider: {
+            select: {
+              service_provider_id: true,
+              serv_provider_name: true,
+              serv_provider_email: true,
+            },
+          },
+          admin: {
+            select: {
+              admin_id: true,
+              name: true,
+              email: true,
+            },
+          },
         },
       },
       messages: {

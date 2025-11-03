@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { unstable_batchedUpdates } from 'react-dom';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { FaComments, FaPaperPlane, FaSearch, FaSpinner } from 'react-icons/fa';
 import useChat from '../../hooks/useChat.js';
@@ -127,6 +128,12 @@ const LiveChat = () => {
   const previousConversationRef = useRef(null);
   const typingStateRef = useRef(false);
   const typingTimeoutRef = useRef(null);
+  
+  // Refs to avoid socket event handler recreation
+  const conversationsRef = useRef(conversations);
+  const activeConversationIdRef = useRef(activeConversationId);
+  const currentUserRef = useRef(currentUser);
+  const currentActorIdRef = useRef(currentActorId);
 
   const currentActorId = useMemo(() => {
     const role = normalizeRole(currentUser?.role);
@@ -154,16 +161,20 @@ const LiveChat = () => {
       const response = await listConversations();
       const items = response?.data?.items || [];
       setConversations(items);
-
-      if (!items.some((item) => item.conversation_id === activeConversationId)) {
-        setActiveConversationId(items[0]?.conversation_id ?? null);
-      }
+      
+      // Only set active conversation on initial load, not on every refresh
+      setActiveConversationId(prev => {
+        if (prev && items.some(item => item.conversation_id === prev)) {
+          return prev;
+        }
+        return items[0]?.conversation_id ?? null;
+      });
     } catch (error) {
       setConversationsError(error?.message || 'Unable to load conversations right now.');
     } finally {
       setConversationsLoading(false);
     }
-  }, [listConversations, activeConversationId]);
+  }, [listConversations]);
 
   useEffect(() => {
     loadConversations();
@@ -204,6 +215,14 @@ const LiveChat = () => {
     });
   }, [conversations, currentUser, searchTerm]);
 
+  // Sync refs on every render
+  useEffect(() => {
+    conversationsRef.current = conversations;
+    activeConversationIdRef.current = activeConversationId;
+    currentUserRef.current = currentUser;
+    currentActorIdRef.current = currentActorId;
+  });
+  
   const activeConversation = useMemo(
     () => conversations.find((conversation) => conversation.conversation_id === activeConversationId) || null,
     [conversations, activeConversationId]
@@ -296,28 +315,34 @@ const LiveChat = () => {
 
       const conversationId = Number(message.conversation_id);
 
-      setMessages((prev) => {
-        if (conversationId !== activeConversationId) {
-          return prev;
-        }
-        if (prev.some((item) => item.message_id === message.message_id)) {
-          return prev;
-        }
-        return [...prev, message];
-      });
+      // Batch state updates to prevent double render
+      unstable_batchedUpdates(() => {
+        setMessages((prev) => {
+          if (conversationId !== activeConversationIdRef.current) {
+            return prev;
+          }
+          if (prev.some((item) => item.message_id === message.message_id)) {
+            return prev;
+          }
+          return [...prev, message];
+        });
 
-      setConversations((prev) => {
-        const index = prev.findIndex((item) => item.conversation_id === conversationId);
-        if (index === -1) {
-          return prev;
-        }
-        const updatedConversation = {
-          ...prev[index],
-          messages: [message],
-          last_message_at: message.created_at,
-        };
-        const others = prev.filter((_, idx) => idx !== index);
-        return [updatedConversation, ...others];
+        setConversations((prev) => {
+          const index = prev.findIndex((item) => item.conversation_id === conversationId);
+          if (index === -1) {
+            return prev;
+          }
+          const updated = [...prev];
+          updated[index] = {
+            ...updated[index],
+            messages: [message],
+            last_message_at: message.created_at,
+          };
+          // Move to top
+          const [movedItem] = updated.splice(index, 1);
+          updated.unshift(movedItem);
+          return updated;
+        });
       });
     };
 
@@ -327,32 +352,28 @@ const LiveChat = () => {
         return;
       }
 
-      setConversations((prev) => prev.map((item) => {
-        if (item.conversation_id !== conversationId) {
-          return item;
-        }
-        if (!Array.isArray(item.participants)) {
-          return item;
-        }
-        const participants = item.participants.map((participant) => {
-          const role = normalizeRole(participant?.role);
-          const matches =
-            (role === 'user' && participant.user_id !== null && participant.user_id !== undefined && String(participant.user_id) === actor.id) ||
-            (role === 'provider' && participant.provider_id !== null && participant.provider_id !== undefined && String(participant.provider_id) === actor.id) ||
-            (role === 'admin' && participant.admin_id !== null && participant.admin_id !== undefined && String(participant.admin_id) === actor.id);
-          if (!matches) {
-            return participant;
-          }
-          return {
-            ...participant,
-            last_read_at: payload.timestamp,
-          };
-        });
-        return {
+      // Optimize with direct index lookup instead of mapping all conversations
+      setConversations((prev) => {
+        const index = prev.findIndex(item => item.conversation_id === conversationId);
+        if (index === -1) return prev;
+        
+        const item = prev[index];
+        if (!Array.isArray(item.participants)) return prev;
+        
+        const updated = [...prev];
+        updated[index] = {
           ...item,
-          participants,
+          participants: item.participants.map((participant) => {
+            const role = normalizeRole(participant?.role);
+            const matches =
+              (role === 'user' && participant.user_id !== null && participant.user_id !== undefined && String(participant.user_id) === actor.id) ||
+              (role === 'provider' && participant.provider_id !== null && participant.provider_id !== undefined && String(participant.provider_id) === actor.id) ||
+              (role === 'admin' && participant.admin_id !== null && participant.admin_id !== undefined && String(participant.admin_id) === actor.id);
+            return matches ? { ...participant, last_read_at: payload.timestamp } : participant;
+          }),
         };
-      }));
+        return updated;
+      });
     };
 
     const handleTyping = (payload) => {
@@ -361,15 +382,15 @@ const LiveChat = () => {
       }
 
       const conversationId = Number(payload.conversationId);
-      if (conversationId !== activeConversationId) {
+      if (conversationId !== activeConversationIdRef.current) {
         return;
       }
 
-      if (payload.actor.id === currentActorId && normalizeRole(payload.actor.role) === normalizeRole(currentUser?.role)) {
+      if (payload.actor.id === currentActorIdRef.current && normalizeRole(payload.actor.role) === normalizeRole(currentUserRef.current?.role)) {
         return;
       }
 
-      const conversation = conversations.find((item) => item.conversation_id === conversationId);
+      const conversation = conversationsRef.current.find((item) => item.conversation_id === conversationId);
       let label = 'Someone';
       if (conversation && Array.isArray(conversation.participants)) {
         const participantMatch = conversation.participants.find((participant) => {
@@ -434,7 +455,7 @@ const LiveChat = () => {
         }
       });
     };
-  }, [on, activeConversationId, upsertConversation, conversations, currentUser, currentActorId]);
+  }, [on, upsertConversation]);
 
   const handleSelectConversation = (conversationId) => {
     setActiveConversationId(conversationId);
@@ -484,29 +505,33 @@ const LiveChat = () => {
     }
   }, [activeConversationId, messageInput, sendMessage, emitTyping]);
 
-  const handleMessageInputChange = (event) => {
+  const handleMessageInputChange = useCallback((event) => {
     const value = event.target.value;
     setMessageInput(value);
-    if (!activeConversationId) {
+    
+    const currentConversationId = activeConversationIdRef.current;
+    if (!currentConversationId) {
       return;
     }
 
+    // Send typing=true only once
     if (!typingStateRef.current) {
-      emitTyping(activeConversationId, true);
+      emitTyping(currentConversationId, true);
       typingStateRef.current = true;
     }
 
+    // Debounce typing=false signal
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
 
     typingTimeoutRef.current = setTimeout(() => {
       if (typingStateRef.current) {
-        emitTyping(activeConversationId, false);
+        emitTyping(currentConversationId, false);
         typingStateRef.current = false;
       }
     }, 2500);
-  };
+  }, [emitTyping]);
 
   const activeTypingParticipants = activeConversationId ? typingParticipants[activeConversationId] || [] : [];
 

@@ -34,6 +34,7 @@ const SOCKET_URL = resolveSocketUrl();
 const useChatSocket = () => {
   const { tokens } = useAuth();
   const socketRef = useRef(null);
+  const prevTokenRef = useRef(null);
   const [connected, setConnected] = useState(false);
 
   const disconnect = useCallback(() => {
@@ -46,17 +47,37 @@ const useChatSocket = () => {
 
   useEffect(() => {
     const accessToken = tokens?.access?.token;
+    
+    // No token - disconnect if connected
     if (!accessToken) {
       setConnected(false);
       disconnect();
+      prevTokenRef.current = null;
+      return undefined;
+    }
+    
+    // Token unchanged - skip reconnection
+    if (accessToken === prevTokenRef.current) {
+      return undefined;
+    }
+    
+    prevTokenRef.current = accessToken;
+    
+    // If socket exists and is connected, update auth without reconnecting
+    if (socketRef.current?.connected) {
+      socketRef.current.auth = { token: accessToken };
       return undefined;
     }
 
+    // Create new socket only if needed
     const socket = io(SOCKET_URL, {
       transports: ['websocket'],
       auth: { token: accessToken },
       autoConnect: true,
       reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      reconnectionAttempts: 5,
     });
 
     socketRef.current = socket;

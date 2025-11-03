@@ -857,5 +857,6 @@ model ChatMessage {
   @@index([author_provider_id], map: "idx_chat_message_author_provider")
   @@index([author_admin_id], map: "idx_chat_message_author_admin")
   @@index([created_at], map: "idx_chat_message_created_at")
+  @@index([conversation_id, message_id], map: "idx_chat_message_conversation_id")
   @@map("chat_messages")
 }
