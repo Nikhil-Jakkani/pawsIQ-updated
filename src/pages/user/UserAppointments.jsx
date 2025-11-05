@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaCalendarAlt, FaPlus, FaSearch, FaFilter, FaEye, FaTimes, FaCheck, FaClock, FaMapMarkerAlt, FaPaw, FaCalendarCheck, FaStar } from 'react-icons/fa';
+import { FaCalendarAlt, FaPlus, FaSearch, FaFilter, FaEye, FaTimes, FaCheck, FaClock, FaMapMarkerAlt, FaPaw, FaCalendarCheck, FaStar, FaComments } from 'react-icons/fa';
 import UserLayout from '../../components/layout/UserLayout';
 import { useAuth } from '../../context/AuthContext';
 const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
@@ -525,11 +525,34 @@ const UserAppointments = () => {
                               onError={(e) => { e.target.src = 'https://api.dicebear.com/7.x/shapes/svg?seed=paws'; }}
                             />
                           </div>
-                          <div>
-                            <p className="text-sm font-bold text-gray-800">{appointment.providerName}</p>
-                            <p className="text-xs text-blue-600 font-medium">Service Provider</p>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between gap-2">
+                              <div>
+                                <p className="text-sm font-bold text-gray-800">{appointment.providerName}</p>
+                                <p className="text-xs text-blue-600 font-medium">Service Provider</p>
+                              </div>
+                              {appointment.providerId && (appointment.actualStatus === 'confirmed' || appointment.actualStatus === 'awaiting') && (
+                                <button
+                                  onClick={() => navigate('/user/chat', {
+                                    state: {
+                                      providerId: appointment.providerId,
+                                      providerName: appointment.providerName,
+                                      serviceType: appointment.serviceType,
+                                      petName: appointment.petName,
+                                      topic: `Appointment: ${appointment.serviceType} for ${appointment.petName}`,
+                                      initialMessage: `Hi! I have an appointment scheduled for ${appointment.date} at ${appointment.time}.`
+                                    }
+                                  })}
+                                  className="flex items-center gap-1 px-3 py-1.5 bg-white hover:bg-blue-100 text-blue-600 rounded-lg border border-blue-200 transition-colors text-xs font-medium"
+                                  title="Chat with provider"
+                                >
+                                  <FaComments />
+                                  <span>Chat</span>
+                                </button>
+                              )}
+                            </div>
                             {appointment.providerAddress && appointment.providerAddress !== '—' && (
-                              <p className="text-xs text-gray-500">{appointment.providerAddress}</p>
+                              <p className="text-xs text-gray-500 mt-1">{appointment.providerAddress}</p>
                             )}
                           </div>
                         </div>

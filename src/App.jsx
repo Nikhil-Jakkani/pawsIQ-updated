@@ -31,6 +31,7 @@ import UserAddPaymentMethod from './pages/user/UserAddPaymentMethod.jsx';
 import UserNotifications from './pages/user/UserNotifications.jsx';
 import UserHelp from './pages/user/UserHelp.jsx';
 import UserCommunity from './pages/user/UserCommunity.jsx';
+import UserChat from './pages/user/UserChat.jsx';
 import Users from './pages/Users.jsx';
 import UserProfiles from './pages/users/UserProfiles.jsx';
 import UserRoles from './pages/users/UserRoles.jsx';
@@ -245,6 +246,9 @@ function App() {
             
             <Route path="/user/appointments/:id" element={<UserProtectedRoute><UserAppointmentDetails /></UserProtectedRoute>} />
             <Route path="/user/appointments/confirmation" element={<UserProtectedRoute><UserAppointmentConfirmation /></UserProtectedRoute>} />
+            
+            {/* Chat Routes */}
+            <Route path="/user/chat" element={<UserProtectedRoute><UserChat /></UserProtectedRoute>} />
             
             {/* Marketplace Routes */}
             <Route path="/user/marketplace" element={<UserProtectedRoute><UserMarketplace /></UserProtectedRoute>} />
