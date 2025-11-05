@@ -163,20 +163,6 @@ const PetProfiles = () => {
                         </dd>
                       </div>
                       <div className="sm:grid sm:grid-cols-3 sm:gap-4">
-                        <dt className="text-sm font-medium text-gray-500">Vaccination Status</dt>
-                        <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                          {pet.vaccinationStatus === 'Up to date' ? (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                              <FaCheck className="mr-1" /> Up to date
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                              <FaExclamationTriangle className="mr-1" /> Due for update
-                            </span>
-                          )}
-                        </dd>
-                      </div>
-                      <div className="sm:grid sm:grid-cols-3 sm:gap-4">
                         <dt className="text-sm font-medium text-gray-500">Medical Notes</dt>
                         <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
                           {pet.medicalNotes || 'No medical notes available'}
