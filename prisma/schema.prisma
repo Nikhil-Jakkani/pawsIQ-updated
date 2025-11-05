@@ -118,23 +118,24 @@ model PIQ_Service_Provider {
   serv_provider_type             String?
   how_hear_about_us              String?                          @db.VarChar
   serv_provider_location         String?                          @db.VarChar
-  profile_photo_url              String?                          @db.VarChar(512)
-  cover_photo_url                String?                          @db.VarChar(512)
-  clinic_name                    String?                          @db.VarChar(255)
-  clinic_phone                   String?                          @db.VarChar(50)
-  clinic_website                 String?                          @db.VarChar(255)
-  clinic_hours                   String?                          @db.VarChar(255)
   clinic_address_line1           String?                          @db.VarChar(255)
   clinic_address_line2           String?                          @db.VarChar(255)
   clinic_city                    String?                          @db.VarChar(100)
-  clinic_state                   String?                          @db.VarChar(100)
-  clinic_postal_code             String?                          @db.VarChar(30)
   clinic_country                 String?                          @db.VarChar(100)
-  specializations                String?                          @db.VarChar(500)
+  clinic_hours                   String?                          @db.VarChar(255)
+  clinic_name                    String?                          @db.VarChar(255)
+  clinic_phone                   String?                          @db.VarChar(50)
+  clinic_postal_code             String?                          @db.VarChar(30)
+  clinic_state                   String?                          @db.VarChar(100)
+  clinic_website                 String?                          @db.VarChar(255)
+  cover_photo_url                String?                          @db.VarChar(512)
   languages_spoken               String?                          @db.VarChar(255)
+  profile_photo_url              String?                          @db.VarChar(512)
+  specializations                String?                          @db.VarChar(500)
   PIQ_Bookings                   PIQ_Bookings[]
   PIQ_Commission                 PIQ_Commission[]
   PIQ_Provider_Availability      PIQ_Provider_Availability[]
+  PIQ_Provider_Billing           PIQ_Provider_Billing?
   PIQ_Provider_Dashboard_Metrics PIQ_Provider_Dashboard_Metrics[]
   PIQ_Provider_Documents         PIQ_Provider_Documents[]
   PIQ_Provider_Payouts           PIQ_Provider_Payouts[]
@@ -142,61 +143,84 @@ model PIQ_Service_Provider {
   PIQ_Provider_Reviews           PIQ_Provider_Reviews[]
   PIQ_Provider_ServiceOffering   PIQ_Provider_ServiceOffering[]
   PIQ_Provider_ServicePricing    PIQ_Provider_ServicePricing[]
-  PIQ_Provider_Billing           PIQ_Provider_Billing?
+  SupportTicket                  SupportTicket[]
+  TicketMessage                  TicketMessage[]                  @relation("TicketMessageProviderAuthor")
+  chat_conversations             ChatConversation[]               @relation("ChatConversationCreatedByProvider")
+  chat_participants              ChatParticipant[]                @relation("ChatParticipantProvider")
+  chat_messages                  ChatMessage[]                    @relation("ChatMessageAuthorProvider")
 
-  @@index([serv_provider_email], map: "idx_provider_email")
   @@index([serv_provider_status], map: "idx_provider_status")
 }
 
 model PIQ_Provider_Billing {
-  billing_id           Int                  @id @default(autoincrement())
-  service_provider_id  Int                  @unique
-  payout_method        String?              @db.VarChar(30)
-  account_holder_name  String?              @db.VarChar(150)
-  account_number       String?              @db.VarChar(34)
-  bank_name            String?              @db.VarChar(150)
-  bank_branch          String?              @db.VarChar(150)
-  ifsc_code            String?              @db.VarChar(20)
-  upi_id               String?              @db.VarChar(100)
-  pan_number           String?              @db.VarChar(20)
-  gst_number           String?              @db.VarChar(20)
-  tax_status           String?              @db.VarChar(50)
-  payout_frequency     String?              @db.VarChar(30)
-  billing_address_line1 String?             @db.VarChar(255)
-  billing_address_line2 String?             @db.VarChar(255)
-  billing_city         String?              @db.VarChar(100)
-  billing_state        String?              @db.VarChar(100)
-  billing_postal_code  String?              @db.VarChar(30)
-  billing_country      String?              @db.VarChar(100)
-  notes                String?              @db.VarChar(500)
-  created_at           DateTime             @default(now()) @db.Timestamptz(6)
-  updated_at           DateTime             @updatedAt @db.Timestamptz(6)
-  PIQ_Service_Provider PIQ_Service_Provider @relation(fields: [service_provider_id], references: [service_provider_id], onDelete: Cascade, map: "fk_billing_provider")
+  billing_id            Int                  @id @default(autoincrement())
+  service_provider_id   Int                  @unique
+  payout_method         String?              @db.VarChar(30)
+  account_holder_name   String?              @db.VarChar(150)
+  account_number        String?              @db.VarChar(34)
+  bank_name             String?              @db.VarChar(150)
+  bank_branch           String?              @db.VarChar(150)
+  ifsc_code             String?              @db.VarChar(20)
+  upi_id                String?              @db.VarChar(100)
+  pan_number            String?              @db.VarChar(20)
+  gst_number            String?              @db.VarChar(20)
+  tax_status            String?              @db.VarChar(50)
+  payout_frequency      String?              @db.VarChar(30)
+  billing_address_line1 String?              @db.VarChar(255)
+  billing_address_line2 String?              @db.VarChar(255)
+  billing_city          String?              @db.VarChar(100)
+  billing_state         String?              @db.VarChar(100)
+  billing_postal_code   String?              @db.VarChar(30)
+  billing_country       String?              @db.VarChar(100)
+  notes                 String?              @db.VarChar(500)
+  created_at            DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime             @updatedAt @db.Timestamptz(6)
+  PIQ_Service_Provider  PIQ_Service_Provider @relation(fields: [service_provider_id], references: [service_provider_id], onDelete: Cascade, map: "fk_billing_provider")
 
   @@index([payout_method], map: "idx_provider_billing_method")
 }
 
 model PIQ_User {
-  user_id                  BigInt                 @id @default(autoincrement())
-  user_full_name           String                 @db.VarChar
-  user_email_id            String                 @unique @db.VarChar
+  user_id                  BigInt                       @id @default(autoincrement())
+  user_full_name           String                       @db.VarChar
+  user_email_id            String                       @unique @db.VarChar
   user_password            String
-  user_phone_number        String                 @db.VarChar
-  user_second_phone_number String?                @db.VarChar
-  user_status              String                 @default("") @db.VarChar
-  last_updated_dtm         DateTime               @default(now()) @db.Timestamp(6)
-  created_at               DateTime               @default(now()) @db.Timestamptz(6)
-  paid_user                Boolean?               @default(false)
-  date_of_birth            DateTime?              @db.Date
-  is_active                Boolean                @default(true)
-  profile_picture_url      String?                @db.VarChar(512)
-  user_location            String?                @db.VarChar(255)
+  user_phone_number        String                       @db.VarChar
+  user_second_phone_number String?                      @db.VarChar
+  user_status              String                       @default("") @db.VarChar
+  last_updated_dtm         DateTime                     @default(now()) @db.Timestamp(6)
+  created_at               DateTime                     @default(now()) @db.Timestamptz(6)
+  paid_user                Boolean?                     @default(false)
+  date_of_birth            DateTime?                    @db.Date
+  is_active                Boolean                      @default(true)
+  profile_picture_url      String?                      @db.VarChar(512)
+  user_location            String?                      @db.VarChar(255)
   PIQ_Bookings             PIQ_Bookings[]
   PIQ_Payments             PIQ_Payments[]
   PIQ_Pets                 PIQ_Pets[]
   PIQ_Provider_Reviews     PIQ_Provider_Reviews[]
   PIQ_Reminders            PIQ_Reminders[]
+  SupportTicket            SupportTicket[]
+  TicketMessage            TicketMessage[]              @relation("TicketMessageUserAuthor")
+  notificationPreferences  UserNotificationPreference[]
   password_reset_otps      password_reset_otps[]
+  chat_conversations       ChatConversation[]           @relation("ChatConversationCreatedByUser")
+  chat_participants        ChatParticipant[]            @relation("ChatParticipantUser")
+  chat_messages            ChatMessage[]                @relation("ChatMessageAuthorUser")
+}
+
+model UserNotificationPreference {
+  preference_id Int      @id @default(autoincrement())
+  user_id       BigInt
+  channel       String
+  key           String
+  enabled       Boolean  @default(true)
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  PIQ_User      PIQ_User @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, channel, key])
+  @@index([user_id])
 }
 
 model PIQ_pets_profile {
@@ -388,12 +412,18 @@ model password_reset_otps {
 }
 
 model PIQ_Admins {
-  name       String
-  email      String   @unique(map: "admins_email_key")
-  password   String
-  role       String   @default("admin")
-  created_at DateTime @default(now()) @db.Timestamptz(6)
-  admin_id   BigInt   @id
+  name                       String
+  email                      String             @unique(map: "admins_email_key")
+  password                   String
+  role                       String             @default("admin")
+  created_at                 DateTime           @default(now()) @db.Timestamptz(6)
+  admin_id                   BigInt             @id
+  TicketAssignmentAssignedBy TicketAssignment[] @relation("TicketAssignmentAssignedBy")
+  TicketAssignmentAssignedTo TicketAssignment[] @relation("TicketAssignmentAssignedTo")
+  TicketMessage              TicketMessage[]    @relation("TicketMessageAdminAuthor")
+  chat_conversations         ChatConversation[] @relation("ChatConversationCreatedByAdmin")
+  chat_participants          ChatParticipant[]  @relation("ChatParticipantAdmin")
+  chat_messages              ChatMessage[]      @relation("ChatMessageAuthorAdmin")
 }
 
 model PIQ_Bookings {
@@ -675,4 +705,158 @@ model PIQ_Commission {
   @@index([service_provider_id], map: "idx_commission_provider")
   @@index([status], map: "idx_commission_status")
   @@index([created_at], map: "idx_commission_created")
+}
+
+model SupportTicket {
+  ticket_id           Int                   @id @default(autoincrement())
+  requester_id        BigInt
+  service_provider_id Int?
+  subject             String                @db.VarChar(200)
+  description         String?               @db.VarChar(2000)
+  category            String?               @db.VarChar(50)
+  priority            String                @default("medium") @db.VarChar(20)
+  status              String                @default("open") @db.VarChar(20)
+  source              String?               @db.VarChar(30)
+  first_response_at   DateTime?             @db.Timestamptz(6)
+  resolved_at         DateTime?             @db.Timestamptz(6)
+  closed_at           DateTime?             @db.Timestamptz(6)
+  reopened_count      Int                   @default(0)
+  sla_response_due    DateTime?             @db.Timestamptz(6)
+  sla_resolution_due  DateTime?             @db.Timestamptz(6)
+  created_at          DateTime              @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime              @updatedAt @db.Timestamptz(6)
+  provider            PIQ_Service_Provider? @relation(fields: [service_provider_id], references: [service_provider_id], map: "fk_support_ticket_provider")
+  requester           PIQ_User              @relation(fields: [requester_id], references: [user_id], onDelete: Cascade, map: "fk_support_ticket_requester")
+  assignments         TicketAssignment[]
+  messages            TicketMessage[]
+  sla_logs            TicketSLA[]
+
+  @@index([status], map: "idx_support_ticket_status")
+  @@index([priority], map: "idx_support_ticket_priority")
+  @@index([service_provider_id], map: "idx_support_ticket_provider")
+  @@index([requester_id], map: "idx_support_ticket_requester")
+}
+
+model TicketMessage {
+  message_id         Int                   @id @default(autoincrement())
+  ticket_id          Int
+  author_user_id     BigInt?
+  author_provider_id Int?
+  author_admin_id    BigInt?
+  author_role        String                @db.VarChar(20)
+  message_body       String                @db.VarChar(2000)
+  attachments        Json?                 @default("[]")
+  created_at         DateTime              @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime              @updatedAt @db.Timestamptz(6)
+  admin_author       PIQ_Admins?           @relation("TicketMessageAdminAuthor", fields: [author_admin_id], references: [admin_id], map: "fk_ticket_message_admin")
+  provider_author    PIQ_Service_Provider? @relation("TicketMessageProviderAuthor", fields: [author_provider_id], references: [service_provider_id], map: "fk_ticket_message_provider")
+  ticket             SupportTicket         @relation(fields: [ticket_id], references: [ticket_id], onDelete: Cascade, map: "fk_ticket_message_ticket")
+  user_author        PIQ_User?             @relation("TicketMessageUserAuthor", fields: [author_user_id], references: [user_id], map: "fk_ticket_message_user")
+
+  @@index([ticket_id], map: "idx_ticket_message_ticket")
+  @@index([author_user_id], map: "idx_ticket_message_user")
+  @@index([author_provider_id], map: "idx_ticket_message_provider")
+  @@index([author_admin_id], map: "idx_ticket_message_admin")
+}
+
+model TicketAssignment {
+  assignment_id        Int           @id @default(autoincrement())
+  ticket_id            Int
+  assigned_to_admin_id BigInt
+  assigned_by_admin_id BigInt?
+  assigned_at          DateTime      @default(now()) @db.Timestamptz(6)
+  unassigned_at        DateTime?     @db.Timestamptz(6)
+  assigned_by_admin    PIQ_Admins?   @relation("TicketAssignmentAssignedBy", fields: [assigned_by_admin_id], references: [admin_id])
+  assigned_to_admin    PIQ_Admins    @relation("TicketAssignmentAssignedTo", fields: [assigned_to_admin_id], references: [admin_id], onDelete: Cascade)
+  ticket               SupportTicket @relation(fields: [ticket_id], references: [ticket_id], onDelete: Cascade, map: "fk_ticket_assignment_ticket")
+
+  @@index([ticket_id], map: "idx_ticket_assignment_ticket")
+  @@index([assigned_to_admin_id], map: "idx_ticket_assignment_assignee")
+}
+
+model TicketSLA {
+  sla_id       Int           @id @default(autoincrement())
+  ticket_id    Int
+  milestone    String        @db.VarChar(50)
+  due_at       DateTime?     @db.Timestamptz(6)
+  completed_at DateTime?     @db.Timestamptz(6)
+  status       String        @default("pending") @db.VarChar(20)
+  created_at   DateTime      @default(now()) @db.Timestamptz(6)
+  ticket       SupportTicket @relation(fields: [ticket_id], references: [ticket_id], onDelete: Cascade, map: "fk_ticket_sla_ticket")
+
+  @@index([ticket_id], map: "idx_ticket_sla_ticket")
+  @@index([status], map: "idx_ticket_sla_status")
+}
+
+model ChatConversation {
+  conversation_id       Int                   @id @default(autoincrement())
+  topic                 String?               @db.VarChar(200)
+  context_type          String?               @db.VarChar(50)
+  is_archived           Boolean               @default(false)
+  created_by_user_id    BigInt?
+  created_by_provider_id Int?
+  created_by_admin_id   BigInt?
+  created_at            DateTime              @default(now()) @db.Timestamptz(6)
+  last_message_at       DateTime?             @db.Timestamptz(6)
+  participants          ChatParticipant[]
+  messages              ChatMessage[]
+  creator_user          PIQ_User?             @relation("ChatConversationCreatedByUser", fields: [created_by_user_id], references: [user_id], onDelete: SetNull)
+  creator_provider      PIQ_Service_Provider? @relation("ChatConversationCreatedByProvider", fields: [created_by_provider_id], references: [service_provider_id], onDelete: SetNull)
+  creator_admin         PIQ_Admins?           @relation("ChatConversationCreatedByAdmin", fields: [created_by_admin_id], references: [admin_id], onDelete: SetNull)
+
+  @@index([is_archived], map: "idx_chat_conversation_archived")
+  @@index([last_message_at], map: "idx_chat_conversation_last_message")
+  @@index([created_by_user_id], map: "idx_chat_conversation_created_user")
+  @@index([created_by_provider_id], map: "idx_chat_conversation_created_provider")
+  @@index([created_by_admin_id], map: "idx_chat_conversation_created_admin")
+  @@map("chat_conversations")
+}
+
+model ChatParticipant {
+  participant_id  Int                @id @default(autoincrement())
+  conversation_id Int
+  role            String             @db.VarChar(20)
+  user_id         BigInt?
+  provider_id     Int?
+  admin_id        BigInt?
+  last_read_at    DateTime?          @db.Timestamptz(6)
+  joined_at       DateTime           @default(now()) @db.Timestamptz(6)
+  conversation    ChatConversation  @relation(fields: [conversation_id], references: [conversation_id], onDelete: Cascade, map: "fk_chat_participant_conversation")
+  user            PIQ_User?          @relation("ChatParticipantUser", fields: [user_id], references: [user_id], onDelete: Cascade, map: "fk_chat_participant_user")
+  provider        PIQ_Service_Provider? @relation("ChatParticipantProvider", fields: [provider_id], references: [service_provider_id], onDelete: Cascade, map: "fk_chat_participant_provider")
+  admin           PIQ_Admins?        @relation("ChatParticipantAdmin", fields: [admin_id], references: [admin_id], onDelete: Cascade, map: "fk_chat_participant_admin")
+
+  @@index([conversation_id], map: "idx_chat_participant_conversation")
+  @@index([user_id], map: "idx_chat_participant_user")
+  @@index([provider_id], map: "idx_chat_participant_provider")
+  @@index([admin_id], map: "idx_chat_participant_admin")
+  @@unique([conversation_id, user_id], map: "uq_chat_participant_user")
+  @@unique([conversation_id, provider_id], map: "uq_chat_participant_provider")
+  @@unique([conversation_id, admin_id], map: "uq_chat_participant_admin")
+  @@map("chat_participants")
+}
+
+model ChatMessage {
+  message_id         Int                @id @default(autoincrement())
+  conversation_id    Int
+  author_role        String             @db.VarChar(20)
+  author_user_id     BigInt?
+  author_provider_id Int?
+  author_admin_id    BigInt?
+  message_body       String             @db.VarChar(4000)
+  attachments        Json               @default("[]")
+  created_at         DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime           @updatedAt @db.Timestamptz(6)
+  conversation       ChatConversation  @relation(fields: [conversation_id], references: [conversation_id], onDelete: Cascade, map: "fk_chat_message_conversation")
+  author_user        PIQ_User?          @relation("ChatMessageAuthorUser", fields: [author_user_id], references: [user_id], onDelete: SetNull)
+  author_provider    PIQ_Service_Provider? @relation("ChatMessageAuthorProvider", fields: [author_provider_id], references: [service_provider_id], onDelete: SetNull)
+  author_admin       PIQ_Admins?        @relation("ChatMessageAuthorAdmin", fields: [author_admin_id], references: [admin_id], onDelete: SetNull)
+
+  @@index([conversation_id], map: "idx_chat_message_conversation")
+  @@index([author_user_id], map: "idx_chat_message_author_user")
+  @@index([author_provider_id], map: "idx_chat_message_author_provider")
+  @@index([author_admin_id], map: "idx_chat_message_author_admin")
+  @@index([created_at], map: "idx_chat_message_created_at")
+  @@index([conversation_id, message_id], map: "idx_chat_message_conversation_id")
+  @@map("chat_messages")
 }

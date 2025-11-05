@@ -10,9 +10,16 @@ export const fetchProviderAppointments = createAsyncThunk(
   async ({ limit = 10, authFetch }, { rejectWithValue }) => {
     try {
       const response = await authFetch(`${API_URL}/provider/dashboard/appointments?limit=${limit}`);
-      return response.data;
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        const message = payload?.message || 'Failed to fetch appointments';
+        throw new Error(message);
+      }
+
+      return payload?.data || payload || [];
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch appointments');
+      return rejectWithValue(error.message || 'Failed to fetch appointments');
     }
   }
 );
@@ -28,9 +35,16 @@ export const fetchAllProviderAppointments = createAsyncThunk(
       const response = await authFetch(
         `${API_URL}/provider/appointments${queryParams ? '?' + queryParams : ''}`
       );
-      return response.data;
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        const message = payload?.message || 'Failed to fetch all appointments';
+        throw new Error(message);
+      }
+
+      return payload?.data || payload || [];
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch all appointments');
+      return rejectWithValue(error.message || 'Failed to fetch all appointments');
     }
   }
 );

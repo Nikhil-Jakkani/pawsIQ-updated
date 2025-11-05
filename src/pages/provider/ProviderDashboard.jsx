@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -9,7 +9,6 @@ import {
   FaRupeeSign,
   FaUserFriends,
   FaStar,
-  FaChartLine,
   FaCheckCircle,
   FaArrowUp,
   FaArrowRight,
@@ -19,16 +18,15 @@ import {
   FaPaw,
   FaFileAlt,
   FaClipboard,
+  FaChartLine,
 } from 'react-icons/fa';
-import { fetchProviderDashboardOverview, fetchProviderMetrics, fetchProviderRevenue, fetchProviderTypeMetrics } from '../../store/slices/providerAnalyticsSlice';
-import { fetchProviderAppointments } from '../../store/slices/providerAppointmentsSlice';
-import { fetchProviderClients } from '../../store/slices/providerClientsSlice';
+import { fetchProviderDashboardOverview } from '../../store/slices/providerAnalyticsSlice';
 import { PROVIDER_TYPES } from '../../store/slices/providerOnboardingSlice';
 
 /**
  * Stat Card Component
  */
-const StatCard = ({ icon: Icon, label, value, trend, trendUp = true, color = 'blue' }) => {
+const StatCard = ({ icon: Icon, label, value, trend, trendUp = true, color = 'blue', showTrendIndicator = true }) => {
   const colorClasses = {
     blue: 'bg-blue-100 text-blue-600 border-blue-500',
     green: 'bg-green-100 text-green-600 border-green-500',
@@ -46,7 +44,9 @@ const StatCard = ({ icon: Icon, label, value, trend, trendUp = true, color = 'bl
           <p className="text-3xl font-bold text-gray-900 mt-3">{value}</p>
           {trend && (
             <div className={`flex items-center mt-3 text-sm font-medium ${trendUp ? 'text-green-600' : 'text-red-600'}`}>
-              <FaArrowUp className={`mr-1 ${!trendUp && 'rotate-180'}`} />
+              {showTrendIndicator && (
+                <FaArrowUp className={`mr-1 ${!trendUp && 'rotate-180'}`} />
+              )}
               {trend}
             </div>
           )}
@@ -62,28 +62,34 @@ const StatCard = ({ icon: Icon, label, value, trend, trendUp = true, color = 'bl
 /**
  * Recent Appointment Card Component
  */
-const RecentAppointmentCard = ({ appointment }) => (
-  <div className="flex items-center justify-between p-4 border-b border-gray-200 hover:bg-gray-50 transition-colors last:border-b-0">
-    <div className="flex-1">
-      <p className="font-semibold text-gray-900">{appointment.clientName}</p>
-      <p className="text-sm text-gray-600">{appointment.petName}</p>
+const RecentAppointmentCard = ({ appointment }) => {
+  const status = (appointment.status || '').toLowerCase();
+  const statusClass =
+    status === 'confirmed'
+      ? 'bg-green-100 text-green-800'
+      : status === 'pending'
+      ? 'bg-yellow-100 text-yellow-800'
+      : status === 'cancelled'
+      ? 'bg-red-100 text-red-700'
+      : 'bg-gray-100 text-gray-800';
+
+  const formattedStatus = status ? status.charAt(0).toUpperCase() + status.slice(1) : '—';
+
+  return (
+    <div className="flex items-center justify-between p-4 border-b border-gray-200 hover:bg-gray-50 transition-colors last:border-b-0">
+      <div className="flex-1">
+        <p className="font-semibold text-gray-900">{appointment.clientName || '—'}</p>
+        <p className="text-sm text-gray-600">{appointment.petName || '—'}</p>
+      </div>
+      <div className="text-right">
+        <p className="text-sm font-medium text-gray-900">{appointment.date}</p>
+        <span className={`inline-block mt-1 px-3 py-1 rounded-full text-xs font-semibold ${statusClass}`}>
+          {formattedStatus}
+        </span>
+      </div>
     </div>
-    <div className="text-right">
-      <p className="text-sm font-medium text-gray-900">{appointment.date}</p>
-      <span
-        className={`inline-block mt-1 px-3 py-1 rounded-full text-xs font-semibold ${
-          appointment.status === 'confirmed'
-            ? 'bg-green-100 text-green-800'
-            : appointment.status === 'pending'
-            ? 'bg-yellow-100 text-yellow-800'
-            : 'bg-gray-100 text-gray-800'
-        }`}
-      >
-        {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
-      </span>
-    </div>
-  </div>
-);
+  );
+};
 
 /**
  * Quick Stat Item Component
@@ -121,15 +127,13 @@ const VeterinarianWidget = ({ metrics }) => (
     <StatCard
       icon={FaStethoscope}
       label="Consultations"
-      value={metrics?.consultations || 12}
-      trend="+3 this week"
+      value={metrics?.consultations ?? 0}
       color="blue"
     />
     <StatCard
       icon={FaFileAlt}
       label="Prescriptions Issued"
-      value={metrics?.prescriptions || 8}
-      trend="+2 this week"
+      value={metrics?.prescriptionsIssued ?? 0}
       color="green"
     />
   </div>
@@ -143,15 +147,13 @@ const TrainerWidget = ({ metrics }) => (
     <StatCard
       icon={FaDumbbell}
       label="Training Sessions"
-      value={metrics?.trainingSessions || 15}
-      trend="+4 this month"
+      value={metrics?.trainingSessions ?? 0}
       color="indigo"
     />
     <StatCard
       icon={FaClipboard}
       label="Progress Reports"
-      value={metrics?.progressReports || 5}
-      trend="+1 this week"
+      value={metrics?.progressReports ?? 0}
       color="purple"
     />
   </div>
@@ -165,15 +167,13 @@ const GroomerWidget = ({ metrics }) => (
     <StatCard
       icon={FaCut}
       label="Grooming Sessions"
-      value={metrics?.groomingSessions || 10}
-      trend="+2 this week"
+      value={metrics?.groomingSessions ?? 0}
       color="pink"
     />
     <StatCard
       icon={FaCheckCircle}
       label="Completed This Month"
-      value={metrics?.completedSessions || 28}
-      trend="+5 from last month"
+      value={metrics?.completedSessions ?? 0}
       color="green"
     />
   </div>
@@ -187,15 +187,13 @@ const PetSitterWidget = ({ metrics }) => (
     <StatCard
       icon={FaPaw}
       label="Active Bookings"
-      value={metrics?.activeBookings || 6}
-      trend="+2 this week"
+      value={metrics?.activeBookings ?? 0}
       color="orange"
     />
     <StatCard
       icon={FaCalendarAlt}
       label="Upcoming Sits"
-      value={metrics?.upcomingSits || 12}
-      trend="+3 scheduled"
+      value={metrics?.upcomingSits ?? 0}
       color="blue"
     />
   </div>
@@ -218,8 +216,47 @@ const ProviderDashboard = () => {
     recentAppointments: fetchedAppointments = [],
     clients = [],
     loading,
-    error 
+    error,
+    providerType: analyticsProviderType
   } = useSelector((state) => state.providerAnalytics || {});
+
+  const providerDisplayName = useMemo(() => (
+    providerInfo?.serv_provider_name ||
+    providerInfo?.name ||
+    providerInfo?.provider_name ||
+    currentUser?.name ||
+    currentUser?.email ||
+    'Provider'
+  ), [providerInfo, currentUser]);
+
+  const normalizedProviderType = useMemo(() => {
+    const rawType = providerType || analyticsProviderType || providerInfo?.providerType || providerInfo?.serv_provider_type;
+    if (!rawType) return null;
+
+    const value = rawType.toString().toLowerCase();
+    const typeKeyMap = {
+      veterinarian: 'veterinarian',
+      veterinary: 'veterinarian',
+      vet: 'veterinarian',
+      trainer: 'trainer',
+      training: 'trainer',
+      groomer: 'groomer',
+      grooming: 'groomer',
+      'pet sitter': 'pet_sitter',
+      petsitter: 'pet_sitter',
+      'pet_sitting': 'pet_sitter',
+      'physical activity': 'pet_sitter',
+      diagnostics: 'diagnostics',
+      'diagnostic services': 'diagnostics',
+      boarding: 'boarding',
+    };
+
+    return typeKeyMap[value] || value.replace(/[^a-z0-9]+/g, '_');
+  }, [providerType, analyticsProviderType, providerInfo]);
+
+  const providerTypeLabel = useMemo(() => (
+    providerType || analyticsProviderType || providerInfo?.providerType || providerInfo?.serv_provider_type || 'Provider'
+  ), [providerType, analyticsProviderType, providerInfo]);
 
   // Check if user is actually a provider
   useEffect(() => {
@@ -252,41 +289,36 @@ const ProviderDashboard = () => {
     );
   }
 
-  // Use fetched appointments or fallback to mock data
-  const recentAppointments = fetchedAppointments.length > 0 ? fetchedAppointments.map(apt => ({
-    id: apt.id,
-    clientName: apt.clientName,
-    petName: apt.petName,
-    date: new Date(apt.date).toLocaleString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      hour: 'numeric', 
-      minute: '2-digit' 
-    }),
-    status: apt.status,
-  })) : [
-    {
-      id: 1,
-      clientName: 'John Doe',
-      petName: 'Max',
-      date: 'Today, 2:00 PM',
-      status: 'confirmed',
-    },
-    {
-      id: 2,
-      clientName: 'Jane Smith',
-      petName: 'Bella',
-      date: 'Tomorrow, 10:00 AM',
-      status: 'pending',
-    },
-    {
-      id: 3,
-      clientName: 'Bob Wilson',
-      petName: 'Charlie',
-      date: 'Dec 20, 3:00 PM',
-      status: 'confirmed',
-    },
-  ];
+  const numberFormatter = useMemo(() => new Intl.NumberFormat('en-IN'), []);
+
+  const formatNumber = (value) => {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return '0';
+    return numberFormatter.format(numeric);
+  };
+
+  const formatDateTime = (value) => {
+    if (!value) return '—';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '—';
+    return date.toLocaleString('en-IN', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  };
+
+  const recentAppointments = useMemo(() => {
+    if (!Array.isArray(fetchedAppointments)) return [];
+    return fetchedAppointments.map((apt) => ({
+      id: apt.id,
+      clientName: apt.clientName,
+      petName: apt.petName,
+      date: formatDateTime(apt.date),
+      status: apt.status,
+    }));
+  }, [fetchedAppointments]);
 
   // Currency formatter
   const formatCurrency = (amount) =>
@@ -294,21 +326,52 @@ const ProviderDashboard = () => {
       style: 'currency',
       currency: 'INR',
       maximumFractionDigits: 0,
-    }).format(amount || 0);
+    }).format(Number(amount) || 0);
+
+  const completionRate = Number(metrics.completionRate || 0);
+  const revenueGrowthValue = Number(revenue.revenueGrowth || 0);
+  const revenueTrend = Number.isFinite(revenueGrowthValue)
+    ? `${revenueGrowthValue >= 0 ? '+' : ''}${revenueGrowthValue.toFixed(1)}% from last month`
+    : null;
+
+  const completionTrend = Number.isFinite(completionRate)
+    ? `${Math.round(completionRate)}% completion rate`
+    : null;
+
+  const averageRating = Number(metrics.averageRating || 0);
+  const averageRatingDisplay = averageRating > 0 ? averageRating.toFixed(1) : '—';
+  const averageRatingSubtitle = metrics.totalReviews
+    ? `Based on ${formatNumber(metrics.totalReviews)} reviews`
+    : null;
+
+  const derivedTypeMetrics = normalizedProviderType ? typeMetrics?.[normalizedProviderType] : undefined;
+
+  const navigateToAppointments = () => navigate('/provider/appointments');
 
   // Get provider-specific widget
   const getProviderWidget = () => {
-    const providerTypeKey = providerType?.toLowerCase().replace(/[^a-z]/g, '_');
-    const specificMetrics = typeMetrics[providerTypeKey] || typeMetrics.veterinarian || typeMetrics.trainer || typeMetrics.groomer || typeMetrics.pet_sitter;
-    
-    switch (providerType) {
+    const specificMetrics = derivedTypeMetrics || typeMetrics.veterinarian || typeMetrics.trainer || typeMetrics.groomer || typeMetrics.pet_sitter;
+
+    if (!specificMetrics) {
+      return (
+        <div className="bg-white rounded-lg shadow-md p-6 text-gray-500">
+          No type-specific metrics available yet.
+        </div>
+      );
+    }
+
+    switch (normalizedProviderType) {
       case PROVIDER_TYPES.VETERINARIAN:
+      case 'veterinarian':
         return <VeterinarianWidget metrics={specificMetrics} />;
       case PROVIDER_TYPES.TRAINER:
+      case 'trainer':
         return <TrainerWidget metrics={specificMetrics} />;
       case PROVIDER_TYPES.GROOMER:
+      case 'groomer':
         return <GroomerWidget metrics={specificMetrics} />;
       case PROVIDER_TYPES.PET_SITTER:
+      case 'pet_sitter':
         return <PetSitterWidget metrics={specificMetrics} />;
       default:
         return null;
@@ -317,14 +380,19 @@ const ProviderDashboard = () => {
 
   // Get provider-specific icon
   const getProviderIcon = () => {
-    switch (providerType) {
+    const type = normalizedProviderType;
+    switch (type) {
       case PROVIDER_TYPES.VETERINARIAN:
+      case 'veterinarian':
         return FaStethoscope;
       case PROVIDER_TYPES.TRAINER:
+      case 'trainer':
         return FaDumbbell;
       case PROVIDER_TYPES.GROOMER:
+      case 'groomer':
         return FaCut;
       case PROVIDER_TYPES.PET_SITTER:
+      case 'pet_sitter':
         return FaPaw;
       default:
         return FaCalendarAlt;
@@ -340,47 +408,52 @@ const ProviderDashboard = () => {
             {React.createElement(getProviderIcon(), { className: 'text-2xl text-blue-600' })}
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
-                {providerType} Dashboard
+                {providerTypeLabel} Dashboard
               </h1>
               <p className="text-gray-600">
-                Welcome back, {providerInfo?.name || 'Provider'}! Here's your performance overview.
+                Welcome back, {providerDisplayName}! Here's your performance overview.
               </p>
             </div>
           </div>
         </div>
+
+        {error && (
+          <div className="p-4 border border-red-200 bg-red-50 text-red-700 rounded-lg">
+            {typeof error === 'string' ? error : 'We ran into a problem loading your dashboard data.'}
+          </div>
+        )}
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard
             icon={FaCalendarAlt}
             label="Total Appointments"
-            value={metrics.totalAppointments || 24}
-            trend="+12% from last month"
-            trendUp={true}
+            value={formatNumber(metrics.totalAppointments || 0)}
             color="blue"
           />
           <StatCard
             icon={FaCheckCircle}
             label="Completed"
-            value={metrics.completedAppointments || 18}
-            trend="75% completion rate"
+            value={formatNumber(metrics.completedAppointments || 0)}
+            trend={completionTrend}
             trendUp={true}
             color="green"
           />
           <StatCard
             icon={FaRupeeSign}
             label="Total Revenue"
-            value={formatCurrency(revenue.totalRevenue || 45000)}
-            trend="+8% from last month"
-            trendUp={true}
+            value={formatCurrency(revenue.paidAmount || revenue.totalRevenue || 0)}
+            trend={revenueTrend}
+            trendUp={revenueGrowthValue >= 0}
             color="green"
           />
           <StatCard
             icon={FaStar}
             label="Average Rating"
-            value={metrics.averageRating ? metrics.averageRating.toFixed(1) : 4.8}
-            trend="Based on 89 reviews"
+            value={averageRatingDisplay}
+            trend={averageRatingSubtitle}
             trendUp={true}
+            showTrendIndicator={Boolean(averageRatingSubtitle && averageRatingSubtitle.includes('Based'))}
             color="purple"
           />
         </div>
@@ -388,7 +461,7 @@ const ProviderDashboard = () => {
         {/* Provider-Specific Widget */}
         <div>
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            {providerType} Specific Metrics
+            {providerTypeLabel} Specific Metrics
           </h2>
           {getProviderWidget()}
         </div>
@@ -404,19 +477,24 @@ const ProviderDashboard = () => {
                 </div>
                 <h2 className="text-xl font-semibold text-gray-900">Recent Appointments</h2>
               </div>
-              <button className="flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium text-sm transition-colors">
+              <button
+                onClick={navigateToAppointments}
+                className="flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium text-sm transition-colors"
+              >
                 View All
                 <FaArrowRight className="text-xs" />
               </button>
             </div>
             <div>
-              {recentAppointments.length > 0 ? (
+              {loading ? (
+                <div className="p-6 text-center text-sm text-gray-500">Loading appointments...</div>
+              ) : recentAppointments.length > 0 ? (
                 recentAppointments.map((apt) => (
                   <RecentAppointmentCard key={apt.id} appointment={apt} />
                 ))
               ) : (
                 <div className="p-8 text-center">
-                  <p className="text-gray-500 font-medium">No appointments scheduled</p>
+                  <p className="text-gray-500 font-medium">No appointments found.</p>
                 </div>
               )}
             </div>
@@ -430,19 +508,19 @@ const ProviderDashboard = () => {
             <div className="divide-y divide-gray-200">
               <QuickStatItem
                 label="Total Clients"
-                value={clients.length || 45}
+                value={formatNumber(Array.isArray(clients) ? clients.length : 0)}
                 icon={FaUserFriends}
                 color="blue"
               />
               <QuickStatItem
                 label="Pending Amount"
-                value={formatCurrency(revenue.pendingAmount || 12000)}
+                value={formatCurrency(revenue.pendingAmount || 0)}
                 icon={FaRupeeSign}
                 color="orange"
               />
               <QuickStatItem
                 label="Total Reviews"
-                value={metrics.totalReviews || 89}
+                value={formatNumber(metrics.totalReviews || 0)}
                 icon={FaStar}
                 color="purple"
               />

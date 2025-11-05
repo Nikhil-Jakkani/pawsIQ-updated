@@ -5,11 +5,14 @@ import ProviderDashboardLayout from './ProviderDashboardLayout';
 import { FaUser, FaSearch, FaEye, FaPhone, FaEnvelope } from 'react-icons/fa';
 import { fetchClients, setFilters } from '../../store/slices/clientsSlice';
 
+const DEFAULT_AVATAR =
+  'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23e2e8f0" width="100" height="100"/><circle cx="50" cy="38" r="20" fill="%2394a3b8"/><path d="M15 88c5-20 65-20 70 0" fill="%2394a3b8"/></svg>';
+
 const ClientCard = ({ client, onView }) => (
   <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
     <div className="flex items-center mb-4">
       <img
-        src={client.profilePhoto || 'https://via.placeholder.com/48'}
+        src={client.profilePhoto || DEFAULT_AVATAR}
         alt={client.name}
         className="w-12 h-12 rounded-full object-cover mr-4"
       />
@@ -48,8 +51,15 @@ const ClientCard = ({ client, onView }) => (
 const ProviderClients = () => {
   const dispatch = useDispatch();
   const { authFetch } = useAuth();
-  const { clients = [], filters = {}, loading = false, error = null } = useSelector((state) => state.clients || {});
+  const {
+    clients = [],
+    filters = {},
+    loading = false,
+    error = null,
+  } = useSelector((state) => state.clients || {});
   const [searchTerm, setSearchTerm] = useState('');
+  const [showDetails, setShowDetails] = useState(false);
+  const [selectedClient, setSelectedClient] = useState(null);
 
   useEffect(() => {
     if (authFetch) {
@@ -64,7 +74,15 @@ const ProviderClients = () => {
   };
 
   const handleView = (id) => {
-    console.log('View client:', id);
+    const client = clients.find((c) => c.id === id);
+    if (!client) return;
+    setSelectedClient(client);
+    setShowDetails(true);
+  };
+
+  const handleCloseDetails = () => {
+    setShowDetails(false);
+    setSelectedClient(null);
   };
 
   const filteredClients = clients.filter((client) =>
@@ -137,6 +155,63 @@ const ProviderClients = () => {
                 onView={handleView}
               />
             ))}
+          </div>
+        )}
+
+        {showDetails && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-lg w-full max-w-xl p-6 relative">
+              <button
+                onClick={handleCloseDetails}
+                className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+                aria-label="Close"
+              >
+                ×
+              </button>
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">Client Details</h2>
+              {selectedClient ? (
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm text-gray-500">Name</p>
+                    <p className="text-lg font-semibold text-gray-900">{selectedClient.name}</p>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-500">Email</p>
+                      <p className="text-gray-800">{selectedClient.email || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Phone</p>
+                      <p className="text-gray-800">{selectedClient.phone || 'N/A'}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-500">Pets</p>
+                      <p className="text-gray-800">{selectedClient.petCount}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Total Appointments</p>
+                      <p className="text-gray-800">{selectedClient.totalAppointments}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Joined</p>
+                      <p className="text-gray-800">{selectedClient.joinDate || 'N/A'}</p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-gray-500">Select a client to view details.</p>
+              )}
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={handleCloseDetails}
+                  className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

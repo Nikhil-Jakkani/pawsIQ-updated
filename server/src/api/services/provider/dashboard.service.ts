@@ -58,8 +58,7 @@ export const getDashboardMetrics = async (providerId: number): Promise<Dashboard
     const { data: allAppointments, error: appointmentsError } = await supabase
       .from('PIQ_Bookings')
       .select('booking_id, booking_status')
-      .eq('service_provider_id', providerId)
-      .is('deleted_dtm', null);
+      .eq('service_provider_id', providerId);
 
     if (appointmentsError) throw appointmentsError;
 
@@ -73,8 +72,7 @@ export const getDashboardMetrics = async (providerId: number): Promise<Dashboard
     const { data: reviews, error: reviewsError } = await supabase
       .from('PIQ_Provider_Reviews')
       .select('rating')
-      .eq('service_provider_id', providerId)
-      .is('deleted_dtm', null);
+      .eq('service_provider_id', providerId);
 
     if (reviewsError) throw reviewsError;
 
@@ -91,8 +89,7 @@ export const getDashboardMetrics = async (providerId: number): Promise<Dashboard
       .from('PIQ_Bookings')
       .select('user_id')
       .eq('service_provider_id', providerId)
-      .gte('booked_dtm', sixMonthsAgo.toISOString())
-      .is('deleted_dtm', null);
+      .gte('booked_dtm', sixMonthsAgo.toISOString());
 
     if (clientsError) throw clientsError;
 
@@ -217,7 +214,6 @@ export const getRecentAppointments = async (providerId: number, limit: number = 
         PIQ_Service_Master!inner(services_id, service_title, service_type)
       `)
       .eq('service_provider_id', providerId)
-      .is('deleted_dtm', null)
       .order('booked_dtm', { ascending: false })
       .limit(limit);
 
@@ -260,7 +256,6 @@ export const getClients = async (providerId: number) => {
         PIQ_User!inner(user_id, user_full_name, user_email_id, user_phone_number)
       `)
       .eq('service_provider_id', providerId)
-      .is('deleted_dtm', null)
       .order('booked_dtm', { ascending: false });
 
     if (error) throw error;
@@ -314,8 +309,7 @@ export const getTypeSpecificMetrics = async (
           .from('PIQ_Bookings')
           .select('booking_id')
           .eq('service_provider_id', providerId)
-          .eq('booking_status', 'Completed')
-          .is('deleted_dtm', null);
+          .eq('booking_status', 'Completed');
 
         // Count prescriptions (if table exists)
         let prescriptions: any[] = [];
@@ -323,8 +317,7 @@ export const getTypeSpecificMetrics = async (
           const prescriptionResult = await supabase
             .from('PIQ_Prescriptions')
             .select('prescription_id')
-            .eq('service_provider_id', providerId)
-            .is('deleted_dtm', null);
+            .eq('service_provider_id', providerId);
           prescriptions = prescriptionResult.data || [];
         } catch (e) {
           // Table might not exist, use empty array
@@ -337,8 +330,7 @@ export const getTypeSpecificMetrics = async (
           const labReportResult = await supabase
             .from('PIQ_Lab_Reports')
             .select('report_id')
-            .eq('service_provider_id', providerId)
-            .is('deleted_dtm', null);
+            .eq('service_provider_id', providerId);
           labReports = labReportResult.data || [];
         } catch (e) {
           // Table might not exist, use empty array
@@ -357,8 +349,7 @@ export const getTypeSpecificMetrics = async (
           .from('PIQ_Bookings')
           .select('booking_id')
           .eq('service_provider_id', providerId)
-          .eq('booking_status', 'Completed')
-          .is('deleted_dtm', null);
+          .eq('booking_status', 'Completed');
 
         metrics.trainer = {
           trainingSessions: trainingSessions?.length || 0,
@@ -372,8 +363,7 @@ export const getTypeSpecificMetrics = async (
         const { data: groomingSessions } = await supabase
           .from('PIQ_Bookings')
           .select('booking_id, booking_status')
-          .eq('service_provider_id', providerId)
-          .is('deleted_dtm', null);
+          .eq('service_provider_id', providerId);
 
         const completed = groomingSessions?.filter(s => (s.booking_status || '').toLowerCase() === 'completed').length || 0;
 
@@ -390,8 +380,7 @@ export const getTypeSpecificMetrics = async (
         const { data: sittingSessions } = await supabase
           .from('PIQ_Bookings')
           .select('booking_id, booking_status, booked_dtm')
-          .eq('service_provider_id', providerId)
-          .is('deleted_dtm', null);
+          .eq('service_provider_id', providerId);
 
         const now = new Date();
         const active = sittingSessions?.filter(s => 

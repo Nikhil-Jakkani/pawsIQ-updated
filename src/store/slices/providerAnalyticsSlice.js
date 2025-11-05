@@ -10,9 +10,16 @@ export const fetchProviderMetrics = createAsyncThunk(
   async ({ authFetch }, { rejectWithValue }) => {
     try {
       const response = await authFetch(`${API_URL}/provider/dashboard/metrics`);
-      return response.data;
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        const message = payload?.message || 'Failed to fetch provider metrics';
+        throw new Error(message);
+      }
+
+      return payload?.data || payload || {};
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch provider metrics');
+      return rejectWithValue(error.message || 'Failed to fetch provider metrics');
     }
   }
 );
@@ -25,9 +32,16 @@ export const fetchProviderRevenue = createAsyncThunk(
   async ({ authFetch }, { rejectWithValue }) => {
     try {
       const response = await authFetch(`${API_URL}/provider/dashboard/revenue`);
-      return response.data;
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        const message = payload?.message || 'Failed to fetch provider revenue';
+        throw new Error(message);
+      }
+
+      return payload?.data || payload || {};
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch provider revenue');
+      return rejectWithValue(error.message || 'Failed to fetch provider revenue');
     }
   }
 );
@@ -40,9 +54,16 @@ export const fetchProviderTypeMetrics = createAsyncThunk(
   async ({ authFetch }, { rejectWithValue }) => {
     try {
       const response = await authFetch(`${API_URL}/provider/dashboard/type-metrics`);
-      return response.data;
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        const message = payload?.message || 'Failed to fetch type-specific metrics';
+        throw new Error(message);
+      }
+
+      return payload?.data || payload || {};
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch type-specific metrics');
+      return rejectWithValue(error.message || 'Failed to fetch type-specific metrics');
     }
   }
 );
@@ -55,9 +76,16 @@ export const fetchProviderDashboardOverview = createAsyncThunk(
   async ({ authFetch }, { rejectWithValue }) => {
     try {
       const response = await authFetch(`${API_URL}/provider/dashboard/overview`);
-      return response.data;
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        const message = payload?.message || 'Failed to fetch dashboard overview';
+        throw new Error(message);
+      }
+
+      return payload?.data || payload || {};
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch dashboard overview');
+      return rejectWithValue(error.message || 'Failed to fetch dashboard overview');
     }
   }
 );

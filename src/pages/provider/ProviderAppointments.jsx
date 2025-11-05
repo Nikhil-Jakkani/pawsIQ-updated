@@ -93,9 +93,14 @@ const AppointmentCard = ({ appointment, onView, onConfirm, onCancel }) => (
 const ProviderAppointments = () => {
   const dispatch = useDispatch();
   const { authFetch } = useAuth();
-  const { appointments = [], filters = {}, loading = false, error = null } = useSelector(
-    (state) => state.appointments || {}
-  );
+  const {
+    appointments: appointmentsState = [],
+    filters = {},
+    loading = false,
+    error = null,
+  } = useSelector((state) => state.appointments || {});
+  const appointments = Array.isArray(appointmentsState) ? appointmentsState : [];
+
   const [selectedStatus, setSelectedStatus] = useState('all');
 
   useEffect(() => {
@@ -131,10 +136,10 @@ const ProviderAppointments = () => {
     }
   };
 
-  const filteredAppointments =
-    selectedStatus === 'all'
-      ? appointments
-      : appointments.filter((apt) => apt.status === selectedStatus);
+  const filteredAppointments = (selectedStatus === 'all'
+    ? appointments
+    : appointments.filter((apt) => apt.statusKey === selectedStatus || apt.status === selectedStatus)
+  ).filter(Boolean);
 
   return (
     <ProviderDashboardLayout>
