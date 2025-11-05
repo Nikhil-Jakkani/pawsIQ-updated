@@ -644,7 +644,8 @@ export const AuthProvider = ({ children }) => {
     };
 
     initializeAuth();
-  }, [authFetch, tokens?.access?.token, tokens?.refresh?.token, refreshToken]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const getAuthHeaders = useCallback(() => {
     if (!tokens?.access?.token) {

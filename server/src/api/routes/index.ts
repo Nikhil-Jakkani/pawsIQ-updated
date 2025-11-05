@@ -68,14 +68,14 @@ router.use('', availabilityRoutes);
 router.use('/vaccines', vaccineRoutes);
 router.use('', reviewRoutes);
 router.use('/payments', paymentRoutes);
+router.use('/support/tickets', supportTicketRoutes);
+router.use('/support/chat', supportChatRoutes);
 router.use('', portfolioRoutes);
 router.use('/provider/payouts', providerPayoutRoutes);
 router.use('/admin/payouts', adminPayoutRoutes);
 router.use('/provider/commissions', providerCommissionRoutes);
 router.use('/admin/commissions', adminCommissionRoutes);
 router.use('/providers', providerRatingsRoutes);
-router.use('/support/tickets', supportTicketRoutes);
-router.use('/support/chat', supportChatRoutes);
 router.use('/admin/users/:userId/spending', (req, res) => {
   // User spending endpoint
   const totalSpent = Math.floor(Math.random() * 10000);

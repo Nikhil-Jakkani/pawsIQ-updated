@@ -21,17 +21,18 @@ import ProviderPrescriptions from '../pages/provider/ProviderPrescriptions';
 import ProviderLabReports from '../pages/provider/ProviderLabReports';
 import ProviderNotifications from '../pages/provider/ProviderNotifications';
 import ProviderSettings from '../pages/provider/ProviderSettings';
+import ProviderChat from '../pages/provider/ProviderChat';
 
 // Vet Specific Pages
 import VetDashboard from '../pages/provider/VetDashboard';
 import VetAppointments from '../pages/provider/VetAppointments';
 import VetClients from '../pages/provider/VetClients';
-import VetServices from '../pages/provider/VetServices';
 import VetPrescriptions from '../pages/provider/VetPrescriptions';
 import VetLabReports from '../pages/provider/VetLabReports';
 import VetAnalytics from '../pages/provider/VetAnalytics';
 import VetNotifications from '../pages/provider/VetNotifications';
 import VetSettings from '../pages/provider/VetSettings';
+import VetServices from '../pages/provider/VetServices';
 
 /**
  * Provider Routes Configuration
@@ -132,6 +133,14 @@ const ProviderRoutes = () => {
         element={
           <ProviderProtectedRoute>
             <ProviderSettings />
+          </ProviderProtectedRoute>
+        }
+      />
+      <Route
+        path="/chat"
+        element={
+          <ProviderProtectedRoute>
+            <ProviderChat />
           </ProviderProtectedRoute>
         }
       />

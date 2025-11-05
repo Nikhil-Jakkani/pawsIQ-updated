@@ -47,7 +47,7 @@ const useChatSocket = () => {
 
   useEffect(() => {
     const accessToken = tokens?.access?.token;
-    
+
     // No token - disconnect if connected
     if (!accessToken) {
       setConnected(false);
@@ -55,14 +55,14 @@ const useChatSocket = () => {
       prevTokenRef.current = null;
       return undefined;
     }
-    
+
     // Token unchanged - skip reconnection
     if (accessToken === prevTokenRef.current) {
       return undefined;
     }
-    
+
     prevTokenRef.current = accessToken;
-    
+
     // If socket exists and is connected, update auth without reconnecting
     if (socketRef.current?.connected) {
       socketRef.current.auth = { token: accessToken };
@@ -75,25 +75,38 @@ const useChatSocket = () => {
       auth: { token: accessToken },
       autoConnect: true,
       reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      reconnectionAttempts: 5,
+      reconnectionDelay: 2000,
+      reconnectionDelayMax: 10000,
+      reconnectionAttempts: 3, // Reduced from 5 to avoid spam
     });
 
     socketRef.current = socket;
 
-    const handleConnect = () => setConnected(true);
-    const handleDisconnect = () => setConnected(false);
+    const handleConnect = () => {
+      setConnected(true);
+    };
+
+    const handleDisconnect = (reason) => {
+      if (reason !== 'io client disconnect') {
+        console.warn('[Chat] WebSocket disconnected, chat will work in polling mode');
+      }
+      setConnected(false);
+    };
+
+    const handleConnectError = (error) => {
+      // Silent failure - chat works without WebSocket via REST API
+      setConnected(false);
+    };
 
     socket.on('connect', handleConnect);
     socket.on('disconnect', handleDisconnect);
-    socket.on('connect_error', handleDisconnect);
+    socket.on('connect_error', handleConnectError);
     socket.on('session:error', handleDisconnect);
 
     return () => {
       socket.off('connect', handleConnect);
       socket.off('disconnect', handleDisconnect);
-      socket.off('connect_error', handleDisconnect);
+      socket.off('connect_error', handleConnectError);
       socket.off('session:error', handleDisconnect);
       socket.disconnect();
       socketRef.current = null;
@@ -106,7 +119,7 @@ const useChatSocket = () => {
   }, []);
 
   const on = useCallback((event, handler) => {
-    if (!socketRef.current) return () => {};
+    if (!socketRef.current) return () => { };
     socketRef.current.on(event, handler);
     return () => {
       if (socketRef.current) {

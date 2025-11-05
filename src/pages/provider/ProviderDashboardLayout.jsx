@@ -14,6 +14,7 @@ import {
   FaBars,
   FaTimes,
   FaStethoscope,
+  FaComments,
 } from 'react-icons/fa';
 
 /**
@@ -37,6 +38,7 @@ const ProviderDashboardLayout = ({ children }) => {
       { label: 'Dashboard', path: '/provider/dashboard', icon: FaHome },
       { label: 'Appointments', path: '/provider/appointments', icon: FaCalendarAlt },
       { label: 'Clients', path: '/provider/clients', icon: FaUser },
+      { label: 'Messages', path: '/provider/chat', icon: FaComments },
       { label: 'Services', path: '/provider/services', icon: FaServicestack },
       { label: 'Analytics', path: '/provider/analytics', icon: FaChartLine },
     ];
