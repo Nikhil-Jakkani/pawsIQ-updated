@@ -15,10 +15,12 @@ const HealthRecords = () => {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [vaccinations, setVaccinations] = useState([]);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     recordType: 'vaccination',
+    vaccinationName: '',
     recordDate: new Date().toISOString().split('T')[0],
     nextDueDate: '',
   });
@@ -135,6 +137,48 @@ const HealthRecords = () => {
   };
 
   useEffect(() => {
+    // Load vaccinations from backend API
+    const loadVaccinations = async () => {
+      try {
+        console.log('Loading vaccinations from backend API');
+        const response = await fetch(`${API_URL}/vaccines/master`);
+        if (!response.ok) {
+          throw new Error(`Failed to load vaccines: ${response.status}`);
+        }
+        const data = await response.json();
+        console.log('API response received:', data);
+        
+        // Extract unique vaccine names from the API response structure
+        const vaccinesList = Array.isArray(data?.vaccines) ? data.vaccines : [];
+        console.log('Vaccines list:', vaccinesList);
+        
+        const uniqueVaccines = [...new Set(vaccinesList.map(item => item.vaccine))].filter(v => v && v.trim()).sort();
+        console.log('Unique vaccines loaded from API:', uniqueVaccines);
+        setVaccinations(uniqueVaccines);
+      } catch (err) {
+        console.error('Error loading vaccinations from API:', err);
+        // Fallback to JSON file if API fails
+        try {
+          console.log('Falling back to JSON file');
+          const response = await fetch('/pet_vaccine_master.json');
+          if (!response.ok) {
+            throw new Error(`Failed to load JSON: ${response.status}`);
+          }
+          const data = await response.json();
+          const uniqueVaccines = [...new Set(data.map(item => item.vaccine))].filter(v => v && v.trim()).sort();
+          console.log('Loaded from JSON fallback:', uniqueVaccines);
+          setVaccinations(uniqueVaccines);
+        } catch (fallbackErr) {
+          console.error('Fallback to JSON also failed:', fallbackErr);
+          setVaccinations([]);
+        }
+      }
+    };
+    
+    loadVaccinations();
+  }, []);
+
+  useEffect(() => {
     if (petId && currentUser) {
       fetchPetAndRecords();
     }
@@ -142,10 +186,17 @@ const HealthRecords = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(prev => {
+      const updated = {
+        ...prev,
+        [name]: value
+      };
+      // Auto-populate title with vaccination name if selecting a vaccination
+      if (name === 'vaccinationName' && value) {
+        updated.title = value;
+      }
+      return updated;
+    });
   };
 
   const handleFileChange = (e) => {
@@ -251,6 +302,7 @@ const HealthRecords = () => {
           title: '',
           description: '',
           recordType: 'vaccination',
+          vaccinationName: '',
           recordDate: new Date().toISOString().split('T')[0],
           nextDueDate: '',
         });
@@ -291,6 +343,7 @@ const HealthRecords = () => {
           title: '',
           description: '',
           recordType: 'vaccination',
+          vaccinationName: '',
           recordDate: new Date().toISOString().split('T')[0],
           nextDueDate: '',
         });
@@ -457,6 +510,7 @@ const HealthRecords = () => {
         title: '',
         description: '',
         recordType: 'test_result',
+        vaccinationName: '',
         recordDate: new Date().toISOString().split('T')[0],
         nextDueDate: '',
       });
@@ -669,6 +723,29 @@ const HealthRecords = () => {
                             ))}
                           </select>
                         </div>
+
+                        {formData.recordType === 'vaccination' && (
+                          <div>
+                            <label htmlFor="vaccinationName" className="block text-sm font-medium text-gray-700">
+                              Vaccination Name *
+                            </label>
+                            <select
+                              id="vaccinationName"
+                              name="vaccinationName"
+                              value={formData.vaccinationName}
+                              onChange={handleInputChange}
+                              required={formData.recordType === 'vaccination'}
+                              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                            >
+                              <option value="">Select a vaccination</option>
+                              {vaccinations.map((vaccine) => (
+                                <option key={vaccine} value={vaccine}>
+                                  {vaccine}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
 
                         <div className="grid grid-cols-2 gap-4">
                           <div>

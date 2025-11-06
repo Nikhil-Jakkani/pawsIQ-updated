@@ -23,7 +23,7 @@ const UserPetProfile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   // Extra lists
-  const [vaccinations, setVaccinations] = useState([]);
+  const [vaccinationsList, setVaccinationsList] = useState([]);
   const [allergiesList, setAllergiesList] = useState([]);
   const [conditionsList, setConditionsList] = useState([]);
   const [pet, setPet] = useState(null);
@@ -259,6 +259,41 @@ const UserPetProfile = () => {
         setCustomAllergies(normalized.otherAllergies || '');
         setSelectedMedicalConditions(initMedical);
         setCustomMedicalConditions(normalized.otherMedicalConditions || '');
+        
+        // Fetch vaccinations from health records
+        try {
+          console.log('Fetching health records for petId:', petId);
+          const healthRes = await authFetch(`${API_URL}/pets/${petId}/health-records`);
+          console.log('Health records API response status:', healthRes.status);
+          if (healthRes.ok) {
+            const healthData = await healthRes.json();
+            console.log('Health records API response data:', healthData);
+            const recordsList = Array.isArray(healthData) ? healthData : (healthData?.records || []);
+            
+            // Filter records with vaccination tag
+            const vaccinationRecords = recordsList.filter(r => 
+              (r.record_type ?? r.recordType ?? '').toLowerCase() === 'vaccination'
+            );
+            
+            // Map health records to vaccination format
+            const mappedVaccinations = vaccinationRecords.map(r => ({
+              vaccination_id: (r.health_record_id ?? r.healthRecordId ?? r.id),
+              vaccination_name: r.title || '',
+              vaccine_given_date: (r.record_date ?? r.recordDate) || '',
+              vaccine_due_date: (r.next_due_date ?? r.nextDueDate) || '',
+              vaccine_status: 'given', // Default to 'given' if record exists
+            }));
+            
+            console.log('Vaccinations to display:', mappedVaccinations);
+            setVaccinationsList(mappedVaccinations);
+          } else {
+            console.error('Health records API error response:', healthRes.status);
+            const errorData = await healthRes.json().catch(() => ({}));
+            console.error('Health records API error details:', errorData);
+          }
+        } catch (e) {
+          console.error('Error loading health records:', e);
+        }
         
         // Fetch options
         await fetchHealthOptions();
@@ -876,6 +911,76 @@ const UserPetProfile = () => {
                               <td className="px-4 py-2 text-sm text-gray-500 text-left">-</td>
                             </tr>
                           ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </section>
+
+                <section>
+                  <h3 className="text-lg font-semibold mb-2">Vaccinations</h3>
+                  {vaccinationsList.length === 0 ? (
+                    <p className="text-sm text-gray-500">No vaccinations recorded.</p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead>
+                          <tr>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Sr. No</th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Vaccination Name</th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Given Date</th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Due Date</th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {(() => {
+                            // Map status from backend values to display values and determine sort order
+                            const mapStatus = (status, givenDate, dueDate) => {
+                              if (status === 'given') return 'Completed';
+                              if (status === 'planned') {
+                                if (dueDate) {
+                                  const dueD = new Date(dueDate);
+                                  return dueD < new Date() ? 'Overdue' : 'Pending';
+                                }
+                                return 'Pending';
+                              }
+                              return 'Unknown';
+                            };
+
+                            const statusOrder = { 'Completed': 1, 'Pending': 2, 'Overdue': 3, 'Unknown': 4 };
+                            const sortedVaccinations = [...vaccinationsList].sort((a, b) => {
+                              const statusA = mapStatus(a.vaccine_status, a.vaccine_given_date, a.vaccine_due_date);
+                              const statusB = mapStatus(b.vaccine_status, b.vaccine_given_date, b.vaccine_due_date);
+                              return (statusOrder[statusA] || 999) - (statusOrder[statusB] || 999);
+                            });
+
+                            return sortedVaccinations.map((vac, index) => {
+                              const displayStatus = mapStatus(vac.vaccine_status, vac.vaccine_given_date, vac.vaccine_due_date);
+                              return (
+                                <tr key={vac.vaccination_id || index}>
+                                  <td className="px-4 py-2 text-sm text-gray-800 text-left">{index + 1}</td>
+                                  <td className="px-4 py-2 text-sm text-gray-800 text-left">{vac.vaccination_name || '-'}</td>
+                                  <td className="px-4 py-2 text-sm text-gray-800 text-left">
+                                    {vac.vaccine_given_date ? new Date(vac.vaccine_given_date).toLocaleDateString() : '-'}
+                                  </td>
+                                  <td className="px-4 py-2 text-sm text-gray-800 text-left">
+                                    {vac.vaccine_due_date ? new Date(vac.vaccine_due_date).toLocaleDateString() : '-'}
+                                  </td>
+                                  <td className="px-4 py-2 text-sm text-left">
+                                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                                      displayStatus === 'Completed' ? 'bg-green-100 text-green-800' :
+                                      displayStatus === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                                      displayStatus === 'Overdue' ? 'bg-red-100 text-red-800' :
+                                      'bg-gray-100 text-gray-800'
+                                    }`}>
+                                      {displayStatus}
+                                    </span>
+                                  </td>
+                                </tr>
+                              );
+                            });
+                          })()}
                         </tbody>
                       </table>
                     </div>
