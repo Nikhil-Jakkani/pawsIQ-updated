@@ -23,7 +23,7 @@ const UserPetProfile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   // Extra lists
-  const [vaccinations, setVaccinations] = useState([]);
+  const [vaccinationsList, setVaccinationsList] = useState([]);
   const [allergiesList, setAllergiesList] = useState([]);
   const [conditionsList, setConditionsList] = useState([]);
   const [pet, setPet] = useState(null);
@@ -149,7 +149,7 @@ const UserPetProfile = () => {
   }, [selectedMedicalConditions, customMedicalConditions]);
   
   useEffect(() => {
-    if (!authFetch || !petId) return;
+    if (!petId) return;
     const load = async () => {
       setLoading(true);
       setError('');
@@ -207,9 +207,6 @@ const UserPetProfile = () => {
                   };
 
         setPet(normalized);
-        // Initialize custom fields from consolidated data
-        setCustomAllergies(normalized.otherAllergies || '');
-        setCustomMedicalConditions(normalized.otherMedicalConditions || '');
         // Try to resolve signed URL for image if path exists
         try {
           if (normalized.imagePath) {
@@ -259,54 +256,47 @@ const UserPetProfile = () => {
           : [];
         if (normalized.otherMedicalConditions) initMedical.push(normalized.otherMedicalConditions);
         setSelectedAllergies(initAllergies);
+        setCustomAllergies(normalized.otherAllergies || '');
         setSelectedMedicalConditions(initMedical);
+        setCustomMedicalConditions(normalized.otherMedicalConditions || '');
+        
+        // Fetch vaccinations from health records
+        try {
+          console.log('Fetching health records for petId:', petId);
+          const healthRes = await authFetch(`${API_URL}/pets/${petId}/health-records`);
+          console.log('Health records API response status:', healthRes.status);
+          if (healthRes.ok) {
+            const healthData = await healthRes.json();
+            console.log('Health records API response data:', healthData);
+            const recordsList = Array.isArray(healthData) ? healthData : (healthData?.records || []);
+            
+            // Filter records with vaccination tag
+            const vaccinationRecords = recordsList.filter(r => 
+              (r.record_type ?? r.recordType ?? '').toLowerCase() === 'vaccination'
+            );
+            
+            // Map health records to vaccination format
+            const mappedVaccinations = vaccinationRecords.map(r => ({
+              vaccination_id: (r.health_record_id ?? r.healthRecordId ?? r.id),
+              vaccination_name: r.title || '',
+              vaccine_given_date: (r.record_date ?? r.recordDate) || '',
+              vaccine_due_date: (r.next_due_date ?? r.nextDueDate) || '',
+              vaccine_status: 'given', // Default to 'given' if record exists
+            }));
+            
+            console.log('Vaccinations to display:', mappedVaccinations);
+            setVaccinationsList(mappedVaccinations);
+          } else {
+            console.error('Health records API error response:', healthRes.status);
+            const errorData = await healthRes.json().catch(() => ({}));
+            console.error('Health records API error details:', errorData);
+          }
+        } catch (e) {
+          console.error('Error loading health records:', e);
+        }
+        
         // Fetch options
         await fetchHealthOptions();
-
-        // Fetch vaccinations, allergies, conditions for this pet
-        try {
-          const [vRes, aRes, cRes] = await Promise.all([
-            authFetch(`${API_URL}/vaccines/pets/${petId}/vaccinations`).catch(() => null),
-            authFetch(`${API_URL}/pets/${petId}/allergies`).catch(() => null),
-            authFetch(`${API_URL}/pets/${petId}/conditions`).catch(() => null),
-          ]);
-          if (vRes && vRes.ok) {
-            const list = await vRes.json().catch(() => []);
-            const vacList = Array.isArray(list) ? list : [];
-            console.log('🔍 Loading vaccination data from backend:', list);
-            console.log('✅ Found vaccination records:', vacList.length);
-            console.log('📋 Vaccination details:', vacList);
-            setVaccinations(vacList);
-            // Also update formData with vaccinations
-            setFormData(prev => ({ ...prev, vaccinations: vacList }));
-            console.log('💾 Set vaccinations state with', vacList.length, 'records');
-          }
-          if (aRes && aRes.ok) {
-            const payload = await aRes.json().catch(() => ({}));
-            // ✅ FIX: Properly separate selected (checkboxes) from custom (text input)
-            const selected = Array.isArray(payload?.selected_allergies) ? payload.selected_allergies : [];
-            const custom = payload?.other_allergies ? String(payload.other_allergies) : '';
-            setSelectedAllergies(selected);
-            setCustomAllergies(custom);
-            // Merge and set the display list
-            const mergedAllergies = [...selected];
-            if (custom) mergedAllergies.push(custom);
-            console.log('✅ Loaded Allergies from API:', { selected, custom });
-          }
-          if (cRes && cRes.ok) {
-            const payload = await cRes.json().catch(() => ({}));
-            // ✅ FIX: Properly separate selected (checkboxes) from custom (text input)
-            const selected = Array.isArray(payload?.selected_conditions) ? payload.selected_conditions : [];
-            const custom = payload?.other_conditions ? String(payload.other_conditions) : '';
-            setSelectedMedicalConditions(selected);
-            setCustomMedicalConditions(custom);
-            // Merge and set the display list
-            const mergedConditions = [...selected];
-            if (custom) mergedConditions.push(custom);
-            console.log('✅ Loaded Conditions from API:', { selected, custom });
-          }        } catch (e) {
-          console.warn('Failed to fetch health lists', e);
-        }
       } catch (e) {
         console.error('Failed to load pet profile:', e);
         setError(e.message || 'Failed to load pet');
@@ -315,7 +305,7 @@ const UserPetProfile = () => {
       }
     };
     load();
-  }, [authFetch, petId]);
+  }, [petId]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -887,71 +877,9 @@ const UserPetProfile = () => {
               </div>
             </div>
 
-            {/* Vaccinations, Allergies, Conditions Sections */}
+            {/* Allergies, Conditions Sections */}
             {!isEditing && (
               <div className="p-6 border-t border-gray-100 space-y-8">
-                <section>
-                  <h3 className="text-lg font-semibold mb-2">Vaccination History</h3>
-                  {vaccinations.length === 0 ? (
-                    <p className="text-sm text-gray-500">No vaccinations recorded.</p>
-                  ) : (
-                    <>
-                      {/* Visual Summary Section */}
-                      <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                        <div className="flex items-start gap-2">
-                          <FaCheckCircle className="text-green-600 mt-0.5 flex-shrink-0" />
-                          <div className="flex-1">
-                            <h4 className="text-sm font-semibold text-green-900 mb-2">
-                              Vaccination Records from Database ({vaccinations.length} {vaccinations.length === 1 ? 'record' : 'records'})
-                            </h4>
-                            <div className="space-y-1.5">
-                              {vaccinations.map((v, idx) => (
-                                <div key={v.id || idx} className="text-sm text-green-800">
-                                  <span className="font-medium">{v.vaccination_name || v.name}</span>
-                                  {(v.vaccine_given_date || v.date) && (
-                                    <span className="text-green-700">
-                                      {' '}- Given: {String(v.vaccine_given_date || v.date).slice(0, 10)}
-                                    </span>
-                                  )}
-                                  {(v.vaccine_due_date || v.next_due_date) && (
-                                    <span className="text-green-700">
-                                      {' '}- Next Due: {String(v.vaccine_due_date || v.next_due_date).slice(0, 10)}
-                                    </span>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Detailed Table */}
-                      <div className="overflow-x-auto">
-                        <table className="min-w-full w-full divide-y divide-gray-200">
-                          <thead>
-                            <tr className="bg-gray-50">
-                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Vaccine</th>
-                             <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Given</th>
-                             <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Next Due</th>
-                             <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Status</th>
-                           </tr>
-                         </thead>
-                         <tbody className="divide-y divide-gray-100">
-                           {vaccinations.map((v, idx) => (
-                             <tr key={v.id || idx}>
-                               <td className="px-4 py-2 text-sm text-gray-800">{v.vaccination_name || v.name}</td>
-                               <td className="px-4 py-2 text-sm text-gray-500">{v.vaccine_given_date || v.date ? String(v.vaccine_given_date || v.date).slice(0, 10) : '-'}</td>
-                               <td className="px-4 py-2 text-sm text-gray-500">{v.vaccine_due_date || v.next_due_date ? String(v.vaccine_due_date || v.next_due_date).slice(0, 10) : '-'}</td>
-                               <td className="px-4 py-2 text-sm text-gray-500 capitalize">{v.vaccine_status || v.status || '-'}</td>
-                             </tr>
-                           ))}
-                         </tbody>
-                        </table>
-                      </div>
-                    </>
-                  )}
-                </section>
-
                 <section>
                   <h3 className="text-lg font-semibold mb-2">Allergies</h3>
                   {allergiesList.length === 0 ? (
@@ -983,6 +911,76 @@ const UserPetProfile = () => {
                               <td className="px-4 py-2 text-sm text-gray-500 text-left">-</td>
                             </tr>
                           ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </section>
+
+                <section>
+                  <h3 className="text-lg font-semibold mb-2">Vaccinations</h3>
+                  {vaccinationsList.length === 0 ? (
+                    <p className="text-sm text-gray-500">No vaccinations recorded.</p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead>
+                          <tr>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Sr. No</th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Vaccination Name</th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Given Date</th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Due Date</th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {(() => {
+                            // Map status from backend values to display values and determine sort order
+                            const mapStatus = (status, givenDate, dueDate) => {
+                              if (status === 'given') return 'Completed';
+                              if (status === 'planned') {
+                                if (dueDate) {
+                                  const dueD = new Date(dueDate);
+                                  return dueD < new Date() ? 'Overdue' : 'Pending';
+                                }
+                                return 'Pending';
+                              }
+                              return 'Unknown';
+                            };
+
+                            const statusOrder = { 'Completed': 1, 'Pending': 2, 'Overdue': 3, 'Unknown': 4 };
+                            const sortedVaccinations = [...vaccinationsList].sort((a, b) => {
+                              const statusA = mapStatus(a.vaccine_status, a.vaccine_given_date, a.vaccine_due_date);
+                              const statusB = mapStatus(b.vaccine_status, b.vaccine_given_date, b.vaccine_due_date);
+                              return (statusOrder[statusA] || 999) - (statusOrder[statusB] || 999);
+                            });
+
+                            return sortedVaccinations.map((vac, index) => {
+                              const displayStatus = mapStatus(vac.vaccine_status, vac.vaccine_given_date, vac.vaccine_due_date);
+                              return (
+                                <tr key={vac.vaccination_id || index}>
+                                  <td className="px-4 py-2 text-sm text-gray-800 text-left">{index + 1}</td>
+                                  <td className="px-4 py-2 text-sm text-gray-800 text-left">{vac.vaccination_name || '-'}</td>
+                                  <td className="px-4 py-2 text-sm text-gray-800 text-left">
+                                    {vac.vaccine_given_date ? new Date(vac.vaccine_given_date).toLocaleDateString() : '-'}
+                                  </td>
+                                  <td className="px-4 py-2 text-sm text-gray-800 text-left">
+                                    {vac.vaccine_due_date ? new Date(vac.vaccine_due_date).toLocaleDateString() : '-'}
+                                  </td>
+                                  <td className="px-4 py-2 text-sm text-left">
+                                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                                      displayStatus === 'Completed' ? 'bg-green-100 text-green-800' :
+                                      displayStatus === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                                      displayStatus === 'Overdue' ? 'bg-red-100 text-red-800' :
+                                      'bg-gray-100 text-gray-800'
+                                    }`}>
+                                      {displayStatus}
+                                    </span>
+                                  </td>
+                                </tr>
+                              );
+                            });
+                          })()}
                         </tbody>
                       </table>
                     </div>

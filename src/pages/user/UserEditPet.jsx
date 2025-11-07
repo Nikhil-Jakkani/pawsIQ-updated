@@ -260,9 +260,14 @@ const UserEditPet = () => {
         const selectedKnownConditions = allConditionsArr.filter((c) => commonMedicalConditions.includes(c));
         const derivedCustomConditions = allConditionsArr.filter((c) => !commonMedicalConditions.includes(c)).join(', ');
 
+        const finalType = mappedType || (petData.pet_type || petData.type || '').toLowerCase();
+        const finalAgeGroup = petData.age_group || petData.ageGroup || 'adult';
+        
+        console.log('DEBUG: Pet data loaded - type:', finalType, 'ageGroup:', finalAgeGroup, 'petData:', petData);
+        
         setFormData({
           name: petData.pet_name || petData.name || '',
-          type: mappedType,
+          type: finalType,
           breed: petData.pet_breed || petData.breed || '',
           gender: petData.pet_gender || petData.gender || '',
           birthdate: (petData.pet_birth_dtm || petData.birthdate || '').split ? (petData.pet_birth_dtm || petData.birthdate || '').split('T')[0] : (petData.pet_birth_dtm || petData.birthdate || ''),
@@ -283,7 +288,7 @@ const UserEditPet = () => {
           vetName: petData.vet_name || '',
           vetPhone: petData.vet_phone || '',
           notes: petData.notes || '',
-          ageGroup: petData.age_group || petData.ageGroup || 'adult',
+          ageGroup: finalAgeGroup,
           vaccinations: vaccinationsArray,
         });
 
@@ -312,6 +317,7 @@ const UserEditPet = () => {
     const fetchVaccineData = async () => {
       try {
         if (!formData.type || !formData.ageGroup) {
+          console.log('DEBUG: Skipping vaccine fetch - type:', formData.type, 'ageGroup:', formData.ageGroup);
           setVaccineData([]);
           return;
         }
@@ -321,9 +327,11 @@ const UserEditPet = () => {
         params.set('petType', petType);
         if (formData.breed) params.set('breed', formData.breed);
         params.set('ageGroup', ageGroup);
+        console.log('DEBUG: Fetching vaccines with params:', params.toString());
         const response = await authFetch(`${API_URL}/vaccines/master?${params.toString()}`);
         const payload = await response.json().catch(() => ({}));
         const items = Array.isArray(payload?.vaccines) ? payload.vaccines : [];
+        console.log('DEBUG: Vaccines fetched:', items);
         setVaccineData(items);
       } catch (error) {
         console.error('Error loading vaccine data:', error);
@@ -337,6 +345,7 @@ const UserEditPet = () => {
   // Filter vaccines based on pet type, breed, and age group
   useEffect(() => {
     if (vaccineData.length === 0 || !formData.type || !formData.ageGroup) {
+      console.log('DEBUG: Resetting filtered vaccines - vaccineData.length:', vaccineData.length, 'type:', formData.type, 'ageGroup:', formData.ageGroup);
       setFilteredVaccines([]);
       return;
     }
@@ -345,11 +354,15 @@ const UserEditPet = () => {
     const petType = formData.type.charAt(0).toUpperCase() + formData.type.slice(1);
     const ageGroup = formData.ageGroup.charAt(0).toUpperCase() + formData.ageGroup.slice(1);
     
+    console.log('DEBUG: Filtering vaccines - petType:', petType, 'ageGroup:', ageGroup);
+    
     // Filter vaccines based on pet type, breed (if available), and age group
     let filtered = vaccineData.filter(vaccine => 
       vaccine.pet_type === petType && 
       vaccine.age_group === ageGroup
     );
+    
+    console.log('DEBUG: Filtered result after type/ageGroup match:', filtered);
     
     // If breed is specified and there are breed-specific vaccines, prioritize those
     if (formData.breed) {
@@ -371,7 +384,9 @@ const UserEditPet = () => {
       return acc;
     }, {});
     
-    setFilteredVaccines(Object.values(groupedVaccines));
+    const final = Object.values(groupedVaccines);
+    console.log('DEBUG: Final filtered vaccines:', final);
+    setFilteredVaccines(final);
   }, [vaccineData, formData.type, formData.breed, formData.ageGroup]);
 
   // Handle form input changes
@@ -1088,17 +1103,17 @@ const UserEditPet = () => {
                 <div className="bg-gray-800 p-2 rounded-xl">
                   <FaSyringe className="text-white text-xl" />
                 </div>
-                <h2 className="text-2xl font-bold text-gray-800">Vaccination Records</h2>
+                <h2 className="text-2xl font-bold text-gray-800">Vaccination Details</h2>
               </div>
               
               <div className="mb-4 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
                 <p className="text-sm text-yellow-800">
-                  <strong>Important:</strong> Select the vaccines your pet has received. The list is based on your pet's type and age group.
+                  <strong>Important:</strong> Track the vaccinations your pet has received. Make sure to select your pet's type and age group above first.
                 </p>
               </div>
               
               {formData.type && formData.ageGroup ? (
-                filteredVaccines.length > 0 ? (
+                Array.isArray(filteredVaccines) && filteredVaccines.length > 0 ? (
                   <div className="space-y-4">
                     <div className="bg-blue-50 p-4 rounded-lg">
                       <h3 className="text-md font-medium text-blue-800 mb-1 flex items-center gap-2">
@@ -1110,109 +1125,109 @@ const UserEditPet = () => {
                       </p>
                     </div>
                     
-                    <div className="border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-                      <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200">
-                          <thead className="bg-gray-50">
-                            <tr>
-                              <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Vaccine Name
-                              </th>
-                              <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Purpose
-                              </th>
-                              <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Recommended Age
-                              </th>
-                              <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Frequency
-                              </th>
-                              <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Date Given
-                              </th>
-                              <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Next Due Date
-                              </th>
-                              <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Received
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody className="bg-white divide-y divide-gray-200">
-                            {filteredVaccines.map((vaccine, index) => {
-                              const vaccineId = vaccine.vaccine;
-                              const isSelected = !!selectedVaccines[vaccineId];
-                              return (
-                                <tr 
-                                  key={index} 
-                                  className={`${vaccine.is_core ? 'bg-yellow-50' : ''} hover:bg-gray-50`}
-                                >
-                                  <td className="px-4 py-3">
-                                    <div className="text-sm font-medium text-gray-900 flex items-center gap-1">
-                                      {vaccine.vaccine}
-                                      {vaccine.is_core && (
-                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
-                                          Core
-                                        </span>
-                                      )}
-                                    </div>
-                                  </td>
-                                  <td className="px-4 py-3">
-                                    <div className="text-sm text-gray-500">{vaccine.purpose}</div>
-                                  </td>
-                                  <td className="px-4 py-3">
-                                    <div className="text-sm text-gray-500">{vaccine.recommended_age}</div>
-                                  </td>
-                                  <td className="px-4 py-3">
-                                    <div className="text-sm text-gray-500">{vaccine.frequency}</div>
-                                  </td>
-                                  <td className="px-4 py-3">
-                                    <input
-                                      type="date"
-                                      value={selectedVaccines[vaccineId]?.date || ''}
-                                      onChange={(e) => {
-                                        if (!isSelected) {
-                                          handleVaccineChange(vaccineId, true, vaccine);
-                                        }
-                                        handleVaccineDetailChange(vaccineId, 'date', e.target.value);
-                                      }}
-                                      className={`w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${!isSelected ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                                      disabled={!isSelected}
-                                    />
-                                  </td>
-                                  <td className="px-4 py-3">
-                                    <input
-                                      type="date"
-                                      value={selectedVaccines[vaccineId]?.nextDue || ''}
-                                      onChange={(e) => {
-                                        if (!isSelected) {
-                                          handleVaccineChange(vaccineId, true, vaccine);
-                                        }
-                                        handleVaccineDetailChange(vaccineId, 'nextDue', e.target.value);
-                                      }}
-                                      className={`w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${!isSelected ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                                      disabled={!isSelected}
-                                    />
-                                  </td>
-                                  <td className="px-4 py-3">
-                                    <div className="flex items-center">
-                                      <input
-                                        type="checkbox"
-                                        id={`vaccine-${index}`}
-                                        checked={isSelected}
-                                        onChange={(e) => {
-                                          handleVaccineChange(vaccineId, e.target.checked, vaccine);
-                                        }}
-                                        className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                      />
-                                    </div>
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
+                    {/* Vaccination Cards Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {filteredVaccines.map((vaccine, index) => {
+                        const vaccineId = vaccine.vaccine;
+                        const isSelected = !!selectedVaccines[vaccineId];
+                        return (
+                          <div
+                            key={index}
+                            className={`rounded-lg border-2 p-4 transition-all ${
+                              vaccine.is_core
+                                ? 'bg-yellow-50 border-yellow-300 shadow-sm'
+                                : 'bg-white border-gray-200 hover:border-blue-300 hover:shadow-md'
+                            } ${isSelected ? 'ring-2 ring-blue-500' : ''}`}
+                          >
+                            {/* Checkbox and Title */}
+                            <div className="flex items-start gap-3 mb-3">
+                              <input
+                                type="checkbox"
+                                id={`vaccine-${index}`}
+                                checked={isSelected}
+                                onChange={(e) => {
+                                  handleVaccineChange(vaccineId, e.target.checked, vaccine);
+                                }}
+                                className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-0.5 flex-shrink-0"
+                              />
+                              <div className="flex-1">
+                                <h4 className="font-semibold text-gray-900 flex items-center gap-2 flex-wrap">
+                                  {vaccine.vaccine}
+                                  {vaccine.is_core && (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                                      Core
+                                    </span>
+                                  )}
+                                </h4>
+                              </div>
+                            </div>
+
+                            {/* Vaccine Details */}
+                            <div className="space-y-2 mb-4 text-sm">
+                              <div>
+                                <p className="text-gray-500 text-xs uppercase tracking-wide font-medium">Purpose</p>
+                                <p className="text-gray-900">{vaccine.purpose}</p>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <p className="text-gray-500 text-xs uppercase tracking-wide font-medium">Recommended Age</p>
+                                  <p className="text-gray-900 text-xs">{vaccine.recommended_age}</p>
+                                </div>
+                                <div>
+                                  <p className="text-gray-500 text-xs uppercase tracking-wide font-medium">Frequency</p>
+                                  <p className="text-gray-900 text-xs">{vaccine.frequency}</p>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Date Fields - Only enabled when checked */}
+                            <div className="space-y-3 border-t border-gray-200 pt-4">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                  Date Given
+                                </label>
+                                <input
+                                  type="date"
+                                  value={selectedVaccines[vaccineId]?.date || ''}
+                                  onChange={(e) => {
+                                    if (!isSelected) {
+                                      handleVaccineChange(vaccineId, true, vaccine);
+                                    }
+                                    handleVaccineDetailChange(vaccineId, 'date', e.target.value);
+                                  }}
+                                  className={`w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                                    !isSelected
+                                      ? 'bg-gray-100 border-gray-300 cursor-not-allowed text-gray-500'
+                                      : 'border-gray-300 bg-white'
+                                  }`}
+                                  disabled={!isSelected}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                  Next Due Date
+                                </label>
+                                <input
+                                  type="date"
+                                  value={selectedVaccines[vaccineId]?.nextDue || ''}
+                                  onChange={(e) => {
+                                    if (!isSelected) {
+                                      handleVaccineChange(vaccineId, true, vaccine);
+                                    }
+                                    handleVaccineDetailChange(vaccineId, 'nextDue', e.target.value);
+                                  }}
+                                  className={`w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                                    !isSelected
+                                      ? 'bg-gray-100 border-gray-300 cursor-not-allowed text-gray-500'
+                                      : 'border-gray-300 bg-white'
+                                  }`}
+                                  disabled={!isSelected}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 ) : (
