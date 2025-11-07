@@ -33,13 +33,8 @@ const login = async (email: string, password: string) => {
     throw new ApiError(httpStatus.UNAUTHORIZED, 'Incorrect email or password');
   }
 
-  if (
-    provider.serv_provider_status &&
-    typeof provider.serv_provider_status === 'string' &&
-    provider.serv_provider_status.trim().toLowerCase() !== 'active'
-  ) {
-    throw new ApiError(httpStatus.UNAUTHORIZED, 'Your account is not active. Please contact support.');
-  }
+  // Note: Inactive providers can login to manage their account
+  // They just won't appear in user-facing provider listings until approved
 
   const tokens = await tokenService.generateAuthTokens(provider.service_provider_id, 'provider');
   return { provider, tokens };

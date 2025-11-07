@@ -91,14 +91,6 @@ const auth = (...requiredRights: string[]) => {
           const { data, error } = await db.from('PIQ_Service_Provider').select('*').eq('service_provider_id', payload.sub).single();
           entity = data;
           entityError = error;
-          if (
-            entity &&
-            typeof entity.serv_provider_status === 'string' &&
-            entity.serv_provider_status.trim() &&
-            entity.serv_provider_status.trim().toLowerCase() !== 'active'
-          ) {
-            throw new ApiError(httpStatus.UNAUTHORIZED, 'User account is not active');
-          }
           break;
         }
         default:
