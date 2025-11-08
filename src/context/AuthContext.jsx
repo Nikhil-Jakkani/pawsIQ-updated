@@ -355,7 +355,7 @@ export const AuthProvider = ({ children }) => {
       setError('Email and password are required');
       return { success: false };
     }
-    
+
     try {
       // Try API authentication first
       const response = await fetch(`${API_URL}/provider/auth/login`, {
@@ -370,6 +370,7 @@ export const AuthProvider = ({ children }) => {
         setTokens(tokens);
         localStorage.setItem('user', JSON.stringify(user));
         localStorage.setItem('authTokens', JSON.stringify(tokens));
+        clearLogoutFlag();
         return { success: true, userType: 'provider', user };
       }
     } catch (apiError) {
