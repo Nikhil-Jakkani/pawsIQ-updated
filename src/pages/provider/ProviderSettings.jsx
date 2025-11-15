@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import ProviderDashboardLayout from './ProviderDashboardLayout';
-import { FaCog, FaSave, FaKey, FaBell, FaLock } from 'react-icons/fa';
+import { FaCog, FaSave, FaKey, FaBell, FaLock, FaClipboardList } from 'react-icons/fa';
+import { getOnboardingPath } from '../../utils/providerOnboardingUtils';
 
 const SettingSection = ({ title, icon: Icon, children }) => (
   <div className="bg-white rounded-lg shadow p-6 mb-6">
@@ -14,6 +16,7 @@ const SettingSection = ({ title, icon: Icon, children }) => (
 );
 
 const ProviderSettings = () => {
+  const navigate = useNavigate();
   const { currentUser } = useAuth();
   const [settings, setSettings] = useState({
     email: currentUser?.email || '',
@@ -63,6 +66,33 @@ const ProviderSettings = () => {
     }
     console.log('Changing password');
     setPasswords({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  };
+
+  const handleContinueOnboarding = () => {
+    // Get provider type from current user or localStorage
+    const registrationData = localStorage.getItem('provider_registration');
+    let providerType = null;
+
+    if (registrationData) {
+      try {
+        const data = JSON.parse(registrationData);
+        providerType = data.providerType;
+      } catch (err) {
+        console.error('Error parsing registration data:', err);
+      }
+    }
+
+    // Fallback to currentUser if available
+    if (!providerType && currentUser?.providerType) {
+      providerType = currentUser.providerType;
+    }
+
+    if (providerType) {
+      const onboardingPath = getOnboardingPath(providerType);
+      navigate(onboardingPath);
+    } else {
+      alert('Could not determine your provider type. Please contact support.');
+    }
   };
 
   return (
@@ -198,6 +228,25 @@ const ProviderSettings = () => {
             Save Settings
           </button>
         </div>
+
+        {/* Onboarding Section */}
+        <SettingSection title="Complete Your Onboarding" icon={FaClipboardList}>
+          <div className="space-y-4">
+            <p className="text-gray-700 mb-4">
+              Complete your provider profile to start accepting appointments and serving customers.
+            </p>
+            <button
+              onClick={handleContinueOnboarding}
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-3 rounded-lg transition-all flex items-center font-medium shadow-md hover:shadow-lg"
+            >
+              <FaClipboardList className="mr-2" />
+              Continue Onboarding
+            </button>
+            <p className="text-sm text-gray-500 mt-3">
+              You can complete this at any time. Your progress will be saved automatically.
+            </p>
+          </div>
+        </SettingSection>
 
         {/* Security Settings */}
         <SettingSection title="Change Password" icon={FaLock}>

@@ -15,6 +15,7 @@ import {
   FaPaw
 } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
+import { getOnboardingPath } from '../../utils/providerOnboardingUtils';
 import DocumentUpload from './DocumentUpload';
 import GroomerDetails from './GroomerDetails';
 import ReviewSubmission from './ReviewSubmission';
@@ -227,8 +228,9 @@ const ProviderSignUp = () => {
       const result = await providerRegister(registrationData);
       
       if (result) {
-        // Navigate to first onboarding step directly
-        navigate('/provider/onboarding/professional-info');
+        // Navigate to provider-type-specific onboarding flow
+        const onboardingPath = getOnboardingPath(formData.providerType);
+        navigate(onboardingPath);
       } else {
         // Clear localStorage on registration failure
         localStorage.removeItem('provider_registration');

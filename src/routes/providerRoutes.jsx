@@ -10,6 +10,10 @@ import ProviderOTPVerification from '../pages/provider/ProviderOTPVerification';
 
 // Provider Onboarding Flow
 import ProviderOnboardingFlow from '../pages/provider/ProviderOnboardingFlow';
+import ProviderOnboardingVeterinarian from '../pages/provider/ProviderOnboardingVeterinarian';
+import ProviderOnboardingTrainer from '../pages/provider/ProviderOnboardingTrainer';
+import ProviderOnboardingGroomer from '../pages/provider/ProviderOnboardingGroomer';
+import ProviderOnboardingPetSitter from '../pages/provider/ProviderOnboardingPetSitter';
 
 // Provider Dashboard & Main Pages
 import ProviderDashboard from '../pages/provider/ProviderDashboard';
@@ -53,6 +57,40 @@ const ProviderRoutes = () => {
         element={
           <ProviderProtectedRoute>
             <ProviderOnboardingFlow />
+          </ProviderProtectedRoute>
+        }
+      />
+
+      {/* Provider-type-specific Onboarding Routes (Protected) */}
+      <Route
+        path="/onboarding/veterinarian"
+        element={
+          <ProviderProtectedRoute>
+            <ProviderOnboardingVeterinarian />
+          </ProviderProtectedRoute>
+        }
+      />
+      <Route
+        path="/onboarding/trainer"
+        element={
+          <ProviderProtectedRoute>
+            <ProviderOnboardingTrainer />
+          </ProviderProtectedRoute>
+        }
+      />
+      <Route
+        path="/onboarding/groomer"
+        element={
+          <ProviderProtectedRoute>
+            <ProviderOnboardingGroomer />
+          </ProviderProtectedRoute>
+        }
+      />
+      <Route
+        path="/onboarding/pet-sitter"
+        element={
+          <ProviderProtectedRoute>
+            <ProviderOnboardingPetSitter />
           </ProviderProtectedRoute>
         }
       />

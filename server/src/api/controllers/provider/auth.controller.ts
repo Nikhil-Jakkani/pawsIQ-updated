@@ -10,8 +10,18 @@ import { providerAuthService } from '../../services/provider/auth.service.js';
 import { adminAuth } from '../../../config/firebaseAdmin.js';
 
 const register = catchAsync(async (req: Request, res: Response) => {
-  const provider = await providerAuthService.register(req.body);
-  res.status(httpStatus.CREATED).send({ provider });
+  const { provider, tokens } = await providerAuthService.register(req.body);
+  
+  const user = {
+    id: provider.service_provider_id,
+    email: provider.serv_provider_email,
+    name: provider.serv_provider_name,
+    phone: provider.serv_provider_contact_nbr,
+    role: 'provider' as const,
+    providerType: provider.serv_provider_type,
+  };
+  
+  res.status(httpStatus.CREATED).send({ user, tokens, provider });
 });
 
 const login = catchAsync(async (req: Request, res: Response) => {

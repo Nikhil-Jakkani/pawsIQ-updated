@@ -98,7 +98,7 @@ const register = async (providerBody: any) => {
   const { data: newProvider, error } = await db
     .from('PIQ_Service_Provider')
     .insert(newProviderData)
-    .select('service_provider_id, serv_provider_name, serv_provider_email, serv_provider_contact_nbr')
+    .select('*')
     .single();
 
   if (error || !newProvider) {
@@ -112,7 +112,10 @@ const register = async (providerBody: any) => {
     );
   }
 
-  return newProvider;
+  // Generate authentication tokens after successful registration
+  const tokens = await tokenService.generateAuthTokens(newProvider.service_provider_id, 'provider');
+
+  return { provider: newProvider, tokens };
 };
 
 export const providerAuthService = {

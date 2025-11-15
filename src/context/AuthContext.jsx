@@ -432,6 +432,31 @@ export const AuthProvider = ({ children }) => {
         throw new Error(errorMessage);
       }
       
+      // Set up authentication after successful registration
+      // The API should return user and tokens similar to login response
+      if (data?.user && data?.tokens) {
+        // API returns user and tokens directly
+        const user = { ...data.user, role: 'provider' };
+        setCurrentUser(user);
+        setTokens(data.tokens);
+        localStorage.setItem('user', JSON.stringify(user));
+        localStorage.setItem('authTokens', JSON.stringify(data.tokens));
+        clearLogoutFlag();
+      } else if (data?.provider) {
+        // Fallback: if API returns provider object, construct user from it
+        const user = {
+          ...data.provider,
+          role: 'provider',
+          // Ensure we have the necessary auth fields
+          provider_id: data.provider.provider_id,
+          provider_email: data.provider.provider_email || registrationData.provider_email,
+        };
+        setCurrentUser(user);
+        // Even if we don't have tokens from registration, user is now registered and logged in
+        localStorage.setItem('user', JSON.stringify(user));
+        clearLogoutFlag();
+      }
+      
       return data?.provider?.provider_id ? data.provider : true;
     } catch (err) {
       const errorMessage = err.message || 'Provider registration failed';
