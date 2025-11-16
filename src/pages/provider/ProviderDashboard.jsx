@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -19,9 +19,12 @@ import {
   FaFileAlt,
   FaClipboard,
   FaChartLine,
+  FaExclamationTriangle,
+  FaTimes,
 } from 'react-icons/fa';
 import { fetchProviderDashboardOverview } from '../../store/slices/providerAnalyticsSlice';
 import { PROVIDER_TYPES } from '../../store/slices/providerOnboardingSlice';
+import { getOnboardingPath } from '../../utils/providerOnboardingUtils';
 
 /**
  * Stat Card Component
@@ -207,6 +210,7 @@ const ProviderDashboard = () => {
   const navigate = useNavigate();
   const { currentUser, authFetch } = useAuth();
   const { providerType, providerInfo } = useProvider();
+  const [showOnboardingBanner, setShowOnboardingBanner] = useState(false);
 
   // Redux state - using provider-specific slices
   const { 
@@ -219,6 +223,17 @@ const ProviderDashboard = () => {
     error,
     providerType: analyticsProviderType
   } = useSelector((state) => state.providerAnalytics || {});
+
+  // Check if onboarding is complete
+  useEffect(() => {
+    const checkOnboardingStatus = () => {
+      // Check if provider has completed onboarding
+      const isOnboardingComplete = currentUser?.onboardingCompleted || false;
+      setShowOnboardingBanner(!isOnboardingComplete);
+    };
+
+    checkOnboardingStatus();
+  }, [currentUser]);
 
   const providerDisplayName = useMemo(() => (
     providerInfo?.serv_provider_name ||
@@ -279,8 +294,8 @@ const ProviderDashboard = () => {
   // Early return if not a provider
   if (currentUser && currentUser.role !== 'provider') {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <div className="text-center p-8 bg-white rounded-lg shadow-md">
+      <div className="flex items-start justify-start min-h-screen bg-gray-100">
+        <div className="p-8 bg-white rounded-lg shadow-md m-4">
           <h2 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h2>
           <p className="text-gray-700 mb-4">You must be logged in as a provider to access this page.</p>
           <p className="text-gray-500">Redirecting to provider login...</p>
@@ -347,6 +362,31 @@ const ProviderDashboard = () => {
   const derivedTypeMetrics = normalizedProviderType ? typeMetrics?.[normalizedProviderType] : undefined;
 
   const navigateToAppointments = () => navigate('/provider/appointments');
+
+  const handleContinueOnboarding = () => {
+    const registrationData = localStorage.getItem('provider_registration');
+    let provType = null;
+
+    if (registrationData) {
+      try {
+        const data = JSON.parse(registrationData);
+        provType = data.providerType;
+      } catch (err) {
+        console.error('Error parsing registration data:', err);
+      }
+    }
+
+    if (!provType && currentUser?.providerType) {
+      provType = currentUser.providerType;
+    }
+
+    if (provType) {
+      const onboardingPath = getOnboardingPath(provType);
+      navigate(onboardingPath);
+    } else {
+      alert('Could not determine your provider type. Please contact support.');
+    }
+  };
 
   // Get provider-specific widget
   const getProviderWidget = () => {
@@ -416,6 +456,34 @@ const ProviderDashboard = () => {
             </div>
           </div>
         </div>
+
+        {/* Incomplete Onboarding Banner */}
+        {showOnboardingBanner && (
+          <div className="bg-amber-50 border-l-4 border-amber-400 rounded-lg p-4 flex items-start justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <FaExclamationTriangle className="text-amber-600 text-lg mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-amber-900">Complete Your Profile</h3>
+                <p className="text-sm text-amber-800 mt-1">
+                  Complete your onboarding to start accepting appointments and serving your clients.
+                </p>
+                <button
+                  onClick={handleContinueOnboarding}
+                  className="mt-3 inline-flex items-center px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition-colors"
+                >
+                  Continue Onboarding
+                </button>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowOnboardingBanner(false)}
+              className="text-amber-600 hover:text-amber-700 flex-shrink-0 p-1"
+              aria-label="Dismiss banner"
+            >
+              <FaTimes />
+            </button>
+          </div>
+        )}
 
         {error && (
           <div className="p-4 border border-red-200 bg-red-50 text-red-700 rounded-lg">
@@ -487,13 +555,13 @@ const ProviderDashboard = () => {
             </div>
             <div>
               {loading ? (
-                <div className="p-6 text-center text-sm text-gray-500">Loading appointments...</div>
+                <div className="p-6 text-sm text-gray-500">Loading appointments...</div>
               ) : recentAppointments.length > 0 ? (
                 recentAppointments.map((apt) => (
                   <RecentAppointmentCard key={apt.id} appointment={apt} />
                 ))
               ) : (
-                <div className="p-8 text-center">
+                <div className="p-8">
                   <p className="text-gray-500 font-medium">No appointments found.</p>
                 </div>
               )}
@@ -544,9 +612,9 @@ const ProviderDashboard = () => {
             </div>
           </div>
           <div className="p-6">
-            <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-              <div className="text-center">
-                <FaChartLine className="text-4xl text-gray-400 mx-auto mb-3" />
+            <div className="h-64 flex items-start bg-gray-50 rounded-lg">
+              <div>
+                <FaChartLine className="text-4xl text-gray-400 mb-3" />
                 <p className="text-gray-600 font-medium">
                   Chart will display revenue trends here
                 </p>

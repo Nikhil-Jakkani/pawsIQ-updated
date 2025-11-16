@@ -97,22 +97,23 @@ const ProviderSettings = () => {
 
   return (
     <ProviderDashboardLayout>
-      <div className="p-6">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
-          <p className="text-gray-600 mt-2">Manage your account settings and preferences.</p>
-        </div>
-
-        {/* Success Message */}
-        {saved && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-            <p className="text-green-800">Settings saved successfully!</p>
+      <div className="min-h-full p-4 sm:p-6 lg:p-8 bg-gray-50">
+        <div className="max-w-4xl">
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
+            <p className="text-gray-600 mt-2">Manage your account settings and preferences.</p>
           </div>
-        )}
 
-        {/* Profile Settings */}
-        <SettingSection title="Profile Information" icon={FaCog}>
+          {/* Success Message */}
+          {saved && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 sticky top-0 z-10">
+              <p className="text-green-800">Settings saved successfully!</p>
+            </div>
+          )}
+
+          {/* Profile Settings */}
+          <SettingSection title="Profile Information" icon={FaCog}>
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
@@ -293,6 +294,7 @@ const ProviderSettings = () => {
             </button>
           </div>
         </SettingSection>
+        </div>
       </div>
     </ProviderDashboardLayout>
   );

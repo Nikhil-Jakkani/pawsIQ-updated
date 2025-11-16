@@ -342,7 +342,7 @@ const PetSitterDetails = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+        <div className="max-w-7xl px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center">
             <img src={logoImage} alt="PawsIQ Logo" className="h-8 w-8 mr-2" />
             <h1 className="text-xl font-bold text-gray-900">PawsIQ Provider Onboarding</h1>
@@ -353,7 +353,7 @@ const PetSitterDetails = () => {
         </div>
       </header>
       
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <main className="max-w-3xl px-4 sm:px-6 lg:px-8 py-10">
         {/* Progress indicator */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">

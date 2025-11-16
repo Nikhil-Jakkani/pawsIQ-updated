@@ -226,7 +226,7 @@ const ProviderOnboardingFlow = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="flex flex-col h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Exit Confirmation Modal */}
       {showConfirmExit && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black bg-opacity-50">
@@ -258,8 +258,8 @@ const ProviderOnboardingFlow = () => {
       )}
 
       {/* Progress Header */}
-      <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-40">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="bg-white border-b border-gray-200 shadow-sm flex-shrink-0 z-40">
+        <div className="max-w-6xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           {/* Progress Bar */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-2">
@@ -362,20 +362,21 @@ const ProviderOnboardingFlow = () => {
       </div>
 
       {/* Step Content */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <motion.div
-          key={`step-${currentStep}`}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          transition={{ duration: 0.3 }}
-          className="bg-white rounded-xl shadow-lg p-8"
-        >
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-6xl px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+          <motion.div
+            key={`step-${currentStep}`}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+            className="bg-white rounded-xl shadow-lg p-6 sm:p-8"
+          >
           {isCompleted ? (
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="text-center py-12"
+              className="py-12"
             >
               <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-6">
                 <FaCheckCircle className="text-4xl text-green-600" />
@@ -398,13 +399,14 @@ const ProviderOnboardingFlow = () => {
               formData={formData[steps[currentStep - 1]?.id] || {}}
             />
           )}
-        </motion.div>
+          </motion.div>
+        </div>
       </div>
 
       {/* Navigation Buttons */}
       {!isCompleted && (
-        <div className="bg-white border-t border-gray-200 shadow-lg sticky bottom-0 z-40">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="bg-white border-t border-gray-200 shadow-lg flex-shrink-0 z-40">
+          <div className="max-w-6xl px-4 sm:px-6 lg:px-8 py-6">
             <div className="flex items-center justify-between gap-4">
               <button
                 onClick={handlePrevious}
