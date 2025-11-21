@@ -93,20 +93,6 @@ const UserSidebar = ({ isOpen, toggleSidebar }) => {
       items: []
     },
     {
-      id: 'orders',
-      icon: <FaClipboardList />,
-      label: 'My Orders',
-      path: '/user/orders',
-      items: []
-    },
-    {
-      id: 'payments',
-      icon: <FaCreditCard />,
-      label: 'Payments',
-      path: '/user/payments',
-      items: []
-    },
-    {
       id: 'community',
       icon: <FaCommentAlt />,
       label: 'Community',

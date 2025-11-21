@@ -113,20 +113,6 @@ const Sidebar = () => {
       ]
     },
     {
-      id: 'transactions',
-      icon: <FaCreditCard />,
-      label: 'Payments & Transactions',
-      path: '/transactions',
-      items: [
-        { path: '/transactions/payments', icon: <FaMoneyBillWave />, label: 'Manage Payments' },
-        { path: '/transactions/reports', icon: <FaFileInvoiceDollar />, label: 'Financial Reports' },
-        { path: '/transactions', icon: <FaCreditCard />, label: 'All Transactions' },
-        { path: '/transactions/pricing', icon: <FaTag />, label: 'Subscription Pricing' },
-        { path: '/transactions/refunds', icon: <FaMoneyBillWave />, label: 'Refunds & Credits' },
-        { path: '/transactions/balances', icon: <FaCreditCard />, label: 'Outstanding Balances' }
-      ]
-    },
-    {
       id: 'marketplace',
       icon: <FaShoppingCart />,
       label: 'Marketplace',

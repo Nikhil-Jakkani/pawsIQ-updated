@@ -710,31 +710,107 @@ const UserSettings = () => {
 
   const paymentTab = (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-800">Payment Methods</h3>
-        <button
-          onClick={() => navigate('/user/settings/payment/add')}
-          className="flex items-center gap-1 rounded-lg bg-indigo-600 px-3 py-1.5 text-sm text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-        >
-          <FaCreditCard />
-          <span>Add new</span>
-        </button>
-      </div>
-      <div className="rounded-lg border border-gray-200 bg-gray-50 p-6 text-center">
-        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-indigo-100">
-          <FaCreditCard className="text-indigo-600" />
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-800">Payment Methods</h3>
+          <p className="text-sm text-gray-500 mt-1">Manage your cards and payment options securely</p>
         </div>
-        <h4 className="text-lg font-medium text-gray-800">No payment methods yet</h4>
-        <p className="mt-2 text-sm text-gray-600">
-          Add a card or wallet so you can check out faster next time.
-        </p>
         <button
           onClick={() => navigate('/user/settings/payment/add')}
-          className="mt-4 inline-flex items-center gap-1 rounded-lg bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+          className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors whitespace-nowrap"
         >
           <FaCreditCard />
           <span>Add payment method</span>
         </button>
+      </div>
+
+      {/* Security Notice */}
+      <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-4">
+        <div className="flex items-start gap-3">
+          <div className="flex-shrink-0">
+            <svg className="h-5 w-5 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div className="flex-1">
+            <p className="text-sm text-indigo-800 font-medium">Secure Payment Storage</p>
+            <p className="text-xs text-indigo-700 mt-1">
+              All payment information is encrypted and stored securely with our PCI-compliant payment partner. Your CVV is never stored.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Empty State */}
+      <div className="rounded-lg border border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100 p-8 text-center">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-sm">
+          <FaCreditCard className="text-2xl text-indigo-600" />
+        </div>
+        <h4 className="text-lg font-semibold text-gray-800 mb-2">No payment methods added</h4>
+        <p className="text-gray-600 text-sm mb-6 max-w-sm mx-auto">
+          Add a credit or debit card to speed up checkout and secure your transactions across PawsIQ.
+        </p>
+        <div className="flex flex-col gap-3 items-center">
+          <button
+            onClick={() => navigate('/user/settings/payment/add')}
+            className="flex items-center gap-2 rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors"
+          >
+            <FaCreditCard />
+            <span>Add Your First Card</span>
+          </button>
+          <p className="text-xs text-gray-500 flex items-center gap-1">
+            <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+            Takes less than a minute
+          </p>
+        </div>
+      </div>
+
+      {/* Features List */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="rounded-lg border border-gray-200 bg-white p-4">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 mt-1">
+              <svg className="h-5 w-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div>
+              <h5 className="font-medium text-gray-800 text-sm">Fast Checkout</h5>
+              <p className="text-xs text-gray-500 mt-1">Complete bookings instantly with saved cards</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-gray-200 bg-white p-4">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 mt-1">
+              <svg className="h-5 w-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div>
+              <h5 className="font-medium text-gray-800 text-sm">Fully Encrypted</h5>
+              <p className="text-xs text-gray-500 mt-1">Bank-level security for all transactions</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-gray-200 bg-white p-4">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 mt-1">
+              <svg className="h-5 w-5 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+              </svg>
+            </div>
+            <div>
+              <h5 className="font-medium text-gray-800 text-sm">Set Default</h5>
+              <p className="text-xs text-gray-500 mt-1">Choose your preferred payment method</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

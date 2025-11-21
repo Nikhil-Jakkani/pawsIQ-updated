@@ -86,88 +86,88 @@ const UserPayments = () => {
     <UserLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
-              <div className="bg-blue-100 p-2 rounded-lg">
-                <FaCreditCard className="text-[#145ae6] text-2xl" />
+            <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+              <div className="bg-indigo-100 p-1.5 rounded-lg">
+                <FaCreditCard className="text-indigo-600 text-lg" />
               </div>
-              Payment Management
+              Payments
             </h1>
-            <p className="text-gray-500 mt-1">Manage your payment methods and view transaction history</p>
+            <p className="text-gray-500 text-sm mt-0.5">Manage cards and view transactions</p>
           </div>
         </div>
 
         {/* Tabs */}
         <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8">
+          <nav className="-mb-px flex space-x-6">
             <button
               onClick={() => setActiveTab('methods')}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'methods'
-                  ? 'border-blue-500 text-blue-600'
+                  ? 'border-indigo-600 text-indigo-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              Payment Methods
+              Cards
             </button>
             <button
               onClick={() => setActiveTab('history')}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'history'
-                  ? 'border-blue-500 text-blue-600'
+                  ? 'border-indigo-600 text-indigo-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              Payment History
+              History
             </button>
           </nav>
         </div>
 
         {/* Payment Methods Tab */}
         {activeTab === 'methods' && (
-          <div className="space-y-6">
+          <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <h2 className="text-lg font-semibold text-gray-800">Your Payment Methods</h2>
+              <h2 className="text-base font-semibold text-gray-800">Your Cards</h2>
               <button
                 onClick={() => setShowAddCard(true)}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                className="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors flex items-center gap-1.5"
               >
-                <FaPlus size={14} />
-                Add Payment Method
+                <FaPlus size={12} />
+                Add Card
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {paymentMethods.map((method) => (
-                <div key={method.id} className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-gray-100 p-2 rounded-lg">
-                        <FaCreditCard className="text-gray-600" />
+                <div key={method.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="bg-indigo-50 p-1.5 rounded-lg">
+                        <FaCreditCard className="text-indigo-600 text-sm" />
                       </div>
                       <div>
-                        <p className="font-semibold text-gray-800">
+                        <p className="font-semibold text-gray-800 text-sm">
                           {method.brand} ****{method.last4}
                         </p>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-xs text-gray-500">
                           Expires {method.expiryMonth}/{method.expiryYear}
                         </p>
                       </div>
                     </div>
                     {method.isDefault && (
-                      <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                      <span className="bg-indigo-100 text-indigo-800 text-xs px-2 py-0.5 rounded-full font-medium">
                         Default
                       </span>
                     )}
                   </div>
                   <div className="flex gap-2">
-                    <button className="flex-1 bg-gray-100 text-gray-700 px-3 py-2 rounded-md hover:bg-gray-200 transition-colors flex items-center justify-center gap-2">
-                      <FaEdit size={14} />
+                    <button className="flex-1 bg-gray-100 text-gray-700 px-2 py-1.5 rounded-md text-xs font-medium hover:bg-gray-200 transition-colors flex items-center justify-center gap-1.5">
+                      <FaEdit size={12} />
                       Edit
                     </button>
-                    <button className="flex-1 bg-red-100 text-red-700 px-3 py-2 rounded-md hover:bg-red-200 transition-colors flex items-center justify-center gap-2">
-                      <FaTrash size={14} />
+                    <button className="flex-1 bg-red-50 text-red-700 px-2 py-1.5 rounded-md text-xs font-medium hover:bg-red-100 transition-colors flex items-center justify-center gap-1.5">
+                      <FaTrash size={12} />
                       Remove
                     </button>
                   </div>
@@ -177,81 +177,81 @@ const UserPayments = () => {
 
             {/* Add Card Modal */}
             {showAddCard && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div className="bg-white rounded-lg p-6 w-full max-w-md">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-semibold">Add Payment Method</h3>
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-lg p-5 w-full max-w-md">
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="text-base font-semibold">Add Payment Method</h3>
                     <button
                       onClick={() => setShowAddCard(false)}
-                      className="text-gray-400 hover:text-gray-600"
+                      className="text-gray-400 hover:text-gray-600 text-lg"
                     >
                       <FaTimes />
                     </button>
                   </div>
-                  <form className="space-y-4">
+                  <form className="space-y-3">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
                         Card Number
                       </label>
                       <input
                         type="text"
                         placeholder="1234 5678 9012 3456"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                       />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Expiry Date
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Expiry
                         </label>
                         <input
                           type="text"
                           placeholder="MM/YY"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
                           CVV
                         </label>
                         <input
                           type="text"
                           placeholder="123"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Cardholder Name
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Name on Card
                       </label>
                       <input
                         type="text"
                         placeholder="John Doe"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                       />
                     </div>
-                    <div className="flex items-center">
+                    <div className="flex items-center gap-2 py-1">
                       <input
                         type="checkbox"
                         id="setDefault"
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                       />
-                      <label htmlFor="setDefault" className="ml-2 block text-sm text-gray-700">
-                        Set as default payment method
+                      <label htmlFor="setDefault" className="text-xs text-gray-700">
+                        Set as default
                       </label>
                     </div>
-                    <div className="flex gap-3 pt-4">
+                    <div className="flex gap-2 pt-2">
                       <button
                         type="button"
                         onClick={() => setShowAddCard(false)}
-                        className="flex-1 bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300 transition-colors"
+                        className="flex-1 bg-gray-100 text-gray-800 px-3 py-1.5 text-xs font-medium rounded-lg hover:bg-gray-200 transition-colors"
                       >
                         Cancel
                       </button>
                       <button
                         type="submit"
-                        className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+                        className="flex-1 bg-indigo-600 text-white px-3 py-1.5 text-xs font-medium rounded-lg hover:bg-indigo-700 transition-colors"
                       >
                         Add Card
                       </button>
@@ -265,7 +265,7 @@ const UserPayments = () => {
 
         {/* Payment History Tab */}
         {activeTab === 'history' && (
-          <div className="space-y-6">
+          <div className="space-y-4">
             <h2 className="text-lg font-semibold text-gray-800">Payment History</h2>
             
             <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
@@ -273,42 +273,42 @@ const UserPayments = () => {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-700">
                         Date
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-700">
                         Description
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-700">
                         Amount
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Payment Method
+                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-700">
+                        Method
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-700">
                         Status
                       </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {paymentHistory.map((payment) => (
-                      <tr key={payment.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <tr key={payment.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-4 py-2.5 whitespace-nowrap text-xs text-gray-900">
                           {new Date(payment.date).toLocaleDateString()}
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">
+                        <td className="px-4 py-2.5 text-xs text-gray-900">
                           {payment.description}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <td className="px-4 py-2.5 whitespace-nowrap text-xs font-semibold text-gray-900">
                           ${payment.amount.toFixed(2)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-4 py-2.5 whitespace-nowrap text-xs text-gray-600">
                           {payment.method}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center gap-2">
+                        <td className="px-4 py-2.5 whitespace-nowrap">
+                          <div className="flex items-center gap-1">
                             {getStatusIcon(payment.status)}
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(payment.status)}`}>
+                            <span className={`inline-flex px-1.5 py-0.5 text-xs font-semibold rounded-full ${getStatusColor(payment.status)}`}>
                               {payment.status.charAt(0).toUpperCase() + payment.status.slice(1)}
                             </span>
                           </div>
