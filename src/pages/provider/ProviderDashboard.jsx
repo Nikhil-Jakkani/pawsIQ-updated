@@ -364,6 +364,8 @@ const ProviderDashboard = () => {
   const navigateToAppointments = () => navigate('/provider/appointments');
 
   const handleContinueOnboarding = () => {
+    console.log('[ProviderDashboard] handleContinueOnboarding called');
+    
     const registrationData = localStorage.getItem('provider_registration');
     let provType = null;
 
@@ -371,19 +373,43 @@ const ProviderDashboard = () => {
       try {
         const data = JSON.parse(registrationData);
         provType = data.providerType;
+        console.log('[ProviderDashboard] Provider type from localStorage:', provType);
       } catch (err) {
-        console.error('Error parsing registration data:', err);
+        console.error('[ProviderDashboard] Error parsing registration data:', err);
       }
     }
 
+    // Try context first
+    if (!provType && providerType) {
+      provType = providerType;
+      console.log('[ProviderDashboard] Provider type from context:', provType);
+    }
+
+    // Then try currentUser
     if (!provType && currentUser?.providerType) {
       provType = currentUser.providerType;
+      console.log('[ProviderDashboard] Provider type from currentUser:', provType);
     }
+
+    console.log('[ProviderDashboard] Final provider type:', provType);
+    console.log('[ProviderDashboard] Available context - providerType:', providerType, 'providerInfo:', providerInfo);
 
     if (provType) {
       const onboardingPath = getOnboardingPath(provType);
-      navigate(onboardingPath);
+      console.log('[ProviderDashboard] Navigation path:', onboardingPath, 'from provider type:', provType);
+      console.log('[ProviderDashboard] About to navigate...');
+      try {
+        navigate(onboardingPath);
+        console.log('[ProviderDashboard] Navigation executed successfully');
+      } catch (err) {
+        console.error('[ProviderDashboard] Navigation error:', err);
+      }
     } else {
+      console.error('[ProviderDashboard] Could not determine provider type. Context:', {
+        providerType,
+        currentUserProviderType: currentUser?.providerType,
+        registrationData: localStorage.getItem('provider_registration')
+      });
       alert('Could not determine your provider type. Please contact support.');
     }
   };
@@ -458,7 +484,7 @@ const ProviderDashboard = () => {
         </div>
 
         {/* Incomplete Onboarding Banner */}
-        {showOnboardingBanner && (
+        {/* {showOnboardingBanner && (
           <div className="bg-amber-50 border-l-4 border-amber-400 rounded-lg p-4 flex items-start justify-between gap-4">
             <div className="flex items-start gap-3">
               <FaExclamationTriangle className="text-amber-600 text-lg mt-0.5 flex-shrink-0" />
@@ -483,7 +509,7 @@ const ProviderDashboard = () => {
               <FaTimes />
             </button>
           </div>
-        )}
+        )} */}
 
         {error && (
           <div className="p-4 border border-red-200 bg-red-50 text-red-700 rounded-lg">

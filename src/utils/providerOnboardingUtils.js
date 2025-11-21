@@ -11,6 +11,13 @@ import { PROVIDER_TYPES } from '../store/slices/providerOnboardingSlice';
  * @returns {string} The onboarding route path
  */
 export const getOnboardingPath = (providerType) => {
+  if (!providerType) return '/provider/onboarding';
+  
+  // Normalize the provider type by checking against known types
+  const normalizedType = Object.values(PROVIDER_TYPES).find(type => 
+    type.toLowerCase() === providerType.toLowerCase()
+  );
+
   // Map provider types to URL-friendly paths
   const pathMap = {
     [PROVIDER_TYPES.VETERINARIAN]: '/provider/onboarding/veterinarian',
@@ -19,7 +26,7 @@ export const getOnboardingPath = (providerType) => {
     [PROVIDER_TYPES.PET_SITTER]: '/provider/onboarding/pet-sitter',
   };
 
-  return pathMap[providerType] || '/provider/onboarding';
+  return pathMap[normalizedType] || '/provider/onboarding';
 };
 
 /**

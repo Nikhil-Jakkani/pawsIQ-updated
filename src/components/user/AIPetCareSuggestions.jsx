@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 import { 
   FaRobot, 
@@ -62,7 +62,7 @@ const AIPetCareSuggestions = ({ selectedPet }) => {
 
   const { tokens, authFetch } = useAuth();
 
-  const fetchSuggestions = async () => {
+  const fetchSuggestions = useCallback(async () => {
     if (!selectedPet) return;
     
     setLoading(true);
@@ -116,9 +116,9 @@ const AIPetCareSuggestions = ({ selectedPet }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedPet, tokens?.access?.token, authFetch]);
 
-    useEffect(() => {
+  useEffect(() => {
     if (selectedPet && selectedPet.pet_id) {
       fetchSuggestions();
     } else {
@@ -126,7 +126,7 @@ const AIPetCareSuggestions = ({ selectedPet }) => {
       setLoading(false);
       setError(null);
     }
-  }, [selectedPet]);
+  }, [selectedPet?.pet_id, fetchSuggestions]);
 
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
