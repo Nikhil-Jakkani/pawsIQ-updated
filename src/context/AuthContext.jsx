@@ -1,10 +1,10 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { 
-  isTokenExpired, 
-  shouldRefreshToken, 
-  validateStoredAuthData, 
+import {
+  isTokenExpired,
+  shouldRefreshToken,
+  validateStoredAuthData,
   cleanInvalidSessionData,
   wasExplicitlyLoggedOut,
   clearLogoutFlag,
@@ -19,7 +19,7 @@ const AuthContext = createContext(null);
 const getStoredAuth = () => {
   const storedTokens = localStorage.getItem('authTokens');
   const storedUser = localStorage.getItem('user');
-  
+
   return {
     tokens: storedTokens ? JSON.parse(storedTokens) : null,
     user: storedUser ? JSON.parse(storedUser) : null
@@ -35,23 +35,23 @@ export const AuthProvider = ({ children }) => {
   const navigateRef = useRef();
   const refreshPromiseRef = useRef(null);
   const dashboardCacheRef = useRef({ data: null, ts: 0, promise: null });
-  
+
   const navigate = useCallback((...args) => {
     if (navigateRef.current) {
       navigateRef.current(...args);
     }
   }, []);
-  
+
   const NavigationHandler = () => {
     const nav = useNavigate();
-    
+
     useEffect(() => {
       navigateRef.current = nav;
       return () => {
         navigateRef.current = undefined;
       };
     }, [nav]);
-    
+
     return null;
   };
 
@@ -59,7 +59,7 @@ export const AuthProvider = ({ children }) => {
     try {
       // Clean any invalid session data first
       cleanInvalidSessionData();
-      
+
       const storedUser = localStorage.getItem('user');
       if (storedUser) {
         const parsedUser = JSON.parse(storedUser);
@@ -89,7 +89,7 @@ export const AuthProvider = ({ children }) => {
       if (tokens?.refresh?.token) {
         await fetch(`${API_URL}/user/auth/logout`, {
           method: 'POST',
-          headers: { 
+          headers: {
             'Content-Type': 'application/json',
             ...(tokens?.access?.token ? { Authorization: `Bearer ${tokens.access.token}` } : {})
           },
@@ -131,10 +131,10 @@ export const AuthProvider = ({ children }) => {
 
     try {
       console.log('[Auth] Attempting token refresh...');
-      
+
       // Always use unified endpoint for all roles
       const refreshEndpoint = `${API_URL}/auth/refresh-token`;
-      
+
       const response = await fetch(refreshEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -144,20 +144,20 @@ export const AuthProvider = ({ children }) => {
       if (!response.ok) {
         const errorText = await response.text();
         console.error('[Auth] Token refresh failed:', response.status, errorText);
-        
+
         // Force logout on 401/403 to prevent infinite loops
         if (response.status === 401 || response.status === 403) {
           console.error('[Auth] Invalid refresh token - forcing logout');
           logout();
           return null;
         }
-        
+
         throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
 
       const data = await response.json();
       console.log('[Auth] Token refresh successful');
-      
+
       let nextTokens = {};
       if (data?.access || data?.refresh) {
         nextTokens = {
@@ -172,7 +172,7 @@ export const AuthProvider = ({ children }) => {
       } else {
         throw new Error('Invalid token refresh response format');
       }
-      
+
       setTokens(nextTokens);
       localStorage.setItem('authTokens', JSON.stringify(nextTokens));
       clearLogoutFlag(); // Clear logout flag on successful refresh
@@ -240,7 +240,7 @@ export const AuthProvider = ({ children }) => {
 
     // Determine if identifier is email or phone
     const isEmail = /\S+@\S+\.\S+/.test(identifier);
-    const payload = isEmail 
+    const payload = isEmail
       ? { email: identifier, password }
       : { phone: identifier, password };
 
@@ -260,14 +260,14 @@ export const AuthProvider = ({ children }) => {
             user: data?.admin
               ? { ...data.admin, role: 'admin' }
               : data?.user
-              ? { ...data.user, role: data.user.role || 'admin' }
-              : null,
+                ? { ...data.user, role: data.user.role || 'admin' }
+                : null,
             tokens: data?.tokens ||
               (data?.accessToken || data?.refreshToken
                 ? {
-                    access: { token: data.accessToken, expires: data.accessExpires },
-                    refresh: { token: data.refreshToken, expires: data.refreshExpires },
-                  }
+                  access: { token: data.accessToken, expires: data.accessExpires },
+                  refresh: { token: data.refreshToken, expires: data.refreshExpires },
+                }
                 : null),
             raw: data,
           }),
@@ -296,8 +296,8 @@ export const AuthProvider = ({ children }) => {
         const normalizedTokens = authResult.tokens?.access
           ? authResult.tokens
           : authResult.tokens
-          ? authResult.tokens
-          : null;
+            ? authResult.tokens
+            : null;
 
         if (!normalizedTokens?.access?.token || !normalizedTokens?.refresh?.token) {
           throw new Error('Invalid token response');
@@ -336,7 +336,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('authTokens', JSON.stringify(nextTokens));
       // Clear explicit logout barrier when tokens are set programmatically
       clearLogoutFlag();
-    } catch (_) {}
+    } catch (_) { }
   };
 
   const isProvider = () => {
@@ -389,7 +389,7 @@ export const AuthProvider = ({ children }) => {
       // Validate required fields before sending
       const requiredFields = ['provider_name', 'provider_email', 'provider_password', 'provider_contact_number', 'services_offered'];
       const missingFields = requiredFields.filter(field => !registrationData[field]);
-      
+
       if (missingFields.length > 0) {
         const errorMsg = `Missing required fields: ${missingFields.join(', ')}`;
         throw new Error(errorMsg);
@@ -423,15 +423,15 @@ export const AuthProvider = ({ children }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cleanedData),
       });
-      
+
       const data = await response.json().catch(() => ({}));
-      
+
       if (!response.ok) {
         console.error('Provider registration error:', data);
         const errorMessage = data?.message || data?.error || 'Provider registration failed';
         throw new Error(errorMessage);
       }
-      
+
       // Set up authentication after successful registration
       // The API should return user and tokens similar to login response
       if (data?.user && data?.tokens) {
@@ -456,7 +456,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('user', JSON.stringify(user));
         clearLogoutFlag();
       }
-      
+
       return data?.provider?.provider_id ? data.provider : true;
     } catch (err) {
       const errorMessage = err.message || 'Provider registration failed';
@@ -485,16 +485,16 @@ export const AuthProvider = ({ children }) => {
       setError('Email and password are required');
       return { success: false };
     }
-    
+
     try {
       const response = await fetch(`${API_URL}/admin/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-      
+
       const data = await response.json().catch(() => ({}));
-      
+
       if (response.ok) {
         const { user, tokens } = data;
         setCurrentUser({ ...user, role: 'admin' });
@@ -504,7 +504,7 @@ export const AuthProvider = ({ children }) => {
         clearLogoutFlag();
         return { success: true, userType: 'admin' };
       }
-      
+
       setError(data?.message || 'Login failed. Please check your credentials.');
       return { success: false };
     } catch (err) {
@@ -553,12 +553,12 @@ export const AuthProvider = ({ children }) => {
           setLoading(false);
           return;
         }
-        
+
         // Check if we need to refresh tokens
         if (tokens?.refresh?.token) {
           const accessToken = tokens?.access?.token;
           const needsRefresh = !accessToken || shouldRefreshToken(accessToken, 5);
-          
+
           if (needsRefresh) {
             console.log('[Auth] Access token needs refresh, attempting refresh...');
             const newTok = await refreshToken();
@@ -576,7 +576,7 @@ export const AuthProvider = ({ children }) => {
 
         if (tokens?.access?.token) {
           let userData = null;
-          
+
           // Fast role discovery to avoid 403 noise
           try {
             const whoResp = await authFetch(`${API_URL}/auth/whoami`);

@@ -89,7 +89,7 @@ import PWAUpdateNotification from './components/PWAUpdateNotification';
 import OfflineStatus from './components/OfflineStatus';
 import ProviderProtectedRoute from './components/common/ProviderProtectedRoute';
 
-import './App.css'; 
+import './App.css';
 
 // Protected route component for admin
 const AdminProtectedRoute = ({ children }) => {
@@ -103,8 +103,8 @@ const AdminProtectedRoute = ({ children }) => {
     const fallback = currentUser.role === 'user'
       ? '/user/dashboard'
       : currentUser.role === 'provider'
-      ? '/provider/dashboard'
-      : '/';
+        ? '/provider/dashboard'
+        : '/';
     return <Navigate to={fallback} replace />;
   }
   return children;
@@ -116,6 +116,14 @@ const UserProtectedRoute = ({ children }) => {
   if (loading) return null; // wait until auth check completes
   if (!currentUser || !tokens?.access?.token) {
     return <Navigate to="/user/login" replace />;
+  }
+  if (currentUser.role !== 'user') {
+    const fallback = currentUser.role === 'admin'
+      ? '/dashboard'
+      : currentUser.role === 'provider'
+        ? '/provider/dashboard'
+        : '/';
+    return <Navigate to={fallback} replace />;
   }
   return children;
 };
@@ -129,8 +137,8 @@ const Landing = () => {
     const dest = currentUser.role === 'admin'
       ? '/dashboard'
       : currentUser.role === 'provider'
-      ? '/provider/dashboard'
-      : '/user/dashboard';
+        ? '/provider/dashboard'
+        : '/user/dashboard';
     return <Navigate to={dest} replace />;
   }
   return <Home />;
@@ -316,9 +324,10 @@ function App() {
                     </a>
                   </div>
                 </div>
-              }
-            />
-          </Routes>
+              </div>
+            }
+          />
+        </Routes>
       </div>
     </>
   );
