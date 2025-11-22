@@ -56,6 +56,9 @@ import ServiceMetrics from './pages/analytics/ServiceMetrics.jsx';
 import RevenueMetrics from './pages/analytics/RevenueMetrics.jsx';
 import PerformanceDashboard from './pages/analytics/PerformanceDashboard.jsx';
 import Notifications from './pages/Notifications.jsx';
+import PushNotifications from './pages/notifications/PushNotifications.jsx';
+import EmailCampaigns from './pages/notifications/EmailCampaigns.jsx';
+import AutomatedReminders from './pages/notifications/AutomatedReminders.jsx';
 import Settings from './pages/Settings.jsx';
 import Security from './pages/Security.jsx';
 import Support from './pages/Support.jsx';
@@ -65,6 +68,7 @@ import PetModeration from './pages/pets/PetModeration.jsx';
 import BookingOverview from './pages/appointments/BookingOverview.jsx';
 import AppointmentScheduler from './pages/appointments/AppointmentScheduler.jsx';
 import DisputeResolution from './pages/appointments/DisputeResolution.jsx';
+import PricingAndDiscounts from './pages/appointments/PricingAndDiscounts.jsx';
 import PaymentManagement from './pages/transactions/PaymentManagement.jsx';
 import FinancialReports from './pages/transactions/FinancialReports.jsx';
 import ProductManagement from './pages/marketplace/ProductManagement.jsx';
@@ -176,6 +180,7 @@ function App() {
             <Route path="/appointments/overview" element={<AdminProtectedRoute><BookingOverview /></AdminProtectedRoute>} />
             <Route path="/appointments/scheduler" element={<AdminProtectedRoute><AppointmentScheduler /></AdminProtectedRoute>} />
             <Route path="/appointments/disputes" element={<AdminProtectedRoute><DisputeResolution /></AdminProtectedRoute>} />
+            <Route path="/appointments/pricing" element={<AdminProtectedRoute><PricingAndDiscounts /></AdminProtectedRoute>} />
             <Route path="/marketplace" element={<AdminProtectedRoute><Marketplace /></AdminProtectedRoute>} />
             <Route path="/marketplace/products" element={<AdminProtectedRoute><ProductManagement /></AdminProtectedRoute>} />
             <Route path="/marketplace/sellers" element={<AdminProtectedRoute><SellerManagement /></AdminProtectedRoute>} />
@@ -188,6 +193,9 @@ function App() {
             <Route path="/analytics/revenue" element={<AdminProtectedRoute><RevenueMetrics /></AdminProtectedRoute>} />
             <Route path="/analytics/performance" element={<AdminProtectedRoute><PerformanceDashboard /></AdminProtectedRoute>} />
             <Route path="/notifications" element={<AdminProtectedRoute><Notifications /></AdminProtectedRoute>} />
+            <Route path="/notifications/push" element={<AdminProtectedRoute><PushNotifications /></AdminProtectedRoute>} />
+            <Route path="/notifications/email" element={<AdminProtectedRoute><EmailCampaigns /></AdminProtectedRoute>} />
+            <Route path="/notifications/reminders" element={<AdminProtectedRoute><AutomatedReminders /></AdminProtectedRoute>} />
             <Route path="/settings" element={<AdminProtectedRoute><Settings /></AdminProtectedRoute>} />
             <Route path="/security" element={<AdminProtectedRoute><Security /></AdminProtectedRoute>} />
             <Route path="/support" element={<AdminProtectedRoute><Support /></AdminProtectedRoute>} />

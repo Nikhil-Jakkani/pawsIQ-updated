@@ -185,7 +185,7 @@ const Sidebar = () => {
       items: [
         { path: '/support/tickets', icon: <FaTicketAlt />, label: 'Support Tickets' },
         { path: '/support/chat', icon: <FaComments />, label: 'Live Chat' },
-        { path: '/support/knowledge', icon: <FaBook />, label: 'Knowledge Base' },
+        // { path: '/support/knowledge', icon: <FaBook />, label: 'Knowledge Base' },
         { path: '/support/disputes', icon: <FaExclamationTriangle />, label: 'Dispute Resolution' },
         { path: '/support/assignment', icon: <FaUsers />, label: 'Ticket Assignment' }
       ]
@@ -271,7 +271,7 @@ const Sidebar = () => {
             </div>
             {!minimized && (
               <div>
-                <h1 className="text-xl font-bold flex items-center font-fredoka">
+                <h1 className="text-xl text-white flex items-center font-fredoka">
                   PawsIQ Admin
                 </h1>
               </div>
