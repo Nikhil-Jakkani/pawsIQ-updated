@@ -268,7 +268,7 @@ const TicketAssignment = () => {
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Wait Time
                     </th>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Assign To
                     </th>
                   </tr>
@@ -296,7 +296,7 @@ const TicketAssignment = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {ticket.waitTime}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <td className="px-6 py-4 whitespace-nowrap text-left text-sm font-medium">
                         <select
                           className="border border-gray-300 rounded-lg px-3 py-1 bg-white focus:ring-indigo-500 focus:border-indigo-500 text-sm"
                           onChange={(e) => handleAssignTicket(ticket.id, parseInt(e.target.value))}
@@ -413,7 +413,7 @@ const TicketAssignment = () => {
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Performance
                   </th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -476,8 +476,8 @@ const TicketAssignment = () => {
                           ></div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex justify-end space-x-2">
+                      <td className="px-6 py-4 whitespace-nowrap text-left text-sm font-medium">
+                        <div className="flex justify-start space-x-2">
                           <button className="text-indigo-600 hover:text-indigo-900" title="View Performance">
                             <FaChartBar />
                           </button>

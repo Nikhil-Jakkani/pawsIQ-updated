@@ -60,6 +60,9 @@ import PushNotifications from './pages/notifications/PushNotifications.jsx';
 import EmailCampaigns from './pages/notifications/EmailCampaigns.jsx';
 import AutomatedReminders from './pages/notifications/AutomatedReminders.jsx';
 import Settings from './pages/Settings.jsx';
+import AppSettings from './pages/settings/AppSettings.jsx';
+import FeatureControls from './pages/settings/FeatureControls.jsx';
+import LegalDocuments from './pages/settings/LegalDocuments.jsx';
 import Security from './pages/Security.jsx';
 import Support from './pages/Support.jsx';
 import PetProfiles from './pages/pets/PetProfiles.jsx';
@@ -197,6 +200,9 @@ function App() {
             <Route path="/notifications/email" element={<AdminProtectedRoute><EmailCampaigns /></AdminProtectedRoute>} />
             <Route path="/notifications/reminders" element={<AdminProtectedRoute><AutomatedReminders /></AdminProtectedRoute>} />
             <Route path="/settings" element={<AdminProtectedRoute><Settings /></AdminProtectedRoute>} />
+            <Route path="/settings/app" element={<AdminProtectedRoute><AppSettings /></AdminProtectedRoute>} />
+            <Route path="/settings/features" element={<AdminProtectedRoute><FeatureControls /></AdminProtectedRoute>} />
+            <Route path="/settings/legal" element={<AdminProtectedRoute><LegalDocuments /></AdminProtectedRoute>} />
             <Route path="/security" element={<AdminProtectedRoute><Security /></AdminProtectedRoute>} />
             <Route path="/support" element={<AdminProtectedRoute><Support /></AdminProtectedRoute>} />
             <Route path="/support/tickets" element={<AdminProtectedRoute><TicketManagement /></AdminProtectedRoute>} />
