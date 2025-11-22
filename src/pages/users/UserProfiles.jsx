@@ -363,7 +363,7 @@ const UserProfiles = () => {
         {/* User List */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full table-fixed">
+            <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left">
@@ -386,11 +386,6 @@ const UserProfiles = () => {
                       Type {getSortIcon('type')}
                     </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('role')}>
-                    <div className="flex items-center">
-                      Role {getSortIcon('role')}
-                    </div>
-                  </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('status')}>
                     <div className="flex items-center">
                       Status {getSortIcon('status')}
@@ -405,9 +400,6 @@ const UserProfiles = () => {
                     <div className="flex items-center">
                       Appts {getSortIcon('appointments')}
                     </div>
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Last Active
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('registeredDate')}>
                     <div className="flex items-center">
@@ -446,15 +438,6 @@ const UserProfiles = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                        ${user.role === 'Admin' ? 'bg-purple-100 text-purple-800' : 
-                          user.role === 'Moderator' ? 'bg-blue-100 text-blue-800' :
-                          user.role === 'Vet' || user.role === 'Groomer' || user.role === 'Pet Sitter' || user.role === 'Trainer' ? 'bg-green-100 text-green-800' :
-                          'bg-gray-100 text-gray-800'}`}>
-                        {user.role}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
                         ${user.status === 'Active' ? 'bg-green-100 text-green-800' : 
                           user.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
                           'bg-red-100 text-red-800'}`}>
@@ -466,9 +449,6 @@ const UserProfiles = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {user.appointments}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {user.lastActive}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {user.registeredDate}

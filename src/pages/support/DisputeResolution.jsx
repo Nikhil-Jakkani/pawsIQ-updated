@@ -144,7 +144,7 @@ const DisputeResolution = () => {
           <div className="bg-indigo-100 p-2 rounded-lg">
             <FaExclamationTriangle className="text-indigo-600 text-2xl" />
           </div>
-          <div>
+          <div className="text-left">
             <h1 className="text-2xl font-bold text-gray-800">Dispute Resolution</h1>
             <p className="text-gray-500">Manage and resolve customer disputes and complaints</p>
           </div>
