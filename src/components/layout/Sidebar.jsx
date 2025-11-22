@@ -120,9 +120,7 @@ const Sidebar = () => {
       items: [
         { path: '/marketplace/products', icon: <FaBoxOpen />, label: 'Products & Services' },
         { path: '/marketplace/sellers', icon: <FaUsers />, label: 'Seller Management' },
-        { path: '/marketplace', icon: <FaShoppingCart />, label: 'All Marketplace' },
-        { path: '/marketplace/inventory', icon: <FaBoxOpen />, label: 'Inventory Management' },
-        { path: '/marketplace/promotions', icon: <FaTag />, label: 'Promotions & Discounts' }
+        { path: '/marketplace', icon: <FaShoppingCart />, label: 'All Marketplace' }
       ]
     },
     // {
