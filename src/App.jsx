@@ -43,7 +43,6 @@ import ProviderOnboardingTrainer from './pages/providers/ProviderOnboardingTrain
 import ProviderOnboardingBoarder from './pages/providers/ProviderOnboardingBoarder.jsx';
 import ProviderOnboardingDiagnostic from './pages/providers/ProviderOnboardingDiagnostic.jsx';
 import ProviderOnboardingPhysicalActivity from './pages/providers/ProviderOnboardingPhysicalActivity.jsx';
-import ProviderVerification from './pages/providers/ProviderVerification.jsx';
 
 
 // Auth pages
@@ -170,7 +169,6 @@ function App() {
             <Route path="/providers/onboarding/boarder" element={<AdminProtectedRoute><ProviderOnboardingBoarder /></AdminProtectedRoute>} />
             <Route path="/providers/onboarding/diagnostic" element={<AdminProtectedRoute><ProviderOnboardingDiagnostic /></AdminProtectedRoute>} />
             <Route path="/providers/onboarding/physical-activity" element={<AdminProtectedRoute><ProviderOnboardingPhysicalActivity /></AdminProtectedRoute>} />
-            <Route path="/providers/verification" element={<AdminProtectedRoute><ProviderVerification /></AdminProtectedRoute>} />
             <Route path="/pets" element={<AdminProtectedRoute><Dashboard /></AdminProtectedRoute>} />
             <Route path="/pets/profiles" element={<AdminProtectedRoute><PetProfiles /></AdminProtectedRoute>} />
             <Route path="/pets/moderation" element={<AdminProtectedRoute><PetModeration /></AdminProtectedRoute>} />

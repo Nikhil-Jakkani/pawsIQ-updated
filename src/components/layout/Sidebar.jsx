@@ -86,7 +86,6 @@ const Sidebar = () => {
         { path: '/providers/onboarding/groomer', icon: <FaCut />, label: 'Groomer Onboarding' },
         { path: '/providers/onboarding/trainer', icon: <FaGraduationCap />, label: 'Trainer Onboarding' },
         { path: '/providers/onboarding/physical-activity', icon: <FaRunning />, label: 'Physical Activity Onboarding' },
-        { path: '/providers/verification', icon: <FaShieldAlt />, label: 'Verification' },
       ]
     },
     {
