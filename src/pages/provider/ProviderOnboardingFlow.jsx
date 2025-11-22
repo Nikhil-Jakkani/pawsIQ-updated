@@ -78,7 +78,7 @@ const ProviderOnboardingFlow = () => {
     try {
       const parsedData = JSON.parse(registrationData);
       const type = parsedData.providerType;
-      
+
       // Validate provider type
       if (!Object.values(PROVIDER_TYPES).includes(type)) {
         console.error('Invalid provider type:', type);
@@ -125,7 +125,7 @@ const ProviderOnboardingFlow = () => {
   const handleStepSubmit = (stepData) => {
     // Save step data to Redux
     dispatch(updateFormData({ [steps[currentStep - 1]?.id]: stepData }));
-    
+
     if (currentStep === totalSteps) {
       // Complete onboarding on final step
       handleComplete();
@@ -288,13 +288,12 @@ const ProviderOnboardingFlow = () => {
                   <button
                     onClick={() => handleStepClick(index + 1)}
                     disabled={index + 1 > currentStep && !completedSteps.includes(step.id)}
-                    className={`flex items-center justify-center w-10 h-10 rounded-full font-semibold text-sm transition-all ${
-                      index + 1 === currentStep
+                    className={`flex items-center justify-center w-10 h-10 rounded-full font-semibold text-sm transition-all ${index + 1 === currentStep
                         ? 'bg-blue-600 text-white ring-4 ring-blue-200 cursor-pointer'
                         : index + 1 < currentStep || completedSteps.includes(step.id)
-                        ? 'bg-green-500 text-white cursor-pointer hover:bg-green-600'
-                        : 'bg-gray-300 text-gray-600 cursor-not-allowed'
-                    }`}
+                          ? 'bg-green-500 text-white cursor-pointer hover:bg-green-600'
+                          : 'bg-gray-300 text-gray-600 cursor-not-allowed'
+                      }`}
                     title={step.label}
                   >
                     {index + 1 < currentStep || completedSteps.includes(step.id) ? (
@@ -305,9 +304,8 @@ const ProviderOnboardingFlow = () => {
                   </button>
                   {index < steps.length - 1 && (
                     <div
-                      className={`w-8 sm:w-12 h-1 mx-1 transition-colors ${
-                        index + 1 < currentStep ? 'bg-green-500' : 'bg-gray-300'
-                      }`}
+                      className={`w-8 sm:w-12 h-1 mx-1 transition-colors ${index + 1 < currentStep ? 'bg-green-500' : 'bg-gray-300'
+                        }`}
                       style={{ minWidth: '20px' }}
                     ></div>
                   )}
@@ -372,33 +370,33 @@ const ProviderOnboardingFlow = () => {
             transition={{ duration: 0.3 }}
             className="bg-white rounded-xl shadow-lg p-6 sm:p-8"
           >
-          {isCompleted ? (
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="py-12"
-            >
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-6">
-                <FaCheckCircle className="text-4xl text-green-600" />
-              </div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-3">
-                Onboarding Complete!
-              </h2>
-              <p className="text-gray-600 mb-8">
-                Your profile has been submitted successfully. You'll be redirected to your dashboard shortly.
-              </p>
-              <div className="flex items-center justify-center gap-2">
-                <FaSpinner className="animate-spin text-blue-600" />
-                <p className="text-gray-600">Redirecting...</p>
-              </div>
-            </motion.div>
-          ) : (
-            <CurrentStepComponent 
-              onNext={handleStepSubmit} 
-              onComplete={handleComplete}
-              formData={formData[steps[currentStep - 1]?.id] || {}}
-            />
-          )}
+            {isCompleted ? (
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="py-12"
+              >
+                <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-6">
+                  <FaCheckCircle className="text-4xl text-green-600" />
+                </div>
+                <h2 className="text-3xl font-bold text-gray-900 mb-3">
+                  Onboarding Complete!
+                </h2>
+                <p className="text-gray-600 mb-8">
+                  Your profile has been submitted successfully. You'll be redirected to your dashboard shortly.
+                </p>
+                <div className="flex items-center justify-center gap-2">
+                  <FaSpinner className="animate-spin text-blue-600" />
+                  <p className="text-gray-600">Redirecting...</p>
+                </div>
+              </motion.div>
+            ) : (
+              <CurrentStepComponent
+                onNext={handleStepSubmit}
+                onComplete={handleComplete}
+                formData={formData[steps[currentStep - 1]?.id] || {}}
+              />
+            )}
           </motion.div>
         </div>
       </div>
@@ -411,11 +409,10 @@ const ProviderOnboardingFlow = () => {
               <button
                 onClick={handlePrevious}
                 disabled={currentStep === 1 || loading}
-                className={`flex items-center px-6 py-3 rounded-lg font-medium transition-all ${
-                  currentStep === 1 || loading
+                className={`flex items-center px-6 py-3 rounded-lg font-medium transition-all ${currentStep === 1 || loading
                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:scale-95'
-                }`}
+                  }`}
               >
                 <FaArrowLeft className="mr-2" />
                 Previous

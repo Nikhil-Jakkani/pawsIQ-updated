@@ -80,11 +80,10 @@ const ProviderDashboardLayout = ({ children }) => {
       <Link
         to={item.path}
         onClick={() => setMobileMenuOpen(false)}
-        className={`flex items-center px-4 py-3 rounded-lg transition-all duration-200 ${
-          active
-            ? 'bg-blue-500 text-white shadow-md'
-            : 'text-blue-100 hover:bg-blue-700'
-        }`}
+        className={`flex items-center px-4 py-3 rounded-lg transition-all duration-200 ${active
+          ? 'bg-blue-500 text-white shadow-md'
+          : 'text-blue-100 hover:bg-blue-700'
+          }`}
       >
         <Icon className={`text-lg ${!sidebarOpen ? 'mx-auto' : 'mr-3'}`} />
         {sidebarOpen && <span className="text-sm font-medium">{item.label}</span>}
@@ -96,9 +95,8 @@ const ProviderDashboardLayout = ({ children }) => {
     <div className="flex h-screen bg-gray-100 overflow-hidden">
       {/* Sidebar */}
       <aside
-        className={`${
-          sidebarOpen ? 'w-64' : 'w-20'
-        } hidden md:flex flex-col bg-gradient-to-b from-blue-600 to-blue-800 text-white transition-all duration-300 ease-in-out overflow-y-auto shadow-lg`}
+        className={`${sidebarOpen ? 'w-64' : 'w-20'
+          } hidden md:flex flex-col bg-gradient-to-b from-blue-600 to-blue-800 text-white transition-all duration-300 ease-in-out overflow-y-auto shadow-lg`}
       >
         {/* Logo Section */}
         <div className="flex items-center justify-between p-6 border-b border-blue-700">
@@ -128,22 +126,20 @@ const ProviderDashboardLayout = ({ children }) => {
         <div className="p-4 space-y-2 border-t border-blue-700">
           <Link
             to="/provider/notifications"
-            className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
-              isActive('/provider/notifications')
-                ? 'bg-blue-500 text-white'
-                : 'hover:bg-blue-700 text-blue-100'
-            }`}
+            className={`flex items-center px-4 py-3 rounded-lg transition-colors ${isActive('/provider/notifications')
+              ? 'bg-blue-500 text-white'
+              : 'hover:bg-blue-700 text-blue-100'
+              }`}
           >
             <FaBell className={`text-lg ${!sidebarOpen ? 'mx-auto' : 'mr-3'}`} />
             {sidebarOpen && <span className="text-sm font-medium">Notifications</span>}
           </Link>
           <Link
             to="/provider/settings"
-            className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
-              isActive('/provider/settings')
-                ? 'bg-blue-500 text-white'
-                : 'hover:bg-blue-700 text-blue-100'
-            }`}
+            className={`flex items-center px-4 py-3 rounded-lg transition-colors ${isActive('/provider/settings')
+              ? 'bg-blue-500 text-white'
+              : 'hover:bg-blue-700 text-blue-100'
+              }`}
           >
             <FaCog className={`text-lg ${!sidebarOpen ? 'mx-auto' : 'mr-3'}`} />
             {sidebarOpen && <span className="text-sm font-medium">Settings</span>}
@@ -189,9 +185,9 @@ const ProviderDashboardLayout = ({ children }) => {
             </button>
             <div className="flex items-center gap-2 pl-4 border-l border-gray-200">
               <img
-                src={currentUser?.profilePhoto || 'https://via.placeholder.com/40'}
-                alt={currentUser?.firstName}
-                className="w-10 h-10 rounded-full object-cover ring-2 ring-blue-200"
+                src={currentUser?.profilePhoto || '/7.png'}
+                alt={currentUser?.firstName || 'Provider'}
+                className="w-10 h-10 rounded-full object-cover ring-2 ring-blue-200 bg-gray-100"
               />
               <div className="hidden sm:block">
                 <p className="text-sm font-medium text-gray-900">
