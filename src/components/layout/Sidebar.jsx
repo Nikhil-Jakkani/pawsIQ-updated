@@ -105,9 +105,9 @@ const Sidebar = () => {
       path: '/appointments',
       items: [
         { path: '/appointments/overview', icon: <FaCalendarCheck />, label: 'Booking Overview' },
-        { path: '/appointments/scheduler', icon: <FaCalendarAlt />, label: 'Appointment Scheduler' },
-        { path: '/appointments', icon: <FaEdit />, label: 'All Bookings' },
-        { path: '/appointments/disputes', icon: <FaExclamationTriangle />, label: 'Disputes & No-shows' },
+        // { path: '/appointments/scheduler', icon: <FaCalendarAlt />, label: 'Appointment Scheduler' },
+        // { path: '/appointments', icon: <FaEdit />, label: 'All Bookings' },
+        // { path: '/appointments/disputes', icon: <FaExclamationTriangle />, label: 'Disputes & No-shows' },
         { path: '/appointments/pricing', icon: <FaTag />, label: 'Pricing & Discounts' }
       ]
     },
@@ -119,7 +119,7 @@ const Sidebar = () => {
       items: [
         { path: '/marketplace/products', icon: <FaBoxOpen />, label: 'Products & Services' },
         { path: '/marketplace/sellers', icon: <FaUsers />, label: 'Seller Management' },
-        { path: '/marketplace', icon: <FaShoppingCart />, label: 'All Marketplace' }
+        // { path: '/marketplace', icon: <FaShoppingCart />, label: 'All Marketplace' }
       ]
     },
     // {

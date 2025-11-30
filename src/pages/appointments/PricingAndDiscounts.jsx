@@ -46,8 +46,8 @@ const PricingAndDiscounts = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="bg-purple-100 p-2 rounded-lg">
-              <FaTag className="text-purple-600 text-2xl" />
+            <div className="bg-blue-100 p-2 rounded-lg">
+              <FaTag className="text-blue-600 text-2xl" />
             </div>
             <div>
               <h1 className="text-2xl font-bold text-gray-800">Pricing & Discounts</h1>
@@ -56,7 +56,7 @@ const PricingAndDiscounts = () => {
           </div>
           <button
             onClick={() => setShowForm(!showForm)}
-            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             + New Discount
           </button>
@@ -64,7 +64,7 @@ const PricingAndDiscounts = () => {
 
         {/* Create Form */}
         {showForm && (
-          <div className="bg-white rounded-xl shadow-sm border border-purple-100 p-6">
+          <div className="bg-white rounded-xl shadow-sm border border-blue-100 p-6">
             <h2 className="text-xl font-semibold text-gray-800 mb-4">Create Discount</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -78,7 +78,7 @@ const PricingAndDiscounts = () => {
                     value={formData.name}
                     onChange={handleInputChange}
                     placeholder="e.g., Summer Sale"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
                     required
                   />
                 </div>
@@ -90,7 +90,7 @@ const PricingAndDiscounts = () => {
                     name="applicableTo"
                     value={formData.applicableTo}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
                   >
                     <option value="all">All Services</option>
                     <option value="veterinary">Veterinary Services</option>
@@ -111,7 +111,7 @@ const PricingAndDiscounts = () => {
                     name="type"
                     value={formData.type}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
                   >
                     <option value="percentage">Percentage (%)</option>
                     <option value="fixed">Fixed Amount ($)</option>
@@ -129,7 +129,7 @@ const PricingAndDiscounts = () => {
                     placeholder={formData.type === 'percentage' ? '10' : '5.00'}
                     step={formData.type === 'percentage' ? '1' : '0.01'}
                     min="0"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
                     required
                   />
                 </div>
@@ -145,7 +145,7 @@ const PricingAndDiscounts = () => {
                     name="validFrom"
                     value={formData.validFrom}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
                     required
                   />
                 </div>
@@ -158,7 +158,7 @@ const PricingAndDiscounts = () => {
                     name="validTo"
                     value={formData.validTo}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
                     required
                   />
                 </div>
@@ -171,7 +171,7 @@ const PricingAndDiscounts = () => {
                   checked={formData.enabled}
                   onChange={handleInputChange}
                   id="enabled"
-                  className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+                  className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                 />
                 <label htmlFor="enabled" className="text-sm font-medium text-gray-700">
                   Enable this discount
@@ -181,7 +181,7 @@ const PricingAndDiscounts = () => {
               <div className="flex gap-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   Create Discount
                 </button>
@@ -198,7 +198,7 @@ const PricingAndDiscounts = () => {
         )}
 
         {/* Filters and Search */}
-        <div className="bg-white rounded-xl shadow-sm border border-purple-100 p-4">
+        <div className="bg-white rounded-xl shadow-sm border border-blue-100 p-4">
           <div className="flex gap-4 flex-wrap">
             <div className="flex-1 min-w-64 relative">
               <FaSearch className="absolute left-3 top-3 text-gray-400" />
@@ -207,13 +207,13 @@ const PricingAndDiscounts = () => {
                 placeholder="Search discounts..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
               />
             </div>
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
             >
               <option value="all">All Status</option>
               <option value="active">Active</option>
@@ -224,7 +224,7 @@ const PricingAndDiscounts = () => {
         </div>
 
         {/* Discounts List */}
-        <div className="bg-white rounded-xl shadow-sm border border-purple-100">
+        <div className="bg-white rounded-xl shadow-sm border border-blue-100">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">

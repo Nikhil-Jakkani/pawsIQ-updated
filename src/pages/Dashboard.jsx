@@ -238,38 +238,7 @@ const Dashboard = () => {
         />
       </div>
 
-      {!loading && engagement && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatCard 
-            title="Active Users (30d)"
-            value={formatNumber(engagement.activeUsers30)}
-            icon={<FaUsers size={20} />}
-            change={undefined}
-            bgColor="bg-gradient-to-br from-indigo-500 to-indigo-600"
-          />
-          <StatCard 
-            title="Active Users (7d)"
-            value={formatNumber(engagement.activeUsers7)}
-            icon={<FaCalendarCheck size={20} />}
-            change={undefined}
-            bgColor="bg-gradient-to-br from-green-500 to-green-600"
-          />
-          <StatCard 
-            title="Repeat Booking Rate"
-            value={formatPercent(engagement.repeatRate)}
-            icon={<FaShoppingCart size={20} />}
-            change={undefined}
-            bgColor="bg-gradient-to-br from-pink-500 to-pink-600"
-          />
-          <StatCard 
-            title="New Users (30d)"
-            value={formatNumber(engagement.newUsers30)}
-            icon={<FaDollarSign size={20} />}
-            change={undefined}
-            bgColor="bg-gradient-to-br from-amber-500 to-amber-600"
-          />
-        </div>
-      )}
+
       
       {/* Pet Services Summary - Dynamic */}
       <div className="bg-white rounded-xl shadow-sm p-6 border border-indigo-100">
