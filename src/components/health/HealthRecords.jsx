@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaPlus, FaFilePdf, FaFileImage, FaFileWord, FaTrash, FaDownload, FaArrowLeft } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
+import { vaccinationService } from '../../services/vaccinationService';
 const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
 
 const HealthRecords = () => {
@@ -16,11 +17,14 @@ const HealthRecords = () => {
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [vaccinations, setVaccinations] = useState([]);
+  const [petVaccinations, setPetVaccinations] = useState([]);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     recordType: 'vaccination',
     vaccinationName: '',
+    isCustomVaccination: false,
+    customVaccinationName: '',
     recordDate: new Date().toISOString().split('T')[0],
     nextDueDate: '',
   });
@@ -137,46 +141,43 @@ const HealthRecords = () => {
   };
 
   useEffect(() => {
-    // Load vaccinations from backend API
+    // Load vaccinations from backend API and pet-specific vaccinations
     const loadVaccinations = async () => {
       try {
-        console.log('Loading vaccinations from backend API');
-        const response = await fetch(`${API_URL}/vaccines/master`);
-        if (!response.ok) {
-          throw new Error(`Failed to load vaccines: ${response.status}`);
-        }
-        const data = await response.json();
-        console.log('API response received:', data);
+        console.log('Loading vaccinations from backend API and pet database');
         
-        // Extract unique vaccine names from the API response structure
-        const vaccinesList = Array.isArray(data?.vaccines) ? data.vaccines : [];
-        console.log('Vaccines list:', vaccinesList);
+        // Get token
+        const token = currentUser?.tokens?.access?.token || tokens?.access?.token;
         
-        const uniqueVaccines = [...new Set(vaccinesList.map(item => item.vaccine))].filter(v => v && v.trim()).sort();
-        console.log('Unique vaccines loaded from API:', uniqueVaccines);
-        setVaccinations(uniqueVaccines);
-      } catch (err) {
-        console.error('Error loading vaccinations from API:', err);
-        // Fallback to JSON file if API fails
-        try {
-          console.log('Falling back to JSON file');
-          const response = await fetch('/pet_vaccine_master.json');
-          if (!response.ok) {
-            throw new Error(`Failed to load JSON: ${response.status}`);
+        // Load available vaccines from master with pet type (if pet is loaded)
+        const petType = pet?.type || '';
+        console.log('Loading vaccines with petType:', petType);
+        const availableVaccines = await vaccinationService.getAvailableVaccines(token, petType);
+        console.log('Available vaccines loaded:', availableVaccines);
+        setVaccinations(availableVaccines);
+        
+        // Load pet-specific vaccinations from PIQ_Pet_Vaccination table
+        if (petId && token) {
+          try {
+            const petVaccinesList = await vaccinationService.getPetVaccinations(petId, token);
+            console.log('Pet vaccinations from database:', petVaccinesList);
+            setPetVaccinations(petVaccinesList);
+          } catch (err) {
+            console.warn('Could not load pet vaccinations from database:', err);
+            setPetVaccinations([]);
           }
-          const data = await response.json();
-          const uniqueVaccines = [...new Set(data.map(item => item.vaccine))].filter(v => v && v.trim()).sort();
-          console.log('Loaded from JSON fallback:', uniqueVaccines);
-          setVaccinations(uniqueVaccines);
-        } catch (fallbackErr) {
-          console.error('Fallback to JSON also failed:', fallbackErr);
-          setVaccinations([]);
         }
+      } catch (err) {
+        console.error('Error loading vaccinations:', err);
+        setVaccinations([]);
       }
     };
     
-    loadVaccinations();
-  }, []);
+    // Only load vaccinations when we have a petId, currentUser, and pet is loaded with a type
+    if (petId && currentUser && pet) {
+      loadVaccinations();
+    }
+  }, [petId, currentUser, pet]);
 
   useEffect(() => {
     if (petId && currentUser) {
@@ -185,16 +186,30 @@ const HealthRecords = () => {
   }, [petId, currentUser]);
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked, id } = e.target;
     setFormData(prev => {
-      const updated = {
-        ...prev,
-        [name]: value
-      };
+      const updated = { ...prev };
+      
+      // Handle radio button for isCustomVaccination
+      if (name === 'isCustomVaccination' && type === 'radio') {
+        updated.isCustomVaccination = id === 'customVaccine';
+        // Reset the other field when switching modes
+        if (id === 'customVaccine') {
+          updated.vaccinationName = '';
+        } else {
+          updated.customVaccinationName = '';
+        }
+      } else if (type === 'checkbox') {
+        updated[name] = checked;
+      } else {
+        updated[name] = value;
+      }
+      
       // Auto-populate title with vaccination name if selecting a vaccination
-      if (name === 'vaccinationName' && value) {
+      if ((name === 'vaccinationName' || name === 'customVaccinationName') && value && updated.recordType === 'vaccination') {
         updated.title = value;
       }
+      
       return updated;
     });
   };
@@ -227,6 +242,22 @@ const HealthRecords = () => {
       setUploading(true);
       setError('');
       const accessToken = currentUser?.tokens?.access?.token || tokens?.access?.token;
+
+      // Determine vaccination name
+      let vaccinationName = '';
+      if (formData.recordType === 'vaccination') {
+        if (formData.isCustomVaccination) {
+          if (!formData.customVaccinationName.trim()) {
+            throw new Error('Please enter a custom vaccination name');
+          }
+          vaccinationName = formData.customVaccinationName.trim();
+        } else {
+          if (!formData.vaccinationName.trim()) {
+            throw new Error('Please select a vaccination');
+          }
+          vaccinationName = formData.vaccinationName;
+        }
+      }
 
       // 1. Get signed upload URL if a file is selected
       if (file) {
@@ -268,7 +299,7 @@ const HealthRecords = () => {
         // 3. Create health record with file details
         const recordData = {
           recordType: formData.recordType,
-          title: formData.title,
+          title: formData.title || vaccinationName,
           description: formData.description,
           recordDate: formData.recordDate,
           nextDueDate: formData.nextDueDate || null,
@@ -294,6 +325,19 @@ const HealthRecords = () => {
           throw new Error(errorData.message || 'Failed to create health record');
         }
 
+        // If vaccination, also save to pet vaccinations table
+        if (formData.recordType === 'vaccination' && vaccinationName) {
+          try {
+            await vaccinationService.savePetVaccination(petId, {
+              vaccination_name: vaccinationName,
+              vaccine_given_date: formData.recordDate,
+              vaccine_due_date: formData.nextDueDate,
+            }, accessToken);
+          } catch (err) {
+            console.warn('Could not save vaccination to pet table:', err);
+          }
+        }
+
         // Refresh records
         await fetchPetAndRecords();
         setShowUploadModal(false);
@@ -303,6 +347,8 @@ const HealthRecords = () => {
           description: '',
           recordType: 'vaccination',
           vaccinationName: '',
+          isCustomVaccination: false,
+          customVaccinationName: '',
           recordDate: new Date().toISOString().split('T')[0],
           nextDueDate: '',
         });
@@ -310,7 +356,7 @@ const HealthRecords = () => {
         // No file provided: create record without file fields
         const recordData = {
           recordType: formData.recordType,
-          title: formData.title,
+          title: formData.title || vaccinationName,
           description: formData.description,
           recordDate: formData.recordDate,
           nextDueDate: formData.nextDueDate || null,
@@ -336,6 +382,19 @@ const HealthRecords = () => {
           throw new Error(errorData.message || 'Failed to create health record');
         }
 
+        // If vaccination, also save to pet vaccinations table
+        if (formData.recordType === 'vaccination' && vaccinationName) {
+          try {
+            await vaccinationService.savePetVaccination(petId, {
+              vaccination_name: vaccinationName,
+              vaccine_given_date: formData.recordDate,
+              vaccine_due_date: formData.nextDueDate,
+            }, accessToken);
+          } catch (err) {
+            console.warn('Could not save vaccination to pet table:', err);
+          }
+        }
+
         await fetchPetAndRecords();
         setShowUploadModal(false);
         setFile(null);
@@ -344,6 +403,8 @@ const HealthRecords = () => {
           description: '',
           recordType: 'vaccination',
           vaccinationName: '',
+          isCustomVaccination: false,
+          customVaccinationName: '',
           recordDate: new Date().toISOString().split('T')[0],
           nextDueDate: '',
         });
@@ -725,25 +786,91 @@ const HealthRecords = () => {
                         </div>
 
                         {formData.recordType === 'vaccination' && (
-                          <div>
-                            <label htmlFor="vaccinationName" className="block text-sm font-medium text-gray-700">
-                              Vaccination Name *
-                            </label>
-                            <select
-                              id="vaccinationName"
-                              name="vaccinationName"
-                              value={formData.vaccinationName}
-                              onChange={handleInputChange}
-                              required={formData.recordType === 'vaccination'}
-                              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                            >
-                              <option value="">Select a vaccination</option>
-                              {vaccinations.map((vaccine) => (
-                                <option key={vaccine} value={vaccine}>
-                                  {vaccine}
-                                </option>
-                              ))}
-                            </select>
+                          <div className="space-y-3">
+                            <div>
+                              <label htmlFor="vaccinationName" className="block text-sm font-medium text-gray-700 mb-2">
+                                Select Vaccination *
+                              </label>
+                              
+                              {/* Show predefined vaccinations + pet's existing vaccinations */}
+                              <div>
+                                <div className="flex items-center mb-2">
+                                  <input
+                                    type="radio"
+                                    id="predefinedVaccine"
+                                    name="isCustomVaccination"
+                                    checked={!formData.isCustomVaccination}
+                                    onChange={handleInputChange}
+                                    className="h-4 w-4 text-indigo-600 cursor-pointer"
+                                  />
+                                  <label htmlFor="predefinedVaccine" className="ml-2 text-sm text-gray-700 cursor-pointer">
+                                    Choose from available vaccinations
+                                  </label>
+                                </div>
+                                
+                                {!formData.isCustomVaccination && (
+                                  <select
+                                    id="vaccinationName"
+                                    name="vaccinationName"
+                                    value={formData.vaccinationName}
+                                    onChange={handleInputChange}
+                                    required={!formData.isCustomVaccination && formData.recordType === 'vaccination'}
+                                    className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                                  >
+                                    <option value="">-- Select a vaccination --</option>
+                                    {/* Show pet's existing vaccinations first */}
+                                    {petVaccinations.length > 0 && (
+                                      <optgroup label="Pet's Existing Vaccinations">
+                                        {petVaccinations.map((vac) => (
+                                          <option key={vac.vaccination_name} value={vac.vaccination_name}>
+                                            {vac.vaccination_name}
+                                          </option>
+                                        ))}
+                                      </optgroup>
+                                    )}
+                                    {/* Show available vaccinations */}
+                                    {vaccinations.length > 0 && (
+                                      <optgroup label="Available Vaccinations">
+                                        {vaccinations.map((vaccine) => (
+                                          <option key={vaccine} value={vaccine}>
+                                            {vaccine}
+                                          </option>
+                                        ))}
+                                      </optgroup>
+                                    )}
+                                  </select>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Custom vaccination option */}
+                            <div className="border-t pt-3">
+                              <div className="flex items-center">
+                                <input
+                                  type="radio"
+                                  id="customVaccine"
+                                  name="isCustomVaccination"
+                                  checked={formData.isCustomVaccination}
+                                  onChange={handleInputChange}
+                                  className="h-4 w-4 text-indigo-600 cursor-pointer"
+                                />
+                                <label htmlFor="customVaccine" className="ml-2 text-sm text-gray-700 cursor-pointer">
+                                  Add a custom vaccination
+                                </label>
+                              </div>
+                              
+                              {formData.isCustomVaccination && (
+                                <input
+                                  type="text"
+                                  name="customVaccinationName"
+                                  placeholder="Enter vaccination name (e.g., Custom Vaccine, Experimental)"
+                                  value={formData.customVaccinationName}
+                                  onChange={handleInputChange}
+                                  required={formData.isCustomVaccination && formData.recordType === 'vaccination'}
+                                  className="mt-2 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                />
+                              )}
+                            </div>
                           </div>
                         )}
 
