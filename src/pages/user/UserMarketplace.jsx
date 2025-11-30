@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaShoppingCart, FaSearch, FaFilter, FaStar, FaHeart, FaRegHeart, FaChevronDown, FaChevronUp, FaTags, FaShippingFast, FaStore, FaDog, FaCat, FaBed, FaCut, FaTshirt, FaCreditCard, FaMobileAlt, FaUniversity, FaWallet, FaPhone, FaGooglePay } from 'react-icons/fa';
 import UserLayout from '../../components/layout/UserLayout';
+import { useToast } from '../../components/common/Toast';
 
 const UserMarketplace = () => {
   const navigate = useNavigate();
+  const toast = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterPrice, setFilterPrice] = useState('all');
@@ -12,6 +14,17 @@ const UserMarketplace = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [favorites, setFavorites] = useState([2, 5]);
   const [cartCount, setCartCount] = useState(0);
+  
+  // Load cart count from localStorage on mount
+  React.useEffect(() => {
+    try {
+      const existingCart = JSON.parse(localStorage.getItem('petStoreCart') || '[]');
+      const totalQuantity = existingCart.reduce((sum, item) => sum + (item.quantity || 1), 0);
+      setCartCount(totalQuantity);
+    } catch (error) {
+      console.error('Failed to load cart:', error);
+    }
+  }, []);
   
   // Mock product data
   const products = [
@@ -180,10 +193,39 @@ const UserMarketplace = () => {
     }
   };
   
-  // Add to cart
-  const addToCart = () => {
-    setCartCount(cartCount + 1);
-    // In a real app, you would add the product to the cart state or context
+  // Add to cart with localStorage persistence
+  const addToCart = (product) => {
+    try {
+      // Get existing cart from localStorage
+      const existingCart = JSON.parse(localStorage.getItem('petStoreCart') || '[]');
+      
+      // Check if product already exists in cart
+      const existingItem = existingCart.find(item => item.id === product.id);
+      
+      if (existingItem) {
+        // Increase quantity if product exists
+        existingItem.quantity += 1;
+      } else {
+        // Add new product with quantity 1
+        existingCart.push({
+          ...product,
+          quantity: 1
+        });
+      }
+      
+      // Save updated cart to localStorage
+      localStorage.setItem('petStoreCart', JSON.stringify(existingCart));
+      
+      // Update cart count
+      setCartCount(existingCart.reduce((sum, item) => sum + item.quantity, 0));
+      
+      // Show success toast
+      const productName = product.name;
+      toast.success(`${productName} added to cart!`);
+    } catch (error) {
+      console.error('Failed to add product to cart:', error);
+      toast.error('Failed to add product to cart');
+    }
   };
   
   // Category options

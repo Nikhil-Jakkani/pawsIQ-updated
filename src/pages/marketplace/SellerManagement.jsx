@@ -665,36 +665,6 @@ const SellerManagement = () => {
                     </div>
                   </div>
 
-                  {/* Quick Actions */}
-                  <div>
-                    <h4 className="font-semibold text-gray-800 mb-3">Quick Actions</h4>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button 
-                        onClick={() => alert(`Contacting ${selectedSeller.businessName}...`)}
-                        className="px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center gap-1"
-                      >
-                        <FaEnvelope /> Contact
-                      </button>
-                      <button 
-                        onClick={() => alert(`Editing commission rate for ${selectedSeller.businessName}...`)}
-                        className="px-3 py-2 bg-purple-600 text-white text-sm rounded-md hover:bg-purple-700 transition-colors flex items-center justify-center gap-1"
-                      >
-                        <FaPercent /> Commission
-                      </button>
-                      <button 
-                        onClick={() => alert(`Processing payout for ${selectedSeller.businessName}...`)}
-                        className="px-3 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 transition-colors flex items-center justify-center gap-1"
-                      >
-                        <FaMoneyBillWave /> Payout
-                      </button>
-                      <button 
-                        onClick={() => alert(`Viewing analytics for ${selectedSeller.businessName}...`)}
-                        className="px-3 py-2 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700 transition-colors flex items-center justify-center gap-1"
-                      >
-                        <FaChartLine /> Analytics
-                      </button>
-                    </div>
-                  </div>
                 </div>
               </div>
 

@@ -24,6 +24,7 @@ import UserAppointmentDetails from './pages/user/UserAppointmentDetails.jsx';
 import AIPetCare from './pages/user/AIPetCare.jsx';
 
 import UserMarketplace from './pages/user/UserMarketplace.jsx';
+import UserCart from './pages/user/UserCart.jsx';
 import UserOrders from './pages/user/UserOrders.jsx';
 import UserPayments from './pages/user/UserPayments.jsx';
 import UserSettings from './pages/user/UserSettings.jsx';
@@ -31,6 +32,7 @@ import UserAddPaymentMethod from './pages/user/UserAddPaymentMethod.jsx';
 import UserNotifications from './pages/user/UserNotifications.jsx';
 import UserHelp from './pages/user/UserHelp.jsx';
 import UserCommunity from './pages/user/UserCommunity.jsx';
+import UserStartDiscussion from './pages/user/UserStartDiscussion.jsx';
 import UserChat from './pages/user/UserChat.jsx';
 import Users from './pages/Users.jsx';
 import UserProfiles from './pages/users/UserProfiles.jsx';
@@ -275,6 +277,7 @@ function App() {
             <Route path="/user/marketplace/food" element={<UserProtectedRoute><UserMarketplace /></UserProtectedRoute>} />
             <Route path="/user/marketplace/toys" element={<UserProtectedRoute><UserMarketplace /></UserProtectedRoute>} />
             <Route path="/user/marketplace/health" element={<UserProtectedRoute><UserMarketplace /></UserProtectedRoute>} />
+            <Route path="/user/cart" element={<UserProtectedRoute><UserCart /></UserProtectedRoute>} />
             
             {/* Order Routes */}
             <Route path="/user/orders" element={<UserProtectedRoute><UserOrders /></UserProtectedRoute>} />
@@ -286,6 +289,7 @@ function App() {
             
             {/* Community Routes */}
             <Route path="/user/community" element={<UserProtectedRoute><UserCommunity /></UserProtectedRoute>} />
+            <Route path="/user/community/new-post" element={<UserProtectedRoute><UserStartDiscussion /></UserProtectedRoute>} />
             <Route path="/user/community/forum" element={<UserProtectedRoute><UserCommunity /></UserProtectedRoute>} />
             <Route path="/user/community/events" element={<UserProtectedRoute><UserCommunity /></UserProtectedRoute>} />
             
@@ -324,9 +328,8 @@ function App() {
                     </a>
                   </div>
                 </div>
-              </div>
-            }
-          />
+              }
+            />
         </Routes>
       </div>
     </>
