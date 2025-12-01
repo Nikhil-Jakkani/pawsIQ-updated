@@ -86,7 +86,6 @@ const Sidebar = () => {
         { path: '/providers/onboarding/groomer', icon: <FaCut />, label: 'Groomer Onboarding' },
         { path: '/providers/onboarding/trainer', icon: <FaGraduationCap />, label: 'Trainer Onboarding' },
         { path: '/providers/onboarding/physical-activity', icon: <FaRunning />, label: 'Physical Activity Onboarding' },
-        { path: '/providers/verification', icon: <FaShieldAlt />, label: 'Verification' },
       ]
     },
     {
@@ -106,9 +105,9 @@ const Sidebar = () => {
       path: '/appointments',
       items: [
         { path: '/appointments/overview', icon: <FaCalendarCheck />, label: 'Booking Overview' },
-        { path: '/appointments/scheduler', icon: <FaCalendarAlt />, label: 'Appointment Scheduler' },
-        { path: '/appointments', icon: <FaEdit />, label: 'All Bookings' },
-        { path: '/appointments/disputes', icon: <FaExclamationTriangle />, label: 'Disputes & No-shows' },
+        // { path: '/appointments/scheduler', icon: <FaCalendarAlt />, label: 'Appointment Scheduler' },
+        // { path: '/appointments', icon: <FaEdit />, label: 'All Bookings' },
+        // { path: '/appointments/disputes', icon: <FaExclamationTriangle />, label: 'Disputes & No-shows' },
         { path: '/appointments/pricing', icon: <FaTag />, label: 'Pricing & Discounts' }
       ]
     },
@@ -120,9 +119,7 @@ const Sidebar = () => {
       items: [
         { path: '/marketplace/products', icon: <FaBoxOpen />, label: 'Products & Services' },
         { path: '/marketplace/sellers', icon: <FaUsers />, label: 'Seller Management' },
-        { path: '/marketplace', icon: <FaShoppingCart />, label: 'All Marketplace' },
-        { path: '/marketplace/inventory', icon: <FaBoxOpen />, label: 'Inventory Management' },
-        { path: '/marketplace/promotions', icon: <FaTag />, label: 'Promotions & Discounts' }
+        // { path: '/marketplace', icon: <FaShoppingCart />, label: 'All Marketplace' }
       ]
     },
     // {
@@ -188,7 +185,7 @@ const Sidebar = () => {
       items: [
         { path: '/support/tickets', icon: <FaTicketAlt />, label: 'Support Tickets' },
         { path: '/support/chat', icon: <FaComments />, label: 'Live Chat' },
-        { path: '/support/knowledge', icon: <FaBook />, label: 'Knowledge Base' },
+        // { path: '/support/knowledge', icon: <FaBook />, label: 'Knowledge Base' },
         { path: '/support/disputes', icon: <FaExclamationTriangle />, label: 'Dispute Resolution' },
         { path: '/support/assignment', icon: <FaUsers />, label: 'Ticket Assignment' }
       ]
@@ -274,7 +271,7 @@ const Sidebar = () => {
             </div>
             {!minimized && (
               <div>
-                <h1 className="text-xl font-bold flex items-center font-fredoka">
+                <h1 className="text-xl text-white flex items-center font-fredoka">
                   PawsIQ Admin
                 </h1>
               </div>

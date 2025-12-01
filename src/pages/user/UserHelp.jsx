@@ -130,15 +130,15 @@ const UserHelp = () => {
       icon: <FaEnvelope className="text-indigo-600" />,
       title: 'Email Support',
       description: 'Send us an email and we\'ll respond within 24 hours',
-      action: 'Send Email',
+      action: 'Send Mail',
       available: true,
       hours: 'Response within 24 hours'
     },
     {
       icon: <FaTicketAlt className="text-indigo-600" />,
       title: 'Support Ticket',
-      description: 'Create a ticket for complex issues',
-      action: 'Create Ticket',
+      description: 'Create a ticket for complex issues and we\'ll respond within 48 hours',
+      action: '+ Ticket',
       available: true,
       hours: 'Response within 48 hours'
     },
@@ -191,16 +191,18 @@ const UserHelp = () => {
         
         {/* Search */}
         <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-6 border border-indigo-100">
-          <h2 className="text-lg font-semibold text-indigo-900 mb-3">How can we help you today?</h2>
-          <div className="relative max-w-2xl">
-            <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search for answers..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-12 pr-4 py-3 w-full border border-indigo-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            />
+          <div className="flex items-center gap-4">
+            <h2 className="text-lg font-semibold text-indigo-900 whitespace-nowrap">How can we help you today?</h2>
+            <div className="relative flex-1">
+              <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search for answers..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-12 pr-4 py-3 w-full border border-indigo-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
           </div>
         </div>
         

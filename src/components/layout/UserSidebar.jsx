@@ -97,10 +97,7 @@ const UserSidebar = ({ isOpen, toggleSidebar }) => {
       icon: <FaCommentAlt />,
       label: 'Community',
       path: '/user/community',
-      items: [
-        { path: '/user/community/forum', icon: <FaCommentAlt />, label: 'Pet Forums' },
-        { path: '/user/community/events', icon: <FaCalendarAlt />, label: 'Pet Events' }
-      ]
+      items: []
     },
     {
       id: 'notifications',
@@ -121,11 +118,7 @@ const UserSidebar = ({ isOpen, toggleSidebar }) => {
       icon: <FaQuestionCircle />,
       label: 'Help & Support',
       path: '/user/help',
-      items: [
-        { path: '/user/help/faq', icon: <FaQuestionCircle />, label: 'FAQs' },
-        { path: '/user/help/contact', icon: <FaEnvelope />, label: 'Contact Us' },
-        { path: '/user/help/support', icon: <FaHeadset />, label: 'Support Tickets' }
-      ]
+      items: []
     }
   ];
 

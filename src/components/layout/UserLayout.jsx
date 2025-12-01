@@ -1,23 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import UserSidebar from './UserSidebar';
-import { FaBell, FaSearch, FaUser, FaShoppingCart, FaSun, FaCloud, FaCloudRain, FaSnowflake, FaClock, FaCalendarAlt, FaSignOutAlt } from 'react-icons/fa';
+import { FaBell, FaSearch, FaUser, FaShoppingCart, FaClock, FaCalendarAlt, FaSignOutAlt } from 'react-icons/fa';
 
 const UserLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarMinimized, setSidebarMinimized] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const { currentUser, logout } = useAuth();
+  const navigate = useNavigate();
+  const [notificationCount] = useState(3); // Can be updated dynamically from context/state
 
   const profileImage = currentUser?.profile_picture_url || currentUser?.profileImage;
-
-  // Mock weather data (in a real app, this would come from a weather API)
-  const weather = {
-    temperature: 72,
-    condition: 'sunny',
-    location: 'New York, NY'
-  };
+  
+  // Load cart count from localStorage on mount
+  const [dynamicCartCount, setDynamicCartCount] = useState(0);
+  
+  useEffect(() => {
+    try {
+      const existingCart = JSON.parse(localStorage.getItem('petStoreCart') || '[]');
+      const totalQuantity = existingCart.reduce((sum, item) => sum + (item.quantity || 1), 0);
+      setDynamicCartCount(totalQuantity);
+    } catch (error) {
+      console.error('Failed to load cart:', error);
+    }
+  }, []);
   
   // Update time every minute
   useEffect(() => {
@@ -57,28 +65,6 @@ const UserLayout = ({ children }) => {
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
-
-  const getWeatherIcon = (condition) => {
-    switch (condition) {
-      case 'sunny': return FaSun;
-      case 'cloudy': return FaCloud;
-      case 'rainy': return FaCloudRain;
-      case 'snowy': return FaSnowflake;
-      default: return FaSun;
-    }
-  };
-
-  const getWeatherColor = (condition) => {
-    switch (condition) {
-      case 'sunny': return 'text-yellow-500';
-      case 'cloudy': return 'text-gray-500';
-      case 'rainy': return 'text-blue-500';
-      case 'snowy': return 'text-blue-300';
-      default: return 'text-yellow-500';
-    }
-  };
-
-  const WeatherIcon = getWeatherIcon(weather.condition);
   
   return (
     <div className="flex h-full w-full bg-gray-50 overflow-x-hidden">
@@ -104,7 +90,7 @@ const UserLayout = ({ children }) => {
           </div>
 
           <div className="flex items-center gap-3 sm:gap-4">
-            {/* Date, Time, and Weather Section */}
+            {/* Date and Time Section */}
             <div className="hidden lg:flex items-center gap-4 mr-2">
               {/* Date */}
               <div className="flex items-center gap-1 text-gray-600">
@@ -128,27 +114,31 @@ const UserLayout = ({ children }) => {
                   })}
                 </div>
               </div>
-
-              {/* Weather */}
-              <div className="flex items-center gap-1 text-gray-600">
-                <WeatherIcon className={`${getWeatherColor(weather.condition)} text-sm`} />
-                <div className="text-xs">
-                  <div className="font-medium">{weather.temperature}°F</div>
-                </div>
-              </div>
             </div>
 
-            <button className="relative p-2 text-gray-500 hover:text-[#145ae6] transition-colors">
+            <button 
+              onClick={() => navigate('/user/cart')}
+              className="relative p-2 text-gray-500 hover:text-[#145ae6] transition-colors"
+              title="Shopping Cart"
+            >
               <FaShoppingCart size={20} />
-              <span className="absolute -top-1 -right-1 bg-[#145ae6] text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
-                2
-              </span>
+              {dynamicCartCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-[#145ae6] text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
+                  {dynamicCartCount}
+                </span>
+              )}
             </button>
-            <button className="relative p-2 text-gray-500 hover:text-[#145ae6] transition-colors">
+            <button 
+              onClick={() => navigate('/user/notifications')}
+              className="relative p-2 text-gray-500 hover:text-[#145ae6] transition-colors"
+              title="Notifications"
+            >
               <FaBell size={20} />
-              <span className="absolute -top-1 -right-1 bg-[#145ae6] text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
-                3
-              </span>
+              {notificationCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-[#145ae6] text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
+                  {notificationCount}
+                </span>
+              )}
             </button>
             <div className="flex items-center gap-2 max-w-[40vw] sm:max-w-none">
               <Link to="/user/settings" className="flex items-center gap-2 hover:opacity-90">

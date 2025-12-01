@@ -24,6 +24,7 @@ import UserAppointmentDetails from './pages/user/UserAppointmentDetails.jsx';
 import AIPetCare from './pages/user/AIPetCare.jsx';
 
 import UserMarketplace from './pages/user/UserMarketplace.jsx';
+import UserCart from './pages/user/UserCart.jsx';
 import UserOrders from './pages/user/UserOrders.jsx';
 import UserPayments from './pages/user/UserPayments.jsx';
 import UserSettings from './pages/user/UserSettings.jsx';
@@ -31,6 +32,7 @@ import UserAddPaymentMethod from './pages/user/UserAddPaymentMethod.jsx';
 import UserNotifications from './pages/user/UserNotifications.jsx';
 import UserHelp from './pages/user/UserHelp.jsx';
 import UserCommunity from './pages/user/UserCommunity.jsx';
+import UserStartDiscussion from './pages/user/UserStartDiscussion.jsx';
 import UserChat from './pages/user/UserChat.jsx';
 import Users from './pages/Users.jsx';
 import UserProfiles from './pages/users/UserProfiles.jsx';
@@ -43,7 +45,6 @@ import ProviderOnboardingTrainer from './pages/providers/ProviderOnboardingTrain
 import ProviderOnboardingBoarder from './pages/providers/ProviderOnboardingBoarder.jsx';
 import ProviderOnboardingDiagnostic from './pages/providers/ProviderOnboardingDiagnostic.jsx';
 import ProviderOnboardingPhysicalActivity from './pages/providers/ProviderOnboardingPhysicalActivity.jsx';
-import ProviderVerification from './pages/providers/ProviderVerification.jsx';
 
 
 // Auth pages
@@ -57,7 +58,13 @@ import ServiceMetrics from './pages/analytics/ServiceMetrics.jsx';
 import RevenueMetrics from './pages/analytics/RevenueMetrics.jsx';
 import PerformanceDashboard from './pages/analytics/PerformanceDashboard.jsx';
 import Notifications from './pages/Notifications.jsx';
+import PushNotifications from './pages/notifications/PushNotifications.jsx';
+import EmailCampaigns from './pages/notifications/EmailCampaigns.jsx';
+import AutomatedReminders from './pages/notifications/AutomatedReminders.jsx';
 import Settings from './pages/Settings.jsx';
+import AppSettings from './pages/settings/AppSettings.jsx';
+import FeatureControls from './pages/settings/FeatureControls.jsx';
+import LegalDocuments from './pages/settings/LegalDocuments.jsx';
 import Security from './pages/Security.jsx';
 import Support from './pages/Support.jsx';
 import PetProfiles from './pages/pets/PetProfiles.jsx';
@@ -66,6 +73,7 @@ import PetModeration from './pages/pets/PetModeration.jsx';
 import BookingOverview from './pages/appointments/BookingOverview.jsx';
 import AppointmentScheduler from './pages/appointments/AppointmentScheduler.jsx';
 import DisputeResolution from './pages/appointments/DisputeResolution.jsx';
+import PricingAndDiscounts from './pages/appointments/PricingAndDiscounts.jsx';
 import PaymentManagement from './pages/transactions/PaymentManagement.jsx';
 import FinancialReports from './pages/transactions/FinancialReports.jsx';
 import ProductManagement from './pages/marketplace/ProductManagement.jsx';
@@ -158,154 +166,170 @@ function App() {
         <PWAInstallPrompt />
         <PWAUpdateNotification />
         <OfflineStatus />
-        <Routes>
-          {/* Main Routes */}
-          <Route path="/" element={<Landing />} />
-          <Route path="/home" element={<Landing />} />
-          <Route path="/login" element={<Login />} />
+          <Routes>
+            {/* Main Routes */}
+            <Route path="/" element={<Landing />} />
+            <Route path="/home" element={<Landing />} />
+            <Route path="/login" element={<Login />} />
+            
+
+            {/* Admin Routes */}
+            <Route path="/dashboard" element={<AdminProtectedRoute><Dashboard /></AdminProtectedRoute>} />
+            <Route path="/users" element={<AdminProtectedRoute><Users /></AdminProtectedRoute>} />
+            <Route path="/users/profiles" element={<AdminProtectedRoute><UserProfiles /></AdminProtectedRoute>} />
+            <Route path="/users/roles" element={<AdminProtectedRoute><UserRoles /></AdminProtectedRoute>} />
+            <Route path="/users/activity" element={<AdminProtectedRoute><UserActivity /></AdminProtectedRoute>} />
+            <Route path="/providers" element={<AdminProtectedRoute><Providers /></AdminProtectedRoute>} />
+            <Route path="/providers/onboarding/veterinarian" element={<AdminProtectedRoute><ProviderOnboardingVeterinarian /></AdminProtectedRoute>} />
+            <Route path="/providers/onboarding/groomer" element={<AdminProtectedRoute><ProviderOnboardingGroomer /></AdminProtectedRoute>} />
+            <Route path="/providers/onboarding/trainer" element={<AdminProtectedRoute><ProviderOnboardingTrainer /></AdminProtectedRoute>} />
+            <Route path="/providers/onboarding/boarder" element={<AdminProtectedRoute><ProviderOnboardingBoarder /></AdminProtectedRoute>} />
+            <Route path="/providers/onboarding/diagnostic" element={<AdminProtectedRoute><ProviderOnboardingDiagnostic /></AdminProtectedRoute>} />
+            <Route path="/providers/onboarding/physical-activity" element={<AdminProtectedRoute><ProviderOnboardingPhysicalActivity /></AdminProtectedRoute>} />
+            <Route path="/pets" element={<AdminProtectedRoute><Dashboard /></AdminProtectedRoute>} />
+            <Route path="/pets/profiles" element={<AdminProtectedRoute><PetProfiles /></AdminProtectedRoute>} />
+            <Route path="/pets/moderation" element={<AdminProtectedRoute><PetModeration /></AdminProtectedRoute>} />
+            <Route path="/appointments" element={<AdminProtectedRoute><Appointments /></AdminProtectedRoute>} />
+            <Route path="/appointments/overview" element={<AdminProtectedRoute><BookingOverview /></AdminProtectedRoute>} />
+            <Route path="/appointments/scheduler" element={<AdminProtectedRoute><AppointmentScheduler /></AdminProtectedRoute>} />
+            <Route path="/appointments/disputes" element={<AdminProtectedRoute><DisputeResolution /></AdminProtectedRoute>} />
+            <Route path="/appointments/pricing" element={<AdminProtectedRoute><PricingAndDiscounts /></AdminProtectedRoute>} />
+            <Route path="/marketplace" element={<AdminProtectedRoute><Marketplace /></AdminProtectedRoute>} />
+            <Route path="/marketplace/products" element={<AdminProtectedRoute><ProductManagement /></AdminProtectedRoute>} />
+            <Route path="/marketplace/sellers" element={<AdminProtectedRoute><SellerManagement /></AdminProtectedRoute>} />
+            <Route path="/transactions" element={<AdminProtectedRoute><Transactions /></AdminProtectedRoute>} />
+            <Route path="/transactions/payments" element={<AdminProtectedRoute><PaymentManagement /></AdminProtectedRoute>} />
+            <Route path="/transactions/reports" element={<AdminProtectedRoute><FinancialReports /></AdminProtectedRoute>} />
+            <Route path="/analytics" element={<AdminProtectedRoute><Analytics /></AdminProtectedRoute>} />
+            <Route path="/analytics/users" element={<AdminProtectedRoute><UserMetrics /></AdminProtectedRoute>} />
+            <Route path="/analytics/services" element={<AdminProtectedRoute><ServiceMetrics /></AdminProtectedRoute>} />
+            <Route path="/analytics/revenue" element={<AdminProtectedRoute><RevenueMetrics /></AdminProtectedRoute>} />
+            <Route path="/analytics/performance" element={<AdminProtectedRoute><PerformanceDashboard /></AdminProtectedRoute>} />
+            <Route path="/notifications" element={<AdminProtectedRoute><Notifications /></AdminProtectedRoute>} />
+            <Route path="/notifications/push" element={<AdminProtectedRoute><PushNotifications /></AdminProtectedRoute>} />
+            <Route path="/notifications/email" element={<AdminProtectedRoute><EmailCampaigns /></AdminProtectedRoute>} />
+            <Route path="/notifications/reminders" element={<AdminProtectedRoute><AutomatedReminders /></AdminProtectedRoute>} />
+            <Route path="/settings" element={<AdminProtectedRoute><Settings /></AdminProtectedRoute>} />
+            <Route path="/settings/app" element={<AdminProtectedRoute><AppSettings /></AdminProtectedRoute>} />
+            <Route path="/settings/features" element={<AdminProtectedRoute><FeatureControls /></AdminProtectedRoute>} />
+            <Route path="/settings/legal" element={<AdminProtectedRoute><LegalDocuments /></AdminProtectedRoute>} />
+            <Route path="/security" element={<AdminProtectedRoute><Security /></AdminProtectedRoute>} />
+            <Route path="/support" element={<AdminProtectedRoute><Support /></AdminProtectedRoute>} />
+            <Route path="/support/tickets" element={<AdminProtectedRoute><TicketManagement /></AdminProtectedRoute>} />
+            <Route path="/support/chat" element={<AdminProtectedRoute><LiveChat /></AdminProtectedRoute>} />
+            <Route path="/support/knowledge" element={<AdminProtectedRoute><KnowledgeBase /></AdminProtectedRoute>} />
+            <Route path="/support/disputes" element={<AdminProtectedRoute><SupportDisputeResolution /></AdminProtectedRoute>} />
+            <Route path="/support/assignment" element={<AdminProtectedRoute><TicketAssignment /></AdminProtectedRoute>} />
+            <Route path="/common/capabilities" element={<AdminProtectedRoute><CommonCapabilities /></AdminProtectedRoute>} />
+
+            {/* User Routes */}
+            {/* Top-level aliases for SEO/direct links */}
+            <Route path="/signup" element={<UserSignIn />} />
+            <Route path="/register" element={<UserSignIn />} />
+            <Route path="/user/forgot-password" element={<UserForgotPassword />} />
+            <Route path="/otp-verification" element={<OTPVerification />} />
+            <Route path="/reset-password" element={<UserResetPassword />} />
+
+            {/* Scoped user routes */}
+            <Route path="/user/signin" element={<UserSignIn />} />
+            <Route path="/user/signup" element={<UserSignIn />} />
+            <Route path="/user/forgot-password" element={<React.Suspense fallback={null}><UserForgotPassword /></React.Suspense>} />
+            <Route path="/user/reset-password" element={<React.Suspense fallback={null}><UserResetPassword /></React.Suspense>} />
+            <Route
+              path="/user/login"
+              element={
+                <UserLogin />
+              }
+            />
+            <Route path="/user/dashboard" element={<UserProtectedRoute><UserDashboard /></UserProtectedRoute>} />
+            
+            {/* Provider Routes - Organized with ProviderRoutes component */}
+            <Route path="/provider/*" element={<ProviderRoutes />} />
+
+            {/* Pet Management Routes */}
+            <Route path="/user/pets" element={<UserProtectedRoute><UserPets /></UserProtectedRoute>} />
+            <Route path="/user/pets/add" element={<UserProtectedRoute><UserAddPet /></UserProtectedRoute>} />
+            <Route path="/user/pets/edit/:petId" element={<UserProtectedRoute><UserEditPet /></UserProtectedRoute>} />
+            <Route path="/user/pets/profiles" element={<UserProtectedRoute><UserPets /></UserProtectedRoute>} />
+            <Route path="/user/pets/health" element={<UserProtectedRoute><UserPets /></UserProtectedRoute>} />
+            <Route path="/user/pets/:petId/health-records" element={<UserProtectedRoute><UserHealthRecords /></UserProtectedRoute>} />
+            <Route path="/user/pets/:petId" element={<UserProtectedRoute><UserPetProfile /></UserProtectedRoute>} />
+            
+            {/* AI Pet Care */}
+            <Route path="/user/ai-pet-care" element={<UserProtectedRoute><AIPetCare /></UserProtectedRoute>} />
+            
+            {/* Appointment Routes */}
+            <Route path="/user/appointments" element={<UserProtectedRoute><UserAppointments /></UserProtectedRoute>} />
+            <Route path="/user/appointments/new" element={<UserProtectedRoute><UserBookAppointment /></UserProtectedRoute>} />
+            <Route path="/user/appointments/upcoming" element={<UserProtectedRoute><UserAppointments /></UserProtectedRoute>} />
+            <Route path="/user/appointments/history" element={<UserProtectedRoute><UserAppointments /></UserProtectedRoute>} />
+            <Route path="/user/appointments/reschedule/:id" element={<UserProtectedRoute><UserRescheduleAppointment /></UserProtectedRoute>} />
+            
+            
+            <Route path="/user/appointments/:id" element={<UserProtectedRoute><UserAppointmentDetails /></UserProtectedRoute>} />
+            <Route path="/user/appointments/confirmation" element={<UserProtectedRoute><UserAppointmentConfirmation /></UserProtectedRoute>} />
+            
+            {/* Chat Routes */}
+            <Route path="/user/chat" element={<UserProtectedRoute><UserChat /></UserProtectedRoute>} />
+            
+            {/* Marketplace Routes */}
+            <Route path="/user/marketplace" element={<UserProtectedRoute><UserMarketplace /></UserProtectedRoute>} />
+            <Route path="/user/marketplace/food" element={<UserProtectedRoute><UserMarketplace /></UserProtectedRoute>} />
+            <Route path="/user/marketplace/toys" element={<UserProtectedRoute><UserMarketplace /></UserProtectedRoute>} />
+            <Route path="/user/marketplace/health" element={<UserProtectedRoute><UserMarketplace /></UserProtectedRoute>} />
+            <Route path="/user/cart" element={<UserProtectedRoute><UserCart /></UserProtectedRoute>} />
+            
+            {/* Order Routes */}
+            <Route path="/user/orders" element={<UserProtectedRoute><UserOrders /></UserProtectedRoute>} />
+            
+            {/* Payment Routes */}
+            <Route path="/user/payments" element={<UserProtectedRoute><UserPayments /></UserProtectedRoute>} />
+            <Route path="/user/payments/methods" element={<UserProtectedRoute><UserPayments /></UserProtectedRoute>} />
+            <Route path="/user/payments/history" element={<UserProtectedRoute><UserPayments /></UserProtectedRoute>} />
+            
+            {/* Community Routes */}
+            <Route path="/user/community" element={<UserProtectedRoute><UserCommunity /></UserProtectedRoute>} />
+            <Route path="/user/community/new-post" element={<UserProtectedRoute><UserStartDiscussion /></UserProtectedRoute>} />
+            <Route path="/user/community/forum" element={<UserProtectedRoute><UserCommunity /></UserProtectedRoute>} />
+            <Route path="/user/community/events" element={<UserProtectedRoute><UserCommunity /></UserProtectedRoute>} />
+            
+            {/* Notification Routes */}
+            <Route path="/user/notifications" element={<UserProtectedRoute><UserNotifications /></UserProtectedRoute>} />
+            
+            {/* Settings Routes */}
+            <Route path="/user/settings" element={<UserProtectedRoute><UserSettings /></UserProtectedRoute>} />
+            <Route path="/user/settings/profile" element={<UserProtectedRoute><UserSettings /></UserProtectedRoute>} />
+            <Route path="/user/settings/notifications" element={<UserProtectedRoute><UserSettings /></UserProtectedRoute>} />
+            <Route path="/user/settings/security" element={<UserProtectedRoute><UserSettings /></UserProtectedRoute>} />
+            <Route path="/user/settings/payment/add" element={<UserProtectedRoute><UserAddPaymentMethod /></UserProtectedRoute>} />
+            
+            {/* Help & Support Routes */}
+            <Route path="/user/help" element={<UserProtectedRoute><UserHelp /></UserProtectedRoute>} />
+            <Route path="/user/help/faq" element={<UserProtectedRoute><UserHelp /></UserProtectedRoute>} />
+            <Route path="/user/help/contact" element={<UserProtectedRoute><UserHelp /></UserProtectedRoute>} />
+            <Route path="/user/help/support" element={<UserProtectedRoute><UserHelp /></UserProtectedRoute>} />
 
 
-          {/* Admin Routes */}
-          <Route path="/dashboard" element={<AdminProtectedRoute><Dashboard /></AdminProtectedRoute>} />
-          <Route path="/users" element={<AdminProtectedRoute><Users /></AdminProtectedRoute>} />
-          <Route path="/users/profiles" element={<AdminProtectedRoute><UserProfiles /></AdminProtectedRoute>} />
-          <Route path="/users/roles" element={<AdminProtectedRoute><UserRoles /></AdminProtectedRoute>} />
-          <Route path="/users/activity" element={<AdminProtectedRoute><UserActivity /></AdminProtectedRoute>} />
-          <Route path="/providers" element={<AdminProtectedRoute><Providers /></AdminProtectedRoute>} />
-          <Route path="/providers/onboarding/veterinarian" element={<AdminProtectedRoute><ProviderOnboardingVeterinarian /></AdminProtectedRoute>} />
-          <Route path="/providers/onboarding/groomer" element={<AdminProtectedRoute><ProviderOnboardingGroomer /></AdminProtectedRoute>} />
-          <Route path="/providers/onboarding/trainer" element={<AdminProtectedRoute><ProviderOnboardingTrainer /></AdminProtectedRoute>} />
-          <Route path="/providers/onboarding/boarder" element={<AdminProtectedRoute><ProviderOnboardingBoarder /></AdminProtectedRoute>} />
-          <Route path="/providers/onboarding/diagnostic" element={<AdminProtectedRoute><ProviderOnboardingDiagnostic /></AdminProtectedRoute>} />
-          <Route path="/providers/onboarding/physical-activity" element={<AdminProtectedRoute><ProviderOnboardingPhysicalActivity /></AdminProtectedRoute>} />
-          <Route path="/providers/verification" element={<AdminProtectedRoute><ProviderVerification /></AdminProtectedRoute>} />
-          <Route path="/pets" element={<AdminProtectedRoute><Dashboard /></AdminProtectedRoute>} />
-          <Route path="/pets/profiles" element={<AdminProtectedRoute><PetProfiles /></AdminProtectedRoute>} />
-          <Route path="/pets/moderation" element={<AdminProtectedRoute><PetModeration /></AdminProtectedRoute>} />
-          <Route path="/appointments" element={<AdminProtectedRoute><Appointments /></AdminProtectedRoute>} />
-          <Route path="/appointments/overview" element={<AdminProtectedRoute><BookingOverview /></AdminProtectedRoute>} />
-          <Route path="/appointments/scheduler" element={<AdminProtectedRoute><AppointmentScheduler /></AdminProtectedRoute>} />
-          <Route path="/appointments/disputes" element={<AdminProtectedRoute><DisputeResolution /></AdminProtectedRoute>} />
-          <Route path="/marketplace" element={<AdminProtectedRoute><Marketplace /></AdminProtectedRoute>} />
-          <Route path="/marketplace/products" element={<AdminProtectedRoute><ProductManagement /></AdminProtectedRoute>} />
-          <Route path="/marketplace/sellers" element={<AdminProtectedRoute><SellerManagement /></AdminProtectedRoute>} />
-          <Route path="/transactions" element={<AdminProtectedRoute><Transactions /></AdminProtectedRoute>} />
-          <Route path="/transactions/payments" element={<AdminProtectedRoute><PaymentManagement /></AdminProtectedRoute>} />
-          <Route path="/transactions/reports" element={<AdminProtectedRoute><FinancialReports /></AdminProtectedRoute>} />
-          <Route path="/analytics" element={<AdminProtectedRoute><Analytics /></AdminProtectedRoute>} />
-          <Route path="/analytics/users" element={<AdminProtectedRoute><UserMetrics /></AdminProtectedRoute>} />
-          <Route path="/analytics/services" element={<AdminProtectedRoute><ServiceMetrics /></AdminProtectedRoute>} />
-          <Route path="/analytics/revenue" element={<AdminProtectedRoute><RevenueMetrics /></AdminProtectedRoute>} />
-          <Route path="/analytics/performance" element={<AdminProtectedRoute><PerformanceDashboard /></AdminProtectedRoute>} />
-          <Route path="/notifications" element={<AdminProtectedRoute><Notifications /></AdminProtectedRoute>} />
-          <Route path="/settings" element={<AdminProtectedRoute><Settings /></AdminProtectedRoute>} />
-          <Route path="/security" element={<AdminProtectedRoute><Security /></AdminProtectedRoute>} />
-          <Route path="/support" element={<AdminProtectedRoute><Support /></AdminProtectedRoute>} />
-          <Route path="/support/tickets" element={<AdminProtectedRoute><TicketManagement /></AdminProtectedRoute>} />
-          <Route path="/support/chat" element={<AdminProtectedRoute><LiveChat /></AdminProtectedRoute>} />
-          <Route path="/support/knowledge" element={<AdminProtectedRoute><KnowledgeBase /></AdminProtectedRoute>} />
-          <Route path="/support/disputes" element={<AdminProtectedRoute><SupportDisputeResolution /></AdminProtectedRoute>} />
-          <Route path="/support/assignment" element={<AdminProtectedRoute><TicketAssignment /></AdminProtectedRoute>} />
-          <Route path="/common/capabilities" element={<AdminProtectedRoute><CommonCapabilities /></AdminProtectedRoute>} />
 
-          {/* User Routes */}
-          {/* Top-level aliases for SEO/direct links */}
-          <Route path="/signup" element={<UserSignIn />} />
-          <Route path="/register" element={<UserSignIn />} />
-          {/* Suspense-wrapped auth flows */}
-          <Route path="/user/forgot-password" element={<React.Suspense fallback={null}><UserForgotPassword /></React.Suspense>} />
-          <Route path="/user/reset-password" element={<React.Suspense fallback={null}><UserResetPassword /></React.Suspense>} />
-
-          {/* Scoped user routes */}
-          <Route path="/user/signin" element={<UserSignIn />} />
-          <Route path="/user/login" element={<UserLogin />} />
-          <Route path="/user/dashboard" element={<UserProtectedRoute><UserDashboard /></UserProtectedRoute>} />
-
-          {/* Provider Routes - Organized with ProviderRoutes component */}
-          <Route path="/provider/*" element={<ProviderRoutes />} />
-
-          {/* Pet Management Routes */}
-          <Route path="/user/pets" element={<UserProtectedRoute><UserPets /></UserProtectedRoute>} />
-          <Route path="/user/pets/add" element={<UserProtectedRoute><UserAddPet /></UserProtectedRoute>} />
-          <Route path="/user/pets/edit/:petId" element={<UserProtectedRoute><UserEditPet /></UserProtectedRoute>} />
-          <Route path="/user/pets/profiles" element={<UserProtectedRoute><UserPets /></UserProtectedRoute>} />
-          <Route path="/user/pets/health" element={<UserProtectedRoute><UserPets /></UserProtectedRoute>} />
-          <Route path="/user/pets/:petId/health-records" element={<UserProtectedRoute><UserHealthRecords /></UserProtectedRoute>} />
-          <Route path="/user/pets/:petId" element={<UserProtectedRoute><UserPetProfile /></UserProtectedRoute>} />
-
-          {/* AI Pet Care */}
-          <Route path="/user/ai-pet-care" element={<UserProtectedRoute><AIPetCare /></UserProtectedRoute>} />
-
-          {/* Appointment Routes */}
-          <Route path="/user/appointments" element={<UserProtectedRoute><UserAppointments /></UserProtectedRoute>} />
-          <Route path="/user/appointments/new" element={<UserProtectedRoute><UserBookAppointment /></UserProtectedRoute>} />
-          <Route path="/user/appointments/upcoming" element={<UserProtectedRoute><UserAppointments /></UserProtectedRoute>} />
-          <Route path="/user/appointments/history" element={<UserProtectedRoute><UserAppointments /></UserProtectedRoute>} />
-          <Route path="/user/appointments/reschedule/:id" element={<UserProtectedRoute><UserRescheduleAppointment /></UserProtectedRoute>} />
-
-
-          <Route path="/user/appointments/:id" element={<UserProtectedRoute><UserAppointmentDetails /></UserProtectedRoute>} />
-          <Route path="/user/appointments/confirmation" element={<UserProtectedRoute><UserAppointmentConfirmation /></UserProtectedRoute>} />
-
-          {/* Chat Routes */}
-          <Route path="/user/chat" element={<UserProtectedRoute><UserChat /></UserProtectedRoute>} />
-
-          {/* Marketplace Routes */}
-          <Route path="/user/marketplace" element={<UserProtectedRoute><UserMarketplace /></UserProtectedRoute>} />
-          <Route path="/user/marketplace/food" element={<UserProtectedRoute><UserMarketplace /></UserProtectedRoute>} />
-          <Route path="/user/marketplace/toys" element={<UserProtectedRoute><UserMarketplace /></UserProtectedRoute>} />
-          <Route path="/user/marketplace/health" element={<UserProtectedRoute><UserMarketplace /></UserProtectedRoute>} />
-
-          {/* Order Routes */}
-          <Route path="/user/orders" element={<UserProtectedRoute><UserOrders /></UserProtectedRoute>} />
-
-          {/* Payment Routes */}
-          <Route path="/user/payments" element={<UserProtectedRoute><UserPayments /></UserProtectedRoute>} />
-          <Route path="/user/payments/methods" element={<UserProtectedRoute><UserPayments /></UserProtectedRoute>} />
-          <Route path="/user/payments/history" element={<UserProtectedRoute><UserPayments /></UserProtectedRoute>} />
-
-          {/* Community Routes */}
-          <Route path="/user/community" element={<UserProtectedRoute><UserCommunity /></UserProtectedRoute>} />
-          <Route path="/user/community/forum" element={<UserProtectedRoute><UserCommunity /></UserProtectedRoute>} />
-          <Route path="/user/community/events" element={<UserProtectedRoute><UserCommunity /></UserProtectedRoute>} />
-
-          {/* Notification Routes */}
-          <Route path="/user/notifications" element={<UserProtectedRoute><UserNotifications /></UserProtectedRoute>} />
-
-          {/* Settings Routes */}
-          <Route path="/user/settings" element={<UserProtectedRoute><UserSettings /></UserProtectedRoute>} />
-          <Route path="/user/settings/profile" element={<UserProtectedRoute><UserSettings /></UserProtectedRoute>} />
-          <Route path="/user/settings/notifications" element={<UserProtectedRoute><UserSettings /></UserProtectedRoute>} />
-          <Route path="/user/settings/security" element={<UserProtectedRoute><UserSettings /></UserProtectedRoute>} />
-          <Route path="/user/settings/payment/add" element={<UserProtectedRoute><UserAddPaymentMethod /></UserProtectedRoute>} />
-
-          {/* Help & Support Routes */}
-          <Route path="/user/help" element={<UserProtectedRoute><UserHelp /></UserProtectedRoute>} />
-          <Route path="/user/help/faq" element={<UserProtectedRoute><UserHelp /></UserProtectedRoute>} />
-          <Route path="/user/help/contact" element={<UserProtectedRoute><UserHelp /></UserProtectedRoute>} />
-          <Route path="/user/help/support" element={<UserProtectedRoute><UserHelp /></UserProtectedRoute>} />
-
-
-
-          {/* 404 */}
-          <Route
-            path="*"
-            element={
-              <div className="min-h-screen flex items-center justify-center bg-indigo-100">
-                <div className="bg-white p-8 rounded-lg shadow-lg">
-                  <h1 className="text-2xl font-bold text-indigo-700 mb-4">
-                    Page Not Found
-                  </h1>
-                  <p className="text-gray-600">
-                    The page you're looking for doesn't exist.
-                  </p>
-                  <a href="/" className="mt-4 inline-block px-4 py-2 bg-indigo-600 text-white rounded">
-                    Go Home
-                  </a>
+            {/* 404 */}
+            <Route
+              path="*"
+              element={
+                <div className="min-h-screen flex items-center justify-center bg-indigo-100">
+                  <div className="bg-white p-8 rounded-lg shadow-lg">
+                    <h1 className="text-2xl font-bold text-indigo-700 mb-4">
+                      Page Not Found
+                    </h1>
+                    <p className="text-gray-600">
+                      The page you're looking for doesn't exist.
+                    </p>
+                    <a href="/" className="mt-4 inline-block px-4 py-2 bg-indigo-600 text-white rounded">
+                      Go Home
+                    </a>
+                  </div>
                 </div>
-              </div>
-            }
-          />
+              }
+            />
         </Routes>
       </div>
     </>

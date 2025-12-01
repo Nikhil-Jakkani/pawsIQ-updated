@@ -92,7 +92,7 @@ const ProviderVerification = () => {
     };
     fetchProviders();
     return () => { alive = false; };
-  }, [api]);
+  }, []);
 
   // Sample data for providers (fallback)
   const sampleProvidersData = [

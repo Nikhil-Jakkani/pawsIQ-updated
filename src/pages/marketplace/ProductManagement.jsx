@@ -31,64 +31,8 @@ const ProductManagement = () => {
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [showProductModal, setShowProductModal] = useState(false);
 
-  // Sample product stats
-  const productStats = {
-    totalProducts: 2847,
-    activeListings: 2650,
-    outOfStock: 47,
-    pendingApproval: 23,
-    lowStock: 89,
-    featuredProducts: 156
-  };
-
-  // Sample products data
-  const productsData = [
-    {
-      id: 'PRD001',
-      name: 'Premium Dog Food - Chicken & Rice',
-      category: 'Food',
-      seller: 'PetNutrition Plus',
-      price: 45.99,
-      originalPrice: 52.99,
-      stock: 150,
-      lowStockThreshold: 20,
-      sold: 89,
-      status: 'Active',
-      featured: true,
-      rating: 4.8,
-      reviews: 156
-    },
-    {
-      id: 'PRD002',
-      name: 'Interactive Cat Toy Set',
-      category: 'Toys',
-      seller: 'PlayTime Pets',
-      price: 24.99,
-      originalPrice: 24.99,
-      stock: 85,
-      lowStockThreshold: 15,
-      sold: 234,
-      status: 'Active',
-      featured: false,
-      rating: 4.6,
-      reviews: 89
-    },
-    {
-      id: 'PRD003',
-      name: 'Orthopedic Dog Bed - Large',
-      category: 'Bedding',
-      seller: 'ComfortPaws',
-      price: 89.99,
-      originalPrice: 109.99,
-      stock: 0,
-      lowStockThreshold: 5,
-      sold: 67,
-      status: 'Out of Stock',
-      featured: true,
-      rating: 4.9,
-      reviews: 43
-    }
-  ];
+  // Products data - populated from API
+  const productsData = [];
 
   // Filter products
   const filteredProducts = productsData.filter(product => {
@@ -102,6 +46,16 @@ const ProductManagement = () => {
     
     return matchesSearch && matchesCategory && matchesStatus;
   });
+
+  // Calculate dynamic product stats
+  const productStats = {
+    totalProducts: productsData.length,
+    activeListings: productsData.filter(p => p.status === 'Active').length,
+    outOfStock: productsData.filter(p => p.status === 'Out of Stock' || p.stock === 0).length,
+    pendingApproval: productsData.filter(p => p.status === 'Pending Approval').length,
+    lowStock: productsData.filter(p => p.stock > 0 && p.stock <= p.lowStockThreshold).length,
+    featuredProducts: productsData.filter(p => p.featured).length
+  };
 
   // Get status badge
   const getStatusBadge = (status) => {
@@ -225,64 +179,6 @@ const ProductManagement = () => {
                 <FaTags className="text-purple-600" />
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <button 
-              onClick={() => setShowProductModal(true)}
-              className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-indigo-50 hover:border-indigo-200 transition-colors"
-            >
-              <div className="bg-indigo-100 p-3 rounded-full">
-                <FaPlus className="text-indigo-600" />
-              </div>
-              <div>
-                <h3 className="font-medium text-gray-800">Add Product</h3>
-                <p className="text-sm text-gray-500">Add new product to marketplace</p>
-              </div>
-            </button>
-            
-            <button 
-              onClick={() => alert('Bulk updating inventory...')}
-              className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-green-50 hover:border-green-200 transition-colors"
-            >
-              <div className="bg-green-100 p-3 rounded-full">
-                <FaWarehouse className="text-green-600" />
-              </div>
-              <div>
-                <h3 className="font-medium text-gray-800">Update Inventory</h3>
-                <p className="text-sm text-gray-500">Bulk update stock levels</p>
-              </div>
-            </button>
-            
-            <button 
-              onClick={() => alert('Applying promotional pricing...')}
-              className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-purple-50 hover:border-purple-200 transition-colors"
-            >
-              <div className="bg-purple-100 p-3 rounded-full">
-                <FaPercent className="text-purple-600" />
-              </div>
-              <div>
-                <h3 className="font-medium text-gray-800">Set Promotions</h3>
-                <p className="text-sm text-gray-500">Apply promotional pricing</p>
-              </div>
-            </button>
-            
-            <button 
-              onClick={() => alert('Generating product report...')}
-              className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-200 transition-colors"
-            >
-              <div className="bg-blue-100 p-3 rounded-full">
-                <FaChartLine className="text-blue-600" />
-              </div>
-              <div>
-                <h3 className="font-medium text-gray-800">Product Report</h3>
-                <p className="text-sm text-gray-500">Generate performance report</p>
-              </div>
-            </button>
           </div>
         </div>
 
