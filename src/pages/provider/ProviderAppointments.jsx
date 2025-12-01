@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useAuth } from '../../context/AuthContext';
 import ProviderDashboardLayout from './ProviderDashboardLayout';
@@ -18,6 +18,7 @@ import {
   updateAppointment,
   cancelAppointment,
 } from '../../store/slices/appointmentsSlice';
+import useDebouncedValue from '../../hooks/useDebouncedValue';
 
 const AppointmentCard = ({ appointment, onView, onConfirm, onCancel }) => (
   <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
@@ -27,13 +28,12 @@ const AppointmentCard = ({ appointment, onView, onConfirm, onCancel }) => (
         <p className="text-sm text-gray-600">{appointment.petName}</p>
       </div>
       <span
-        className={`px-3 py-1 rounded-full text-xs font-semibold ${
-          appointment.status === 'confirmed'
+        className={`px-3 py-1 rounded-full text-xs font-semibold ${appointment.status === 'confirmed'
             ? 'bg-green-100 text-green-800'
             : appointment.status === 'pending'
-            ? 'bg-yellow-100 text-yellow-800'
-            : 'bg-gray-100 text-gray-800'
-        }`}
+              ? 'bg-yellow-100 text-yellow-800'
+              : 'bg-gray-100 text-gray-800'
+          }`}
       >
         {appointment.status}
       </span>
@@ -101,17 +101,45 @@ const ProviderAppointments = () => {
   } = useSelector((state) => state.appointments || {});
   const appointments = Array.isArray(appointmentsState) ? appointmentsState : [];
 
-  const [selectedStatus, setSelectedStatus] = useState('all');
+  const [selectedStatus, setSelectedStatus] = useState(filters?.status || 'all');
+  const [searchTerm, setSearchTerm] = useState(filters?.search || '');
+  const debouncedSearch = useDebouncedValue(searchTerm, 400);
+  const activeRequestRef = useRef(null);
 
   useEffect(() => {
-    if (authFetch) {
-      dispatch(fetchAppointments({ filters, authFetch }));
+    const normalizedSearch = debouncedSearch.trim();
+    if ((filters?.search || '') === normalizedSearch) return;
+    dispatch(setFilters({ search: normalizedSearch }));
+  }, [debouncedSearch, dispatch, filters?.search]);
+
+  useEffect(() => {
+    if (!authFetch) return undefined;
+
+    if (activeRequestRef.current?.abort) {
+      activeRequestRef.current.abort();
     }
-  }, [dispatch, authFetch]);
+
+    const request = dispatch(fetchAppointments({ filters, authFetch }));
+    activeRequestRef.current = request;
+
+    return () => {
+      request.abort();
+    };
+  }, [dispatch, authFetch, filters]);
+
+  useEffect(() => {
+    if ((filters?.status || 'all') !== selectedStatus) {
+      setSelectedStatus(filters?.status || 'all');
+    }
+  }, [filters?.status, selectedStatus]);
 
   const handleStatusChange = (status) => {
     setSelectedStatus(status);
     dispatch(setFilters({ status }));
+  };
+
+  const handleSearchChange = (event) => {
+    setSearchTerm(event.target.value);
   };
 
   const handleView = (id) => {
@@ -136,10 +164,17 @@ const ProviderAppointments = () => {
     }
   };
 
+  const normalizedSearch = searchTerm.trim().toLowerCase();
   const filteredAppointments = (selectedStatus === 'all'
     ? appointments
     : appointments.filter((apt) => apt.statusKey === selectedStatus || apt.status === selectedStatus)
-  ).filter(Boolean);
+  )
+    .filter(Boolean)
+    .filter((apt) => {
+      if (!normalizedSearch) return true;
+      const target = `${apt.clientName || ''} ${apt.petName || ''} ${apt.serviceType || ''}`.toLowerCase();
+      return target.includes(normalizedSearch);
+    });
 
   return (
     <ProviderDashboardLayout>
@@ -154,15 +189,21 @@ const ProviderAppointments = () => {
         <div className="bg-white rounded-lg shadow p-6 mb-8">
           <div className="flex items-center space-x-4 flex-wrap gap-4">
             <FaFilter className="text-gray-600" />
+            <input
+              type="text"
+              placeholder="Search appointments..."
+              value={searchTerm}
+              onChange={handleSearchChange}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+            />
             {['all', 'pending', 'confirmed', 'completed', 'cancelled'].map((status) => (
               <button
                 key={status}
                 onClick={() => handleStatusChange(status)}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors capitalize ${
-                  selectedStatus === status
+                className={`px-4 py-2 rounded-lg font-medium transition-colors capitalize ${selectedStatus === status
                     ? 'bg-blue-600 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+                  }`}
               >
                 {status}
               </button>

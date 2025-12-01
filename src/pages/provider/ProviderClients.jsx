@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useAuth } from '../../context/AuthContext';
 import ProviderDashboardLayout from './ProviderDashboardLayout';
 import { FaUser, FaSearch, FaEye, FaPhone, FaEnvelope } from 'react-icons/fa';
 import { fetchClients, setFilters } from '../../store/slices/clientsSlice';
+import useDebouncedValue from '../../hooks/useDebouncedValue';
 
 const DEFAULT_AVATAR =
   'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23e2e8f0" width="100" height="100"/><circle cx="50" cy="38" r="20" fill="%2394a3b8"/><path d="M15 88c5-20 65-20 70 0" fill="%2394a3b8"/></svg>';
@@ -57,20 +58,35 @@ const ProviderClients = () => {
     loading = false,
     error = null,
   } = useSelector((state) => state.clients || {});
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(filters?.search || '');
   const [showDetails, setShowDetails] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
+  const debouncedSearch = useDebouncedValue(searchTerm, 400);
+  const activeRequestRef = useRef(null);
 
   useEffect(() => {
-    if (authFetch) {
-      dispatch(fetchClients({ filters, authFetch }));
+    if (filters?.search === debouncedSearch) return;
+    dispatch(setFilters({ search: debouncedSearch }));
+  }, [debouncedSearch, dispatch, filters?.search]);
+
+  useEffect(() => {
+    if (!authFetch) return undefined;
+
+    if (activeRequestRef.current?.abort) {
+      activeRequestRef.current.abort();
     }
-  }, [dispatch, authFetch]);
+
+    const request = dispatch(fetchClients({ filters, authFetch }));
+    activeRequestRef.current = request;
+
+    return () => {
+      request.abort();
+    };
+  }, [dispatch, authFetch, filters]);
 
   const handleSearch = (e) => {
     const value = e.target.value;
     setSearchTerm(value);
-    dispatch(setFilters({ search: value }));
   };
 
   const handleView = (id) => {
@@ -85,8 +101,9 @@ const ProviderClients = () => {
     setSelectedClient(null);
   };
 
+  const normalizedSearch = searchTerm.trim().toLowerCase();
   const filteredClients = clients.filter((client) =>
-    client.name.toLowerCase().includes(searchTerm.toLowerCase())
+    client.name.toLowerCase().includes(normalizedSearch)
   );
 
   return (

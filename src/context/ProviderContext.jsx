@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useAuth } from './AuthContext';
 
 /**
@@ -13,6 +13,7 @@ export const ProviderProvider = ({ children }) => {
   const [providerType, setProviderType] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const fetchPromiseRef = useRef(null);
 
   // Fetch provider info on mount or when currentUser changes
   useEffect(() => {
@@ -27,35 +28,45 @@ export const ProviderProvider = ({ children }) => {
 
   const fetchProviderInfo = async () => {
     if (!authFetch) return;
+    if (fetchPromiseRef.current) {
+      return fetchPromiseRef.current;
+    }
 
-    try {
-      setIsLoading(true);
-      setError(null);
+    fetchPromiseRef.current = (async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
 
-      const response = await authFetch('/api/v1/provider/me', {
-        method: 'GET',
-      });
+        const response = await authFetch('/api/v1/provider/me', {
+          method: 'GET',
+        });
 
-      if (!response.ok) {
-        if (response.status === 403 || response.status === 404) {
-          setProviderInfo(null);
-          setProviderType(null);
-          return;
+        if (!response.ok) {
+          if (response.status === 403 || response.status === 404) {
+            setProviderInfo(null);
+            setProviderType(null);
+            return null;
+          }
+
+          const errorText = await response.text().catch(() => 'Failed to fetch provider info');
+          throw new Error(errorText || `Request failed with status ${response.status}`);
         }
 
-        const errorText = await response.text().catch(() => 'Failed to fetch provider info');
-        throw new Error(errorText || `Request failed with status ${response.status}`);
+        const data = await response.json();
+        setProviderInfo(data);
+        setProviderType(data?.providerType || data?.serv_provider_type || data?.type || null);
+        return data;
+      } catch (err) {
+        console.error('Failed to fetch provider info:', err);
+        setError(err.message);
+        throw err;
+      } finally {
+        setIsLoading(false);
+        fetchPromiseRef.current = null;
       }
+    })();
 
-      const data = await response.json();
-      setProviderInfo(data);
-      setProviderType(data?.providerType || data?.serv_provider_type || data?.type || null);
-    } catch (err) {
-      console.error('Failed to fetch provider info:', err);
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
-    }
+    return fetchPromiseRef.current;
   };
 
   const updateProviderInfo = async (updates) => {

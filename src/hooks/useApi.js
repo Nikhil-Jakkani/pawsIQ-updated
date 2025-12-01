@@ -46,14 +46,14 @@ const useApi = () => {
         console.error('[useApi] ❌ No access token found!');
         throw new Error('No authentication token found. Please log in again.');
       }
-      
+
       // Decode token to check role (for debugging) - only log issues
       let decodedPayload = null;
       try {
         const tokenParts = tokens.access.token.split('.');
         if (tokenParts.length === 3) {
           decodedPayload = JSON.parse(atob(tokenParts[1]));
-          
+
           // Check if token is expired
           if (decodedPayload.exp && Date.now() / 1000 > decodedPayload.exp) {
             console.error('[useApi] ⚠️ Token is EXPIRED!', {
@@ -61,7 +61,7 @@ const useApi = () => {
               exp: new Date(decodedPayload.exp * 1000).toISOString()
             });
           }
-          
+
           // Check if role matches what's needed for admin endpoints
           if (endpoint.includes('/admin/') && decodedPayload.role !== 'admin') {
             console.error(`[useApi] ❌ ROLE MISMATCH! Endpoint requires 'admin' but token has role: '${decodedPayload.role}'`, {
@@ -76,14 +76,14 @@ const useApi = () => {
       } catch (e) {
         console.error('[useApi] ❌ Could not decode token:', e);
       }
-      
+
       interceptedOptions.headers['Authorization'] = `Bearer ${tokens.access.token}`;
     }
 
     try {
       // Make the initial request with intercepted options
       let response = await fetch(url, interceptedOptions);
-      
+
       // Apply response interceptor
       response = responseInterceptor(response);
 
@@ -124,7 +124,7 @@ const useApi = () => {
               mergedTokens = { ...tokens, access: { ...(tokens.access || {}), token: newTokens.accessToken } };
             }
             setAuthTokens(mergedTokens);
-            
+
             // Build updated headers with the new access token
             const retryHeaders = {
               'Content-Type': 'application/json',
@@ -160,24 +160,28 @@ const useApi = () => {
 
       return data;
     } catch (error) {
+      if (error?.name === 'AbortError') {
+        throw error;
+      }
+
       console.error('API request failed:', error);
-      
+
       // Only show error toast if it's not an auth error (to avoid duplicate messages)
       if (error.message !== 'Session expired. Please log in again.') {
         toast.error(error.message || 'An error occurred. Please try again.');
       }
-      
+
       throw error;
     }
   }, []);
 
   // Helper methods for common HTTP methods with TypeScript-like type safety
-  const get = useCallback((endpoint, options = {}) => 
+  const get = useCallback((endpoint, options = {}) =>
     fetchApi(endpoint, { ...options, method: 'GET' }), [fetchApi]);
 
   const post = useCallback((endpoint, data = {}, options = {}) => {
-    return fetchApi(endpoint, { 
-      ...options, 
+    return fetchApi(endpoint, {
+      ...options,
       method: 'POST',
       body: JSON.stringify(data),
       headers: {
@@ -187,9 +191,9 @@ const useApi = () => {
     });
   }, [fetchApi]);
 
-  const put = useCallback((endpoint, data = {}, options = {}) => 
-    fetchApi(endpoint, { 
-      ...options, 
+  const put = useCallback((endpoint, data = {}, options = {}) =>
+    fetchApi(endpoint, {
+      ...options,
       method: 'PUT',
       body: JSON.stringify(data),
       headers: {
@@ -198,9 +202,9 @@ const useApi = () => {
       }
     }), [fetchApi]);
 
-  const del = useCallback((endpoint, options = {}) => 
-    fetchApi(endpoint, { 
-      ...options, 
+  const del = useCallback((endpoint, options = {}) =>
+    fetchApi(endpoint, {
+      ...options,
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
@@ -208,9 +212,9 @@ const useApi = () => {
       }
     }), [fetchApi]);
 
-  const patch = useCallback((endpoint, data = {}, options = {}) => 
-    fetchApi(endpoint, { 
-      ...options, 
+  const patch = useCallback((endpoint, data = {}, options = {}) =>
+    fetchApi(endpoint, {
+      ...options,
       method: 'PATCH',
       body: JSON.stringify(data),
       headers: {
@@ -218,7 +222,7 @@ const useApi = () => {
         ...(options.headers || {})
       }
     }), [fetchApi]);
-    
+
   /**
    * Download a file from the server
    * @param {string} endpoint - API endpoint (without base URL)
@@ -265,12 +269,12 @@ const useApi = () => {
   const upload = useCallback((endpoint, file, fieldName = 'file', data = {}, options = {}) => {
     const formData = new FormData();
     formData.append(fieldName, file);
-    
+
     // Append additional data if provided
     Object.entries(data).forEach(([key, value]) => {
       formData.append(key, value);
     });
-    
+
     return fetchApi(endpoint, {
       ...options,
       method: 'POST',
@@ -285,7 +289,7 @@ const useApi = () => {
   return {
     // Core fetch method
     fetch: fetchApi,
-    
+
     // HTTP methods
     get,
     post,
@@ -294,13 +298,13 @@ const useApi = () => {
     patch,
     upload,
     download,
-    
+
     // Interceptors
     addRequestInterceptor: (interceptor) => {
       const originalRequest = requestInterceptor;
       requestInterceptor = (config) => interceptor(originalRequest(config));
     },
-    
+
     addResponseInterceptor: (interceptor) => {
       const originalResponse = responseInterceptor;
       responseInterceptor = (response) => interceptor(originalResponse(response));
