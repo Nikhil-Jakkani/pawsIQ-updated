@@ -39,6 +39,8 @@ const UserDashboard = () => {
   const [pets, setPets] = useState([]);
   const [dashboardData, setDashboardData] = useState(null);
   const [appointments, setAppointments] = useState([]);
+  const [appointmentsLoading, setAppointmentsLoading] = useState(false);
+  const [appointmentsError, setAppointmentsError] = useState('');
   const careRemRef = useRef(null);
 
   // In-memory cache for signed image URLs with persistence to localStorage
@@ -151,18 +153,21 @@ const UserDashboard = () => {
   // Load pet data and cache image URLs
   useEffect(() => {
     if (authLoading || !currentUser) return;
-    
+
     let isMounted = true;
-    
+
     const loadPets = async () => {
       try {
+        setAppointmentsLoading(true);
+        setAppointmentsError('');
         // Prefer aggregated dashboard data (single round-trip)
         let payload = null;
         try {
           payload = await fetchUserDashboard();
           if (payload) setDashboardData(payload);
-        } catch (_) {}
+        } catch (_) { }
         let rawPets = [];
+        let appointmentsDataset = null;
         if (payload?.pets) {
           rawPets = payload.pets;
         } else {
@@ -173,74 +178,86 @@ const UserDashboard = () => {
           if (!res.ok) throw new Error((arr && arr.message) || 'Failed to load pets');
           rawPets = Array.isArray(arr) ? arr : (arr?.pets || []);
         }
-        
-        // Fetch appointments to get last checkup dates
-        let appointmentsMap = new Map();
-        try {
-          // Fetch user appointments (backend filters by authenticated user)
-          const userId = Number(currentUser?.user_id ?? currentUser?.id);
-          const apptRes = await authFetch(`${API_URL}/appointments?limit=50`);
-          if (apptRes.ok) {
-            const apptData = await apptRes.json();
-            const fetchedAppointments = Array.isArray(apptData?.items) ? apptData.items : (Array.isArray(apptData) ? apptData : []);
-            
-            // Store in state for UpcomingSchedule to use
-            if (isMounted) {
-              setAppointments(fetchedAppointments);
+        if (Array.isArray(payload?.appointments?.recent)) {
+          appointmentsDataset = payload.appointments.recent;
+        }
+
+        if (!appointmentsDataset) {
+          try {
+            const apptRes = await authFetch(`${API_URL}/appointments?limit=50`);
+            if (apptRes.ok) {
+              const apptData = await apptRes.json();
+              appointmentsDataset = Array.isArray(apptData?.items)
+                ? apptData.items
+                : (Array.isArray(apptData) ? apptData : []);
+            } else {
+              const payloadErr = await apptRes.json().catch(() => ({}));
+              throw new Error(payloadErr?.message || 'Failed to load appointments');
             }
-                        
-            // Group completed appointments by pet_id and find the most recent
-            fetchedAppointments
-              .filter(a => {
-                const status = (a.appointment_status || a.booking_status || '').toLowerCase();
-                return status === 'completed' || (status === 'scheduled' && (() => { const d = new Date(a.appointment_date || a.booked_dtm || a.appointment_dtm); return !isNaN(d.getTime()) && d <= new Date(); })());
-              })
-              .forEach(a => {
-                const petId = Number(a.pet_id);
-                const apptDate = new Date(a.appointment_date || a.booked_dtm || a.appointment_dtm);
-                if (isNaN(apptDate.getTime())) return; // Skip invalid dates
-                
-                if (!appointmentsMap.has(petId) || apptDate > appointmentsMap.get(petId)) {
-                  appointmentsMap.set(petId, apptDate);
-                }
-              });
+          } catch (err) {
+            console.warn('Failed to fetch appointments for last checkup:', err);
+            if (isMounted) {
+              setAppointmentsError(err.message || 'Failed to load appointments');
+            }
           }
-        } catch (err) {
-          console.warn('Failed to fetch appointments for last checkup:', err);
+        }
+
+        const appointmentList = Array.isArray(appointmentsDataset) ? appointmentsDataset : [];
+        const appointmentsMap = new Map();
+        appointmentList
+          .filter(a => {
+            const status = (a.appointment_status || a.booking_status || '').toLowerCase();
+            if (status === 'completed') return true;
+            if (status === 'scheduled') {
+              const d = new Date(a.appointment_date || a.booked_dtm || a.appointment_dtm);
+              return !isNaN(d.getTime()) && d <= new Date();
+            }
+            return false;
+          })
+          .forEach(a => {
+            const petId = Number(a.pet_id);
+            const apptDate = new Date(a.appointment_date || a.booked_dtm || a.appointment_dtm);
+            if (isNaN(apptDate.getTime())) return;
+            if (!appointmentsMap.has(petId) || apptDate > appointmentsMap.get(petId)) {
+              appointmentsMap.set(petId, apptDate);
+            }
+          });
+        if (isMounted) {
+          setAppointments(appointmentList);
         }
 
         // Phase 1: map pet data synchronously using cached image URLs (if present)
         rawPets = rawPets
           .filter((p) => (p.status || '').toLowerCase() !== 'inactive')
           .map((p) => {
-          const imagePath = p.pet_image || p.imagePath || '';
-          const cachedUrl = getCachedUrlIfFresh(imagePath);
-          const placeholder = p.profileImage || `https://source.unsplash.com/random/400x300?${encodeURIComponent(p.pet_type || p.type || 'pet')}`;
-          const legacy = typeof (p.image || '') === 'string' && /\/user\/\d+\/pet\/\d+\//.test(p.image || '');
-          const ageText = p.pet_birth_dtm 
-            ? calculateAgeFromDate(p.pet_birth_dtm)
-            : (p.age || p.pet_age || '-');
-          const weightDisplay = formatWeight(p.weight || p.pet_weight);
-          const petId = Number(p.id || p.pet_id);
-          const lastCompletedAppt = appointmentsMap.get(petId);
-          
-          return {
-            id: petId,
-            name: p.name || p.pet_name || 'Pet',
-            type: (p.type || p.pet_type || '').toString().toLowerCase(),
-            breed: p.breed || p.pet_breed || '',
-            age: ageText,
-            weight: weightDisplay,
-            gender: (p.gender || p.pet_gender || ''),
-            birthday: p.birthday || p.pet_birth_dtm || p.pet_birthday || null,
-            createdAt: p.createdAt || p.created_at || null,
-            imagePath,
-            image: cachedUrl || (legacy ? placeholder : (p.image || p.profileImage || 'https://placehold.co/600x400?text=Pet')),
-            lastCheckup: lastCompletedAppt ? lastCompletedAppt.toISOString().slice(0, 10) : null,
-            vaccinations: p.vaccinations || 'Unknown',
-          };
-        });
-        
+            const imagePath = p.pet_image || p.imagePath || '';
+            const cachedUrl = getCachedUrlIfFresh(imagePath);
+            const placeholder = p.profileImage || `https://source.unsplash.com/random/400x300?${encodeURIComponent(p.pet_type || p.type || 'pet')}`;
+            const legacy = typeof (p.image || '') === 'string' && /\/user\/\d+\/pet\/\d+\//.test(p.image || '');
+            const ageText = p.pet_birth_dtm
+              ? calculateAgeFromDate(p.pet_birth_dtm)
+              : (p.age || p.pet_age || '-');
+            const weightDisplay = formatWeight(p.weight || p.pet_weight);
+            const petId = Number(p.id || p.pet_id);
+            const lastCompletedAppt = appointmentsMap.get(petId);
+
+            return {
+              id: petId,
+              name: p.name || p.pet_name || 'Pet',
+              type: (p.type || p.pet_type || '').toString().toLowerCase(),
+              breed: p.breed || p.pet_breed || '',
+              age: ageText,
+              weight: weightDisplay,
+              gender: (p.gender || p.pet_gender || ''),
+              birthday: p.birthday || p.pet_birth_dtm || p.pet_birthday || null,
+              createdAt: p.createdAt || p.created_at || null,
+              imagePath,
+              image: cachedUrl || (legacy ? placeholder : (p.image || p.profileImage || 'https://placehold.co/600x400?text=Pet')),
+              lastCheckup: lastCompletedAppt ? lastCompletedAppt.toISOString().slice(0, 10) : null,
+              vaccinations: p.vaccinations || 'Unknown',
+            };
+          });
+
         // Enforce oldest-first ordering to avoid jumps
         rawPets = rawPets.sort((a, b) => {
           const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -248,9 +265,9 @@ const UserDashboard = () => {
           return da - db;
         });
 
-        
+
         if (!isMounted) return;
-        
+
         // Paint immediately with cached/placeholder images
         setPets(rawPets);
         // Persist for instant paint on next load
@@ -259,7 +276,7 @@ const UserDashboard = () => {
             const sortedPets = rawPets.map(pet => ({ ...pet, createdAt: pet.createdAt || new Date().toISOString() }));
             sortedPets.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
             localStorage.setItem(petsCacheKey, JSON.stringify(sortedPets));
-          } catch {}
+          } catch { }
         }
         if (rawPets.length > 0 && !selectedPetForAI) {
           setSelectedPetForAI(rawPets[0]);
@@ -280,7 +297,7 @@ const UserDashboard = () => {
                     const snapshot = JSON.parse(localStorage.getItem(petsCacheKey) || '[]');
                     const updated = snapshot.map((x) => (x.id === p.id ? { ...x, image: url } : x));
                     localStorage.setItem(petsCacheKey, JSON.stringify(updated));
-                  } catch {}
+                  } catch { }
                 }
               }
             } catch (e) {
@@ -292,12 +309,18 @@ const UserDashboard = () => {
         console.error('Failed to load pets:', e);
         if (isMounted) {
           setPets([]);
+          setAppointments([]);
+          setAppointmentsError(e.message || 'Failed to load dashboard');
+        }
+      } finally {
+        if (isMounted) {
+          setAppointmentsLoading(false);
         }
       }
     };
-    
+
     loadPets();
-    
+
     return () => {
       isMounted = false;
     };
@@ -315,15 +338,15 @@ const UserDashboard = () => {
     const currentDate = new Date();
     const currentSeason = getCurrentSeason();
     const currentHour = currentDate.getHours();
-    
+
     pets.forEach(pet => {
       const petAge = extractAgeNumber(pet.age);
       const petWeight = extractWeightNumber(pet.weight);
-      
+
       // Walking & Activity Tips
       if (pet.type === 'dog') {
-        const walkingTime = pet.breed === 'Golden Retriever' ? '90-120' : 
-                           pet.breed === 'Labrador' ? '60-90' : '45-60';
+        const walkingTime = pet.breed === 'Golden Retriever' ? '90-120' :
+          pet.breed === 'Labrador' ? '60-90' : '45-60';
         tips.push({
           id: `walking-${pet.id}`,
           petName: pet.name,
@@ -348,8 +371,8 @@ const UserDashboard = () => {
       }
 
       // Nutrition Tips
-      const feedingSchedule = pet.type === 'dog' ? (petAge !== null && petAge < 1 ? '3-4 times daily' : '2 times daily') : 
-                             pet.type === 'cat' ? (petAge !== null && petAge < 1 ? '3-4 times daily' : '2-3 times daily') : '2 times daily';
+      const feedingSchedule = pet.type === 'dog' ? (petAge !== null && petAge < 1 ? '3-4 times daily' : '2 times daily') :
+        pet.type === 'cat' ? (petAge !== null && petAge < 1 ? '3-4 times daily' : '2-3 times daily') : '2 times daily';
       tips.push({
         id: `nutrition-${pet.id}`,
         petName: pet.name,
@@ -814,7 +837,7 @@ const UserDashboard = () => {
         </div>
 
         {/* AI Assistant Popup */}
-        <AIAssistantPopup 
+        <AIAssistantPopup
           isOpen={showAIPopup}
           onClose={() => setShowAIPopup(false)}
           pets={pets}

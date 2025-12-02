@@ -28,7 +28,6 @@ import ProviderSettings from '../pages/provider/ProviderSettings';
 import ProviderChat from '../pages/provider/ProviderChat';
 
 // Vet Specific Pages
-import VetDashboard from '../pages/provider/VetDashboard';
 import VetAppointments from '../pages/provider/VetAppointments';
 import VetClients from '../pages/provider/VetClients';
 import VetPrescriptions from '../pages/provider/VetPrescriptions';
@@ -184,14 +183,8 @@ const ProviderRoutes = () => {
       />
 
       {/* Vet Specific Routes (Alternative dashboard for vets) */}
-      <Route
-        path="/vet/dashboard"
-        element={
-          <ProviderProtectedRoute>
-            <VetDashboard />
-          </ProviderProtectedRoute>
-        }
-      />
+      <Route path="/vet/dashboard" element={<Navigate to="/provider/dashboard" replace />} />
+
       <Route
         path="/vet/appointments"
         element={

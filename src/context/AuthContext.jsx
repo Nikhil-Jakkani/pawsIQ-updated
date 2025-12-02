@@ -16,6 +16,31 @@ const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
 
 const AuthContext = createContext(null);
 
+const decodeRoleFromToken = (token) => {
+  if (!token) return null;
+  try {
+    const parts = token.split?.('.') || [];
+    const payload = parts[1];
+    if (!payload) return null;
+
+    let normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+    while (normalized.length % 4) {
+      normalized += '=';
+    }
+
+    const decoded = JSON.parse(atob(normalized));
+    if (typeof decoded?.role === 'string') {
+      return decoded.role.trim().toLowerCase();
+    }
+    return null;
+  } catch (error) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('[Auth] Failed to decode token role:', error?.message || error);
+    }
+    return null;
+  }
+};
+
 const getStoredAuth = () => {
   const storedTokens = localStorage.getItem('authTokens');
   const storedUser = localStorage.getItem('user');
@@ -87,14 +112,20 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       if (tokens?.refresh?.token) {
-        await fetch(`${API_URL}/user/auth/logout`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(tokens?.access?.token ? { Authorization: `Bearer ${tokens.access.token}` } : {})
-          },
-          body: JSON.stringify({ refreshToken: tokens.refresh.token })
-        });
+        const role = currentUser?.role || decodeRoleFromToken(tokens?.access?.token) || 'user';
+
+        // Only the user auth router currently exposes a logout endpoint guarded by auth('user').
+        // For admin/provider we simply skip the API call to avoid role-mismatch noise.
+        if (role === 'user') {
+          await fetch(`${API_URL}/user/auth/logout`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(tokens?.access?.token ? { Authorization: `Bearer ${tokens.access.token}` } : {})
+            },
+            body: JSON.stringify({ refreshToken: tokens.refresh.token })
+          });
+        }
       }
     } catch (error) {
       console.error('Logout error:', error);
@@ -575,34 +606,47 @@ export const AuthProvider = ({ children }) => {
         }
 
         if (tokens?.access?.token) {
-          let userData = null;
+          const loadSessionForRole = async (role) => {
+            switch (role) {
+              case 'user': {
+                const response = await authFetch(`${API_URL}/user/auth/me`);
+                if (response.ok) {
+                  const body = await response.json();
+                  setCurrentUser({ ...(body || {}), role: 'user' });
+                  return true;
+                }
+                return false;
+              }
+              case 'provider': {
+                const response = await authFetch(`${API_URL}/provider/me`);
+                if (response.ok) {
+                  const body = await response.json();
+                  setCurrentUser({ ...(body || {}), role: 'provider' });
+                  return true;
+                }
+                return false;
+              }
+              case 'admin': {
+                const response = await authFetch(`${API_URL}/admin/auth/me`);
+                if (response.ok) {
+                  const body = await response.json();
+                  setCurrentUser({ ...(body || {}), role: 'admin' });
+                  return true;
+                }
+                return false;
+              }
+              default:
+                return false;
+            }
+          };
 
           // Fast role discovery to avoid 403 noise
           try {
             const whoResp = await authFetch(`${API_URL}/auth/whoami`);
             if (whoResp.ok) {
               const info = await whoResp.json();
-              if (info?.role === 'user') {
-                const u = await authFetch(`${API_URL}/user/auth/me`);
-                if (u.ok) {
-                  const body = await u.json();
-                  setCurrentUser({ ...(body || {}), role: 'user' });
-                  return;
-                }
-              } else if (info?.role === 'provider') {
-                const p = await authFetch(`${API_URL}/provider/me`);
-                if (p.ok) {
-                  const body = await p.json();
-                  setCurrentUser({ ...(body || {}), role: 'provider' });
-                  return;
-                }
-              } else if (info?.role === 'admin') {
-                const a = await fetch(`${API_URL}/admin/auth/me`, { headers: { Authorization: `Bearer ${tokens.access.token}` } });
-                if (a.ok) {
-                  const body = await a.json();
-                  setCurrentUser({ ...(body || {}), role: 'admin' });
-                  return;
-                }
+              if (await loadSessionForRole(info?.role)) {
+                return;
               }
             }
           } catch (e) {
@@ -611,55 +655,21 @@ export const AuthProvider = ({ children }) => {
             }
           }
 
-          try {
-            // Prefer user session first
-            let response = await authFetch(`${API_URL}/user/auth/me`);
-            if (response.ok) {
-              const userData = await response.json();
-              setCurrentUser({ ...(userData || {}), role: 'user' });
-              return;
-            }
-          } catch (error) {
-            if (process.env.NODE_ENV !== 'production') {
-              console.warn('[PawsIQ] User auth check failed:', error);
-            }
-          }
+          const inferredRole = decodeRoleFromToken(tokens?.access?.token);
+          const rolePriority = inferredRole ? [inferredRole] : ['user', 'provider', 'admin'];
 
-          try {
-            // Then check provider session
-            const provResp = await authFetch(`${API_URL}/provider/me`);
-            if (provResp.ok) {
-              const provData = await provResp.json();
-              setCurrentUser({ ...(provData || {}), role: 'provider' });
-              return;
-            }
-          } catch (error) {
-            if (process.env.NODE_ENV !== 'production') {
-              console.warn('[PawsIQ] Provider auth check failed:', error);
-            }
-          }
-
-          try {
-            const adminResp = await fetch(`${API_URL}/admin/auth/me`, {
-              headers: { Authorization: `Bearer ${tokens.access.token}` },
-            });
-            if (adminResp.ok) {
-              const adminData = await adminResp.json();
-              setCurrentUser({ ...(adminData || {}), role: 'admin' });
-              return;
-            }
-          } catch (error) {
-            if (process.env.NODE_ENV !== 'production') {
-              console.warn('[PawsIQ] Admin auth check failed:', error);
+          for (const role of rolePriority) {
+            try {
+              if (await loadSessionForRole(role)) {
+                return;
+              }
+            } catch (error) {
+              if (process.env.NODE_ENV !== 'production') {
+                console.warn(`[PawsIQ] ${role} auth check failed:`, error);
+              }
             }
           }
         }
-
-        console.warn('[Auth] All auth checks failed, clearing invalid session');
-        // Clear tokens but don't redirect to login immediately - let user try again
-        setCurrentUser(null);
-        setTokens(null);
-        localStorage.removeItem('user');
         localStorage.removeItem('authTokens');
       } catch (error) {
         console.error('Auth initialization error:', error);

@@ -26,55 +26,48 @@ import { fetchProviderDashboardOverview } from '../../store/slices/providerAnaly
 import { PROVIDER_TYPES } from '../../store/slices/providerOnboardingSlice';
 import { getOnboardingPath } from '../../utils/providerOnboardingUtils';
 
-/**
- * Stat Card Component
- */
-const StatCard = ({ icon: Icon, label, value, trend, trendUp = true, color = 'blue', showTrendIndicator = true }) => {
-  const colorClasses = {
-    blue: 'bg-blue-100 text-blue-600 border-blue-500',
-    green: 'bg-green-100 text-green-600 border-green-500',
-    purple: 'bg-purple-100 text-purple-600 border-purple-500',
-    orange: 'bg-orange-100 text-orange-600 border-orange-500',
-    pink: 'bg-pink-100 text-pink-600 border-pink-500',
-    indigo: 'bg-indigo-100 text-indigo-600 border-indigo-500',
-  };
-
-  return (
-    <div className={`bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow p-6 border-l-4 ${colorClasses[color]}`}>
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <p className="text-gray-600 text-sm font-medium">{label}</p>
-          <p className="text-3xl font-bold text-gray-900 mt-3">{value}</p>
-          {trend && (
-            <div className={`flex items-center mt-3 text-sm font-medium ${trendUp ? 'text-green-600' : 'text-red-600'}`}>
-              {showTrendIndicator && (
-                <FaArrowUp className={`mr-1 ${!trendUp && 'rotate-180'}`} />
-              )}
-              {trend}
-            </div>
-          )}
-        </div>
-        <div className={`p-3 rounded-lg ${colorClasses[color]}`}>
-          <Icon className="text-2xl" />
-        </div>
-      </div>
-    </div>
-  );
+const STAT_COLORS = {
+  blue: 'bg-blue-100 text-blue-600 border-blue-500',
+  green: 'bg-green-100 text-green-600 border-green-500',
+  purple: 'bg-purple-100 text-purple-600 border-purple-500',
+  orange: 'bg-orange-100 text-orange-600 border-orange-500',
+  pink: 'bg-pink-100 text-pink-600 border-pink-500',
+  indigo: 'bg-indigo-100 text-indigo-600 border-indigo-500',
 };
 
-/**
- * Recent Appointment Card Component
- */
-const RecentAppointmentCard = ({ appointment }) => {
+const StatCard = React.memo(({ icon: Icon, label, value, trend, trendUp = true, color = 'blue', showTrendIndicator = true }) => (
+  <div className={`bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow p-6 border-l-4 ${STAT_COLORS[color]}`}>
+    <div className="flex items-start justify-between">
+      <div className="flex-1">
+        <p className="text-gray-600 text-sm font-medium">{label}</p>
+        <p className="text-3xl font-bold text-gray-900 mt-3">{value}</p>
+        {trend && (
+          <div className={`flex items-center mt-3 text-sm font-medium ${trendUp ? 'text-green-600' : 'text-red-600'}`}>
+            {showTrendIndicator && (
+              <FaArrowUp className={`mr-1 ${!trendUp && 'rotate-180'}`} />
+            )}
+            {trend}
+          </div>
+        )}
+      </div>
+      <div className={`p-3 rounded-lg ${STAT_COLORS[color]}`}>
+        <Icon className="text-2xl" />
+      </div>
+    </div>
+  </div>
+));
+StatCard.displayName = 'StatCard';
+
+const RecentAppointmentCard = React.memo(({ appointment }) => {
   const status = (appointment.status || '').toLowerCase();
   const statusClass =
     status === 'confirmed'
       ? 'bg-green-100 text-green-800'
       : status === 'pending'
-      ? 'bg-yellow-100 text-yellow-800'
-      : status === 'cancelled'
-      ? 'bg-red-100 text-red-700'
-      : 'bg-gray-100 text-gray-800';
+        ? 'bg-yellow-100 text-yellow-800'
+        : status === 'cancelled'
+          ? 'bg-red-100 text-red-700'
+          : 'bg-gray-100 text-gray-800';
 
   const formattedStatus = status ? status.charAt(0).toUpperCase() + status.slice(1) : '—';
 
@@ -92,40 +85,42 @@ const RecentAppointmentCard = ({ appointment }) => {
       </div>
     </div>
   );
-};
+});
 
-/**
- * Quick Stat Item Component
- */
-const QuickStatItem = ({ label, value, icon: Icon, color = 'blue' }) => {
-  const colorClasses = {
-    blue: 'text-blue-600',
-    green: 'text-green-600',
-    orange: 'text-orange-600',
-    purple: 'text-purple-600',
-    pink: 'text-pink-600',
-    indigo: 'text-indigo-600',
-  };
-
-  return (
-    <div className="flex items-center justify-between p-4 border-b border-gray-200 last:border-b-0">
-      <div className="flex items-center gap-3">
-        <div className={`p-2 rounded-lg ${colorClasses[color]} opacity-20`}>
-          <Icon className="text-2xl" />
-        </div>
-        <div>
-          <p className="text-sm text-gray-600">{label}</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
-        </div>
+const QuickStatItem = React.memo(({ label, value, icon: Icon, color = 'blue' }) => (
+  <div className="flex items-center justify-between p-4 border-b border-gray-200 last:border-b-0">
+    <div className="flex items-center gap-3">
+      <div className={`p-2 rounded-lg text-${color}-600 opacity-20`}>
+        <Icon className="text-2xl" />
+      </div>
+      <div>
+        <p className="text-sm text-gray-600">{label}</p>
+        <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
       </div>
     </div>
-  );
-};
+  </div>
+));
+QuickStatItem.displayName = 'QuickStatItem';
 
-/**
- * Veterinarian Dashboard Widget
- */
-const VeterinarianWidget = ({ metrics }) => (
+const OverviewStats = React.memo(({ stats }) => (
+  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+    {stats.map(({ key, ...statProps }) => (
+      <StatCard key={key} {...statProps} />
+    ))}
+  </div>
+));
+OverviewStats.displayName = 'OverviewStats';
+
+const QuickStatsPanel = React.memo(({ items }) => (
+  <div className="bg-white rounded-lg shadow divide-y divide-gray-200">
+    {items.map(({ key, ...itemProps }) => (
+      <QuickStatItem key={key} {...itemProps} />
+    ))}
+  </div>
+));
+QuickStatsPanel.displayName = 'QuickStatsPanel';
+
+const VeterinarianWidget = React.memo(({ metrics }) => (
   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
     <StatCard
       icon={FaStethoscope}
@@ -140,7 +135,7 @@ const VeterinarianWidget = ({ metrics }) => (
       color="green"
     />
   </div>
-);
+));
 
 /**
  * Trainer Dashboard Widget
@@ -213,9 +208,9 @@ const ProviderDashboard = () => {
   const [showOnboardingBanner, setShowOnboardingBanner] = useState(false);
 
   // Redux state - using provider-specific slices
-  const { 
-    metrics = {}, 
-    revenue = {}, 
+  const {
+    metrics = {},
+    revenue = {},
     typeMetrics = {},
     recentAppointments: fetchedAppointments = [],
     clients = [],
@@ -359,13 +354,75 @@ const ProviderDashboard = () => {
     ? `Based on ${formatNumber(metrics.totalReviews)} reviews`
     : null;
 
+  const overviewStats = useMemo(() => ([
+    {
+      key: 'total-appointments',
+      icon: FaCalendarAlt,
+      label: 'Total Appointments',
+      value: formatNumber(metrics.totalAppointments || 0),
+      color: 'blue',
+    },
+    {
+      key: 'completed',
+      icon: FaCheckCircle,
+      label: 'Completed',
+      value: formatNumber(metrics.completedAppointments || 0),
+      trend: completionTrend,
+      trendUp: true,
+      color: 'green',
+    },
+    {
+      key: 'revenue',
+      icon: FaRupeeSign,
+      label: 'Total Revenue',
+      value: formatCurrency(revenue.paidAmount || revenue.totalRevenue || 0),
+      trend: revenueTrend,
+      trendUp: revenueGrowthValue >= 0,
+      color: 'green',
+    },
+    {
+      key: 'rating',
+      icon: FaStar,
+      label: 'Average Rating',
+      value: averageRatingDisplay,
+      trend: averageRatingSubtitle,
+      trendUp: true,
+      showTrendIndicator: Boolean(averageRatingSubtitle && averageRatingSubtitle.includes('Based')),
+      color: 'purple',
+    },
+  ]), [metrics, revenue, completionTrend, revenueTrend, revenueGrowthValue, averageRatingDisplay, averageRatingSubtitle]);
+
+  const quickStats = useMemo(() => ([
+    {
+      key: 'clients',
+      label: 'Total Clients',
+      value: formatNumber(Array.isArray(clients) ? clients.length : 0),
+      icon: FaUserFriends,
+      color: 'blue',
+    },
+    {
+      key: 'pending-amount',
+      label: 'Pending Amount',
+      value: formatCurrency(revenue.pendingAmount || 0),
+      icon: FaRupeeSign,
+      color: 'orange',
+    },
+    {
+      key: 'total-reviews',
+      label: 'Total Reviews',
+      value: formatNumber(metrics.totalReviews || 0),
+      icon: FaStar,
+      color: 'purple',
+    },
+  ]), [clients, revenue.pendingAmount, metrics.totalReviews, formatNumber, formatCurrency]);
+
   const derivedTypeMetrics = normalizedProviderType ? typeMetrics?.[normalizedProviderType] : undefined;
 
   const navigateToAppointments = () => navigate('/provider/appointments');
 
   const handleContinueOnboarding = () => {
     console.log('[ProviderDashboard] handleContinueOnboarding called');
-    
+
     const registrationData = localStorage.getItem('provider_registration');
     let provType = null;
 
@@ -518,39 +575,7 @@ const ProviderDashboard = () => {
         )}
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatCard
-            icon={FaCalendarAlt}
-            label="Total Appointments"
-            value={formatNumber(metrics.totalAppointments || 0)}
-            color="blue"
-          />
-          <StatCard
-            icon={FaCheckCircle}
-            label="Completed"
-            value={formatNumber(metrics.completedAppointments || 0)}
-            trend={completionTrend}
-            trendUp={true}
-            color="green"
-          />
-          <StatCard
-            icon={FaRupeeSign}
-            label="Total Revenue"
-            value={formatCurrency(revenue.paidAmount || revenue.totalRevenue || 0)}
-            trend={revenueTrend}
-            trendUp={revenueGrowthValue >= 0}
-            color="green"
-          />
-          <StatCard
-            icon={FaStar}
-            label="Average Rating"
-            value={averageRatingDisplay}
-            trend={averageRatingSubtitle}
-            trendUp={true}
-            showTrendIndicator={Boolean(averageRatingSubtitle && averageRatingSubtitle.includes('Based'))}
-            color="purple"
-          />
-        </div>
+        <OverviewStats stats={overviewStats} />
 
         {/* Provider-Specific Widget */}
         <div>
@@ -599,26 +624,7 @@ const ProviderDashboard = () => {
             <div className="p-6 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900">Quick Stats</h3>
             </div>
-            <div className="divide-y divide-gray-200">
-              <QuickStatItem
-                label="Total Clients"
-                value={formatNumber(Array.isArray(clients) ? clients.length : 0)}
-                icon={FaUserFriends}
-                color="blue"
-              />
-              <QuickStatItem
-                label="Pending Amount"
-                value={formatCurrency(revenue.pendingAmount || 0)}
-                icon={FaRupeeSign}
-                color="orange"
-              />
-              <QuickStatItem
-                label="Total Reviews"
-                value={formatNumber(metrics.totalReviews || 0)}
-                icon={FaStar}
-                color="purple"
-              />
-            </div>
+            <QuickStatsPanel items={quickStats} />
             <div className="p-4">
               <button className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors">
                 View All Stats

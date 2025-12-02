@@ -9,12 +9,7 @@ import {
   FaStar,
   FaUsers,
 } from 'react-icons/fa';
-import {
-  fetchProviderDashboardOverview,
-  fetchProviderMetrics,
-  fetchProviderRevenue,
-  fetchProviderTypeMetrics,
-} from '../../store/slices/providerAnalyticsSlice';
+import { fetchProviderDashboardOverview } from '../../store/slices/providerAnalyticsSlice';
 
 const StatBox = ({ icon: Icon, label, value, bgColor = 'bg-blue-100', textColor = 'text-blue-600' }) => (
   <div className="bg-white rounded-lg shadow p-6">
@@ -51,9 +46,6 @@ const ProviderAnalytics = () => {
   useEffect(() => {
     if (authFetch) {
       dispatch(fetchProviderDashboardOverview({ authFetch }));
-      dispatch(fetchProviderMetrics({ authFetch }));
-      dispatch(fetchProviderRevenue({ authFetch }));
-      dispatch(fetchProviderTypeMetrics({ authFetch }));
     }
   }, [dispatch, authFetch]);
 
