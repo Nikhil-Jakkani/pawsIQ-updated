@@ -6,5 +6,6 @@ const router = express.Router();
 
 router.post('/suggestions', auth(), aiController.generatePetCareSuggestions);
 router.post('/nutrition-from-image', auth(), aiController.analyzeFoodFromImage);
+router.post('/analyze-symptoms', auth(), aiController.analyzePetSymptoms);
 
 export default router;
