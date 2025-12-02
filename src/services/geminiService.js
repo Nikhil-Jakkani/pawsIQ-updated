@@ -7,46 +7,49 @@ const getToken = () => {
       const parsed = JSON.parse(raw);
       if (parsed?.access?.token) return parsed.access.token;
     }
-  } catch (_) {}
+  } catch (_) { }
   try {
     const legacy = localStorage.getItem('pawsiq_user');
     if (legacy) {
       const parsed = JSON.parse(legacy);
       return parsed?.tokens?.access?.token || null;
     }
-  } catch (_) {}
+  } catch (_) { }
   return null;
 };
 
-export const generatePetCareSuggestions = async (petData) => {
+export const generatePetCareSuggestions = async (petData, authFetchInstance) => {
   try {
-    const prompt = `
-    As a professional veterinarian and pet care expert, provide comprehensive care recommendations for the following pet:
-{{ ... }}
-    `;
-
-    const token = getToken();
-    if (!token) {
-      throw new Error('Authentication token not found.');
+    if (!petData || typeof petData !== 'object') {
+      throw new Error('Pet information is required to fetch insights.');
     }
 
-    const response = await fetch(`${API_URL}/user/ai/suggestions`, {
+    const requestInit = {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ prompt }),
-    });
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(petData),
+    };
+
+    let response;
+    if (typeof authFetchInstance === 'function') {
+      response = await authFetchInstance(`${API_URL}/user/ai/suggestions`, requestInit);
+    } else {
+      const token = getToken();
+      if (!token) {
+        throw new Error('Authentication token not found.');
+      }
+      requestInit.headers.Authorization = `Bearer ${token}`;
+      response = await fetch(`${API_URL}/user/ai/suggestions`, requestInit);
+    }
 
     if (!response.ok) {
-      const errorData = await response.json();
+      const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.message || 'Failed to fetch suggestions');
     }
 
-    return await response.json();
+    const json = await response.json();
+    return json;
   } catch (error) {
-    console.error('Error generating pet care suggestions:', error);
     throw new Error(error.message || 'Failed to generate pet care suggestions. Please try again.');
   }
 };
@@ -99,7 +102,7 @@ export const analyzePetSymptoms = async (petData, symptoms) => {
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
-    
+
     // Try to parse the JSON response
     try {
       const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -109,7 +112,7 @@ export const analyzePetSymptoms = async (petData, symptoms) => {
     } catch (parseError) {
       console.error('Error parsing AI response:', parseError);
     }
-    
+
     // Fallback if JSON parsing fails
     return {
       urgencyLevel: "moderate",
@@ -130,7 +133,7 @@ export const analyzePetSymptoms = async (petData, symptoms) => {
       },
       disclaimer: "This analysis is for informational purposes only. Always consult with a qualified veterinarian for proper diagnosis and treatment."
     };
-    
+
   } catch (error) {
     console.error('Error analyzing pet symptoms:', error);
     throw new Error('Failed to analyze symptoms. Please try again.');
