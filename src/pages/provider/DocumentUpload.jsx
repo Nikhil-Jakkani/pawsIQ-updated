@@ -120,7 +120,6 @@ const DocumentUpload = () => {
   
   // Loading state
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   
   // Handle file upload
   const handleFileUpload = (documentId, files) => {

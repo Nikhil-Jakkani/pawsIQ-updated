@@ -321,7 +321,7 @@ const PetHealthCard = ({ pet }) => {
                 <span className="text-sm font-normal text-gray-600">• {pet.breed}</span>
               )}
             </h3>
-            <PetIcon type={pet.type} className="text-lg" style={{ color: '#145ae6' }} />
+            {/* <PetIcon type={pet.type} className="text-lg" style={{color: '#145ae6'}} /> */}
           </div>
           <div className="flex items-center gap-2 mb-2">
             {pet.age && pet.age !== 'Unknown' && (
@@ -344,17 +344,17 @@ const PetHealthCard = ({ pet }) => {
       </div>
 
       {/* Health Stats Grid */}
-      <div className="mt-4 grid grid-cols-2 gap-3">
+      {/* <div className="mt-4 grid grid-cols-2 gap-3">
         <div className="bg-white rounded-lg p-3 shadow-sm">
           <div className="flex items-center gap-2 mb-1" style={{ color: '#145ae6' }}>
             <FaSyringe className="text-sm" />
             <span className="text-xs font-medium">Vaccines</span>
           </div>
           <p className="text-sm font-semibold text-gray-800">{pet.vaccinations}</p>
-        </div>
-
-        <div className="bg-white rounded-lg p-3 shadow-sm">
-          <div className="flex items-center gap-2 mb-1" style={{ color: '#145ae6' }}>
+        </div> */}
+        
+        {/* <div className="bg-white rounded-lg p-3 shadow-sm">
+          <div className="flex items-center gap-2 mb-1" style={{color: '#145ae6'}}>
             <FaStethoscope className="text-sm" />
             <span className="text-xs font-medium">Last Checkup</span>
           </div>
@@ -385,8 +385,8 @@ const PetHealthCard = ({ pet }) => {
               return diffYears === 1 ? '1 year ago' : `${diffYears} years ago`;
             })()}
           </p>
-        </div>
-      </div>
+        </div> */}
+      {/* </div> */}
 
       {/* View More Insights Button */}
       <div className="mt-4">

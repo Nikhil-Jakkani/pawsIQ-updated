@@ -418,20 +418,12 @@ const ProviderOnboardingFlow = () => {
                 Previous
               </button>
 
-              <div className="flex gap-4">
-                <button
-                  onClick={handleExit}
-                  disabled={loading}
-                  className="px-6 py-3 rounded-lg font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all active:scale-95 disabled:opacity-50"
-                >
-                  Save & Exit
-                </button>
-
+              <div className="flex gap-3">
                 {currentStep === totalSteps ? (
                   <button
                     onClick={handleComplete}
                     disabled={loading}
-                    className="flex items-center px-6 py-3 rounded-lg font-medium bg-green-600 text-white hover:bg-green-700 transition-all active:scale-95 disabled:opacity-50"
+                    className="flex items-center px-8 py-3 rounded-lg font-medium bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700 transition-all active:scale-95 disabled:opacity-50 shadow-md hover:shadow-lg"
                   >
                     {loading ? (
                       <>
@@ -449,7 +441,7 @@ const ProviderOnboardingFlow = () => {
                   <button
                     onClick={handleNext}
                     disabled={loading || Object.keys(validationErrors).length > 0}
-                    className="flex items-center px-6 py-3 rounded-lg font-medium bg-blue-600 text-white hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50"
+                    className="flex items-center px-8 py-3 rounded-lg font-medium bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 transition-all active:scale-95 disabled:opacity-50 shadow-md hover:shadow-lg"
                   >
                     {loading ? (
                       <>

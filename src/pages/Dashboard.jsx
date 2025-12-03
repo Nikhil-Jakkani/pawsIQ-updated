@@ -94,7 +94,7 @@ const Dashboard = () => {
     return () => {
       isMounted = false;
     };
-  }, []); // Remove api dependency to prevent infinite loop
+  }, []); 
 
   useEffect(() => {
     let isMounted = true;
