@@ -18,6 +18,7 @@ const HealthRecords = () => {
   const [uploading, setUploading] = useState(false);
   const [vaccinations, setVaccinations] = useState([]);
   const [petVaccinations, setPetVaccinations] = useState([]);
+  const [profileVaccinations, setProfileVaccinations] = useState([]);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -49,7 +50,7 @@ const HealthRecords = () => {
       setLoading(true);
       setError('');
       if (!authFetch) throw new Error('Auth not ready');
-      
+
       // Fetch pet details with fallback
       let petResponse = await authFetch(`${API_URL}/pets/${petId}`);
       let petData;
@@ -62,6 +63,14 @@ const HealthRecords = () => {
           const arr = Array.isArray(profilePayload?.pets) ? profilePayload.pets : [];
           const idNum = Number(petId);
           petData = arr.find(p => Number(p.pet_id ?? p.id) === idNum);
+          if (petData?.vaccinations) {
+            const normalizedVaccs = Array.isArray(petData.vaccinations)
+              ? petData.vaccinations
+              : typeof petData.vaccinations === 'string'
+                ? petData.vaccinations.split(',').map(v => v.trim()).filter(Boolean)
+                : [];
+            setProfileVaccinations(normalizedVaccs);
+          }
         }
         // If still not found, set a minimal pet object and continue without error
         if (!petData) {
@@ -76,12 +85,12 @@ const HealthRecords = () => {
         age: petData.pet_age != null ? `${petData.pet_age} years` : (petData.pet_birthday || petData.birthdate ? (() => {
           const d = new Date(petData.pet_birthday || petData.birthdate);
           if (isNaN(d.getTime())) return '';
-          const years = Math.max(0, Math.floor((Date.now() - d.getTime()) / (1000*60*60*24*365.25)));
+          const years = Math.max(0, Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24 * 365.25)));
           return `${years} years`;
         })() : ''),
       };
       setPet(normalizedPet);
-      
+
       // Fetch health records (with fallback)
       let recordsResponse = await authFetch(`${API_URL}/pets/${petId}/health-records`);
       let recordsData;
@@ -145,26 +154,36 @@ const HealthRecords = () => {
     const loadVaccinations = async () => {
       try {
         console.log('Loading vaccinations from backend API and pet database');
-        
+
         // Get token
         const token = currentUser?.tokens?.access?.token || tokens?.access?.token;
-        
+
         // Load available vaccines from master with pet type (if pet is loaded)
         const petType = pet?.type || '';
         console.log('Loading vaccines with petType:', petType);
         const availableVaccines = await vaccinationService.getAvailableVaccines(token, petType);
         console.log('Available vaccines loaded:', availableVaccines);
         setVaccinations(availableVaccines);
-        
+
         // Load pet-specific vaccinations from PIQ_Pet_Vaccination table
         if (petId && token) {
           try {
             const petVaccinesList = await vaccinationService.getPetVaccinations(petId, token);
             console.log('Pet vaccinations from database:', petVaccinesList);
-            setPetVaccinations(petVaccinesList);
+            if (petVaccinesList.length) {
+              setPetVaccinations(petVaccinesList);
+            } else if (profileVaccinations.length) {
+              setPetVaccinations(profileVaccinations.map(name => ({ vaccination_name: name })));
+            } else {
+              setPetVaccinations([]);
+            }
           } catch (err) {
             console.warn('Could not load pet vaccinations from database:', err);
-            setPetVaccinations([]);
+            if (profileVaccinations.length) {
+              setPetVaccinations(profileVaccinations.map(name => ({ vaccination_name: name })));
+            } else {
+              setPetVaccinations([]);
+            }
           }
         }
       } catch (err) {
@@ -172,12 +191,12 @@ const HealthRecords = () => {
         setVaccinations([]);
       }
     };
-    
+
     // Only load vaccinations when we have a petId, currentUser, and pet is loaded with a type
     if (petId && currentUser && pet) {
       loadVaccinations();
     }
-  }, [petId, currentUser, pet]);
+  }, [petId, currentUser, pet, profileVaccinations]);
 
   useEffect(() => {
     if (petId && currentUser) {
@@ -189,7 +208,7 @@ const HealthRecords = () => {
     const { name, value, type, checked, id } = e.target;
     setFormData(prev => {
       const updated = { ...prev };
-      
+
       // Handle radio button for isCustomVaccination
       if (name === 'isCustomVaccination' && type === 'radio') {
         updated.isCustomVaccination = id === 'customVaccine';
@@ -222,7 +241,7 @@ const HealthRecords = () => {
       if ((name === 'vaccinationName' || name === 'customVaccinationName') && value && updated.recordType === 'vaccination') {
         updated.title = value;
       }
-      
+
       return updated;
     });
   };
@@ -236,13 +255,13 @@ const HealthRecords = () => {
         setError('Invalid file type. Please upload a PDF, JPG, PNG, or DOCX file.');
         return;
       }
-      
+
       // File size limit: 10MB
       if (selectedFile.size > 10 * 1024 * 1024) {
         setError('File size exceeds 10MB limit');
         return;
       }
-      
+
       setFile(selectedFile);
       setError('');
     }
@@ -464,7 +483,7 @@ const HealthRecords = () => {
 
   const getFileIcon = (fileName) => {
     if (!fileName) return <FaFilePdf className="text-red-500" />;
-    
+
     const ext = fileName.split('.').pop().toLowerCase();
     switch (ext) {
       case 'pdf':
@@ -484,7 +503,7 @@ const HealthRecords = () => {
 
   const getFileUrl = async (record) => {
     if (!record.file_path) return '#';
-    
+
     try {
       const qs = new URLSearchParams({
         path: record.file_path,
@@ -492,12 +511,12 @@ const HealthRecords = () => {
       });
 
       const response = await authFetch(`${API_URL}/media/signed-url?${qs}`);
-      
+
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
         throw new Error(error.message || 'Failed to get file URL');
       }
-      
+
       const { url } = await response.json();
       return url;
     } catch (error) {
@@ -622,7 +641,7 @@ const HealthRecords = () => {
         >
           <FaArrowLeft className="mr-1" /> Back to Pets
         </button>
-        
+
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
@@ -813,7 +832,7 @@ const HealthRecords = () => {
                               <label htmlFor="vaccinationName" className="block text-sm font-medium text-gray-700 mb-2">
                                 Select Vaccination *
                               </label>
-                              
+
                               {/* Show predefined vaccinations + pet's existing vaccinations */}
                               <div>
                                 <div className="flex items-center mb-2">
@@ -829,7 +848,7 @@ const HealthRecords = () => {
                                     Choose from available vaccinations
                                   </label>
                                 </div>
-                                
+
                                 {!formData.isCustomVaccination && (
                                   <select
                                     id="vaccinationName"
@@ -880,7 +899,7 @@ const HealthRecords = () => {
                                   Add a custom vaccination
                                 </label>
                               </div>
-                              
+
                               {formData.isCustomVaccination && (
                                 <input
                                   type="text"
@@ -953,7 +972,7 @@ const HealthRecords = () => {
                               >
                                 <path
                                   d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-          strokeWidth={2}
+                                  strokeWidth={2}
                                   strokeLinecap="round"
                                   strokeLinejoin="round"
                                 />
@@ -961,7 +980,7 @@ const HealthRecords = () => {
                               <div className="flex text-sm text-gray-600">
                                 <label
                                   htmlFor="file-upload"
-           className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
+                                  className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
                                 >
                                   <span>Upload a file</span>
                                   <input

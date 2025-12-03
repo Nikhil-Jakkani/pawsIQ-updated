@@ -168,6 +168,14 @@ const UserSettings = () => {
       if (userData.email && userData.email !== originalEmail) {
         payload.user_email_id = userData.email.trim();
       }
+      if (userData.address) {
+        payload.user_address = {
+          ...DEFAULT_ADDRESS,
+          ...Object.fromEntries(
+            Object.entries(userData.address || {}).map(([key, value]) => [key, value?.trim?.() || value || ''])
+          ),
+        };
+      }
 
       if (Object.keys(payload).length === 0) {
         setSuccessMessage('No profile changes to save.');
@@ -187,7 +195,18 @@ const UserSettings = () => {
       }
 
       if (payload.user_email_id) setOriginalEmail(payload.user_email_id);
-      setSuccessMessage('Profile updated successfully.');
+      if (payload.user_address) {
+        setUserData((prev) => ({
+          ...prev,
+          address: {
+            ...DEFAULT_ADDRESS,
+            ...payload.user_address,
+          },
+        }));
+        setSuccessMessage('Address saved successfully.');
+      } else {
+        setSuccessMessage('Profile updated successfully.');
+      }
       resetMessagesLater();
     } catch (error) {
       console.error(error);
@@ -330,9 +349,8 @@ const UserSettings = () => {
           </div>
           <label
             htmlFor="profile-image"
-            className={`absolute bottom-0 right-0 rounded-full p-2 text-white shadow transition-colors ${
-              isUploading ? 'bg-indigo-300 opacity-80' : 'bg-indigo-600 hover:bg-indigo-700'
-            }`}
+            className={`absolute bottom-0 right-0 rounded-full p-2 text-white shadow transition-colors ${isUploading ? 'bg-indigo-300 opacity-80' : 'bg-indigo-600 hover:bg-indigo-700'
+              }`}
           >
             {isUploading ? <FaSpinner className="animate-spin" size={14} /> : <FaCamera size={14} />}
             <input
@@ -408,9 +426,8 @@ const UserSettings = () => {
         <button
           type="submit"
           disabled={profileSubmitting}
-          className={`flex items-center gap-2 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-            profileSubmitting ? 'cursor-not-allowed bg-indigo-300' : 'bg-indigo-600 hover:bg-indigo-700'
-          }`}
+          className={`flex items-center gap-2 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${profileSubmitting ? 'cursor-not-allowed bg-indigo-300' : 'bg-indigo-600 hover:bg-indigo-700'
+            }`}
         >
           {profileSubmitting ? (
             <>
@@ -484,9 +501,8 @@ const UserSettings = () => {
             <button
               type="submit"
               disabled={passwordSubmitting}
-              className={`flex items-center gap-2 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-                passwordSubmitting ? 'cursor-not-allowed bg-indigo-300' : 'bg-indigo-600 hover:bg-indigo-700'
-              }`}
+              className={`flex items-center gap-2 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${passwordSubmitting ? 'cursor-not-allowed bg-indigo-300' : 'bg-indigo-600 hover:bg-indigo-700'
+                }`}
             >
               {passwordSubmitting ? (
                 <>
@@ -632,9 +648,8 @@ const UserSettings = () => {
         <button
           type="submit"
           disabled={notificationSubmitting}
-          className={`flex items-center gap-2 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-            notificationSubmitting ? 'cursor-not-allowed bg-indigo-300' : 'bg-indigo-600 hover:bg-indigo-700'
-          }`}
+          className={`flex items-center gap-2 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${notificationSubmitting ? 'cursor-not-allowed bg-indigo-300' : 'bg-indigo-600 hover:bg-indigo-700'
+            }`}
         >
           {notificationSubmitting ? (
             <>
@@ -688,9 +703,8 @@ const UserSettings = () => {
         <button
           type="submit"
           disabled={profileSubmitting}
-          className={`flex items-center gap-2 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-            profileSubmitting ? 'cursor-not-allowed bg-indigo-300' : 'bg-indigo-600 hover:bg-indigo-700'
-          }`}
+          className={`flex items-center gap-2 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${profileSubmitting ? 'cursor-not-allowed bg-indigo-300' : 'bg-indigo-600 hover:bg-indigo-700'
+            }`}
         >
           {profileSubmitting ? (
             <>
@@ -931,11 +945,10 @@ const UserSettings = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold transition-colors focus:outline-none ${
-                  activeTab === tab.id
+                className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold transition-colors focus:outline-none ${activeTab === tab.id
                     ? 'border-b-2 border-indigo-600 text-indigo-600'
                     : 'text-gray-600 hover:bg-indigo-50 hover:text-indigo-600'
-                }`}
+                  }`}
               >
                 {tab.icon}
                 <span>{tab.label}</span>

@@ -9,14 +9,14 @@ const UserCommunity = () => {
   const [filterCategory, setFilterCategory] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
   const [expandedPost, setExpandedPost] = useState(null);
-  
+
   // Mock user data
   const currentUser = {
     id: 1,
     name: 'John Doe',
     avatar: 'https://randomuser.me/api/portraits/men/32.jpg'
   };
-  
+
   // Mock forum posts data
   const [posts, setPosts] = useState([
     {
@@ -103,20 +103,37 @@ const UserCommunity = () => {
       comments: 23,
       views: 312,
       isLiked: true
+    },
+    {
+      id: 6,
+      title: 'Managing seasonal allergies in dogs',
+      content: "My Beagle, Rusty, has started scratching nonstop every time the weather shifts. Our vet confirmed it\'s seasonal allergies, but I\'d love to know what home care routines, supplements, or grooming habits have helped your pups. Looking for practical Health & Wellness tips before trying prescription meds.",
+      author: {
+        id: 7,
+        name: 'Priya Sharma',
+        avatar: 'https://randomuser.me/api/portraits/women/68.jpg'
+      },
+      category: 'health',
+      tags: ['allergies', 'health', 'dogs'],
+      date: '2023-12-01T10:10:00',
+      likes: 21,
+      comments: 11,
+      views: 189,
+      isLiked: false
     }
   ]);
-  
+
   // Filter posts based on search and category
   const filteredPosts = posts.filter(post => {
-    const matchesSearch = post.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          post.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
-    
+    const matchesSearch = post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      post.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+
     const matchesCategory = filterCategory === 'all' || post.category === filterCategory;
-    
+
     return matchesSearch && matchesCategory;
   });
-  
+
   // Toggle post expansion
   const togglePostExpansion = (id) => {
     if (expandedPost === id) {
@@ -125,7 +142,7 @@ const UserCommunity = () => {
       setExpandedPost(id);
     }
   };
-  
+
   // Toggle like
   const toggleLike = (id) => {
     setPosts(posts.map(post => {
@@ -140,14 +157,14 @@ const UserCommunity = () => {
       return post;
     }));
   };
-  
+
   // Format date
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     const now = new Date();
     const diffTime = Math.abs(now - date);
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays === 0) {
       return `Today at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
     } else if (diffDays === 1) {
@@ -158,7 +175,7 @@ const UserCommunity = () => {
       return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     }
   };
-  
+
   // Category options
   const categories = [
     { value: 'all', label: 'All Topics' },
@@ -169,12 +186,12 @@ const UserCommunity = () => {
     { value: 'events', label: 'Events & Meetups' },
     { value: 'success-stories', label: 'Success Stories' }
   ];
-  
+
   // Popular tags
   const popularTags = [
     'dogs', 'cats', 'puppies', 'kittens', 'training', 'health', 'nutrition', 'adoption', 'behavior', 'grooming'
   ];
-  
+
   // Trending topics
   const trendingTopics = [
     {
@@ -193,7 +210,7 @@ const UserCommunity = () => {
       category: 'training'
     }
   ];
-  
+
   return (
     <UserLayout>
       <div className="space-y-8">
@@ -227,7 +244,7 @@ const UserCommunity = () => {
                   </div>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => navigate('/user/community/new-post')}
                 className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white px-6 py-3 rounded-2xl flex items-center gap-3 transition-all duration-300 font-semibold border border-white/20 hover:border-white/40"
               >
@@ -240,7 +257,7 @@ const UserCommunity = () => {
           <div className="absolute -top-4 -right-4 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
           <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-white/5 rounded-full blur-2xl"></div>
         </div>
-        
+
         {/* Search and Filters */}
         <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-white/20">
           <div className="flex flex-col md:flex-row gap-4">
@@ -274,7 +291,7 @@ const UserCommunity = () => {
               </button>
             </div>
           </div>
-          
+
           {/* Advanced Filters */}
           {showFilters && (
             <div className="mt-6 pt-6 border-t border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -294,7 +311,7 @@ const UserCommunity = () => {
                   ))}
                 </div>
               </div>
-              
+
               <div className="flex items-end justify-end">
                 <button
                   onClick={() => {
@@ -309,7 +326,7 @@ const UserCommunity = () => {
             </div>
           )}
         </div>
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
@@ -317,17 +334,17 @@ const UserCommunity = () => {
             {filteredPosts.length > 0 ? (
               <div className="space-y-6">
                 {filteredPosts.map(post => (
-                  <div 
-                    key={post.id} 
+                  <div
+                    key={post.id}
                     className="bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden border border-white/20 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] group"
                   >
                     <div className="p-6">
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex items-center gap-4">
                           <div className="relative">
-                            <img 
-                              src={post.author.avatar} 
-                              alt={post.author.name} 
+                            <img
+                              src={post.author.avatar}
+                              alt={post.author.name}
                               className="w-12 h-12 rounded-full object-cover ring-2 ring-white shadow-md"
                             />
                             <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white"></div>
@@ -338,14 +355,13 @@ const UserCommunity = () => {
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
-                          <span className={`px-3 py-1 text-xs font-semibold rounded-full capitalize ${
-                            post.category === 'advice' ? 'bg-pet-blue-100 text-pet-blue-800' :
-                            post.category === 'nutrition' ? 'bg-pet-orange-100 text-pet-orange-800' :
-                            post.category === 'training' ? 'bg-pet-purple-100 text-pet-purple-800' :
-                            post.category === 'health' ? 'bg-green-100 text-green-800' :
-                            post.category === 'events' ? 'bg-pet-pink-100 text-pet-pink-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
+                          <span className={`px-3 py-1 text-xs font-semibold rounded-full capitalize ${post.category === 'advice' ? 'bg-pet-blue-100 text-pet-blue-800' :
+                              post.category === 'nutrition' ? 'bg-pet-orange-100 text-pet-orange-800' :
+                                post.category === 'training' ? 'bg-pet-purple-100 text-pet-purple-800' :
+                                  post.category === 'health' ? 'bg-green-100 text-green-800' :
+                                    post.category === 'events' ? 'bg-pet-pink-100 text-pet-pink-800' :
+                                      'bg-gray-100 text-gray-800'
+                            }`}>
                             {post.category.replace('-', ' ')}
                           </span>
                           <button className="text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-all duration-300">
@@ -353,31 +369,31 @@ const UserCommunity = () => {
                           </button>
                         </div>
                       </div>
-                      
+
                       <div>
-                        <h3 
+                        <h3
                           className="text-xl font-bold text-gray-800 cursor-pointer hover:text-pet-purple-600 transition-colors leading-tight"
                           onClick={() => togglePostExpansion(post.id)}
                         >
                           {post.title}
                         </h3>
-                        
+
                         <div className={`mt-3 text-gray-600 leading-relaxed ${expandedPost === post.id ? '' : 'line-clamp-3'}`}>
                           <p>{post.content}</p>
                         </div>
-                        
+
                         {post.content.length > 150 && expandedPost !== post.id && (
-                          <button 
+                          <button
                             onClick={() => togglePostExpansion(post.id)}
                             className="mt-2 text-pet-purple-600 hover:text-pet-purple-700 text-sm font-semibold bg-pet-purple-50 hover:bg-pet-purple-100 px-3 py-1 rounded-full transition-all duration-300"
                           >
                             Read more
                           </button>
                         )}
-                        
+
                         <div className="flex flex-wrap gap-2 mt-4">
                           {post.tags.map(tag => (
-                            <span 
+                            <span
                               key={tag}
                               className="px-3 py-1 bg-gradient-to-r from-gray-100 to-gray-200 hover:from-pet-purple-100 hover:to-pet-pink-100 text-gray-700 hover:text-pet-purple-700 text-xs font-medium rounded-full cursor-pointer transition-all duration-300"
                               onClick={() => setSearchTerm(tag)}
@@ -387,21 +403,20 @@ const UserCommunity = () => {
                           ))}
                         </div>
                       </div>
-                      
+
                       <div className="mt-6 flex items-center justify-between pt-4 border-t border-gray-100">
                         <div className="flex items-center gap-6">
-                          <button 
+                          <button
                             onClick={() => toggleLike(post.id)}
-                            className={`flex items-center gap-2 px-3 py-2 rounded-full transition-all duration-300 font-medium ${
-                              post.isLiked 
-                                ? 'bg-pet-pink-100 text-pet-pink-600 hover:bg-pet-pink-200' 
+                            className={`flex items-center gap-2 px-3 py-2 rounded-full transition-all duration-300 font-medium ${post.isLiked
+                                ? 'bg-pet-pink-100 text-pet-pink-600 hover:bg-pet-pink-200'
                                 : 'text-gray-500 hover:text-pet-pink-600 hover:bg-pet-pink-50'
-                            }`}
+                              }`}
                           >
                             {post.isLiked ? <FaHeart className="text-pet-pink-600" /> : <FaRegHeart />}
                             <span>{post.likes}</span>
                           </button>
-                          <button 
+                          <button
                             onClick={() => navigate(`/user/community/post/${post.id}`)}
                             className="flex items-center gap-2 px-3 py-2 rounded-full text-gray-500 hover:text-pet-blue-600 hover:bg-pet-blue-50 transition-all duration-300 font-medium"
                           >
@@ -437,7 +452,7 @@ const UserCommunity = () => {
                     ? "No discussions match your search criteria. Try adjusting your filters or explore different topics."
                     : "Be the first to start a meaningful discussion in our pet-loving community!"}
                 </p>
-                <button 
+                <button
                   onClick={() => navigate('/user/community/new-post')}
                   className="bg-gradient-to-r from-pet-purple-600 to-pet-pink-600 hover:from-pet-purple-700 hover:to-pet-pink-700 text-white px-6 py-3 rounded-xl inline-flex items-center gap-3 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
                 >
@@ -447,7 +462,7 @@ const UserCommunity = () => {
               </div>
             )}
           </div>
-          
+
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Community Stats */}
@@ -479,7 +494,7 @@ const UserCommunity = () => {
                 </div>
               </div>
             </div>
-            
+
             {/* Trending Topics */}
             <div className="bg-gradient-to-br from-white/90 to-pet-orange-50/50 backdrop-blur-sm rounded-2xl border border-white/20 overflow-hidden shadow-lg">
               <div className="px-6 py-4 bg-gradient-to-r from-pet-orange-500 to-pet-pink-500 text-white">
@@ -499,13 +514,12 @@ const UserCommunity = () => {
                         {topic.title}
                       </h4>
                       <div className="flex items-center gap-3 mt-2">
-                        <span className={`px-3 py-1 text-xs font-semibold rounded-full capitalize ${
-                          topic.category === 'advice' ? 'bg-pet-blue-100 text-pet-blue-800' :
-                          topic.category === 'nutrition' ? 'bg-pet-orange-100 text-pet-orange-800' :
-                          topic.category === 'training' ? 'bg-pet-purple-100 text-pet-purple-800' :
-                          topic.category === 'health' ? 'bg-green-100 text-green-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
+                        <span className={`px-3 py-1 text-xs font-semibold rounded-full capitalize ${topic.category === 'advice' ? 'bg-pet-blue-100 text-pet-blue-800' :
+                            topic.category === 'nutrition' ? 'bg-pet-orange-100 text-pet-orange-800' :
+                              topic.category === 'training' ? 'bg-pet-purple-100 text-pet-purple-800' :
+                                topic.category === 'health' ? 'bg-green-100 text-green-800' :
+                                  'bg-gray-100 text-gray-800'
+                          }`}>
                           {topic.category}
                         </span>
                         <div className="flex items-center gap-1 text-gray-500 text-sm">
@@ -518,7 +532,7 @@ const UserCommunity = () => {
                 ))}
               </div>
             </div>
-            
+
             {/* Upcoming Events */}
             <div className="bg-gradient-to-br from-white/90 to-pet-pink-50/50 backdrop-blur-sm rounded-2xl border border-white/20 overflow-hidden shadow-lg">
               <div className="px-6 py-4 bg-gradient-to-r from-pet-pink-500 to-pet-purple-500 text-white">
@@ -554,7 +568,7 @@ const UserCommunity = () => {
                 </div>
               </div>
               <div className="px-6 py-4 bg-gradient-to-r from-pet-pink-50 to-pet-purple-50 border-t border-white/20">
-                <button 
+                <button
                   onClick={() => navigate('/user/community/events')}
                   className="text-pet-purple-600 hover:text-pet-purple-700 text-sm font-semibold bg-white/50 hover:bg-white/70 px-4 py-2 rounded-xl transition-all duration-300 w-full"
                 >
@@ -562,7 +576,7 @@ const UserCommunity = () => {
                 </button>
               </div>
             </div>
-            
+
             {/* Active Members */}
             <div className="bg-gradient-to-br from-white/90 to-green-50/50 backdrop-blur-sm rounded-2xl border border-white/20 overflow-hidden shadow-lg">
               <div className="px-6 py-4 bg-gradient-to-r from-green-500 to-pet-blue-500 text-white">
@@ -575,9 +589,9 @@ const UserCommunity = () => {
                 <div className="flex items-center justify-between p-3 rounded-xl hover:bg-white/50 transition-all duration-300 cursor-pointer group">
                   <div className="flex items-center gap-3">
                     <div className="relative">
-                      <img 
-                        src="https://randomuser.me/api/portraits/women/44.jpg" 
-                        alt="Emily Wilson" 
+                      <img
+                        src="https://randomuser.me/api/portraits/women/44.jpg"
+                        alt="Emily Wilson"
                         className="w-10 h-10 rounded-full object-cover ring-2 ring-white shadow-md"
                       />
                       <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white"></div>
@@ -596,9 +610,9 @@ const UserCommunity = () => {
                 <div className="flex items-center justify-between p-3 rounded-xl hover:bg-white/50 transition-all duration-300 cursor-pointer group">
                   <div className="flex items-center gap-3">
                     <div className="relative">
-                      <img 
-                        src="https://randomuser.me/api/portraits/men/22.jpg" 
-                        alt="Michael Brown" 
+                      <img
+                        src="https://randomuser.me/api/portraits/men/22.jpg"
+                        alt="Michael Brown"
                         className="w-10 h-10 rounded-full object-cover ring-2 ring-white shadow-md"
                       />
                       <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white"></div>
@@ -614,9 +628,9 @@ const UserCommunity = () => {
                 <div className="flex items-center justify-between p-3 rounded-xl hover:bg-white/50 transition-all duration-300 cursor-pointer group">
                   <div className="flex items-center gap-3">
                     <div className="relative">
-                      <img 
-                        src="https://randomuser.me/api/portraits/women/28.jpg" 
-                        alt="Sarah Johnson" 
+                      <img
+                        src="https://randomuser.me/api/portraits/women/28.jpg"
+                        alt="Sarah Johnson"
                         className="w-10 h-10 rounded-full object-cover ring-2 ring-white shadow-md"
                       />
                       <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white"></div>
@@ -634,7 +648,7 @@ const UserCommunity = () => {
                 </div>
               </div>
               <div className="px-6 py-4 bg-gradient-to-r from-green-50 to-pet-blue-50 border-t border-white/20">
-                <button 
+                <button
                   onClick={() => navigate('/user/community/members')}
                   className="text-green-600 hover:text-green-700 text-sm font-semibold bg-white/50 hover:bg-white/70 px-4 py-2 rounded-xl transition-all duration-300 w-full"
                 >

@@ -16,7 +16,14 @@ const analyzeFoodFromImage = catchAsync(async (req: Request, res: Response) => {
   res.status(httpStatus.OK).send(result);
 });
 
+const analyzePetSymptoms = catchAsync(async (req: Request, res: Response) => {
+  const payload = req.body;
+  const result = await aiService.analyzePetSymptoms(payload);
+  res.status(httpStatus.OK).send(result);
+});
+
 export default {
   generatePetCareSuggestions,
   analyzeFoodFromImage,
+  analyzePetSymptoms,
 };

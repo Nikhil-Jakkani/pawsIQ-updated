@@ -77,6 +77,7 @@ export const userValidation = {
         user_email_id: Joi.string().email(),
         user_phone_number: Joi.string().min(10).max(15),
         user_second_phone_number: Joi.string().min(10).max(15).allow('', null),
+        user_location: Joi.string().max(255).allow('', null),
       })
       .min(1), // at least one field to update
   },
