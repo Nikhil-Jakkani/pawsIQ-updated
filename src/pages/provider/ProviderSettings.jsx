@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import ProviderDashboardLayout from './ProviderDashboardLayout';
-import { FaCog, FaSave, FaKey, FaBell, FaLock, FaClipboardList, FaCamera } from 'react-icons/fa';
+import { FaCog, FaSave, FaKey, FaBell, FaLock, FaClipboardList, FaCamera, FaCheckCircle } from 'react-icons/fa';
 import { supabase } from '../../lib/supabaseClient';
 import { getOnboardingPath } from '../../utils/providerOnboardingUtils';
 
@@ -125,11 +125,31 @@ const ProviderSettings = () => {
     }));
   };
 
-  const handleSaveSettings = () => {
-    console.log('Saving settings:', settings);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+  const handleSaveSettings = async () => {
+    try {
+      // Auto-save to backend if needed
+      const res = await authFetch(`${API_URL}/provider/settings`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings),
+      });
+      
+      if (!res.ok) {
+        throw new Error('Failed to save settings');
+      }
+      
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      console.error('Error saving settings:', err);
+    }
   };
+
+  // Auto-save settings when they change
+  React.useEffect(() => {
+    const timeout = setTimeout(handleSaveSettings, 2000);
+    return () => clearTimeout(timeout);
+  }, [settings]);
 
   const handleChangePassword = () => {
     if (passwords.newPassword !== passwords.confirmPassword) {
@@ -148,21 +168,23 @@ const ProviderSettings = () => {
     if (registrationData) {
       try {
         const data = JSON.parse(registrationData);
-        providerType = data.providerType;
+        providerType = data.providerType || data.serv_provider_type;
       } catch (err) {
         console.error('Error parsing registration data:', err);
       }
     }
 
     // Fallback to currentUser if available
-    if (!providerType && currentUser?.providerType) {
-      providerType = currentUser.providerType;
+    if (!providerType) {
+      providerType = currentUser?.providerType || currentUser?.serv_provider_type;
     }
 
     if (providerType) {
       const onboardingPath = getOnboardingPath(providerType);
+      console.log('Navigating to onboarding path:', onboardingPath);
       navigate(onboardingPath);
     } else {
+      console.error('Provider type not found. CurrentUser:', currentUser);
       alert('Could not determine your provider type. Please contact support.');
     }
   };
@@ -177,10 +199,11 @@ const ProviderSettings = () => {
             <p className="text-gray-600 mt-2">Manage your account settings and preferences.</p>
           </div>
 
-          {/* Success Message */}
+          {/* Auto-save Success Message */}
           {saved && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 sticky top-0 z-10">
-              <p className="text-green-800">Settings saved successfully!</p>
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 sticky top-0 z-10 flex items-center gap-2">
+              <FaCheckCircle className="text-green-600" />
+              <p className="text-green-800 font-medium">Settings saved automatically</p>
             </div>
           )}
 
@@ -326,16 +349,7 @@ const ProviderSettings = () => {
             </div>
           </SettingSection>
 
-          {/* Save Button */}
-          <div className="mb-8">
-            <button
-              onClick={handleSaveSettings}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors flex items-center"
-            >
-              <FaSave className="mr-2" />
-              Save Settings
-            </button>
-          </div>
+
 
           {/* Onboarding Section */}
           <SettingSection title="Complete Your Onboarding" icon={FaClipboardList}>

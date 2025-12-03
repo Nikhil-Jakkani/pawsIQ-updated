@@ -205,6 +205,19 @@ const HealthRecords = () => {
         updated[name] = value;
       }
       
+      // Validate recordDate - prevent future dates
+      if (name === 'recordDate') {
+        const selectedDate = new Date(value);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        if (selectedDate > today) {
+          setError('Vaccination date cannot be in the future');
+          return prev;
+        }
+        setError('');
+      }
+      
       // Auto-populate title with vaccination name if selecting a vaccination
       if ((name === 'vaccinationName' || name === 'customVaccinationName') && value && updated.recordType === 'vaccination') {
         updated.title = value;
@@ -242,6 +255,15 @@ const HealthRecords = () => {
       setUploading(true);
       setError('');
       const accessToken = currentUser?.tokens?.access?.token || tokens?.access?.token;
+
+      // Validate recordDate - prevent future dates
+      const selectedDate = new Date(formData.recordDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (selectedDate > today) {
+        throw new Error('Vaccination date cannot be in the future');
+      }
 
       // Determine vaccination name
       let vaccinationName = '';
@@ -886,6 +908,7 @@ const HealthRecords = () => {
                               required
                               value={formData.recordDate}
                               onChange={handleInputChange}
+                              max={new Date().toISOString().split('T')[0]}
                               className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                             />
                           </div>

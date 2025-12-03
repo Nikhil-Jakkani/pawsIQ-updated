@@ -36,7 +36,8 @@ const UserAddPet = () => {
     gender: '',
     birthdate: '',
     weight: '',
-    color: '',
+    colorOption: '',
+    customColor: '',
     bloodGroup: '',
     microchipped: false,
     microchipNumber: '',
@@ -317,6 +318,8 @@ const UserAddPet = () => {
       const selected_conditions = Array.isArray(formData.medicalConditions) && formData.medicalConditions.length > 0 ? formData.medicalConditions : undefined;
       const other_conditions = formData.customMedicalConditions && formData.customMedicalConditions.trim() ? formData.customMedicalConditions.trim() : undefined;
 
+      const color = formData.colorOption === 'Custom' ? formData.customColor : formData.colorOption;
+      
       const payload = {
         name: formData.name.trim(),
         type: formData.type,
@@ -324,7 +327,7 @@ const UserAddPet = () => {
         gender: formData.gender,
         birthdate: formData.birthdate || undefined,
         weight: formData.weight || undefined,
-        color: formData.color || undefined,
+        color: color || undefined,
         bloodGroup: formData.bloodGroup || undefined,
         ageGroup: formData.ageGroup || undefined,
         microchipped: formData.microchipped,
@@ -371,6 +374,24 @@ const UserAddPet = () => {
     { value: 'other', label: 'Other', icon: <FaPaw /> }
   ];
   
+  // Color options for pets
+  const colorOptions = [
+    'Black',
+    'White',
+    'Brown',
+    'Red/Ginger',
+    'Gray/Silver',
+    'Orange',
+    'Cream/Beige',
+    'Tan/Fawn',
+    'Brindle',
+    'Spotted',
+    'Calico',
+    'Striped',
+    'Mixed/Multi-colored',
+    'Custom'
+  ];
+
   // Age group options
   const ageGroups = [
     { value: 'puppy', label: 'Puppy/Kitten' },
@@ -698,23 +719,46 @@ const UserAddPet = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <label htmlFor="color" className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label htmlFor="colorOption" className="block text-sm font-semibold text-gray-700 mb-2">
                     Color
                   </label>
                   <div className="relative">
-                    <input
-                      type="text"
-                      id="color"
-                      name="color"
-                      value={formData.color}
+                    <select
+                      id="colorOption"
+                      name="colorOption"
+                      value={formData.colorOption}
                       onChange={handleChange}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
-                      placeholder="Enter color description"
-                    />
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md appearance-none"
+                    >
+                      <option value="">Select color</option>
+                      {colorOptions.map((color) => (
+                        <option key={color} value={color}>
+                          {color}
+                        </option>
+                      ))}
+                    </select>
                     <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                      <div className="w-4 h-4 rounded-full bg-gradient-to-r from-blue-400 to-purple-400"></div>
+                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
                     </div>
                   </div>
+                  {formData.colorOption === 'Custom' && (
+                    <div className="mt-3 space-y-2">
+                      <label htmlFor="customColor" className="block text-sm font-semibold text-gray-700">
+                        Describe the color
+                      </label>
+                      <input
+                        type="text"
+                        id="customColor"
+                        name="customColor"
+                        value={formData.customColor}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
+                        placeholder="e.g., Light brown with white patches"
+                      />
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="bloodGroup" className="block text-sm font-semibold text-gray-700 mb-2">
