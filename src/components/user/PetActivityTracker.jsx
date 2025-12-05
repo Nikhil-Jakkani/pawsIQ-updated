@@ -40,6 +40,7 @@ const PetActivityTracker = ({ pets: petsProp = [] }) => {
       }
     ];
     const list = (Array.isArray(petsProp) && petsProp.length ? petsProp : fallback).map((p, idx) => ({
+      id: p.id || p.pet_id || p.petId || idx + 1,
       name: p.name || `Pet ${idx + 1}`,
       breed: p.breed || '',
       type: (p.type || '').toLowerCase(),
@@ -358,8 +359,8 @@ const PetActivityTracker = ({ pets: petsProp = [] }) => {
                         type="button"
                         onClick={() => setActivityType(type)}
                         className={`flex flex-col items-center justify-center p-3 border rounded-xl transition-all ${activityType === type
-                            ? 'bg-indigo-50 border-indigo-500 text-indigo-700'
-                            : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                          ? 'bg-indigo-50 border-indigo-500 text-indigo-700'
+                          : 'border-gray-300 text-gray-700 hover:bg-gray-50'
                           }`}
                       >
                         <IconComponent className={`h-5 w-5 ${activityType === type ? 'text-indigo-500' : 'text-gray-400'}`} />
@@ -585,12 +586,13 @@ const PetActivityTracker = ({ pets: petsProp = [] }) => {
           {Object.entries(currentPetData.today).map(([activity, data]) => {
             const IconComponent = getActivityIcon(activity);
             const displayValue = Math.round(data.value);
-            const isRunning = running && running.petName === currentPet.name && running.type === activity;
+            const isRunning = running && running.petKey === currentPetKey && running.type === activity;
             // Use session-only progress while running; otherwise use cumulative
             const sessionVal = (isRunning && data.unit === 'min' && typeof (running?.baseValue) === 'number')
               ? Math.max(0, data.value - running.baseValue)
               : data.value;
-            const percentage = Math.min((sessionVal / data.goal) * 100, 100);
+            const rawPercentage = data.goal ? (sessionVal / data.goal) * 100 : 0;
+            const barPercentage = Math.min(rawPercentage, 100);
             const formatMinutes = (val, goal) => {
               const totalSec = Math.max(0, Math.round(val * 60));
               const mm = Math.floor(totalSec / 60);
@@ -615,22 +617,31 @@ const PetActivityTracker = ({ pets: petsProp = [] }) => {
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div
-                        className={`h-full rounded-full transition-all duration-500 ${getProgressColor(percentage)}`}
-                        style={{ width: `${percentage}%` }}
+                        className={`h-full rounded-full transition-all duration-500 ${getProgressColor(rawPercentage)}`}
+                        style={{ width: `${barPercentage}%` }}
                       ></div>
                     </div>
                   </div>
-                  <div className={`text-xs font-bold px-2 py-1 rounded-full ${percentage >= 100 ? 'bg-green-100 text-green-700' :
-                      percentage >= 75 ? 'bg-yellow-100 text-yellow-700' :
-                        percentage >= 50 ? 'bg-orange-100 text-orange-700' : 'bg-red-100 text-red-700'
+                  <div className={`text-xs font-bold px-2 py-1 rounded-full ${rawPercentage >= 100 ? 'bg-green-100 text-green-700' :
+                    rawPercentage >= 75 ? 'bg-yellow-100 text-yellow-700' :
+                      rawPercentage >= 50 ? 'bg-orange-100 text-orange-700' : 'bg-red-100 text-red-700'
                     }`}>
-                    {Math.round(percentage)}%
+                    {Math.round(rawPercentage)}%
                   </div>
                   <div className="ml-2 flex items-center gap-2">
                     {isRunning ? (
                       <button className="px-2 py-1 text-[10px] bg-red-600 text-white rounded" onClick={stopTimer}>Stop</button>
                     ) : (
-                      <button className="px-2 py-1 text-[10px] border rounded" onClick={() => startTimer(currentPet.name, activity, data.value)}>Start</button>
+                      <button
+                        className="px-2 py-1 text-[10px] border rounded"
+                        onClick={() => {
+                          setActivityType(activity);
+                          setShowPopup(true);
+                          startTimer(currentPetKey, activity, data.value);
+                        }}
+                      >
+                        Start
+                      </button>
                     )}
                     <span className={`text-[10px] ${isRunning ? 'text-green-600' : 'text-gray-500'}`}>{isRunning ? 'Live' : 'Not running'}</span>
                   </div>
@@ -665,8 +676,8 @@ const PetActivityTracker = ({ pets: petsProp = [] }) => {
                       {completedActivities}/{totalActivities}
                     </div>
                     <div className={`text-xs font-bold px-2 py-1 rounded-full ${overallPercentage >= 80 ? 'bg-green-100 text-green-700' :
-                        overallPercentage >= 60 ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-orange-100 text-orange-700'
+                      overallPercentage >= 60 ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-orange-100 text-orange-700'
                       }`}>
                       {overallPercentage}%
                     </div>
