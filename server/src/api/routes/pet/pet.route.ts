@@ -4,8 +4,10 @@ import { userAuth } from '../../middlewares/user.auth.js';
 import { validate } from '../../middlewares/validate.js';
 import { petValidation } from '../../validations/user/pet.validation.js';
 import { petController } from '../../controllers/user/pet.controller.js';
+import petActivityController from '../../controllers/user/petActivity.controller.js';
 import { db } from '../../../config/db.js';
 import prisma from '../../../lib/prisma.js';
+import petActivityValidation from '../../validations/user/petActivity.validation.js';
 
 const router = express.Router();
 
@@ -284,7 +286,7 @@ router.get('/:petId', userAuth as any, async (req: any, res) => {
         (safePet as any).vet_phone = '';
         (safePet as any).notes = '';
       }
-    } catch {}
+    } catch { }
     // Enrich from consolidated tables
     try {
       const [al, hc, vac] = await Promise.all([
@@ -299,7 +301,7 @@ router.get('/:petId', userAuth as any, async (req: any, res) => {
       (safePet as any).current_medications = hc?.current_medications ?? '';
       (safePet as any).dietary_needs = hc?.dietary_needs ?? '';
       (safePet as any).vaccinations = vac ? { selected_vaccines: vac.selected_vaccines, vaccination_dates: vac.vaccination_dates, next_due_dates: vac.next_due_dates, custom_vaccines: vac.custom_vaccines } : undefined;
-    } catch (_) {}
+    } catch (_) { }
     return res.status(httpStatus.OK).send(safePet);
   } catch (e: any) {
     return res.status(httpStatus.INTERNAL_SERVER_ERROR).send({ message: e?.message || 'Failed to fetch pet' });
@@ -307,6 +309,20 @@ router.get('/:petId', userAuth as any, async (req: any, res) => {
 });
 
 router.patch('/:petId', userAuth as any, validate(petValidation.updatePetProfile), petController.updatePetProfile);
+
+router.get(
+  '/:petId/activities',
+  userAuth as any,
+  validate({ params: petActivityValidation.getSummary.params, query: petActivityValidation.getSummary.query }),
+  petActivityController.getSummary,
+);
+
+router.post(
+  '/:petId/activities',
+  userAuth as any,
+  validate({ params: petActivityValidation.logActivity.params, body: petActivityValidation.logActivity.body }),
+  petActivityController.logActivity,
+);
 
 router.delete('/:petId', userAuth as any, async (req: any, res) => {
   try {

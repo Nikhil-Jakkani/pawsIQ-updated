@@ -1,8 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { FaRunning, FaBone, FaPlay, FaChartLine, FaChevronLeft, FaChevronRight, FaPaw, FaPlus, FaTimes, FaWater, FaBed, FaCheck, FaHeart, FaSmile } from 'react-icons/fa';
+import { useAuth } from '../../context/AuthContext';
 
-// Accept pets and optional realtime fetcher via props
-const PetActivityTracker = ({ pets: petsProp = [], fetchActivities }) => {
+const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
+
+// Accept pets via props (defaults to mock data)
+const PetActivityTracker = ({ pets: petsProp = [] }) => {
   const [currentPetIndex, setCurrentPetIndex] = useState(0);
   const [showPopup, setShowPopup] = useState(false);
   const [activityType, setActivityType] = useState('walking'); // renamed from exercise
@@ -13,26 +16,31 @@ const PetActivityTracker = ({ pets: petsProp = [], fetchActivities }) => {
   const [foodImage, setFoodImage] = useState(null); // { base64, preview }
   const [nutrition, setNutrition] = useState(null);
   const [analyzing, setAnalyzing] = useState(false);
+  const [loadingActivities, setLoadingActivities] = useState(false);
+  const [activityError, setActivityError] = useState('');
+
+  const { authFetch } = useAuth();
 
   // Map incoming pets to minimal structure this component needs
   const pets = useMemo(() => {
     const fallback = [
-      { 
-        name: 'Max', 
-        breed: 'Golden Retriever', 
+      {
+        name: 'Max',
+        breed: 'Golden Retriever',
         type: 'dog',
         image: 'https://images.unsplash.com/photo-1552053831-71594a27632d?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=60',
         color: 'from-amber-500 to-orange-600'
       },
-      { 
-        name: 'Luna', 
-        breed: 'Siamese Cat', 
+      {
+        name: 'Luna',
+        breed: 'Siamese Cat',
         type: 'cat',
         image: 'https://images.unsplash.com/photo-1592194996308-7b43878e84a6?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=60',
         color: 'from-purple-500 to-blue-600'
       }
     ];
     const list = (Array.isArray(petsProp) && petsProp.length ? petsProp : fallback).map((p, idx) => ({
+      id: p.id || p.pet_id || p.petId || idx + 1,
       name: p.name || `Pet ${idx + 1}`,
       breed: p.breed || '',
       type: (p.type || '').toLowerCase(),
@@ -42,69 +50,72 @@ const PetActivityTracker = ({ pets: petsProp = [], fetchActivities }) => {
     return list;
   }, [petsProp]);
 
-  // Local simulated activity store keyed by pet name
-  const [activities, setActivities] = useState(() => ({
-    [pets[0]?.name || 'Max']: {
-      today: {
-        walking: { value: 45, goal: 60, unit: 'min' },
-        food: { value: 2, goal: 3, unit: 'portions' },
-        play: { value: 30, goal: 45, unit: 'min' }
-      },
-      week: [
-        { day: 'Mon', walking: 60, food: 3, play: 45 },
-        { day: 'Tue', walking: 45, food: 3, play: 30 },
-        { day: 'Wed', walking: 55, food: 2, play: 40 },
-        { day: 'Thu', walking: 40, food: 3, play: 35 },
-        { day: 'Fri', walking: 50, food: 3, play: 50 },
-        { day: 'Sat', walking: 70, food: 3, play: 60 },
-      ]
-    }
-  }));
+  const activityShape = {
+    walking: { goal: 60, unit: 'min' },
+    food: { goal: 3, unit: 'portions' },
+    water: { goal: 6, unit: 'cups' },
+    play: { goal: 45, unit: 'min' },
+    sleep: { goal: 12, unit: 'hours' },
+  };
+
+  const buildDefaultToday = () => Object.entries(activityShape).reduce((acc, [type, cfg]) => {
+    acc[type] = { value: 0, goal: cfg.goal, unit: cfg.unit };
+    return acc;
+  }, {});
+
+  const buildDefaultSummary = () => ({ today: buildDefaultToday(), week: [] });
+
+  const getPetKey = (pet, idx = 0) => {
+    if (!pet) return `pet-${idx}`;
+    if (pet.id) return `pet-${pet.id}`;
+    return `pet-${pet.name || idx}`;
+  };
+
+  const seedActivities = (list) => {
+    const map = {};
+    list.forEach((pet, idx) => {
+      map[getPetKey(pet, idx)] = buildDefaultSummary();
+    });
+    return Object.keys(map).length ? map : { [getPetKey(list[0], 0)]: buildDefaultSummary() };
+  };
+
+  const [activities, setActivities] = useState(() => seedActivities(pets));
 
   // Real-time timer (per pet & activity)
-  const [running, setRunning] = useState(null); // { petName, type, startedAt, initialValue, baseValue }
-
-  // Optional realtime polling hook (every 20s) if fetchActivities provided
-  useEffect(() => {
-    if (!fetchActivities) return;
-    let mounted = true;
-    const load = async () => {
-      try {
-        const data = await fetchActivities(); // expected shape should match setActivities
-        // Do not overwrite local live increments while a timer is running
-        if (mounted && data && !running) setActivities(data);
-      } catch {}
-    };
-    load();
-    const id = setInterval(load, 20000);
-    return () => { mounted = false; clearInterval(id); };
-  }, [fetchActivities, running]);
+  const [running, setRunning] = useState(null); // { petKey, type, startedAt, baseValue }
 
   useEffect(() => {
     if (!running) return;
     const id = setInterval(() => {
       setActivities((prev) => {
         const copy = { ...prev };
-        const { petName, type, startedAt, initialValue, baseValue } = running;
-        const pdata = copy[petName] || { today: {}, week: [] };
-        const today = pdata.today || {};
+        const { petKey, type, startedAt, baseValue } = running;
+        const summary = copy[petKey];
+        if (!summary) return copy;
+        const today = summary.today || {};
         const rec = today[type];
         if (!rec) return copy;
         // Only auto-increment minute-based activities
         if (rec.unit !== 'min') return copy;
         const elapsedMin = (Date.now() - startedAt) / 60000;
         // Keep the underlying cumulative value growing from the starting base
-        rec.value = Math.min((baseValue || 0) + elapsedMin, (rec.goal || 0) * 1.5 || 1e6);
-        return { ...copy };
+        const updated = Math.min((baseValue || 0) + elapsedMin, (rec.goal || 0) * 1.5 || 1e6);
+        copy[petKey] = {
+          ...summary,
+          today: {
+            ...today,
+            [type]: { ...rec, value: updated },
+          },
+        };
+        return copy;
       });
     }, 1000);
     return () => clearInterval(id);
   }, [running]);
 
-  const startTimer = (petName, type, currentVal) => {
+  const startTimer = (petKey, type, currentVal) => {
     const base = Number(currentVal) || 0;
-    // initialValue is the session's starting displayed value (0), baseValue is the cumulative baseline
-    setRunning({ petName, type, startedAt: Date.now(), initialValue: 0, baseValue: base });
+    setRunning({ petKey, type, startedAt: Date.now(), baseValue: base });
   };
   const stopTimer = () => setRunning(null);
 
@@ -113,19 +124,83 @@ const PetActivityTracker = ({ pets: petsProp = [], fetchActivities }) => {
       const saved = localStorage.getItem('petActivityRunning');
       if (saved && !running) {
         const parsed = JSON.parse(saved);
-        if (parsed && parsed.petName && parsed.type && parsed.startedAt && parsed.initialValue !== undefined) {
+        if (parsed && parsed.petKey && parsed.type && parsed.startedAt) {
           setRunning(parsed);
         }
       }
-    } catch {}
+    } catch { }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
     try {
       if (running) localStorage.setItem('petActivityRunning', JSON.stringify(running));
       else localStorage.removeItem('petActivityRunning');
-    } catch {}
+    } catch { }
   }, [running]);
+
+  const normalizeSummary = useCallback((summary) => {
+    const baseToday = buildDefaultToday();
+    const incoming = summary?.today || {};
+    const normalizedToday = Object.keys(baseToday).reduce((acc, type) => {
+      const src = incoming?.[type];
+      if (src && typeof src === 'object') {
+        acc[type] = {
+          value: typeof src.value === 'number' ? src.value : Number(src?.value || 0),
+          goal: typeof src.goal === 'number' ? src.goal : baseToday[type].goal,
+          unit: src.unit || baseToday[type].unit,
+        };
+      } else {
+        acc[type] = {
+          value: Number(src || 0),
+          goal: baseToday[type].goal,
+          unit: baseToday[type].unit,
+        };
+      }
+      return acc;
+    }, {});
+    return {
+      today: normalizedToday,
+      week: Array.isArray(summary?.week) ? summary.week : [],
+    };
+  }, []);
+
+  useEffect(() => {
+    // ensure default entries exist when pets change
+    setActivities((prev) => {
+      const copy = { ...prev };
+      pets.forEach((pet, idx) => {
+        const key = getPetKey(pet, idx);
+        if (!copy[key]) copy[key] = buildDefaultSummary();
+      });
+      return copy;
+    });
+  }, [pets]);
+
+  const loadActivities = useCallback(async (pet, idx) => {
+    if (!pet?.id || !authFetch) return;
+    const key = getPetKey(pet, idx);
+    setLoadingActivities(true);
+    setActivityError('');
+    try {
+      const resp = await authFetch(`${API_URL}/pets/${pet.id}/activities?days=7`);
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(data?.message || 'Failed to load activities');
+      const summary = normalizeSummary(data?.summary);
+      setActivities((prev) => ({ ...prev, [key]: summary }));
+    } catch (error) {
+      console.error('Failed to load pet activities:', error);
+      setActivityError(error.message || 'Unable to load activities');
+    } finally {
+      setLoadingActivities(false);
+    }
+  }, [authFetch, normalizeSummary]);
+
+  useEffect(() => {
+    if (!pets.length) return;
+    const current = pets[currentPetIndex];
+    if (!current) return;
+    loadActivities(current, currentPetIndex);
+  }, [pets, currentPetIndex, loadActivities]);
 
   // Icon per activity type
   const getActivityIcon = (type) => {
@@ -149,7 +224,7 @@ const PetActivityTracker = ({ pets: petsProp = [], fetchActivities }) => {
       default: return 'text-gray-600 bg-gray-100';
     }
   };
-  
+
   const getActivityUnit = (type) => {
     switch (type) {
       case 'walking': return 'min';
@@ -160,50 +235,40 @@ const PetActivityTracker = ({ pets: petsProp = [], fetchActivities }) => {
       default: return '';
     }
   };
-  
+
   const handleSubmitActivity = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     try {
       const currentPetName = pets[currentPetIndex].name;
-
-      // If food activity, persist calories only
-      if (activityType === 'food') {
-        const calories = parseInt(activityValue || '0', 10);
-        try {
-          const mod = await import('../../services/nutritionService');
-          await mod.saveFoodCalories({
-            pet_id: currentPetIndex + 1, // TODO: replace with real pet_id from your store
-            calories,
-            note: activityNote || undefined,
-            image_url: foodImage?.preview || undefined,
-          });
-        } catch (err) {
-          console.error('Failed to save food calories:', err);
-        }
+      const currentPetId = pets[currentPetIndex].id;
+      const petKey = getPetKey(pets[currentPetIndex], currentPetIndex);
+      if (!currentPetId) {
+        throw new Error('Missing pet identifier. Please refresh and try again.');
       }
 
-      // Local UI update simulation (keeps UI in sync immediately)
-      setActivities((prev) => {
-        const copy = { ...(prev || {}) };
-        copy[currentPetName] = copy[currentPetName] || { today: {}, week: [] };
-        const today = copy[currentPetName].today;
-        const currentActivity = today[activityType];
-        if (currentActivity) {
-          currentActivity.value = Math.min(
-            parseInt(currentActivity.value) + parseInt(activityValue || 0),
-            (currentActivity.goal || 0) * 1.5 || 9999
-          );
-        } else {
-          today[activityType] = {
-            value: parseInt(activityValue || 0),
-            goal: Math.max(10, parseInt(activityValue || 0) * 1.2),
-            unit: getActivityUnit(activityType)
-          };
-        }
-        return { ...copy };
+      const payload = {
+        activityType,
+        value: Number(activityValue || 0),
+        unit: getActivityUnit(activityType),
+        note: activityNote || undefined,
+        metadata: {
+          nutrition,
+          imagePreview: foodImage?.preview || undefined,
+        },
+      };
+
+      const resp = await authFetch(`${API_URL}/pets/${currentPetId}/activities`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
       });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(data?.message || 'Failed to log activity');
+
+      const summary = normalizeSummary(data?.summary);
+      setActivities((prev) => ({ ...prev, [petKey]: summary }));
 
       setShowPopup(false);
       setShowSuccess(true);
@@ -214,6 +279,9 @@ const PetActivityTracker = ({ pets: petsProp = [], fetchActivities }) => {
       setActivityNote('');
       setFoodImage(null);
       setNutrition(null);
+    } catch (error) {
+      console.error('Failed to log activity:', error);
+      setActivityError(error.message || 'Failed to log activity');
     } finally {
       setIsSubmitting(false);
     }
@@ -227,7 +295,8 @@ const PetActivityTracker = ({ pets: petsProp = [], fetchActivities }) => {
   };
 
   const currentPet = pets[currentPetIndex];
-  const currentPetData = activities[currentPet?.name] || { today: {}, week: [] };
+  const currentPetKey = getPetKey(currentPet, currentPetIndex);
+  const currentPetData = activities[currentPetKey] || buildDefaultSummary();
 
   const nextPet = () => {
     const nextIndex = (currentPetIndex + 1) % pets.length;
@@ -254,19 +323,19 @@ const PetActivityTracker = ({ pets: petsProp = [], fetchActivities }) => {
           </div>
         </div>
       )}
-      
+
       {/* Activity Log Popup */}
       {showPopup && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 animate-fadeIn">
           <div className="bg-white rounded-3xl shadow-xl max-w-md w-full p-6 relative animate-scaleIn">
             {/* Close button */}
-            <button 
+            <button
               onClick={() => setShowPopup(false)}
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
             >
               <FaTimes className="text-xl" />
             </button>
-            
+
             {/* Popup header */}
             <div className="text-center mb-6">
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-indigo-100 mb-4">
@@ -275,7 +344,7 @@ const PetActivityTracker = ({ pets: petsProp = [], fetchActivities }) => {
               <h3 className="text-xl font-bold text-gray-800">Log {pets[currentPetIndex].name}'s Activity</h3>
               <p className="text-gray-500 text-sm mt-1">Keep track of your pet's daily activities</p>
             </div>
-            
+
             {/* Activity form */}
             <form onSubmit={handleSubmitActivity}>
               {/* Activity type selector */}
@@ -289,11 +358,10 @@ const PetActivityTracker = ({ pets: petsProp = [], fetchActivities }) => {
                         key={type}
                         type="button"
                         onClick={() => setActivityType(type)}
-                        className={`flex flex-col items-center justify-center p-3 border rounded-xl transition-all ${
-                          activityType === type 
-                            ? 'bg-indigo-50 border-indigo-500 text-indigo-700' 
-                            : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                        }`}
+                        className={`flex flex-col items-center justify-center p-3 border rounded-xl transition-all ${activityType === type
+                          ? 'bg-indigo-50 border-indigo-500 text-indigo-700'
+                          : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                          }`}
                       >
                         <IconComponent className={`h-5 w-5 ${activityType === type ? 'text-indigo-500' : 'text-gray-400'}`} />
                         <span className="mt-1 text-xs font-medium capitalize">{type}</span>
@@ -302,7 +370,7 @@ const PetActivityTracker = ({ pets: petsProp = [], fetchActivities }) => {
                   })}
                 </div>
               </div>
-              
+
               {/* Amount/Portion input */}
               <div className="mb-5">
                 <label htmlFor="activityValue" className="block text-sm font-medium text-gray-700 mb-2">
@@ -319,7 +387,7 @@ const PetActivityTracker = ({ pets: petsProp = [], fetchActivities }) => {
                   placeholder={activityType === 'food' ? 'Enter portion count' : `Enter ${activityType} amount`}
                 />
               </div>
-              
+
               {/* Notes input */}
               <div className="mb-6">
                 <label htmlFor="activityNote" className="block text-sm font-medium text-gray-700 mb-2">
@@ -390,7 +458,7 @@ const PetActivityTracker = ({ pets: petsProp = [], fetchActivities }) => {
                       <img src={foodImage.preview} alt="food" className="w-16 h-16 object-cover rounded border" />
                       {nutrition && (
                         <div className="text-xs text-gray-700">
-                          <div className="font-semibold">{nutrition.name} ({Math.round((nutrition.confidence||0)*100)}%)</div>
+                          <div className="font-semibold">{nutrition.name} ({Math.round((nutrition.confidence || 0) * 100)}%)</div>
                           <div>Calories: {nutrition.calories}</div>
                           <div className="italic text-gray-500">Amount auto-filled with calories. You can edit if needed.</div>
                         </div>
@@ -399,7 +467,7 @@ const PetActivityTracker = ({ pets: petsProp = [], fetchActivities }) => {
                   )}
                 </div>
               )}
-              
+
               {/* Submit button */}
               <button
                 type="submit"
@@ -421,14 +489,14 @@ const PetActivityTracker = ({ pets: petsProp = [], fetchActivities }) => {
                   </>
                 )}
               </button>
-              
+
               {/* Pet illustration */}
               <div className="mt-6 text-center">
                 <div className="inline-block">
                   <div className="relative">
                     <div className="w-12 h-12 rounded-full overflow-hidden mx-auto border-2 border-indigo-100">
-                      <img 
-                        src={pets[currentPetIndex].image} 
+                      <img
+                        src={pets[currentPetIndex].image}
                         alt={pets[currentPetIndex].name}
                         className="w-full h-full object-cover"
                       />
@@ -444,7 +512,7 @@ const PetActivityTracker = ({ pets: petsProp = [], fetchActivities }) => {
           </div>
         </div>
       )}
-      
+
       {/* Compact Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
@@ -459,7 +527,7 @@ const PetActivityTracker = ({ pets: petsProp = [], fetchActivities }) => {
           <div className="bg-green-100 text-green-700 text-xs font-semibold px-2 py-1 rounded-full flex-shrink-0">
             Live
           </div>
-          <button 
+          <button
             onClick={() => setShowPopup(true)}
             className="bg-indigo-500 hover:bg-indigo-600 text-white p-1.5 rounded-lg shadow-sm transition-colors flex-shrink-0"
             aria-label="Log activity"
@@ -477,8 +545,8 @@ const PetActivityTracker = ({ pets: petsProp = [], fetchActivities }) => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-white shadow-sm">
-                <img 
-                  src={currentPet.image} 
+                <img
+                  src={currentPet.image}
                   alt={currentPet.name}
                   className="w-full h-full object-cover"
                 />
@@ -488,17 +556,17 @@ const PetActivityTracker = ({ pets: petsProp = [], fetchActivities }) => {
                 <p className="text-xs text-gray-500">{currentPet.breed}</p>
               </div>
             </div>
-            
+
             {pets.length > 1 && (
               <div className="flex items-center gap-1">
-                <button 
+                <button
                   onClick={prevPet}
                   className="p-1 rounded-full bg-white hover:bg-gray-100 border border-gray-200 transition-colors"
                 >
                   <FaChevronLeft className="text-gray-600 text-xs" />
                 </button>
                 <span className="text-xs text-gray-500 px-2">{currentPetIndex + 1}/{pets.length}</span>
-                <button 
+                <button
                   onClick={nextPet}
                   className="p-1 rounded-full bg-white hover:bg-gray-100 border border-gray-200 transition-colors"
                 >
@@ -513,17 +581,18 @@ const PetActivityTracker = ({ pets: petsProp = [], fetchActivities }) => {
       {/* Today's Progress */}
       <div>
         <h3 className="text-sm font-bold text-gray-800 mb-3">Today's Progress</h3>
-        
+
         <div className="space-y-2">
           {Object.entries(currentPetData.today).map(([activity, data]) => {
             const IconComponent = getActivityIcon(activity);
             const displayValue = Math.round(data.value);
-            const isRunning = running && running.petName === currentPet.name && running.type === activity;
+            const isRunning = running && running.petKey === currentPetKey && running.type === activity;
             // Use session-only progress while running; otherwise use cumulative
             const sessionVal = (isRunning && data.unit === 'min' && typeof (running?.baseValue) === 'number')
               ? Math.max(0, data.value - running.baseValue)
               : data.value;
-            const percentage = Math.min((sessionVal / data.goal) * 100, 100);
+            const rawPercentage = data.goal ? (sessionVal / data.goal) * 100 : 0;
+            const barPercentage = Math.min(rawPercentage, 100);
             const formatMinutes = (val, goal) => {
               const totalSec = Math.max(0, Math.round(val * 60));
               const mm = Math.floor(totalSec / 60);
@@ -531,10 +600,10 @@ const PetActivityTracker = ({ pets: petsProp = [], fetchActivities }) => {
               const goalSec = Math.max(0, Math.round((goal || 0) * 60));
               const mmG = Math.floor(goalSec / 60);
               const ssG = goalSec % 60;
-              return `${mm}:${String(ss).padStart(2,'0')} / ${mmG}:${String(ssG).padStart(2,'0')}`;
+              return `${mm}:${String(ss).padStart(2, '0')} / ${mmG}:${String(ssG).padStart(2, '0')}`;
             };
             const valueLabel = data.unit === 'min' ? formatMinutes(sessionVal, data.goal) : `${Math.round(sessionVal)}/${data.goal} ${data.unit}`;
-            
+
             return (
               <div key={activity} className="bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition-colors">
                 <div className="flex items-center gap-3">
@@ -547,24 +616,32 @@ const PetActivityTracker = ({ pets: petsProp = [], fetchActivities }) => {
                       <span className="text-xs text-gray-500">{valueLabel}</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className={`h-full rounded-full transition-all duration-500 ${getProgressColor(percentage)}`}
-                        style={{ width: `${percentage}%` }}
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 ${getProgressColor(rawPercentage)}`}
+                        style={{ width: `${barPercentage}%` }}
                       ></div>
                     </div>
                   </div>
-                  <div className={`text-xs font-bold px-2 py-1 rounded-full ${
-                    percentage >= 100 ? 'bg-green-100 text-green-700' : 
-                    percentage >= 75 ? 'bg-yellow-100 text-yellow-700' : 
-                    percentage >= 50 ? 'bg-orange-100 text-orange-700' : 'bg-red-100 text-red-700'
-                  }`}>
-                    {Math.round(percentage)}%
+                  <div className={`text-xs font-bold px-2 py-1 rounded-full ${rawPercentage >= 100 ? 'bg-green-100 text-green-700' :
+                    rawPercentage >= 75 ? 'bg-yellow-100 text-yellow-700' :
+                      rawPercentage >= 50 ? 'bg-orange-100 text-orange-700' : 'bg-red-100 text-red-700'
+                    }`}>
+                    {Math.round(rawPercentage)}%
                   </div>
                   <div className="ml-2 flex items-center gap-2">
                     {isRunning ? (
                       <button className="px-2 py-1 text-[10px] bg-red-600 text-white rounded" onClick={stopTimer}>Stop</button>
                     ) : (
-                      <button className="px-2 py-1 text-[10px] border rounded" onClick={() => startTimer(currentPet.name, activity, data.value)}>Start</button>
+                      <button
+                        className="px-2 py-1 text-[10px] border rounded"
+                        onClick={() => {
+                          setActivityType(activity);
+                          setShowPopup(true);
+                          startTimer(currentPetKey, activity, data.value);
+                        }}
+                      >
+                        Start
+                      </button>
                     )}
                     <span className={`text-[10px] ${isRunning ? 'text-green-600' : 'text-gray-500'}`}>{isRunning ? 'Live' : 'Not running'}</span>
                   </div>
@@ -592,17 +669,16 @@ const PetActivityTracker = ({ pets: petsProp = [], fetchActivities }) => {
                     (sum, data) => sum + Math.min((data.value / data.goal) * 100, 100), 0
                   ) / totalActivities
                 );
-                
+
                 return (
                   <div>
                     <div className="text-lg font-bold text-gray-800">
                       {completedActivities}/{totalActivities}
                     </div>
-                    <div className={`text-xs font-bold px-2 py-1 rounded-full ${
-                      overallPercentage >= 80 ? 'bg-green-100 text-green-700' :
+                    <div className={`text-xs font-bold px-2 py-1 rounded-full ${overallPercentage >= 80 ? 'bg-green-100 text-green-700' :
                       overallPercentage >= 60 ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-orange-100 text-orange-700'
-                    }`}>
+                        'bg-orange-100 text-orange-700'
+                      }`}>
                       {overallPercentage}%
                     </div>
                   </div>
