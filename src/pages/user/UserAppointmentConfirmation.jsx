@@ -133,7 +133,9 @@ const UserAppointmentConfirmation = () => {
           <div className="mt-6 bg-blue-50 p-4 rounded-lg border border-blue-100">
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Total Paid</span>
-              <span className="font-bold text-blue-800">${appointment?.total?.toFixed ? appointment.total.toFixed(2) : (appointment?.total || 0)}</span>
+              <span className="font-bold text-blue-800">
+                {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(Number(appointment?.total || 0))}
+              </span>
             </div>
           </div>
 

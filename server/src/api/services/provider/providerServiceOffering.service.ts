@@ -21,6 +21,15 @@ const listServiceOfferings = async (providerId: number) => {
           pet_type: true,
         },
       },
+      PIQ_Provider_ServicePricing: {
+        where: {
+          effective_to: null,
+        },
+        orderBy: {
+          effective_from: 'desc',
+        },
+        take: 1,
+      },
     },
     orderBy: { created_at: 'desc' },
   });
@@ -41,6 +50,10 @@ const listServiceOfferings = async (providerId: number) => {
     default_price: offering.PIQ_Service_Master?.service_price_amt,
     default_duration: offering.PIQ_Service_Master?.service_duration,
     pet_type: offering.PIQ_Service_Master?.pet_type,
+    // Custom pricing
+    custom_price: offering.PIQ_Provider_ServicePricing?.[0]?.base_price || null,
+    discount_percent: offering.PIQ_Provider_ServicePricing?.[0]?.discount_percent || 0,
+    pricing_id: offering.PIQ_Provider_ServicePricing?.[0]?.pricing_id || null,
   }));
 };
 
@@ -66,6 +79,15 @@ const getServiceOffering = async (providerId: number, offeringId: number) => {
           pet_type: true,
         },
       },
+      PIQ_Provider_ServicePricing: {
+        where: {
+          effective_to: null,
+        },
+        orderBy: {
+          effective_from: 'desc',
+        },
+        take: 1,
+      },
     },
   });
 
@@ -88,6 +110,9 @@ const getServiceOffering = async (providerId: number, offeringId: number) => {
     default_price: offering.PIQ_Service_Master?.service_price_amt,
     default_duration: offering.PIQ_Service_Master?.service_duration,
     pet_type: offering.PIQ_Service_Master?.pet_type,
+    custom_price: offering.PIQ_Provider_ServicePricing?.[0]?.base_price || null,
+    discount_percent: offering.PIQ_Provider_ServicePricing?.[0]?.discount_percent || 0,
+    pricing_id: offering.PIQ_Provider_ServicePricing?.[0]?.pricing_id || null,
   };
 };
 
@@ -101,6 +126,8 @@ const createServiceOffering = async (
     custom_title?: string;
     custom_description?: string;
     is_active?: boolean;
+    custom_price?: number;
+    discount_percent?: number;
   }
 ) => {
   // Check if service exists in master
@@ -153,6 +180,27 @@ const createServiceOffering = async (
     },
   });
 
+  let customPrice = null;
+  let discountPercent = 0;
+  let pricingId = null;
+
+  if (payload.custom_price !== undefined || payload.discount_percent !== undefined) {
+    const pricing = await prisma.pIQ_Provider_ServicePricing.create({
+      data: {
+        service_provider_id: providerId,
+        services_id: payload.services_id,
+        base_price: payload.custom_price || service.service_price_amt,
+        discount_percent: payload.discount_percent || 0,
+        effective_from: new Date(),
+        last_updated_dtm: new Date(),
+      },
+    });
+
+    customPrice = pricing.base_price;
+    discountPercent = pricing.discount_percent;
+    pricingId = pricing.pricing_id;
+  }
+
   return {
     offering_id: offering.offering_id,
     service_id: offering.services_id,
@@ -168,6 +216,9 @@ const createServiceOffering = async (
     default_price: offering.PIQ_Service_Master?.service_price_amt,
     default_duration: offering.PIQ_Service_Master?.service_duration,
     pet_type: offering.PIQ_Service_Master?.pet_type,
+    custom_price: customPrice,
+    discount_percent: discountPercent,
+    pricing_id: pricingId,
   };
 };
 
@@ -181,6 +232,8 @@ const updateServiceOffering = async (
     custom_title?: string;
     custom_description?: string;
     is_active?: boolean;
+    custom_price?: number;
+    discount_percent?: number;
   }
 ) => {
   // Check if offering exists and belongs to provider
@@ -188,6 +241,13 @@ const updateServiceOffering = async (
     where: {
       offering_id: offeringId,
       service_provider_id: providerId,
+    },
+    include: {
+      PIQ_Service_Master: {
+        select: {
+          service_price_amt: true,
+        },
+      },
     },
   });
 
@@ -217,8 +277,59 @@ const updateServiceOffering = async (
           pet_type: true,
         },
       },
+      PIQ_Provider_ServicePricing: {
+        where: {
+          effective_to: null,
+        },
+        orderBy: {
+          effective_from: 'desc',
+        },
+        take: 1,
+      },
     },
   });
+
+  let customPrice = null;
+  let discountPercent = 0;
+  let pricingId = null;
+
+  if (payload.custom_price !== undefined || payload.discount_percent !== undefined) {
+    const oldPricing = await prisma.pIQ_Provider_ServicePricing.findFirst({
+      where: {
+        service_provider_id: providerId,
+        services_id: existing.services_id,
+        effective_to: null,
+      },
+    });
+
+    if (oldPricing) {
+      await prisma.pIQ_Provider_ServicePricing.update({
+        where: { pricing_id: oldPricing.pricing_id },
+        data: {
+          effective_to: new Date(),
+        },
+      });
+    }
+
+    const newPricing = await prisma.pIQ_Provider_ServicePricing.create({
+      data: {
+        service_provider_id: providerId,
+        services_id: existing.services_id,
+        base_price: payload.custom_price !== undefined ? payload.custom_price : (oldPricing?.base_price || existing.PIQ_Service_Master!.service_price_amt),
+        discount_percent: payload.discount_percent !== undefined ? payload.discount_percent : (oldPricing?.discount_percent || 0),
+        effective_from: new Date(),
+        last_updated_dtm: new Date(),
+      },
+    });
+
+    customPrice = newPricing.base_price;
+    discountPercent = newPricing.discount_percent;
+    pricingId = newPricing.pricing_id;
+  } else if (updated.PIQ_Provider_ServicePricing.length > 0) {
+    customPrice = updated.PIQ_Provider_ServicePricing[0].base_price;
+    discountPercent = updated.PIQ_Provider_ServicePricing[0].discount_percent;
+    pricingId = updated.PIQ_Provider_ServicePricing[0].pricing_id;
+  }
 
   return {
     offering_id: updated.offering_id,
@@ -235,6 +346,9 @@ const updateServiceOffering = async (
     default_price: updated.PIQ_Service_Master?.service_price_amt,
     default_duration: updated.PIQ_Service_Master?.service_duration,
     pet_type: updated.PIQ_Service_Master?.pet_type,
+    custom_price: customPrice,
+    discount_percent: discountPercent,
+    pricing_id: pricingId,
   };
 };
 

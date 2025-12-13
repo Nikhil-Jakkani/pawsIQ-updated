@@ -20,77 +20,108 @@ import {
   deleteService,
 } from '../../store/slices/servicesSlice';
 
-const ServiceCard = ({ service, onEdit, onDelete, onToggle }) => (
-  <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
-    <div className="flex items-start justify-between mb-4">
-      <div>
-        <h3 className="text-lg font-semibold text-gray-900">{service.name}</h3>
-        <p className="text-sm text-gray-600 mt-1">{service.description}</p>
-      </div>
-      <button
-        onClick={() => onToggle(service.id)}
-        className={`p-2 rounded-lg transition-colors ${
-          service.active
-            ? 'bg-green-100 text-green-600'
-            : 'bg-gray-100 text-gray-600'
-        }`}
-      >
-        {service.active ? <FaToggleOn /> : <FaToggleOff />}
-      </button>
-    </div>
+const ServiceCard = ({ service, onEdit, onDelete, onToggle }) => {
+  const displayPrice = service.custom_price || service.default_price;
+  const discountPercent = service.discount_percent || 0;
+  const discountAmount = discountPercent ? (displayPrice * discountPercent) / 100 : 0;
+  const finalPrice = displayPrice - discountAmount;
 
-    <div className="grid grid-cols-2 gap-4 mb-4 py-4 border-y border-gray-200">
-      <div>
-        <p className="flex items-center text-sm text-gray-600">
-          <FaRupeeSign className="mr-2 text-green-600" />
-          Price: ₹{service.price}
-        </p>
+  return (
+    <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
+      <div className="flex items-start justify-between mb-4">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900">
+            {service.custom_title || service.service_title}
+          </h3>
+          <p className="text-sm text-gray-600 mt-1">
+            {service.custom_description || service.service_description}
+          </p>
+        </div>
+        <button
+          onClick={() => onToggle(service.offering_id)}
+          className={`p-2 rounded-lg transition-colors ${
+            service.is_active
+              ? 'bg-green-100 text-green-600'
+              : 'bg-gray-100 text-gray-600'
+          }`}
+        >
+          {service.is_active ? <FaToggleOn /> : <FaToggleOff />}
+        </button>
       </div>
-      <div>
-        <p className="flex items-center text-sm text-gray-600">
-          <FaClock className="mr-2 text-blue-600" />
-          Duration: {service.duration} min
-        </p>
+
+      <div className="grid grid-cols-2 gap-4 mb-4 py-4 border-y border-gray-200">
+        <div>
+          <p className="flex items-center text-sm text-gray-600">
+            <FaRupeeSign className="mr-2 text-green-600" />
+            {service.custom_price ? (
+              <span>
+                {discountPercent > 0 ? (
+                  <>
+                    <span className="line-through text-gray-400 mr-2">₹{displayPrice}</span>
+                    <span className="font-semibold text-green-600">₹{finalPrice.toFixed(2)}</span>
+                  </>
+                ) : (
+                  <span className="font-semibold">₹{displayPrice.toFixed(2)}</span>
+                )}
+              </span>
+            ) : (
+              <span>₹{service.default_price}</span>
+            )}
+          </p>
+        </div>
+        <div>
+          <p className="flex items-center text-sm text-gray-600">
+            <FaClock className="mr-2 text-blue-600" />
+            Duration: {service.default_duration} min
+          </p>
+        </div>
+      </div>
+
+      {service.custom_price && discountPercent > 0 && (
+        <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded p-2 text-xs text-gray-600">
+          <span className="font-semibold">{discountPercent}% discount</span> applied
+        </div>
+      )}
+
+      <div className="flex space-x-3">
+        <button
+          onClick={() => onEdit(service.offering_id)}
+          className="flex-1 flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg transition-colors"
+        >
+          <FaEdit className="mr-2" />
+          Edit
+        </button>
+        <button
+          onClick={() => onDelete(service.offering_id)}
+          className="flex-1 flex items-center justify-center bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg transition-colors"
+        >
+          <FaTrash className="mr-2" />
+          Delete
+        </button>
       </div>
     </div>
-
-    <div className="mb-4">
-      <p className="text-xs text-gray-600">
-        Bookings: <span className="font-semibold">{service.bookings || 0}</span>
-      </p>
-    </div>
-
-    <div className="flex space-x-3">
-      <button
-        onClick={() => onEdit(service.id)}
-        className="flex-1 flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg transition-colors"
-      >
-        <FaEdit className="mr-2" />
-        Edit
-      </button>
-      <button
-        onClick={() => onDelete(service.id)}
-        className="flex-1 flex items-center justify-center bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg transition-colors"
-      >
-        <FaTrash className="mr-2" />
-        Delete
-      </button>
-    </div>
-  </div>
-);
+  );
+};
 
 const ServiceForm = ({ service, availableServices = [], onSubmit, onCancel }) => {
   const isEditing = Boolean(service);
   const [formData, setFormData] = useState({
-    serviceId: service?.serviceId ?? '',
-    customTitle: service?.customTitle ?? '',
-    customDescription: service?.customDescription ?? '',
-    isActive: service?.active ?? true,
+    serviceId: service?.service_id ?? '',
+    customTitle: service?.custom_title ?? '',
+    customDescription: service?.custom_description ?? '',
+    isActive: service?.is_active ?? true,
+    customPrice: service?.custom_price ?? '',
+    discountPercent: service?.discount_percent ?? 0,
   });
 
   const selectedService = availableServices.find(
     (item) => item.services_id === Number(formData.serviceId)
   );
+
+  const defaultPrice = isEditing ? service?.default_price : selectedService?.service_price_amt;
+  const finalPrice = formData.customPrice ? Number(formData.customPrice) : defaultPrice;
+  const discountAmount = formData.discountPercent ? (finalPrice * Number(formData.discountPercent)) / 100 : 0;
+  const priceAfterDiscount = finalPrice - discountAmount;
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -109,12 +140,16 @@ const ServiceForm = ({ service, availableServices = [], onSubmit, onCancel }) =>
           custom_title: formData.customTitle || undefined,
           custom_description: formData.customDescription || undefined,
           is_active: formData.isActive,
+          ...(formData.customPrice && { custom_price: Number(formData.customPrice) }),
+          ...(formData.discountPercent && { discount_percent: Number(formData.discountPercent) }),
         }
       : {
           services_id: Number(formData.serviceId),
           custom_title: formData.customTitle || undefined,
           custom_description: formData.customDescription || undefined,
           is_active: formData.isActive,
+          ...(formData.customPrice && { custom_price: Number(formData.customPrice) }),
+          ...(formData.discountPercent && { discount_percent: Number(formData.discountPercent) }),
         };
 
     onSubmit(payload);
@@ -211,19 +246,86 @@ const ServiceForm = ({ service, availableServices = [], onSubmit, onCancel }) =>
           {(isEditing || selectedService) && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-blue-50 border border-blue-100 rounded-lg p-4">
               <div>
-                <p className="text-xs text-blue-600 uppercase tracking-wide">Base Price</p>
+                <p className="text-xs text-blue-600 uppercase tracking-wide">Master Price</p>
                 <p className="text-lg font-semibold text-blue-900">
-                  ₹{(isEditing ? service?.price : selectedService?.service_price_amt) ?? 0}
+                  ₹{(isEditing ? service?.default_price : selectedService?.service_price_amt) ?? 0}
                 </p>
               </div>
               <div>
                 <p className="text-xs text-blue-600 uppercase tracking-wide">Duration</p>
                 <p className="text-lg font-semibold text-blue-900">
-                  {(isEditing ? service?.duration : selectedService?.service_duration) ?? 0} mins
+                  {(isEditing ? service?.default_duration : selectedService?.service_duration) ?? 0} mins
                 </p>
               </div>
             </div>
           )}
+
+          <div className="border border-gray-200 rounded-lg p-4 bg-yellow-50">
+            <h3 className="text-sm font-semibold text-gray-900 mb-4">Custom Pricing (Optional)</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Custom Price <span className="text-gray-400 text-xs">(optional)</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-600">₹</span>
+                  <input
+                    type="number"
+                    name="customPrice"
+                    value={formData.customPrice}
+                    onChange={handleChange}
+                    min="0"
+                    step="0.01"
+                    className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-600"
+                    placeholder={`Master: ₹${defaultPrice || 0}`}
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Leave empty to use master price</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Discount % <span className="text-gray-400 text-xs">(optional)</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    name="discountPercent"
+                    value={formData.discountPercent}
+                    onChange={handleChange}
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-600"
+                    placeholder="0"
+                  />
+                  <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-600">%</span>
+                </div>
+              </div>
+            </div>
+
+            {(formData.customPrice || formData.discountPercent) && (
+              <div className="bg-white border border-yellow-200 rounded p-3 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-700">Price:</span>
+                  <span className="font-semibold">₹{finalPrice.toFixed(2)}</span>
+                </div>
+                {formData.discountPercent > 0 && (
+                  <>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-700">Discount ({formData.discountPercent}%):</span>
+                      <span className="font-semibold text-red-600">-₹{discountAmount.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm border-t border-yellow-100 pt-2">
+                      <span className="text-gray-900 font-semibold">Final Price:</span>
+                      <span className="font-bold text-lg text-green-600">₹{priceAfterDiscount.toFixed(2)}</span>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
 
           <div className="flex space-x-3 mt-6">
             <button

@@ -127,7 +127,7 @@ const UserAppointments = () => {
         const providerIdRaw = providerInfo?.service_provider_id ?? a.service_provider_id;
         const providerId = providerIdRaw !== undefined && providerIdRaw !== null ? Number(providerIdRaw) : null;
         const providerName = providerInfo?.serv_provider_name || a.provider_name || '';
-        const providerLocation = providerInfo?.serv_provider_location || a.provider_address || '';
+        const providerLocation = providerInfo?.serv_provider_location || a?.provider_location || a?.provider_address || providerInfo?.provider_location || a?.location || '';
         const providerAverageRatingRaw = providerInfo?.average_rating ?? providerInfo?.averageRating ?? null;
         const providerAverageRating = providerAverageRatingRaw !== null && providerAverageRatingRaw !== undefined
           ? Number(providerAverageRatingRaw)
@@ -165,7 +165,7 @@ const UserAppointments = () => {
           bookingStatus,
           bookingId,
           notes: a.appointment_comments || '',
-          location: providerName || '—',
+          location: providerLocation || 'Location not specified',
           address: providerLocation || '—',
           providerAddress: providerLocation || '—',
           providerId,
@@ -576,13 +576,15 @@ const UserAppointments = () => {
                     )}
 
                     {/* Location */}
-                    <div className="flex items-center gap-3 mb-4">
-                      <FaMapMarkerAlt className="text-blue-500" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-800">{appointment.location}</p>
-                        <p className="text-xs text-gray-500">{appointment.address}</p>
+                    {appointment.location && appointment.location !== '—' && appointment.location !== 'Location not specified' && (
+                      <div className="flex items-center gap-3 mb-4">
+                        <FaMapMarkerAlt className="text-blue-500" />
+                        <div>
+                          <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Location</p>
+                          <p className="text-sm font-medium text-gray-800">{appointment.location}</p>
+                        </div>
                       </div>
-                    </div>
+                    )}
 
                     {/* Notes */}
                     {appointment.notes && (

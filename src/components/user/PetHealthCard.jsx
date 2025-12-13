@@ -1,13 +1,17 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 
-import { FaHeart, FaWeight, FaBirthdayCake, FaSyringe, FaStethoscope, FaCalendarCheck, FaChevronDown, FaChevronUp } from 'react-icons/fa';
+import { FaHeart, FaWeight, FaBirthdayCake, FaSyringe, FaStethoscope, FaCalendarCheck, FaChevronDown, FaChevronUp, FaFileAlt } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { PetIcon } from '../layout/PetIcons';
 import { generatePetCareSuggestions } from '../../services/geminiService';
+import { useAuth } from '../../context/AuthContext';
 
 const PetHealthCard = ({ pet }) => {
   const navigate = useNavigate();
+  const { authFetch } = useAuth();
   const [showInsights, setShowInsights] = useState(false);
+  const [prescriptions, setPrescriptions] = useState([]);
+  const [loadingPrescriptions, setLoadingPrescriptions] = useState(false);
 
   const getHealthStatus = (pet) => {
     const today = new Date();
@@ -293,6 +297,31 @@ const PetHealthCard = ({ pet }) => {
     return () => { cancelled = true; };
   }, [showInsights, petPayload, ai.data]);
 
+  useEffect(() => {
+    const fetchPrescriptions = async () => {
+      if (!pet?.id || !authFetch) return;
+      try {
+        setLoadingPrescriptions(true);
+        const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
+        const response = await authFetch(`${API_URL}/pets/${pet.id}/health-records`);
+        if (response.ok) {
+          const records = await response.json();
+          const list = Array.isArray(records) ? records : (records?.records || []);
+          const prescriptionRecords = list.filter(r => 
+            (r.record_type ?? r.recordType ?? '').toLowerCase() === 'prescription'
+          ).slice(0, 2);
+          setPrescriptions(prescriptionRecords);
+        }
+      } catch (error) {
+        console.error('Failed to fetch prescriptions:', error);
+      } finally {
+        setLoadingPrescriptions(false);
+      }
+    };
+
+    fetchPrescriptions();
+  }, [pet?.id, authFetch]);
+
   return (
     <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100 shadow-sm hover:shadow-md transition-all duration-300" style={{ background: 'linear-gradient(135deg, #f0f7ff 0%, #e6f2ff 100%)' }}>
       <div className="flex items-start gap-4">
@@ -502,6 +531,42 @@ const PetHealthCard = ({ pet }) => {
           </div>
         )}
       </div>
+
+      {/* Prescriptions Section */}
+      {prescriptions.length > 0 && (
+        <div className="mt-4 bg-white/50 border border-blue-100 rounded-lg p-3">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <FaFileAlt className="text-blue-600" />
+              <p className="text-xs font-semibold text-gray-900">Recent Prescriptions</p>
+            </div>
+            <span className="text-xs font-medium px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
+              {prescriptions.length}
+            </span>
+          </div>
+          <div className="space-y-1 max-h-32 overflow-y-auto">
+            {prescriptions.map((prescription) => (
+              <div key={prescription.health_record_id ?? prescription.id} className="text-xs">
+                <p className="text-gray-900 font-medium truncate">
+                  {prescription.title || 'Prescription'}
+                </p>
+                <p className="text-gray-600">
+                  {prescription.record_date || prescription.recordDate ? 
+                    new Date(prescription.record_date ?? prescription.recordDate).toLocaleDateString() : 
+                    'No date'
+                  }
+                </p>
+              </div>
+            ))}
+          </div>
+          <button
+            onClick={() => navigate(`/user/pets/${pet.id}/health-records`)}
+            className="mt-2 w-full text-xs text-blue-600 hover:text-blue-700 font-medium py-1 px-2 hover:bg-blue-50 rounded transition-colors"
+          >
+            View All Prescriptions →
+          </button>
+        </div>
+      )}
 
       {/* Quick Actions */}
       <div className="mt-4 flex gap-2">

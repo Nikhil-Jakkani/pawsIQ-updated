@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { FaPlus, FaFilePdf, FaFileImage, FaFileWord, FaTrash, FaDownload, FaArrowLeft } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import { vaccinationService } from '../../services/vaccinationService';
+import PrescriptionSection from './PrescriptionSection';
 const API_URL = import.meta?.env?.VITE_API_URL || '/api/v1';
 
 const HealthRecords = () => {
@@ -28,6 +29,10 @@ const HealthRecords = () => {
     customVaccinationName: '',
     recordDate: new Date().toISOString().split('T')[0],
     nextDueDate: '',
+    medicationName: '',
+    dosage: '',
+    frequency: '',
+    prescribedBy: '',
   });
 
   const recordTypes = [
@@ -392,6 +397,10 @@ const HealthRecords = () => {
           customVaccinationName: '',
           recordDate: new Date().toISOString().split('T')[0],
           nextDueDate: '',
+          medicationName: '',
+          dosage: '',
+          frequency: '',
+          prescribedBy: '',
         });
       } else {
         // No file provided: create record without file fields
@@ -615,6 +624,10 @@ const HealthRecords = () => {
         vaccinationName: '',
         recordDate: new Date().toISOString().split('T')[0],
         nextDueDate: '',
+        medicationName: '',
+        dosage: '',
+        frequency: '',
+        prescribedBy: '',
       });
     } catch (err) {
       setError(err.message);
@@ -708,8 +721,25 @@ const HealthRecords = () => {
           </div>
         </div>
       ) : (
-        <div className="space-y-4">
-          {records.map((record) => (
+        <div className="space-y-6">
+          <PrescriptionSection 
+            petId={petId}
+            petName={pet?.name}
+            records={records}
+            onAddPrescription={() => {
+              setFormData(prev => ({ ...prev, recordType: 'prescription' }));
+              setShowUploadModal(true);
+            }}
+            onDeletePrescription={handleDelete}
+          />
+
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Other Health Records</h3>
+            <div className="space-y-4">
+              {records.filter(r => (r.record_type ?? r.recordType ?? '').toLowerCase() !== 'prescription').length === 0 ? (
+                <p className="text-center text-gray-500 py-8">No other health records</p>
+              ) : (
+                records.filter(r => (r.record_type ?? r.recordType ?? '').toLowerCase() !== 'prescription').map((record) => (
             <div key={record.health_record_id} className="border rounded-lg overflow-hidden">
               <div className="p-4 sm:p-6">
                 <div className="flex items-start justify-between">
@@ -767,7 +797,10 @@ const HealthRecords = () => {
                 </div>
               </div>
             </div>
-          ))}
+          ))
+              )}
+            </div>
+          </div>
         </div>
       )}
 
@@ -825,6 +858,70 @@ const HealthRecords = () => {
                             ))}
                           </select>
                         </div>
+
+                        {formData.recordType === 'prescription' && (
+                          <div className="space-y-3 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <h4 className="font-medium text-gray-900 mb-3">Prescription Details</h4>
+                            <div>
+                              <label htmlFor="medicationName" className="block text-sm font-medium text-gray-700">
+                                Medication Name <span className="text-gray-400 text-xs">(optional)</span>
+                              </label>
+                              <input
+                                type="text"
+                                name="medicationName"
+                                id="medicationName"
+                                placeholder="e.g., Amoxicillin"
+                                value={formData.medicationName}
+                                onChange={handleInputChange}
+                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                              />
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label htmlFor="dosage" className="block text-sm font-medium text-gray-700">
+                                  Dosage
+                                </label>
+                                <input
+                                  type="text"
+                                  name="dosage"
+                                  id="dosage"
+                                  placeholder="e.g., 500mg"
+                                  value={formData.dosage}
+                                  onChange={handleInputChange}
+                                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                />
+                              </div>
+                              <div>
+                                <label htmlFor="frequency" className="block text-sm font-medium text-gray-700">
+                                  Frequency
+                                </label>
+                                <input
+                                  type="text"
+                                  name="frequency"
+                                  id="frequency"
+                                  placeholder="e.g., Twice daily"
+                                  value={formData.frequency}
+                                  onChange={handleInputChange}
+                                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <label htmlFor="prescribedBy" className="block text-sm font-medium text-gray-700">
+                                Prescribed By
+                              </label>
+                              <input
+                                type="text"
+                                name="prescribedBy"
+                                id="prescribedBy"
+                                placeholder="e.g., Dr. John Smith"
+                                value={formData.prescribedBy}
+                                onChange={handleInputChange}
+                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                              />
+                            </div>
+                          </div>
+                        )}
 
                         {formData.recordType === 'vaccination' && (
                           <div className="space-y-3">
@@ -927,9 +1024,9 @@ const HealthRecords = () => {
                               required
                               value={formData.recordDate}
                               onChange={handleInputChange}
-                              max={new Date().toISOString().split('T')[0]}
                               className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                             />
+                            <p className="mt-1 text-xs text-gray-500">You can use today's date or earlier dates</p>
                           </div>
                           <div>
                             <label htmlFor="nextDueDate" className="block text-sm font-medium text-gray-700">
@@ -941,8 +1038,10 @@ const HealthRecords = () => {
                               id="nextDueDate"
                               value={formData.nextDueDate}
                               onChange={handleInputChange}
+                              min={formData.recordDate}
                               className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                             />
+                            <p className="mt-1 text-xs text-gray-500">Must be on or after record date</p>
                           </div>
                         </div>
 

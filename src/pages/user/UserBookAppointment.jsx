@@ -488,7 +488,9 @@ const UserBookAppointment = () => {
         } : null,
         date: formData.date,
         timeSlot: formData.timeSlot,
-        total: selectedService?.service_price || data.service?.service_price || 0,
+        total: selectedService?.custom_price 
+          ? selectedService.custom_price - (selectedService.custom_price * (selectedService.discount_percent || 0) / 100)
+          : (selectedService?.service_price || data.service?.service_price || 0),
       };
       
       navigate('/user/appointments/confirmation', { state: { appointment: appointmentData } });
@@ -663,7 +665,28 @@ const UserBookAppointment = () => {
                         {service.duration_minutes && (
                           <p className="text-gray-500 text-sm">Duration: {service.duration_minutes} minutes</p>
                         )}
-                        <p className="text-gray-500 text-sm">Price: {formatINR(service.price)}</p>
+                        <div className="text-gray-500 text-sm">
+                          {service.custom_price ? (
+                            <>
+                              <p>
+                                Price: <span className="font-semibold">{formatINR(service.custom_price)}</span>
+                                {service.discount_percent > 0 && (
+                                  <>
+                                    <span className="line-through text-gray-400 ml-2">{formatINR(service.price)}</span>
+                                    <span className="text-green-600 ml-2">-{service.discount_percent}%</span>
+                                  </>
+                                )}
+                              </p>
+                              {service.discount_percent > 0 && (
+                                <p className="text-green-600 font-semibold">
+                                  Final: {formatINR(service.custom_price - (service.custom_price * service.discount_percent / 100))}
+                                </p>
+                              )}
+                            </>
+                          ) : (
+                            <p>Price: {formatINR(service.price)}</p>
+                          )}
+                        </div>
 
                         {String(formData.serviceId) === String(service.services_id) && (
                           <div className="mt-2 text-blue-600 flex items-center gap-1">

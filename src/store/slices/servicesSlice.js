@@ -42,9 +42,12 @@ const normalizeService = (item = {}) => {
 
   const customPrice = item.price ?? item.custom_price ?? null;
   const customDuration = item.duration ?? item.custom_duration ?? null;
+  const discountPercent = item.discount_percent ?? 0;
 
   return {
     id,
+    offering_id: item.offering_id,
+    service_id: serviceId,
     serviceId,
     name:
       item.custom_title ??
@@ -57,15 +60,25 @@ const normalizeService = (item = {}) => {
       item.description ??
       item.service_description ??
       null,
+    custom_title: item.custom_title ?? null,
     customTitle: item.custom_title ?? null,
+    custom_description: item.custom_description ?? null,
     customDescription: item.custom_description ?? null,
+    custom_price: customPrice,
     price: customPrice ?? defaultPrice,
+    default_price: defaultPrice,
     defaultPrice,
+    discount_percent: discountPercent,
+    discountPercent,
     duration: customDuration ?? defaultDuration,
+    default_duration: defaultDuration,
     defaultDuration,
+    is_active: Boolean(item.active ?? item.is_active ?? item.serv_active ?? true),
     active: Boolean(item.active ?? item.is_active ?? item.serv_active ?? true),
     bookings: item.bookings ?? item.totalBookings ?? item.booking_count ?? 0,
+    service_type: item.service_type ?? null,
     serviceType: item.service_type ?? null,
+    pet_type: item.pet_type ?? null,
     petType: item.pet_type ?? null,
     raw: item,
   };

@@ -24,6 +24,7 @@ import UserAppointmentDetails from './pages/user/UserAppointmentDetails.jsx';
 import AIPetCare from './pages/user/AIPetCare.jsx';
 
 import UserMarketplace from './pages/user/UserMarketplace.jsx';
+import UserShopProductDetails from './pages/user/UserShopProductDetails.jsx';
 import UserCart from './pages/user/UserCart.jsx';
 import UserOrders from './pages/user/UserOrders.jsx';
 import UserPayments from './pages/user/UserPayments.jsx';
@@ -277,6 +278,7 @@ function App() {
             <Route path="/user/marketplace/food" element={<UserProtectedRoute><UserMarketplace /></UserProtectedRoute>} />
             <Route path="/user/marketplace/toys" element={<UserProtectedRoute><UserMarketplace /></UserProtectedRoute>} />
             <Route path="/user/marketplace/health" element={<UserProtectedRoute><UserMarketplace /></UserProtectedRoute>} />
+            <Route path="/user/marketplace/product/:id" element={<UserProtectedRoute><UserShopProductDetails /></UserProtectedRoute>} />
             <Route path="/user/cart" element={<UserProtectedRoute><UserCart /></UserProtectedRoute>} />
             
             {/* Order Routes */}
