@@ -343,10 +343,24 @@ const HealthRecords = () => {
         }
 
         // 3. Create health record with file details
+        let description = formData.description;
+        if (formData.recordType === 'prescription') {
+          const prescriptionDetails = {
+            medicationName: formData.medicationName || null,
+            dosage: formData.dosage || null,
+            frequency: formData.frequency || null,
+            prescribedBy: formData.prescribedBy || null,
+          };
+          description = JSON.stringify({
+            text: formData.description || '',
+            prescriptionDetails,
+          });
+        }
+
         const recordData = {
           recordType: formData.recordType,
           title: formData.title || vaccinationName,
-          description: formData.description,
+          description: description,
           recordDate: formData.recordDate,
           nextDueDate: formData.nextDueDate || null,
           filePath: path,
@@ -404,10 +418,24 @@ const HealthRecords = () => {
         });
       } else {
         // No file provided: create record without file fields
+        let description = formData.description;
+        if (formData.recordType === 'prescription') {
+          const prescriptionDetails = {
+            medicationName: formData.medicationName || null,
+            dosage: formData.dosage || null,
+            frequency: formData.frequency || null,
+            prescribedBy: formData.prescribedBy || null,
+          };
+          description = JSON.stringify({
+            text: formData.description || '',
+            prescriptionDetails,
+          });
+        }
+
         const recordData = {
           recordType: formData.recordType,
           title: formData.title || vaccinationName,
-          description: formData.description,
+          description: description,
           recordDate: formData.recordDate,
           nextDueDate: formData.nextDueDate || null,
           filePath: '',
@@ -735,9 +763,9 @@ const HealthRecords = () => {
 
           <div>
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Other Health Records</h3>
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {records.filter(r => (r.record_type ?? r.recordType ?? '').toLowerCase() !== 'prescription').length === 0 ? (
-                <p className="text-center text-gray-500 py-8">No other health records</p>
+                <p className="text-center text-gray-500 py-8 col-span-full">No other health records</p>
               ) : (
                 records.filter(r => (r.record_type ?? r.recordType ?? '').toLowerCase() !== 'prescription').map((record) => (
             <div key={record.health_record_id} className="border rounded-lg overflow-hidden">

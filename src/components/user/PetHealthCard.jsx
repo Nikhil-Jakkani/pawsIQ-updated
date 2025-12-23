@@ -297,6 +297,21 @@ const PetHealthCard = ({ pet }) => {
     return () => { cancelled = true; };
   }, [showInsights, petPayload, ai.data]);
 
+  const parsePrescriptionDetails = (description) => {
+    if (!description) return { text: '', prescriptionDetails: {} };
+    
+    try {
+      const parsed = JSON.parse(description);
+      if (parsed.prescriptionDetails) {
+        return parsed;
+      }
+    } catch (e) {
+      // Not JSON, treat as plain text
+    }
+    
+    return { text: description, prescriptionDetails: {} };
+  };
+
   useEffect(() => {
     const fetchPrescriptions = async () => {
       if (!pet?.id || !authFetch) return;
@@ -544,20 +559,36 @@ const PetHealthCard = ({ pet }) => {
               {prescriptions.length}
             </span>
           </div>
-          <div className="space-y-1 max-h-32 overflow-y-auto">
-            {prescriptions.map((prescription) => (
-              <div key={prescription.health_record_id ?? prescription.id} className="text-xs">
-                <p className="text-gray-900 font-medium truncate">
-                  {prescription.title || 'Prescription'}
-                </p>
-                <p className="text-gray-600">
-                  {prescription.record_date || prescription.recordDate ? 
-                    new Date(prescription.record_date ?? prescription.recordDate).toLocaleDateString() : 
-                    'No date'
-                  }
-                </p>
-              </div>
-            ))}
+          <div className="space-y-2 max-h-40 overflow-y-auto">
+            {prescriptions.map((prescription) => {
+              const { prescriptionDetails } = parsePrescriptionDetails(prescription.description);
+              const details = prescriptionDetails || {};
+              return (
+                <div key={prescription.health_record_id ?? prescription.id} className="text-xs bg-blue-50 rounded p-2 border border-blue-100">
+                  <p className="text-gray-900 font-medium truncate">
+                    {prescription.title || 'Prescription'}
+                  </p>
+                  {details.medicationName && (
+                    <p className="text-blue-700 font-semibold text-[11px] mt-1">
+                      💊 {details.medicationName}
+                    </p>
+                  )}
+                  {(details.dosage || details.frequency) && (
+                    <p className="text-gray-600 text-[11px] mt-0.5">
+                      {details.dosage && `${details.dosage}`}
+                      {details.dosage && details.frequency && ' • '}
+                      {details.frequency && `${details.frequency}`}
+                    </p>
+                  )}
+                  <p className="text-gray-600 text-[11px] mt-1">
+                    {prescription.record_date || prescription.recordDate ? 
+                      new Date(prescription.record_date ?? prescription.recordDate).toLocaleDateString() : 
+                      'No date'
+                    }
+                  </p>
+                </div>
+              );
+            })}
           </div>
           <button
             onClick={() => navigate(`/user/pets/${pet.id}/health-records`)}
