@@ -54,6 +54,21 @@ const PrescriptionSection = ({ petId, petName, records = [], onAddPrescription, 
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  const parsePrescriptionDetails = (description) => {
+    if (!description) return { text: '', prescriptionDetails: {} };
+    
+    try {
+      const parsed = JSON.parse(description);
+      if (parsed.prescriptionDetails) {
+        return parsed;
+      }
+    } catch (e) {
+      // Not JSON, treat as plain text
+    }
+    
+    return { text: description, prescriptionDetails: {} };
+  };
+
   if (prescriptions.length === 0) {
     return (
       <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200 p-6">
@@ -98,7 +113,7 @@ const PrescriptionSection = ({ petId, petName, records = [], onAddPrescription, 
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4">
         {prescriptions.map((prescription) => (
           <div key={prescription.health_record_id ?? prescription.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
             <div className="flex items-start justify-between mb-3">
@@ -112,7 +127,7 @@ const PrescriptionSection = ({ petId, petName, records = [], onAddPrescription, 
                   </h4>
                   {prescription.description && (
                     <p className="text-xs text-gray-600 mt-1 line-clamp-2">
-                      {prescription.description}
+                      {parsePrescriptionDetails(prescription.description).text}
                     </p>
                   )}
                 </div>
@@ -129,6 +144,38 @@ const PrescriptionSection = ({ petId, petName, records = [], onAddPrescription, 
                   }
                 </span>
               </div>
+              {(() => {
+                const { prescriptionDetails } = parsePrescriptionDetails(prescription.description);
+                const details = prescriptionDetails || {};
+                return (
+                  <>
+                    {details.medicationName && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Medication:</span>
+                        <span className="font-medium text-gray-900">{details.medicationName}</span>
+                      </div>
+                    )}
+                    {details.dosage && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Dosage:</span>
+                        <span className="font-medium text-gray-900">{details.dosage}</span>
+                      </div>
+                    )}
+                    {details.frequency && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Frequency:</span>
+                        <span className="font-medium text-gray-900">{details.frequency}</span>
+                      </div>
+                    )}
+                    {details.prescribedBy && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Prescribed By:</span>
+                        <span className="font-medium text-gray-900">{details.prescribedBy}</span>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
               {prescription.file_name && (
                 <div className="flex justify-between">
                   <span className="text-gray-600">File:</span>
@@ -217,12 +264,53 @@ const PrescriptionSection = ({ petId, petName, records = [], onAddPrescription, 
                 </div>
               )}
 
-              {selectedPrescription.description && (
-                <div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wide">Description</p>
-                  <p className="text-gray-700">{selectedPrescription.description}</p>
-                </div>
-              )}
+              {(() => {
+                const { prescriptionDetails, text } = parsePrescriptionDetails(selectedPrescription.description);
+                const details = prescriptionDetails || {};
+                return (
+                  <>
+                    {(details.medicationName || details.dosage || details.frequency || details.prescribedBy) && (
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold mb-3">Medicine Information</p>
+                        <div className="bg-blue-50 rounded-lg p-4 space-y-3 border border-blue-100">
+                          {details.medicationName && (
+                            <div>
+                              <p className="text-xs text-blue-600 uppercase tracking-wider font-bold">Medicine Name</p>
+                              <p className="text-lg font-bold text-gray-900 mt-1">{details.medicationName}</p>
+                            </div>
+                          )}
+                          <div className="grid grid-cols-2 gap-3">
+                            {details.dosage && (
+                              <div>
+                                <p className="text-xs text-gray-600 uppercase tracking-wider font-medium">Dosage</p>
+                                <p className="text-sm font-semibold text-gray-800 mt-1">{details.dosage}</p>
+                              </div>
+                            )}
+                            {details.frequency && (
+                              <div>
+                                <p className="text-xs text-gray-600 uppercase tracking-wider font-medium">Frequency</p>
+                                <p className="text-sm font-semibold text-gray-800 mt-1">{details.frequency}</p>
+                              </div>
+                            )}
+                          </div>
+                          {details.prescribedBy && (
+                            <div className="border-t border-blue-200 pt-3">
+                              <p className="text-xs text-gray-600 uppercase tracking-wider font-medium">Prescribed By</p>
+                              <p className="text-sm font-semibold text-gray-800 mt-1">{details.prescribedBy}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    {text && (
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">Additional Notes</p>
+                        <p className="text-gray-700 bg-gray-50 p-3 rounded-lg text-sm">{text}</p>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
 
               {selectedPrescription.file_name && (
                 <div>

@@ -543,32 +543,8 @@ const UserDashboard = () => {
                     <div className="ml-auto text-xs font-semibold text-green-700 underline">Shop now</div>
                   </div>
                 </button>
-
-                {/* Vet Services Ad */}
-                <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-100 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-gradient-to-br from-blue-500 to-cyan-600 p-2 rounded-lg group-">
-                      <FaStethoscope className="text-white text-lg" />
-                    </div>
-                    <div>
-                      <div className="text-sm font-bold text-blue-800">Vet Checkup</div>
-                      <div className="text-xs text-blue-600">Book Now!</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Pet Toys Ad */}
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-gradient-to-br from-blue-500 to-[#145ae6] p-2 rounded-lg group-">
-                      <FaStar className="text-white text-lg" />
-                    </div>
-                    <div>
-                      <div className="text-sm font-bold text-blue-800">New Toys</div>
-                      <div className="text-xs text-blue-600">Free Shipping</div>
-                    </div>
-                  </div>
-                </div>
+                
+                
               </div>
             </div>
           </div>
