@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useAuth } from '../../context/AuthContext';
 import ProviderDashboardLayout from './ProviderDashboardLayout';
+import { useProvider } from '../../context/ProviderContext';
+
 import {
   FaServicestack,
   FaPlus,
@@ -39,11 +41,10 @@ const ServiceCard = ({ service, onEdit, onDelete, onToggle }) => {
         </div>
         <button
           onClick={() => onToggle(service.offering_id)}
-          className={`p-2 rounded-lg transition-colors ${
-            service.is_active
-              ? 'bg-green-100 text-green-600'
-              : 'bg-gray-100 text-gray-600'
-          }`}
+          className={`p-2 rounded-lg transition-colors ${service.is_active
+            ? 'bg-green-100 text-green-600'
+            : 'bg-gray-100 text-gray-600'
+            }`}
         >
           {service.is_active ? <FaToggleOn /> : <FaToggleOff />}
         </button>
@@ -105,6 +106,7 @@ const ServiceCard = ({ service, onEdit, onDelete, onToggle }) => {
 
 const ServiceForm = ({ service, availableServices = [], onSubmit, onCancel }) => {
   const isEditing = Boolean(service);
+  const { providerType } = useProvider();
   const [formData, setFormData] = useState({
     serviceId: service?.service_id ?? '',
     customTitle: service?.custom_title ?? '',
@@ -113,10 +115,44 @@ const ServiceForm = ({ service, availableServices = [], onSubmit, onCancel }) =>
     customPrice: service?.custom_price ?? '',
     discountPercent: service?.discount_percent ?? 0,
   });
-
   const selectedService = availableServices.find(
     (item) => item.services_id === Number(formData.serviceId)
   );
+
+  const normalizedProviderType = useMemo(() => {
+    if (!providerType) return null;
+    const raw = providerType.toString().toLowerCase().trim();
+
+    if (['veterinarian', 'veterinary', 'vet'].includes(raw)) return 'veterinary';
+    if (['diagnostic services', 'diagnostics'].includes(raw)) return 'diagnostic services';
+    if (['groomer', 'grooming'].includes(raw)) return 'grooming';
+    if (['trainer', 'training'].includes(raw)) return 'training';
+    if (['pet sitter', 'pet_sitter', 'pet sitting', 'physical activity'].includes(raw)) return 'physical activity';
+    if (raw === 'boarding') return 'boarding';
+
+    return null;
+  }, [providerType]);
+
+  const filteredAvailableServices = useMemo(() => {
+    if (!normalizedProviderType) return availableServices;
+
+    const allowedMap = {
+      'veterinary': ['veterinary', 'diagnostic services', 'diagnostics'],
+      'diagnostic services': ['diagnostic services', 'diagnostics'],
+      'grooming': ['grooming'],
+      'training': ['training'],
+      'physical activity': ['physical activity', 'boarding'],
+      'boarding': ['boarding'],
+    };
+
+    const allowed = allowedMap[normalizedProviderType];
+    if (!allowed) return availableServices;
+
+    return availableServices.filter((svc) => {
+      const type = (svc.service_type || '').toLowerCase().trim();
+      return allowed.includes(type);
+    });
+  }, [availableServices, normalizedProviderType]);
 
   const defaultPrice = isEditing ? service?.default_price : selectedService?.service_price_amt;
   const finalPrice = formData.customPrice ? Number(formData.customPrice) : defaultPrice;
@@ -137,27 +173,27 @@ const ServiceForm = ({ service, availableServices = [], onSubmit, onCancel }) =>
 
     const payload = isEditing
       ? {
-          custom_title: formData.customTitle || undefined,
-          custom_description: formData.customDescription || undefined,
-          is_active: formData.isActive,
-          ...(formData.customPrice && { custom_price: Number(formData.customPrice) }),
-          ...(formData.discountPercent && { discount_percent: Number(formData.discountPercent) }),
-        }
+        custom_title: formData.customTitle || undefined,
+        custom_description: formData.customDescription || undefined,
+        is_active: formData.isActive,
+        ...(formData.customPrice && { custom_price: Number(formData.customPrice) }),
+        ...(formData.discountPercent && { discount_percent: Number(formData.discountPercent) }),
+      }
       : {
-          services_id: Number(formData.serviceId),
-          custom_title: formData.customTitle || undefined,
-          custom_description: formData.customDescription || undefined,
-          is_active: formData.isActive,
-          ...(formData.customPrice && { custom_price: Number(formData.customPrice) }),
-          ...(formData.discountPercent && { discount_percent: Number(formData.discountPercent) }),
-        };
+        services_id: Number(formData.serviceId),
+        custom_title: formData.customTitle || undefined,
+        custom_description: formData.customDescription || undefined,
+        is_active: formData.isActive,
+        ...(formData.customPrice && { custom_price: Number(formData.customPrice) }),
+        ...(formData.discountPercent && { discount_percent: Number(formData.discountPercent) }),
+      };
 
     onSubmit(payload);
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-lg w-full max-w-xl p-6">
+      <div className="bg-white rounded-lg shadow-lg w-full max-w-xl p-6 max-h-[90vh] overflow-y-auto">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">
           {isEditing ? 'Edit Service' : 'Add New Service'}
         </h2>
@@ -176,7 +212,7 @@ const ServiceForm = ({ service, availableServices = [], onSubmit, onCancel }) =>
                 required
               >
                 <option value="">-- Select a service --</option>
-                {availableServices.map((item) => (
+                {filteredAvailableServices.map((item) => (
                   <option key={item.services_id} value={item.services_id}>
                     {item.service_title} — ₹{item.service_price_amt}
                   </option>
@@ -230,14 +266,12 @@ const ServiceForm = ({ service, availableServices = [], onSubmit, onCancel }) =>
                 className="sr-only"
               />
               <span
-                className={`w-11 h-6 flex items-center rounded-full p-1 duration-300 ${
-                  formData.isActive ? 'bg-green-500' : 'bg-gray-300'
-                }`}
+                className={`w-11 h-6 flex items-center rounded-full p-1 duration-300 ${formData.isActive ? 'bg-green-500' : 'bg-gray-300'
+                  }`}
               >
                 <span
-                  className={`bg-white w-4 h-4 rounded-full shadow-md transform duration-300 ${
-                    formData.isActive ? 'translate-x-5' : 'translate-x-0'
-                  }`}
+                  className={`bg-white w-4 h-4 rounded-full shadow-md transform duration-300 ${formData.isActive ? 'translate-x-5' : 'translate-x-0'
+                    }`}
                 />
               </span>
             </label>
@@ -262,7 +296,7 @@ const ServiceForm = ({ service, availableServices = [], onSubmit, onCancel }) =>
 
           <div className="border border-gray-200 rounded-lg p-4 bg-yellow-50">
             <h3 className="text-sm font-semibold text-gray-900 mb-4">Custom Pricing (Optional)</h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -372,7 +406,7 @@ const ProviderServices = () => {
     dispatch(createService({ data: payload, authFetch }))
       .unwrap()
       .then(() => setShowForm(false))
-      .catch(() => {});
+      .catch(() => { });
   };
 
   const handleEdit = (id) => {
@@ -395,7 +429,7 @@ const ProviderServices = () => {
         setShowForm(false);
         setEditingService(null);
       })
-      .catch(() => {});
+      .catch(() => { });
   };
 
   const handleDelete = (id) => {

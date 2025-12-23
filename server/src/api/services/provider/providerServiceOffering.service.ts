@@ -21,40 +21,60 @@ const listServiceOfferings = async (providerId: number) => {
           pet_type: true,
         },
       },
-      PIQ_Provider_ServicePricing: {
-        where: {
-          effective_to: null,
-        },
-        orderBy: {
-          effective_from: 'desc',
-        },
-        take: 1,
-      },
     },
     orderBy: { created_at: 'desc' },
   });
 
-  return offerings.map((offering: any) => ({
-    offering_id: offering.offering_id,
-    service_id: offering.services_id,
-    custom_title: offering.custom_title,
-    custom_description: offering.custom_description,
-    is_active: offering.is_active,
-    created_at: offering.created_at,
-    last_updated_dtm: offering.last_updated_dtm,
-    // Service master details
-    service_type: offering.PIQ_Service_Master?.service_type,
-    service_sub_type: offering.PIQ_Service_Master?.service_sub_type,
-    service_title: offering.PIQ_Service_Master?.service_title,
-    service_description: offering.PIQ_Service_Master?.service_description,
-    default_price: offering.PIQ_Service_Master?.service_price_amt,
-    default_duration: offering.PIQ_Service_Master?.service_duration,
-    pet_type: offering.PIQ_Service_Master?.pet_type,
-    // Custom pricing
-    custom_price: offering.PIQ_Provider_ServicePricing?.[0]?.base_price || null,
-    discount_percent: offering.PIQ_Provider_ServicePricing?.[0]?.discount_percent || 0,
-    pricing_id: offering.PIQ_Provider_ServicePricing?.[0]?.pricing_id || null,
-  }));
+  const serviceIds = Array.from(
+    new Set(offerings.map((offering: any) => offering.services_id))
+  );
+
+  const pricingMap: Record<number, any> = {};
+
+  if (serviceIds.length > 0) {
+    const pricingRecords = await prisma.pIQ_Provider_ServicePricing.findMany({
+      where: {
+        service_provider_id: providerId,
+        services_id: { in: serviceIds },
+        effective_to: null,
+      },
+      orderBy: {
+        effective_from: 'desc',
+      },
+    });
+
+    for (const pricing of pricingRecords) {
+      if (!pricingMap[pricing.services_id]) {
+        pricingMap[pricing.services_id] = pricing;
+      }
+    }
+  }
+
+  return offerings.map((offering: any) => {
+    const pricing = pricingMap[offering.services_id];
+
+    return {
+      offering_id: offering.offering_id,
+      service_id: offering.services_id,
+      custom_title: offering.custom_title,
+      custom_description: offering.custom_description,
+      is_active: offering.is_active,
+      created_at: offering.created_at,
+      last_updated_dtm: offering.last_updated_dtm,
+      // Service master details
+      service_type: offering.PIQ_Service_Master?.service_type,
+      service_sub_type: offering.PIQ_Service_Master?.service_sub_type,
+      service_title: offering.PIQ_Service_Master?.service_title,
+      service_description: offering.PIQ_Service_Master?.service_description,
+      default_price: offering.PIQ_Service_Master?.service_price_amt,
+      default_duration: offering.PIQ_Service_Master?.service_duration,
+      pet_type: offering.PIQ_Service_Master?.pet_type,
+      // Custom pricing
+      custom_price: pricing?.base_price || null,
+      discount_percent: pricing?.discount_percent || 0,
+      pricing_id: pricing?.pricing_id || null,
+    };
+  });
 };
 
 /**
@@ -79,21 +99,23 @@ const getServiceOffering = async (providerId: number, offeringId: number) => {
           pet_type: true,
         },
       },
-      PIQ_Provider_ServicePricing: {
-        where: {
-          effective_to: null,
-        },
-        orderBy: {
-          effective_from: 'desc',
-        },
-        take: 1,
-      },
     },
   });
 
   if (!offering) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Service offering not found');
   }
+
+  const pricing = await prisma.pIQ_Provider_ServicePricing.findFirst({
+    where: {
+      service_provider_id: providerId,
+      services_id: offering.services_id,
+      effective_to: null,
+    },
+    orderBy: {
+      effective_from: 'desc',
+    },
+  });
 
   return {
     offering_id: offering.offering_id,
@@ -110,9 +132,9 @@ const getServiceOffering = async (providerId: number, offeringId: number) => {
     default_price: offering.PIQ_Service_Master?.service_price_amt,
     default_duration: offering.PIQ_Service_Master?.service_duration,
     pet_type: offering.PIQ_Service_Master?.pet_type,
-    custom_price: offering.PIQ_Provider_ServicePricing?.[0]?.base_price || null,
-    discount_percent: offering.PIQ_Provider_ServicePricing?.[0]?.discount_percent || 0,
-    pricing_id: offering.PIQ_Provider_ServicePricing?.[0]?.pricing_id || null,
+    custom_price: pricing?.base_price || null,
+    discount_percent: pricing?.discount_percent || 0,
+    pricing_id: pricing?.pricing_id || null,
   };
 };
 
@@ -277,15 +299,6 @@ const updateServiceOffering = async (
           pet_type: true,
         },
       },
-      PIQ_Provider_ServicePricing: {
-        where: {
-          effective_to: null,
-        },
-        orderBy: {
-          effective_from: 'desc',
-        },
-        take: 1,
-      },
     },
   });
 
@@ -325,10 +338,23 @@ const updateServiceOffering = async (
     customPrice = newPricing.base_price;
     discountPercent = newPricing.discount_percent;
     pricingId = newPricing.pricing_id;
-  } else if (updated.PIQ_Provider_ServicePricing.length > 0) {
-    customPrice = updated.PIQ_Provider_ServicePricing[0].base_price;
-    discountPercent = updated.PIQ_Provider_ServicePricing[0].discount_percent;
-    pricingId = updated.PIQ_Provider_ServicePricing[0].pricing_id;
+  } else {
+    const latestPricing = await prisma.pIQ_Provider_ServicePricing.findFirst({
+      where: {
+        service_provider_id: providerId,
+        services_id: existing.services_id,
+        effective_to: null,
+      },
+      orderBy: {
+        effective_from: 'desc',
+      },
+    });
+
+    if (latestPricing) {
+      customPrice = latestPricing.base_price;
+      discountPercent = latestPricing.discount_percent;
+      pricingId = latestPricing.pricing_id;
+    }
   }
 
   return {

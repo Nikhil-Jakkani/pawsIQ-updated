@@ -13,16 +13,16 @@ const UserLogin = () => {
   const [localError, setLocalError] = useState('');
   const { login, error: authError, currentUser, tokens } = useAuth();
   const navigate = useNavigate();
-  
+
   // Component mounted - loading screen should be handled by AuthContext
-  
+
   // Check if already logged in
   useEffect(() => {
     if (currentUser && tokens?.access?.token) {
       navigate('/user/dashboard');
     }
   }, [currentUser, tokens, navigate]);
-  
+
   // Handle auth errors
   useEffect(() => {
     if (authError) {
@@ -34,7 +34,7 @@ const UserLogin = () => {
     e.preventDefault();
     setIsLoading(true);
     setLocalError('');
-    
+
     try {
       const result = await login(identifier, password);
       if (result && result.success) {
@@ -58,16 +58,16 @@ const UserLogin = () => {
               <img src={logoImage} alt="PawsIQ Logo" className="w-12 h-12" />
             </div>
           </div>
-          
+
           <h1 className="text-2xl font-bold text-center text-gray-800 mb-2">Welcome to PawsIQ</h1>
           <p className="text-center text-gray-600 mb-6">Sign in to your pet owner account</p>
-          
+
           {localError && (
             <div className="bg-red-100 text-red-700 p-3 rounded-lg mb-4 text-sm">
               {localError}
             </div>
           )}
-          
+
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
               <label htmlFor="identifier" className="block text-sm font-medium text-gray-700 mb-1">
@@ -88,7 +88,7 @@ const UserLogin = () => {
                 />
               </div>
             </div>
-            
+
             <div className="mb-6">
               <div className="flex justify-between items-center mb-1">
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700">
@@ -113,13 +113,12 @@ const UserLogin = () => {
                 />
               </div>
             </div>
-            
+
             <button
               type="submit"
               disabled={isLoading}
-              className={`w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-[#145ae6] text-white font-medium rounded-xl shadow-sm hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center justify-center gap-2 ${
-                isLoading ? 'opacity-70 cursor-not-allowed' : ''
-              }`}
+              className={`w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-[#145ae6] text-white font-medium rounded-xl shadow-sm hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center justify-center gap-2 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''
+                }`}
             >
               {isLoading ? (
                 <>
@@ -137,7 +136,7 @@ const UserLogin = () => {
               )}
             </button>
           </form>
-          
+
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
@@ -147,8 +146,8 @@ const UserLogin = () => {
                 <span className="px-2 bg-white text-gray-500">Or continue with</span>
               </div>
             </div>
-            
-            <div className="mt-6 grid grid-cols-3 gap-3">
+
+            <div className="mt-6 grid grid-cols-2 gap-3">
               <button
                 type="button"
                 className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
@@ -159,33 +158,27 @@ const UserLogin = () => {
                 type="button"
                 className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
               >
-                <FaFacebook className="text-blue-600" />
-              </button>
-              <button
-                type="button"
-                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
-              >
                 <FaApple className="text-gray-800" />
               </button>
             </div>
           </div>
         </div>
-        
+
         <div className="px-8 py-4 bg-gray-50 border-t border-gray-200 flex flex-col sm:flex-row justify-between items-center gap-2">
           <p className="text-sm text-gray-600">
             Don't have an account?
           </p>
           <div className="flex flex-col sm:flex-row gap-2">
-            <Link 
-              to="/user/signin" 
+            <Link
+              to="/user/signin"
               className="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1"
             >
               <FaPaw size={12} />
               Create a Pet Owner Account
             </Link>
             <span className="hidden sm:inline text-gray-400">|</span>
-            <Link 
-              to="/provider/signup" 
+            <Link
+              to="/provider/signup"
               className="text-sm font-medium text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
             >
               <FaStethoscope size={12} />
@@ -194,7 +187,7 @@ const UserLogin = () => {
           </div>
         </div>
       </div>
-      
+
       {/* Decorative elements */}
       <div className="hidden lg:block absolute bottom-0 left-0 w-full overflow-hidden">
         <div className="text-white opacity-10 text-9xl">
