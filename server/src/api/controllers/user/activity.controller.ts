@@ -9,7 +9,20 @@ const logFood = catchAsync(async (req: any, res: Response) => {
   if (!userId) {
     return res.status(httpStatus.UNAUTHORIZED).send({ message: 'Unauthorized' });
   }
-  const saved = await activityService.logFoodActivity(Number(userId), req.body);
+
+  const { pet_id, calories, note, image_url } = req.body || {};
+
+  const saved = await activityService.logPetActivity(
+    Number(userId),
+    Number(pet_id),
+    {
+      activityType: 'food',
+      value: Number(calories),
+      note,
+      metadata: image_url ? { image_url } : undefined,
+    },
+  );
+
   res.status(httpStatus.CREATED).send(saved);
 });
 
