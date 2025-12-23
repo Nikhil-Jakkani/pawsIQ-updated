@@ -10,14 +10,14 @@ import FacebookLogin from '@greatsumini/react-facebook-login';
 const Login = () => {
   const navigate = useNavigate();
   const { login, adminLogin, currentUser, setCurrentUserData, setAuthTokens, tokens } = useAuth();
-  
+
   // Form state
   const [formData, setFormData] = useState({
     identifier: '', // Can be email or phone
     password: '',
     rememberMe: false
   });
-  
+
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
@@ -45,7 +45,7 @@ const Login = () => {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
-    
+
     if (errors[name]) {
       setErrors(prev => {
         const newErrors = { ...prev };
@@ -57,31 +57,31 @@ const Login = () => {
 
   const validateForm = () => {
     const newErrors = {};
-    
+
     if (!formData.identifier) {
       newErrors.identifier = 'Email or phone number is required';
     }
-    
+
     if (!formData.password) {
       newErrors.password = 'Password is required';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
-    
+
     setIsLoading(true);
-    
+
     try {
       const result = await login(formData.identifier, formData.password);
-      
+
       if (result.success) {
         const role = result.userType || currentUser?.role || 'user';
         if (role === 'admin') navigate('/dashboard');
@@ -108,22 +108,22 @@ const Login = () => {
   const handleGoogleSuccess = async (credentialResponse) => {
     setIsLoading(true);
     setErrors({});
-    
+
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL || '/api/v1'}/auth/google/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
-          credential: credentialResponse.credential 
+        body: JSON.stringify({
+          credential: credentialResponse.credential
         })
       });
-      
+
       if (!response.ok) {
         throw new Error('Google authentication failed');
       }
-      
+
       const data = await response.json();
 
       // Persist user in AuthContext + localStorage for route guards
@@ -143,13 +143,13 @@ const Login = () => {
       // Optional legacy keys
       localStorage.setItem('accessToken', data.accessToken);
       localStorage.setItem('refreshToken', data.refreshToken);
-      
+
       // Redirect based on user role (align with app routes)
       const role = userData.role;
       if (role === 'admin') navigate('/dashboard');
       else if (role === 'provider') navigate('/provider/vet/dashboard');
       else navigate('/user/dashboard');
-      
+
     } catch (error) {
       console.error('Google login error:', error);
       setErrors(prev => ({
@@ -181,7 +181,7 @@ const Login = () => {
 
     setIsLoading(true);
     setErrors({});
-    
+
     try {
       const apiResponse = await fetch(`${import.meta.env.VITE_API_URL || '/api/v1'}/auth/facebook/login`, {
         method: 'POST',
@@ -195,13 +195,13 @@ const Login = () => {
           email: response.email
         })
       });
-      
+
       if (!apiResponse.ok) {
         throw new Error('Facebook authentication failed');
       }
-      
+
       const data = await apiResponse.json();
-      
+
       // Update user and tokens in context immediately
       if (data.user) {
         setCurrentUserData(data.user);
@@ -210,7 +210,7 @@ const Login = () => {
         access: { token: data.accessToken },
         refresh: { token: data.refreshToken },
       });
-      
+
       // Store tokens
       localStorage.setItem('authTokens', JSON.stringify({
         access: { token: data.accessToken },
@@ -218,13 +218,13 @@ const Login = () => {
       }));
       localStorage.setItem('accessToken', data.accessToken);
       localStorage.setItem('refreshToken', data.refreshToken);
-      
+
       // Redirect based on user role (align with app routes)
       const role = data.user?.role || 'user';
       if (role === 'admin') navigate('/dashboard');
       else if (role === 'provider') navigate('/provider/vet/dashboard');
       else navigate('/user/dashboard');
-      
+
     } catch (error) {
       console.error('Facebook login error:', error);
       setErrors(prev => ({
@@ -294,9 +294,8 @@ const Login = () => {
                     autoComplete="username"
                     value={formData.identifier}
                     onChange={handleChange}
-                    className={`pl-10 block w-full focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md ${
-                      errors.identifier ? 'border-red-300' : ''
-                    }`}
+                    className={`pl-10 block w-full focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md ${errors.identifier ? 'border-red-300' : ''
+                      }`}
                     placeholder="you@example.com or 9876543210"
                   />
                 </div>
@@ -320,9 +319,8 @@ const Login = () => {
                     autoComplete="current-password"
                     value={formData.password}
                     onChange={handleChange}
-                    className={`pl-10 pr-10 block w-full focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md ${
-                      errors.password ? 'border-red-300' : ''
-                    }`}
+                    className={`pl-10 pr-10 block w-full focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md ${errors.password ? 'border-red-300' : ''
+                      }`}
                     placeholder="••••••••"
                   />
                   <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
@@ -387,46 +385,27 @@ const Login = () => {
 
               <div className="mt-6 space-y-4">
 
-              <div className="grid grid-cols-2 gap-3">
-                {/* Google Login */}
-                <GoogleLogin
-                  onSuccess={handleGoogleSuccess}
-                  onError={handleGoogleError}
-                  useOneTap={false}
-                  render={(renderProps) => (
-                    <button
-                      onClick={renderProps.onClick}
-                      disabled={isLoading || renderProps.disabled}
-                      className="w-full inline-flex items-center justify-center py-2.5 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <FaGoogle className="h-5 w-5 text-red-500 mr-2" />
-                      <span>Google</span>
-                    </button>
-                  )}
-                />
-
-                {/* Facebook Login */}
-                <FacebookLogin
-                  appId={FACEBOOK_APP_ID}
-                  autoLoad={false}
-                  fields="name,email,picture"
-                  scope="public_profile,email"
-                  callback={handleFacebookResponse}
-                  render={(renderProps) => (
-                    <button
-                      onClick={renderProps.onClick}
-                      disabled={isLoading}
-                      className="w-full inline-flex items-center justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#1877F2] hover:bg-[#166FE5] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#166FE5] disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <FaFacebook className="h-5 w-5 text-white mr-2" />
-                      <span>Facebook</span>
-                    </button>
-                  )}
-                />
+                <div className="grid grid-cols-1 gap-3">
+                  {/* Google Login */}
+                  <GoogleLogin
+                    onSuccess={handleGoogleSuccess}
+                    onError={handleGoogleError}
+                    useOneTap={false}
+                    render={(renderProps) => (
+                      <button
+                        onClick={renderProps.onClick}
+                        disabled={isLoading || renderProps.disabled}
+                        className="w-full inline-flex items-center justify-center py-2.5 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <FaGoogle className="h-5 w-5 text-red-500 mr-2" />
+                        <span>Google</span>
+                      </button>
+                    )}
+                  />
+                </div>
               </div>
             </div>
-            </div>
-            
+
             {/* Provider Section */}
             <div className="mt-8 pt-6 border-t border-gray-200">
               <div className="flex items-center justify-center">

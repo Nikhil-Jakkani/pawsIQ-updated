@@ -149,7 +149,7 @@ const ProviderLogin = () => {
         setCurrentUserData(data.user);
         setAuthTokens(data.tokens);
         localStorage.setItem('authTokens', JSON.stringify(data.tokens));
-        
+
         // Redirect to unified provider dashboard
         navigate('/provider/dashboard');
       } else {
@@ -191,7 +191,7 @@ const ProviderLogin = () => {
         setCurrentUserData(data.user);
         setAuthTokens(data.tokens);
         localStorage.setItem('authTokens', JSON.stringify(data.tokens));
-        
+
         // Redirect to unified provider dashboard
         navigate('/provider/dashboard');
       } else {
@@ -260,9 +260,8 @@ const ProviderLogin = () => {
                     autoComplete="email"
                     value={formData.email}
                     onChange={handleChange}
-                    className={`pl-10 block w-full focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md ${
-                      errors.email ? 'border-red-300' : ''
-                    }`}
+                    className={`pl-10 block w-full focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md ${errors.email ? 'border-red-300' : ''
+                      }`}
                     placeholder="you@example.com"
                   />
                 </div>
@@ -286,9 +285,8 @@ const ProviderLogin = () => {
                     autoComplete="current-password"
                     value={formData.password}
                     onChange={handleChange}
-                    className={`pl-10 block w-full focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md ${
-                      errors.password ? 'border-red-300' : ''
-                    }`}
+                    className={`pl-10 block w-full focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md ${errors.password ? 'border-red-300' : ''
+                      }`}
                     placeholder="••••••••"
                   />
                 </div>
@@ -339,7 +337,7 @@ const ProviderLogin = () => {
                 </div>
               </div>
 
-              <div className="mt-6 grid grid-cols-2 gap-3">
+              <div className="mt-6 grid grid-cols-1 gap-3">
                 <GoogleLogin
                   onSuccess={handleGoogleSuccess}
                   onError={handleGoogleError}
@@ -355,25 +353,8 @@ const ProviderLogin = () => {
                     </button>
                   )}
                 />
-
-                <FacebookLogin
-                  appId={import.meta.env.VITE_FACEBOOK_APP_ID}
-                  autoLoad={false}
-                  fields="name,email,picture"
-                  scope="public_profile,email"
-                  callback={handleFacebookResponse}
-                  render={(renderProps) => (
-                    <button
-                      onClick={renderProps.onClick}
-                      disabled={isLoading}
-                      className="w-full inline-flex items-center justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#1877F2] hover:bg-[#166FE5] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#166FE5] disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <FaFacebook className="h-5 w-5 text-white mr-2" />
-                      <span>Facebook</span>
-                    </button>
-                  )}
-                />
               </div>
+
             </div>
 
             {/* User Section */}
