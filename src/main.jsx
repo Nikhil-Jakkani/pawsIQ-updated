@@ -2,12 +2,15 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter as Router } from 'react-router-dom'
 import { Provider } from 'react-redux'
+import { GoogleOAuthProvider } from '@react-oauth/google'
 import store from './store/store'
 import './index.css'
 import App from './App.jsx'
 import { AuthProvider } from './context/AuthContext'
 import { ProviderProvider } from './context/ProviderContext'
 import { ToastProvider } from './components/common/Toast'
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 // Simple error boundary
 class ErrorBoundary extends React.Component {
@@ -27,16 +30,16 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ 
-          padding: '20px', 
-          margin: '20px', 
-          backgroundColor: '#ffebee', 
+        <div style={{
+          padding: '20px',
+          margin: '20px',
+          backgroundColor: '#ffebee',
           border: '1px solid #f44336',
           borderRadius: '4px'
         }}>
           <h2>Something went wrong.</h2>
           <p>{this.state.error && this.state.error.toString()}</p>
-          <button 
+          <button
             onClick={() => window.location.reload()}
             style={{
               padding: '8px 16px',
@@ -65,7 +68,7 @@ const hideLoadingScreen = () => {
     // Add fade-out effect
     loadingElement.style.opacity = '0';
     loadingElement.style.transition = 'opacity 0.3s ease-out';
-    
+
     // Remove element after transition
     setTimeout(() => {
       if (loadingElement) {
@@ -82,22 +85,24 @@ try {
   if (!rootElement) {
     throw new Error('Root element not found');
   }
-  
+
   // Create root
   const root = ReactDOM.createRoot(rootElement);
-  
+
   // Render the app with proper routing
   const AppTree = (
     <Provider store={store}>
       <Router>
         <ErrorBoundary>
-          <AuthProvider>
-            <ProviderProvider>
-              <ToastProvider>
-                <App />
-              </ToastProvider>
-            </ProviderProvider>
-          </AuthProvider>
+          <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+            <AuthProvider>
+              <ProviderProvider>
+                <ToastProvider>
+                  <App />
+                </ToastProvider>
+              </ProviderProvider>
+            </AuthProvider>
+          </GoogleOAuthProvider>
         </ErrorBoundary>
       </Router>
     </Provider>
@@ -106,16 +111,16 @@ try {
   // In development, avoid StrictMode to prevent double effects (duplicate API calls)
   const withStrict = import.meta?.env?.MODE === 'production';
   root.render(withStrict ? <React.StrictMode>{AppTree}</React.StrictMode> : AppTree);
-  
+
   // Hide loading screen after React has started rendering
   setTimeout(hideLoadingScreen, 800);
-  
+
 } catch (error) {
   console.error("Error rendering app:", error);
-  
+
   // Hide loading screen
   hideLoadingScreen();
-  
+
   // Show error message
   const rootElement = document.getElementById('root');
   if (rootElement) {
