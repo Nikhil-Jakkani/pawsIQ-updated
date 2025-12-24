@@ -80,64 +80,6 @@ const PetActivityTracker = ({ pets: petsProp = [] }) => {
   };
 
   const [activities, setActivities] = useState(() => seedActivities(pets));
-
-  // Real-time timer (per pet & activity)
-  const [running, setRunning] = useState(null); // { petKey, type, startedAt, baseValue }
-
-  useEffect(() => {
-    if (!running) return;
-    const id = setInterval(() => {
-      setActivities((prev) => {
-        const copy = { ...prev };
-        const { petKey, type, startedAt, baseValue } = running;
-        const summary = copy[petKey];
-        if (!summary) return copy;
-        const today = summary.today || {};
-        const rec = today[type];
-        if (!rec) return copy;
-        // Only auto-increment minute-based activities
-        if (rec.unit !== 'min') return copy;
-        const elapsedMin = (Date.now() - startedAt) / 60000;
-        // Keep the underlying cumulative value growing from the starting base
-        const updated = Math.min((baseValue || 0) + elapsedMin, (rec.goal || 0) * 1.5 || 1e6);
-        copy[petKey] = {
-          ...summary,
-          today: {
-            ...today,
-            [type]: { ...rec, value: updated },
-          },
-        };
-        return copy;
-      });
-    }, 1000);
-    return () => clearInterval(id);
-  }, [running]);
-
-  const startTimer = (petKey, type, currentVal) => {
-    const base = Number(currentVal) || 0;
-    setRunning({ petKey, type, startedAt: Date.now(), baseValue: base });
-  };
-  const stopTimer = () => setRunning(null);
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('petActivityRunning');
-      if (saved && !running) {
-        const parsed = JSON.parse(saved);
-        if (parsed && parsed.petKey && parsed.type && parsed.startedAt) {
-          setRunning(parsed);
-        }
-      }
-    } catch { }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  useEffect(() => {
-    try {
-      if (running) localStorage.setItem('petActivityRunning', JSON.stringify(running));
-      else localStorage.removeItem('petActivityRunning');
-    } catch { }
-  }, [running]);
-
   const normalizeSummary = useCallback((summary) => {
     const baseToday = buildDefaultToday();
     const incoming = summary?.today || {};
@@ -524,9 +466,6 @@ const PetActivityTracker = ({ pets: petsProp = [] }) => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <div className="bg-green-100 text-green-700 text-xs font-semibold px-2 py-1 rounded-full flex-shrink-0">
-            Live
-          </div>
           <button
             onClick={() => setShowPopup(true)}
             className="bg-indigo-500 hover:bg-indigo-600 text-white p-1.5 rounded-lg shadow-sm transition-colors flex-shrink-0"
@@ -586,11 +525,7 @@ const PetActivityTracker = ({ pets: petsProp = [] }) => {
           {Object.entries(currentPetData.today).map(([activity, data]) => {
             const IconComponent = getActivityIcon(activity);
             const displayValue = Math.round(data.value);
-            const isRunning = running && running.petKey === currentPetKey && running.type === activity;
-            // Use session-only progress while running; otherwise use cumulative
-            const sessionVal = (isRunning && data.unit === 'min' && typeof (running?.baseValue) === 'number')
-              ? Math.max(0, data.value - running.baseValue)
-              : data.value;
+            const sessionVal = data.value;
             const rawPercentage = data.goal ? (sessionVal / data.goal) * 100 : 0;
             const barPercentage = Math.min(rawPercentage, 100);
             const formatMinutes = (val, goal) => {
@@ -627,23 +562,6 @@ const PetActivityTracker = ({ pets: petsProp = [] }) => {
                       rawPercentage >= 50 ? 'bg-orange-100 text-orange-700' : 'bg-red-100 text-red-700'
                     }`}>
                     {Math.round(rawPercentage)}%
-                  </div>
-                  <div className="ml-2 flex items-center gap-2">
-                    {isRunning ? (
-                      <button className="px-2 py-1 text-[10px] bg-red-600 text-white rounded" onClick={stopTimer}>Stop</button>
-                    ) : (
-                      <button
-                        className="px-2 py-1 text-[10px] border rounded"
-                        onClick={() => {
-                          setActivityType(activity);
-                          setShowPopup(true);
-                          startTimer(currentPetKey, activity, data.value);
-                        }}
-                      >
-                        Start
-                      </button>
-                    )}
-                    <span className={`text-[10px] ${isRunning ? 'text-green-600' : 'text-gray-500'}`}>{isRunning ? 'Live' : 'Not running'}</span>
                   </div>
                 </div>
               </div>

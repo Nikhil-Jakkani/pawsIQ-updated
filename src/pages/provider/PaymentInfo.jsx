@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { 
-  FaCreditCard, 
-  FaUniversity, 
-  FaMoneyBillWave, 
-  FaLock, 
-  FaShieldAlt, 
+import {
+  FaCreditCard,
+  FaUniversity,
+  FaMoneyBillWave,
+  FaLock,
+  FaShieldAlt,
   FaIdCard,
   FaCalendarAlt,
   FaArrowLeft,
@@ -19,7 +19,7 @@ const logoImage = "/1.svg";
 
 const PaymentInfo = () => {
   const navigate = useNavigate();
-  
+
   // Check if registration data exists
   useEffect(() => {
     const registrationData = localStorage.getItem('provider_registration');
@@ -28,18 +28,18 @@ const PaymentInfo = () => {
       navigate('/provider/signup');
       return;
     }
-    
+
     // Load existing data if available
     const paymentData = localStorage.getItem('provider_payment_info');
     if (paymentData) {
       setFormData(JSON.parse(paymentData));
     }
   }, [navigate]);
-  
+
   // Form state
   const [formData, setFormData] = useState({
     paymentMethod: 'bankAccount', // 'bankAccount' or 'creditCard'
-    
+
     // Bank Account Information
     bankAccount: {
       accountHolderName: '',
@@ -48,7 +48,7 @@ const PaymentInfo = () => {
       accountNumber: '',
       confirmAccountNumber: ''
     },
-    
+
     // Credit Card Information
     creditCard: {
       cardHolderName: '',
@@ -57,7 +57,7 @@ const PaymentInfo = () => {
       expirationYear: '',
       cvv: ''
     },
-    
+
     // Tax Information
     taxInformation: {
       taxIdType: 'pan', // 'pan' or 'gst'
@@ -71,28 +71,29 @@ const PaymentInfo = () => {
         pinCode: ''
       }
     },
-    
+
     // Agreements
     agreements: {
       termsAccepted: false,
       electronicCommunicationAccepted: false
     }
   });
-  
+
   // Validation state
   const [errors, setErrors] = useState({});
-  
+
   // Loading state
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+  const [isSaving, setIsSaving] = useState(false);
+
   // Handle input changes
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    
+
     // Handle nested fields
     if (name.includes('.')) {
       const [parent, child] = name.split('.');
-      
+
       if (child.includes('.')) {
         const [subParent, subChild] = child.split('.');
         setFormData(prev => ({
@@ -120,7 +121,7 @@ const PaymentInfo = () => {
         [name]: type === 'checkbox' ? checked : value
       }));
     }
-    
+
     // Clear error when field is edited
     if (name.includes('.')) {
       const errorKey = name.replace(/\./g, '_');
@@ -139,25 +140,25 @@ const PaymentInfo = () => {
       });
     }
   };
-  
+
   // Format credit card number with spaces
   const formatCreditCardNumber = (value) => {
     if (!value) return value;
-    
+
     // Remove all non-digit characters
     const v = value.replace(/\D/g, '');
-    
+
     // Add space after every 4 digits
     const formatted = v.replace(/(\d{4})(?=\d)/g, '$1 ');
-    
+
     return formatted;
   };
-  
+
   // Handle credit card number input
   const handleCreditCardNumberChange = (e) => {
     const { value } = e.target;
     const formatted = formatCreditCardNumber(value);
-    
+
     setFormData(prev => ({
       ...prev,
       creditCard: {
@@ -165,7 +166,7 @@ const PaymentInfo = () => {
         cardNumber: formatted
       }
     }));
-    
+
     // Clear error when field is edited
     if (errors.creditCard_cardNumber) {
       setErrors(prev => {
@@ -175,14 +176,14 @@ const PaymentInfo = () => {
       });
     }
   };
-  
+
   // Format tax ID (SSN or EIN)
   const formatTaxId = (value, type) => {
     if (!value) return value;
-    
+
     // Remove all non-digit characters
     const v = value.replace(/\D/g, '');
-    
+
     if (type === 'ssn') {
       // Format as SSN: XXX-XX-XXXX
       if (v.length <= 3) return v;
@@ -194,13 +195,13 @@ const PaymentInfo = () => {
       return `${v.slice(0, 2)}-${v.slice(2, 9)}`;
     }
   };
-  
+
   // Handle tax ID input
   const handleTaxIdChange = (e) => {
     const { value } = e.target;
     const type = formData.taxInformation.taxIdType;
     const formatted = formatTaxId(value, type);
-    
+
     setFormData(prev => ({
       ...prev,
       taxInformation: {
@@ -208,7 +209,7 @@ const PaymentInfo = () => {
         taxId: formatted
       }
     }));
-    
+
     // Clear error when field is edited
     if (errors.taxInformation_taxId) {
       setErrors(prev => {
@@ -218,30 +219,30 @@ const PaymentInfo = () => {
       });
     }
   };
-  
+
   // Validate form
   const validateForm = () => {
     const newErrors = {};
-    
+
     // Validate based on payment method
     if (formData.paymentMethod === 'bankAccount') {
       // Bank Account validation
       if (!formData.bankAccount.accountHolderName) {
         newErrors.bankAccount_accountHolderName = 'Account holder name is required';
       }
-      
+
       if (!formData.bankAccount.routingNumber) {
         newErrors.bankAccount_routingNumber = 'Routing number is required';
       } else if (!/^\d{9}$/.test(formData.bankAccount.routingNumber.replace(/\D/g, ''))) {
         newErrors.bankAccount_routingNumber = 'Routing number must be 9 digits';
       }
-      
+
       if (!formData.bankAccount.accountNumber) {
         newErrors.bankAccount_accountNumber = 'Account number is required';
       } else if (formData.bankAccount.accountNumber.replace(/\D/g, '').length < 4) {
         newErrors.bankAccount_accountNumber = 'Account number is too short';
       }
-      
+
       if (!formData.bankAccount.confirmAccountNumber) {
         newErrors.bankAccount_confirmAccountNumber = 'Please confirm account number';
       } else if (formData.bankAccount.confirmAccountNumber !== formData.bankAccount.accountNumber) {
@@ -252,28 +253,28 @@ const PaymentInfo = () => {
       if (!formData.creditCard.cardHolderName) {
         newErrors.creditCard_cardHolderName = 'Cardholder name is required';
       }
-      
+
       if (!formData.creditCard.cardNumber) {
         newErrors.creditCard_cardNumber = 'Card number is required';
       } else if (formData.creditCard.cardNumber.replace(/\D/g, '').length < 13) {
         newErrors.creditCard_cardNumber = 'Card number is invalid';
       }
-      
+
       if (!formData.creditCard.expirationMonth) {
         newErrors.creditCard_expirationMonth = 'Expiration month is required';
       }
-      
+
       if (!formData.creditCard.expirationYear) {
         newErrors.creditCard_expirationYear = 'Expiration year is required';
       }
-      
+
       if (!formData.creditCard.cvv) {
         newErrors.creditCard_cvv = 'CVV is required';
       } else if (!/^\d{3,4}$/.test(formData.creditCard.cvv)) {
         newErrors.creditCard_cvv = 'CVV must be 3 or 4 digits';
       }
     }
-    
+
     // Tax Information validation
     if (!formData.taxInformation.taxId) {
       newErrors.taxInformation_taxId = `${formData.taxInformation.taxIdType === 'ssn' ? 'SSN' : 'EIN'} is required`;
@@ -285,63 +286,63 @@ const PaymentInfo = () => {
         newErrors.taxInformation_taxId = 'EIN must be 9 digits';
       }
     }
-    
+
     if (formData.taxInformation.businessType !== 'individual') {
       if (!formData.taxInformation.legalBusinessName) {
         newErrors.taxInformation_legalBusinessName = 'Legal business name is required';
       }
-      
+
       if (!formData.taxInformation.businessAddress.street) {
         newErrors.taxInformation_businessAddress_street = 'Street address is required';
       }
-      
+
       if (!formData.taxInformation.businessAddress.city) {
         newErrors.taxInformation_businessAddress_city = 'City is required';
       }
-      
+
       if (!formData.taxInformation.businessAddress.state) {
         newErrors.taxInformation_businessAddress_state = 'State is required';
       }
-      
+
       if (!formData.taxInformation.businessAddress.pinCode) {
         newErrors.taxInformation_businessAddress_pinCode = 'PIN code is required';
       }
     }
-    
+
     // Agreements validation
     if (!formData.agreements.termsAccepted) {
       newErrors.agreements_termsAccepted = 'You must accept the terms';
     }
-    
+
     if (!formData.agreements.electronicCommunicationAccepted) {
       newErrors.agreements_electronicCommunicationAccepted = 'You must accept electronic communications';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-  
+
   // Handle save as draft
   const handleSaveAsDraft = async () => {
     setIsSaving(true);
-    
+
     try {
       // In a real app, this would call an API to save the draft
       console.log('Saving payment info as draft:', formData);
-      
+
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       // Store in localStorage
       localStorage.setItem('provider_payment_info', JSON.stringify(formData));
-      
+
       // Update registration step
       const registrationData = JSON.parse(localStorage.getItem('provider_registration'));
       localStorage.setItem('provider_registration', JSON.stringify({
         ...registrationData,
         registrationStep: 6
       }));
-      
+
       // Show success message
       alert('Your information has been saved as a draft.');
     } catch (error) {
@@ -351,11 +352,11 @@ const PaymentInfo = () => {
       setIsSaving(false);
     }
   };
-  
+
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       // Scroll to the first error
       const firstError = document.querySelector('.text-red-600');
@@ -364,26 +365,26 @@ const PaymentInfo = () => {
       }
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
       // In a real app, this would call an API to save the data
       console.log('Submitting payment info:', formData);
-      
+
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1500));
-      
+
       // Store in localStorage
       localStorage.setItem('provider_payment_info', JSON.stringify(formData));
-      
+
       // Update registration step
       const registrationData = JSON.parse(localStorage.getItem('provider_registration'));
       localStorage.setItem('provider_registration', JSON.stringify({
         ...registrationData,
         registrationStep: 6
       }));
-      
+
       // Navigate to the review page
       navigate('/provider/onboarding/review');
     } catch (error) {
@@ -396,7 +397,7 @@ const PaymentInfo = () => {
       setIsSubmitting(false);
     }
   };
-  
+
   // Generate years for expiration date dropdown
   const generateYears = () => {
     const currentYear = new Date().getFullYear();
@@ -406,7 +407,7 @@ const PaymentInfo = () => {
     }
     return years;
   };
-  
+
   // Generate months for expiration date dropdown
   const months = [
     { value: '01', label: '01 - January' },
@@ -422,7 +423,7 @@ const PaymentInfo = () => {
     { value: '11', label: '11 - November' },
     { value: '12', label: '12 - December' }
   ];
-  
+
   // US States for dropdown
   const usStates = [
     { value: 'AL', label: 'Alabama' },
@@ -477,7 +478,7 @@ const PaymentInfo = () => {
     { value: 'WY', label: 'Wyoming' },
     { value: 'DC', label: 'District of Columbia' }
   ];
-  
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -492,7 +493,7 @@ const PaymentInfo = () => {
           </div>
         </div>
       </header>
-      
+
       <main className="max-w-3xl px-4 sm:px-6 lg:px-8 py-10">
         {/* Progress indicator */}
         <div className="mb-8">
@@ -504,7 +505,7 @@ const PaymentInfo = () => {
             <div className="bg-indigo-600 h-2.5 rounded-full" style={{ width: '75%' }}></div>
           </div>
         </div>
-        
+
         <div className="bg-white shadow-md rounded-lg overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
             <h2 className="text-lg font-medium text-gray-900">Payment Information</h2>
@@ -512,7 +513,7 @@ const PaymentInfo = () => {
               Set up how you'll receive payments for your services
             </p>
           </div>
-          
+
           {/* Form error message */}
           {errors.form && (
             <div className="m-6 bg-red-50 border-l-4 border-red-500 p-4 rounded">
@@ -526,7 +527,7 @@ const PaymentInfo = () => {
               </div>
             </div>
           )}
-          
+
           <form onSubmit={handleSubmit} className="p-6 space-y-8">
             {/* Security Notice */}
             <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
@@ -542,7 +543,7 @@ const PaymentInfo = () => {
                 </div>
               </div>
             </div>
-            
+
             {/* Payment Method Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -550,17 +551,15 @@ const PaymentInfo = () => {
               </label>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div
-                  className={`border rounded-lg p-4 cursor-pointer ${
-                    formData.paymentMethod === 'bankAccount'
+                  className={`border rounded-lg p-4 cursor-pointer ${formData.paymentMethod === 'bankAccount'
                       ? 'border-indigo-500 bg-indigo-50'
                       : 'border-gray-300 hover:border-indigo-300'
-                  }`}
+                    }`}
                   onClick={() => handleChange({ target: { name: 'paymentMethod', value: 'bankAccount' } })}
                 >
                   <div className="flex items-center">
-                    <div className={`flex-shrink-0 h-6 w-6 flex items-center justify-center rounded-full ${
-                      formData.paymentMethod === 'bankAccount' ? 'bg-indigo-600' : 'border border-gray-300'
-                    }`}>
+                    <div className={`flex-shrink-0 h-6 w-6 flex items-center justify-center rounded-full ${formData.paymentMethod === 'bankAccount' ? 'bg-indigo-600' : 'border border-gray-300'
+                      }`}>
                       {formData.paymentMethod === 'bankAccount' && (
                         <div className="h-3 w-3 rounded-full bg-white"></div>
                       )}
@@ -574,19 +573,17 @@ const PaymentInfo = () => {
                     <span>Direct deposit to your bank account</span>
                   </div>
                 </div>
-                
+
                 <div
-                  className={`border rounded-lg p-4 cursor-pointer ${
-                    formData.paymentMethod === 'creditCard'
+                  className={`border rounded-lg p-4 cursor-pointer ${formData.paymentMethod === 'creditCard'
                       ? 'border-indigo-500 bg-indigo-50'
                       : 'border-gray-300 hover:border-indigo-300'
-                  }`}
+                    }`}
                   onClick={() => handleChange({ target: { name: 'paymentMethod', value: 'creditCard' } })}
                 >
                   <div className="flex items-center">
-                    <div className={`flex-shrink-0 h-6 w-6 flex items-center justify-center rounded-full ${
-                      formData.paymentMethod === 'creditCard' ? 'bg-indigo-600' : 'border border-gray-300'
-                    }`}>
+                    <div className={`flex-shrink-0 h-6 w-6 flex items-center justify-center rounded-full ${formData.paymentMethod === 'creditCard' ? 'bg-indigo-600' : 'border border-gray-300'
+                      }`}>
                       {formData.paymentMethod === 'creditCard' && (
                         <div className="h-3 w-3 rounded-full bg-white"></div>
                       )}
@@ -602,14 +599,14 @@ const PaymentInfo = () => {
                 </div>
               </div>
             </div>
-            
+
             {/* Bank Account Information */}
             {formData.paymentMethod === 'bankAccount' && (
               <div className="space-y-6 border border-gray-200 rounded-lg p-4">
                 <h3 className="text-md font-medium text-gray-900 pb-2 border-b border-gray-200">
                   Bank Account Information
                 </h3>
-                
+
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                   <div className="sm:col-span-2">
                     <label htmlFor="accountHolderName" className="block text-sm font-medium text-gray-700">
@@ -622,9 +619,8 @@ const PaymentInfo = () => {
                         name="bankAccount.accountHolderName"
                         value={formData.bankAccount.accountHolderName}
                         onChange={handleChange}
-                        className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-                          errors.bankAccount_accountHolderName ? 'border-red-300' : ''
-                        }`}
+                        className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${errors.bankAccount_accountHolderName ? 'border-red-300' : ''
+                          }`}
                         placeholder="John Doe"
                       />
                     </div>
@@ -632,7 +628,7 @@ const PaymentInfo = () => {
                       <p className="mt-1 text-sm text-red-600">{errors.bankAccount_accountHolderName}</p>
                     )}
                   </div>
-                  
+
                   <div className="sm:col-span-2">
                     <label className="block text-sm font-medium text-gray-700">
                       Account Type <span className="text-red-500">*</span>
@@ -668,7 +664,7 @@ const PaymentInfo = () => {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div>
                     <label htmlFor="routingNumber" className="block text-sm font-medium text-gray-700">
                       IFSC Code <span className="text-red-500">*</span>
@@ -680,9 +676,8 @@ const PaymentInfo = () => {
                         name="bankAccount.routingNumber"
                         value={formData.bankAccount.routingNumber}
                         onChange={handleChange}
-                        className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-                          errors.bankAccount_routingNumber ? 'border-red-300' : ''
-                        }`}
+                        className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${errors.bankAccount_routingNumber ? 'border-red-300' : ''
+                          }`}
                         placeholder="123456789"
                         maxLength="9"
                       />
@@ -693,7 +688,7 @@ const PaymentInfo = () => {
                       <p className="mt-1 text-xs text-gray-500">9-digit number found on the bottom of your check</p>
                     )}
                   </div>
-                  
+
                   <div>
                     <label htmlFor="accountNumber" className="block text-sm font-medium text-gray-700">
                       Account Number <span className="text-red-500">*</span>
@@ -705,9 +700,8 @@ const PaymentInfo = () => {
                         name="bankAccount.accountNumber"
                         value={formData.bankAccount.accountNumber}
                         onChange={handleChange}
-                        className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-                          errors.bankAccount_accountNumber ? 'border-red-300' : ''
-                        }`}
+                        className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${errors.bankAccount_accountNumber ? 'border-red-300' : ''
+                          }`}
                         placeholder="••••••••••"
                       />
                     </div>
@@ -715,7 +709,7 @@ const PaymentInfo = () => {
                       <p className="mt-1 text-sm text-red-600">{errors.bankAccount_accountNumber}</p>
                     )}
                   </div>
-                  
+
                   <div>
                     <label htmlFor="confirmAccountNumber" className="block text-sm font-medium text-gray-700">
                       Confirm Account Number <span className="text-red-500">*</span>
@@ -727,9 +721,8 @@ const PaymentInfo = () => {
                         name="bankAccount.confirmAccountNumber"
                         value={formData.bankAccount.confirmAccountNumber}
                         onChange={handleChange}
-                        className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-                          errors.bankAccount_confirmAccountNumber ? 'border-red-300' : ''
-                        }`}
+                        className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${errors.bankAccount_confirmAccountNumber ? 'border-red-300' : ''
+                          }`}
                         placeholder="••••••••••"
                       />
                     </div>
@@ -740,14 +733,14 @@ const PaymentInfo = () => {
                 </div>
               </div>
             )}
-            
+
             {/* Credit Card Information */}
             {formData.paymentMethod === 'creditCard' && (
               <div className="space-y-6 border border-gray-200 rounded-lg p-4">
                 <h3 className="text-md font-medium text-gray-900 pb-2 border-b border-gray-200">
                   Credit Card Information
                 </h3>
-                
+
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                   <div className="sm:col-span-2">
                     <label htmlFor="cardHolderName" className="block text-sm font-medium text-gray-700">
@@ -760,9 +753,8 @@ const PaymentInfo = () => {
                         name="creditCard.cardHolderName"
                         value={formData.creditCard.cardHolderName}
                         onChange={handleChange}
-                        className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-                          errors.creditCard_cardHolderName ? 'border-red-300' : ''
-                        }`}
+                        className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${errors.creditCard_cardHolderName ? 'border-red-300' : ''
+                          }`}
                         placeholder="John Doe"
                       />
                     </div>
@@ -770,7 +762,7 @@ const PaymentInfo = () => {
                       <p className="mt-1 text-sm text-red-600">{errors.creditCard_cardHolderName}</p>
                     )}
                   </div>
-                  
+
                   <div className="sm:col-span-2">
                     <label htmlFor="cardNumber" className="block text-sm font-medium text-gray-700">
                       Card Number <span className="text-red-500">*</span>
@@ -785,9 +777,8 @@ const PaymentInfo = () => {
                         name="creditCard.cardNumber"
                         value={formData.creditCard.cardNumber}
                         onChange={handleCreditCardNumberChange}
-                        className={`pl-10 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-                          errors.creditCard_cardNumber ? 'border-red-300' : ''
-                        }`}
+                        className={`pl-10 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${errors.creditCard_cardNumber ? 'border-red-300' : ''
+                          }`}
                         placeholder="1234 5678 9012 3456"
                         maxLength="19"
                       />
@@ -796,7 +787,7 @@ const PaymentInfo = () => {
                       <p className="mt-1 text-sm text-red-600">{errors.creditCard_cardNumber}</p>
                     )}
                   </div>
-                  
+
                   <div>
                     <label htmlFor="expirationMonth" className="block text-sm font-medium text-gray-700">
                       Expiration Month <span className="text-red-500">*</span>
@@ -807,9 +798,8 @@ const PaymentInfo = () => {
                         name="creditCard.expirationMonth"
                         value={formData.creditCard.expirationMonth}
                         onChange={handleChange}
-                        className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-                          errors.creditCard_expirationMonth ? 'border-red-300' : ''
-                        }`}
+                        className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${errors.creditCard_expirationMonth ? 'border-red-300' : ''
+                          }`}
                       >
                         <option value="">Select Month</option>
                         {months.map(month => (
@@ -821,7 +811,7 @@ const PaymentInfo = () => {
                       <p className="mt-1 text-sm text-red-600">{errors.creditCard_expirationMonth}</p>
                     )}
                   </div>
-                  
+
                   <div>
                     <label htmlFor="expirationYear" className="block text-sm font-medium text-gray-700">
                       Expiration Year <span className="text-red-500">*</span>
@@ -832,9 +822,8 @@ const PaymentInfo = () => {
                         name="creditCard.expirationYear"
                         value={formData.creditCard.expirationYear}
                         onChange={handleChange}
-                        className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-                          errors.creditCard_expirationYear ? 'border-red-300' : ''
-                        }`}
+                        className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${errors.creditCard_expirationYear ? 'border-red-300' : ''
+                          }`}
                       >
                         <option value="">Select Year</option>
                         {generateYears().map(year => (
@@ -846,7 +835,7 @@ const PaymentInfo = () => {
                       <p className="mt-1 text-sm text-red-600">{errors.creditCard_expirationYear}</p>
                     )}
                   </div>
-                  
+
                   <div>
                     <label htmlFor="cvv" className="block text-sm font-medium text-gray-700">
                       CVV <span className="text-red-500">*</span>
@@ -858,9 +847,8 @@ const PaymentInfo = () => {
                         name="creditCard.cvv"
                         value={formData.creditCard.cvv}
                         onChange={handleChange}
-                        className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-                          errors.creditCard_cvv ? 'border-red-300' : ''
-                        }`}
+                        className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${errors.creditCard_cvv ? 'border-red-300' : ''
+                          }`}
                         placeholder="•••"
                         maxLength="4"
                       />
@@ -874,13 +862,13 @@ const PaymentInfo = () => {
                 </div>
               </div>
             )}
-            
+
             {/* Tax Information */}
             <div className="space-y-6 border border-gray-200 rounded-lg p-4">
               <h3 className="text-md font-medium text-gray-900 pb-2 border-b border-gray-200">
                 Tax Information
               </h3>
-              
+
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -917,7 +905,7 @@ const PaymentInfo = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="sm:col-span-2">
                   <label htmlFor="taxId" className="block text-sm font-medium text-gray-700">
                     {formData.taxInformation.taxIdType === 'pan' ? 'PAN Number' : 'GST Number'} <span className="text-red-500">*</span>
@@ -932,9 +920,8 @@ const PaymentInfo = () => {
                       name="taxInformation.taxId"
                       value={formData.taxInformation.taxId}
                       onChange={handleTaxIdChange}
-                      className={`pl-10 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-                        errors.taxInformation_taxId ? 'border-red-300' : ''
-                      }`}
+                      className={`pl-10 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${errors.taxInformation_taxId ? 'border-red-300' : ''
+                        }`}
                       placeholder={formData.taxInformation.taxIdType === 'pan' ? 'ABCDE1234F' : '12ABCDE1234F1Z5'}
                       maxLength={formData.taxInformation.taxIdType === 'pan' ? 10 : 15}
                     />
@@ -947,7 +934,7 @@ const PaymentInfo = () => {
                     </p>
                   )}
                 </div>
-                
+
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Business Type <span className="text-red-500">*</span>
@@ -1011,7 +998,7 @@ const PaymentInfo = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 {formData.taxInformation.businessType !== 'individual' && (
                   <>
                     <div className="sm:col-span-2">
@@ -1025,9 +1012,8 @@ const PaymentInfo = () => {
                           name="taxInformation.legalBusinessName"
                           value={formData.taxInformation.legalBusinessName}
                           onChange={handleChange}
-                          className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-                            errors.taxInformation_legalBusinessName ? 'border-red-300' : ''
-                          }`}
+                          className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${errors.taxInformation_legalBusinessName ? 'border-red-300' : ''
+                            }`}
                           placeholder="Your Business Name, LLC"
                         />
                       </div>
@@ -1035,7 +1021,7 @@ const PaymentInfo = () => {
                         <p className="mt-1 text-sm text-red-600">{errors.taxInformation_legalBusinessName}</p>
                       )}
                     </div>
-                    
+
                     <div className="sm:col-span-2">
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Business Address <span className="text-red-500">*</span>
@@ -1049,16 +1035,15 @@ const PaymentInfo = () => {
                             name="taxInformation.businessAddress.street"
                             value={formData.taxInformation.businessAddress.street}
                             onChange={handleChange}
-                            className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-                              errors.taxInformation_businessAddress_street ? 'border-red-300' : ''
-                            }`}
+                            className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${errors.taxInformation_businessAddress_street ? 'border-red-300' : ''
+                              }`}
                             placeholder="Street Address"
                           />
                           {errors.taxInformation_businessAddress_street && (
                             <p className="mt-1 text-sm text-red-600">{errors.taxInformation_businessAddress_street}</p>
                           )}
                         </div>
-                        
+
                         <div className="sm:col-span-3">
                           <label htmlFor="city" className="sr-only">City</label>
                           <input
@@ -1067,16 +1052,15 @@ const PaymentInfo = () => {
                             name="taxInformation.businessAddress.city"
                             value={formData.taxInformation.businessAddress.city}
                             onChange={handleChange}
-                            className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-                              errors.taxInformation_businessAddress_city ? 'border-red-300' : ''
-                            }`}
+                            className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${errors.taxInformation_businessAddress_city ? 'border-red-300' : ''
+                              }`}
                             placeholder="City"
                           />
                           {errors.taxInformation_businessAddress_city && (
                             <p className="mt-1 text-sm text-red-600">{errors.taxInformation_businessAddress_city}</p>
                           )}
                         </div>
-                        
+
                         <div className="sm:col-span-2">
                           <label htmlFor="state" className="sr-only">State</label>
                           <select
@@ -1084,9 +1068,8 @@ const PaymentInfo = () => {
                             name="taxInformation.businessAddress.state"
                             value={formData.taxInformation.businessAddress.state}
                             onChange={handleChange}
-                            className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-                              errors.taxInformation_businessAddress_state ? 'border-red-300' : ''
-                            }`}
+                            className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${errors.taxInformation_businessAddress_state ? 'border-red-300' : ''
+                              }`}
                           >
                             <option value="">Select State</option>
                             {usStates.map(state => (
@@ -1097,7 +1080,7 @@ const PaymentInfo = () => {
                             <p className="mt-1 text-sm text-red-600">{errors.taxInformation_businessAddress_state}</p>
                           )}
                         </div>
-                        
+
                         <div className="sm:col-span-1">
                           <label htmlFor="pinCode" className="sr-only">PIN Code</label>
                           <input
@@ -1106,9 +1089,8 @@ const PaymentInfo = () => {
                             name="taxInformation.businessAddress.pinCode"
                             value={formData.taxInformation.businessAddress.pinCode}
                             onChange={handleChange}
-                            className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-                              errors.taxInformation_businessAddress_pinCode ? 'border-red-300' : ''
-                            }`}
+                            className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${errors.taxInformation_businessAddress_pinCode ? 'border-red-300' : ''
+                              }`}
                             placeholder="PIN Code"
                           />
                           {errors.taxInformation_businessAddress_pinCode && (
@@ -1121,7 +1103,7 @@ const PaymentInfo = () => {
                 )}
               </div>
             </div>
-            
+
             {/* Agreements */}
             <div className="space-y-4">
               <div className="flex items-start">
@@ -1132,9 +1114,8 @@ const PaymentInfo = () => {
                     type="checkbox"
                     checked={formData.agreements.termsAccepted}
                     onChange={handleChange}
-                    className={`focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded ${
-                      errors.agreements_termsAccepted ? 'border-red-300' : ''
-                    }`}
+                    className={`focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded ${errors.agreements_termsAccepted ? 'border-red-300' : ''
+                      }`}
                   />
                 </div>
                 <div className="ml-3 text-sm">
@@ -1149,7 +1130,7 @@ const PaymentInfo = () => {
                   )}
                 </div>
               </div>
-              
+
               <div className="flex items-start">
                 <div className="flex items-center h-5">
                   <input
@@ -1158,9 +1139,8 @@ const PaymentInfo = () => {
                     type="checkbox"
                     checked={formData.agreements.electronicCommunicationAccepted}
                     onChange={handleChange}
-                    className={`focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded ${
-                      errors.agreements_electronicCommunicationAccepted ? 'border-red-300' : ''
-                    }`}
+                    className={`focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded ${errors.agreements_electronicCommunicationAccepted ? 'border-red-300' : ''
+                      }`}
                   />
                 </div>
                 <div className="ml-3 text-sm">
@@ -1176,7 +1156,7 @@ const PaymentInfo = () => {
                 </div>
               </div>
             </div>
-            
+
             {/* Form Actions */}
             <div className="pt-5 border-t border-gray-200 flex justify-between">
               <Link
@@ -1186,7 +1166,7 @@ const PaymentInfo = () => {
                 <FaArrowLeft className="mr-2 -ml-1 h-4 w-4" />
                 Back
               </Link>
-              
+
               <div className="flex space-x-3">
                 <button
                   type="button"
@@ -1209,7 +1189,7 @@ const PaymentInfo = () => {
                     </>
                   )}
                 </button>
-                
+
                 <button
                   type="submit"
                   disabled={isSubmitting}
