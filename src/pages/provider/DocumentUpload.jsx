@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { 
-  FaFileUpload, 
-  FaIdCard, 
-  FaFileAlt, 
-  FaFileInvoice, 
-  FaFileContract, 
-  FaFileImage, 
+import {
+  FaFileUpload,
+  FaIdCard,
+  FaFileAlt,
+  FaFileInvoice,
+  FaFileContract,
+  FaFileImage,
   FaFilePdf,
   FaTrashAlt,
   FaCheck,
@@ -22,7 +22,7 @@ const logoImage = "/1.svg";
 
 const DocumentUpload = () => {
   const navigate = useNavigate();
-  
+
   // Check if registration data exists
   useEffect(() => {
     const registrationData = localStorage.getItem('provider_registration');
@@ -31,22 +31,22 @@ const DocumentUpload = () => {
       navigate('/provider/signup');
       return;
     }
-    
+
     // Load existing data if available
     const documentData = localStorage.getItem('provider_document_upload');
     if (documentData) {
       setFormData(JSON.parse(documentData));
     }
-    
+
     // Set required documents based on provider type
     const parsedData = JSON.parse(registrationData);
     const providerType = parsedData.providerType;
-    
+
     let requiredDocs = [
       { id: 'identification', label: 'Government-Issued ID', required: true, description: 'Driver\'s license, passport, or other government-issued ID' },
       { id: 'businessLicense', label: 'Business License', required: false, description: 'If you operate as a registered business' }
     ];
-    
+
     // Add provider-specific required documents (Indian Standards)
     switch (providerType) {
       case 'Veterinarian':
@@ -93,7 +93,7 @@ const DocumentUpload = () => {
       default:
         break;
     }
-    
+
     // Add common documents for all providers (Indian Standards)
     requiredDocs = [
       ...requiredDocs,
@@ -102,31 +102,32 @@ const DocumentUpload = () => {
       { id: 'gstCertificate', label: 'GST Registration Certificate', required: false, description: 'If your annual turnover exceeds ₹20 lakhs (optional)' },
       { id: 'additionalDocuments', label: 'Additional Documents', required: false, description: 'Any other relevant documents (awards, memberships, etc.)' }
     ];
-    
+
     setRequiredDocuments(requiredDocs);
   }, [navigate]);
-  
+
   // State for required documents
   const [requiredDocuments, setRequiredDocuments] = useState([]);
-  
+
   // Form state
   const [formData, setFormData] = useState({
     documents: {},
     acknowledgement: false
   });
-  
+
   // Validation state
   const [errors, setErrors] = useState({});
-  
+
   // Loading state
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+  const [isSaving, setIsSaving] = useState(false);
+
   // Handle file upload
   const handleFileUpload = (documentId, files) => {
     if (files.length === 0) return;
-    
+
     const file = files[0];
-    
+
     // Check file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       setErrors(prev => ({
@@ -135,7 +136,7 @@ const DocumentUpload = () => {
       }));
       return;
     }
-    
+
     // Check file type
     const validTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
     if (!validTypes.includes(file.type)) {
@@ -145,7 +146,7 @@ const DocumentUpload = () => {
       }));
       return;
     }
-    
+
     // Create file preview
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -163,7 +164,7 @@ const DocumentUpload = () => {
           }
         }
       }));
-      
+
       // Clear error if exists
       if (errors[documentId]) {
         setErrors(prev => {
@@ -175,7 +176,7 @@ const DocumentUpload = () => {
     };
     reader.readAsDataURL(file);
   };
-  
+
   // Handle file removal
   const handleFileRemove = (documentId) => {
     setFormData(prev => {
@@ -187,7 +188,7 @@ const DocumentUpload = () => {
       };
     });
   };
-  
+
   // Handle checkbox change
   const handleChange = (e) => {
     const { name, checked } = e.target;
@@ -195,7 +196,7 @@ const DocumentUpload = () => {
       ...prev,
       [name]: checked
     }));
-    
+
     // Clear error if exists
     if (errors[name]) {
       setErrors(prev => {
@@ -205,38 +206,38 @@ const DocumentUpload = () => {
       });
     }
   };
-  
+
   // Validate form
   const validateForm = () => {
     const newErrors = {};
-    
+
     // Check if required documents are uploaded
     requiredDocuments.forEach(doc => {
       if (doc.required && !formData.documents[doc.id]) {
         newErrors[doc.id] = `${doc.label} is required`;
       }
     });
-    
+
     // Check acknowledgement
     if (!formData.acknowledgement) {
       newErrors.acknowledgement = 'You must acknowledge that all documents are accurate';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-  
+
   // Handle save as draft
   const handleSaveAsDraft = async () => {
     setIsSaving(true);
-    
+
     try {
       // In a real app, this would call an API to save the draft
       console.log('Saving document upload as draft:', formData);
-      
+
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       // Store in localStorage (note: in a real app, files would be uploaded to a server)
       // For this demo, we'll just store the file metadata
       const documentsMetadata = {};
@@ -249,19 +250,19 @@ const DocumentUpload = () => {
           uploadDate: doc.uploadDate
         };
       });
-      
+
       localStorage.setItem('provider_document_upload', JSON.stringify({
         documents: documentsMetadata,
         acknowledgement: formData.acknowledgement
       }));
-      
+
       // Update registration step
       const registrationData = JSON.parse(localStorage.getItem('provider_registration'));
       localStorage.setItem('provider_registration', JSON.stringify({
         ...registrationData,
         registrationStep: 4
       }));
-      
+
       // Show success message
       alert('Your information has been saved as a draft.');
     } catch (error) {
@@ -271,11 +272,11 @@ const DocumentUpload = () => {
       setIsSaving(false);
     }
   };
-  
+
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       // Scroll to the first error
       const firstError = document.querySelector('.text-red-600');
@@ -284,16 +285,16 @@ const DocumentUpload = () => {
       }
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
       // In a real app, this would call an API to upload the files
       console.log('Submitting document upload:', formData);
-      
+
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1500));
-      
+
       // Store in localStorage (note: in a real app, files would be uploaded to a server)
       // For this demo, we'll just store the file metadata
       const documentsMetadata = {};
@@ -306,19 +307,19 @@ const DocumentUpload = () => {
           uploadDate: doc.uploadDate
         };
       });
-      
+
       localStorage.setItem('provider_document_upload', JSON.stringify({
         documents: documentsMetadata,
         acknowledgement: formData.acknowledgement
       }));
-      
+
       // Update registration step
       const registrationData = JSON.parse(localStorage.getItem('provider_registration'));
       localStorage.setItem('provider_registration', JSON.stringify({
         ...registrationData,
         registrationStep: 4
       }));
-      
+
       // Navigate to the terms and conditions page
       navigate('/provider/onboarding/terms');
     } catch (error) {
@@ -331,15 +332,15 @@ const DocumentUpload = () => {
       setIsSubmitting(false);
     }
   };
-  
+
   // Get back link based on provider type
   const getBackLink = () => {
     const registrationData = localStorage.getItem('provider_registration');
     if (!registrationData) return '/provider/onboarding/professional-info';
-    
+
     const parsedData = JSON.parse(registrationData);
     const providerType = parsedData.providerType;
-    
+
     switch (providerType) {
       case 'Veterinarian':
         return '/provider/onboarding/veterinarian-details';
@@ -353,21 +354,21 @@ const DocumentUpload = () => {
         return '/provider/onboarding/professional-info';
     }
   };
-  
+
   // Format file size
   const formatFileSize = (bytes) => {
     if (bytes < 1024) return bytes + ' bytes';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
-  
+
   // Get file icon based on file type
   const getFileIcon = (fileType) => {
     if (fileType.includes('pdf')) return <FaFilePdf className="text-red-500" />;
     if (fileType.includes('image')) return <FaFileImage className="text-blue-500" />;
     return <FaFileAlt className="text-gray-500" />;
   };
-  
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -382,7 +383,7 @@ const DocumentUpload = () => {
           </div>
         </div>
       </header>
-      
+
       <main className="max-w-3xl px-4 sm:px-6 lg:px-8 py-10">
         {/* Progress indicator */}
         <div className="mb-8">
@@ -394,7 +395,7 @@ const DocumentUpload = () => {
             <div className="bg-indigo-600 h-2.5 rounded-full" style={{ width: '50%' }}></div>
           </div>
         </div>
-        
+
         <div className="bg-white shadow-md rounded-lg overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
             <h2 className="text-lg font-medium text-gray-900">Document Upload</h2>
@@ -402,7 +403,7 @@ const DocumentUpload = () => {
               Please upload the required documents to verify your identity and qualifications
             </p>
           </div>
-          
+
           {/* Form error message */}
           {errors.form && (
             <div className="m-6 bg-red-50 border-l-4 border-red-500 p-4 rounded">
@@ -416,7 +417,7 @@ const DocumentUpload = () => {
               </div>
             </div>
           )}
-          
+
           <form onSubmit={handleSubmit} className="p-6 space-y-8">
             {/* Document Upload Instructions */}
             <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
@@ -437,7 +438,7 @@ const DocumentUpload = () => {
                 </div>
               </div>
             </div>
-            
+
             {/* Document Upload Section */}
             <div className="space-y-6">
               {requiredDocuments.map((doc) => (
@@ -448,12 +449,12 @@ const DocumentUpload = () => {
                         {doc.label} {doc.required && <span className="text-red-500">*</span>}
                       </label>
                       <p className="mt-1 text-xs text-gray-500">{doc.description}</p>
-                      
+
                       {errors[doc.id] && (
                         <p className="mt-1 text-sm text-red-600">{errors[doc.id]}</p>
                       )}
                     </div>
-                    
+
                     {formData.documents[doc.id] ? (
                       <div className="flex items-center space-x-4">
                         <div className="flex items-center space-x-2 bg-gray-100 px-3 py-2 rounded-md">
@@ -500,7 +501,7 @@ const DocumentUpload = () => {
                 </div>
               ))}
             </div>
-            
+
             {/* Acknowledgement */}
             <div className="mt-6">
               <div className="flex items-start">
@@ -511,9 +512,8 @@ const DocumentUpload = () => {
                     type="checkbox"
                     checked={formData.acknowledgement}
                     onChange={handleChange}
-                    className={`focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded ${
-                      errors.acknowledgement ? 'border-red-300' : ''
-                    }`}
+                    className={`focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded ${errors.acknowledgement ? 'border-red-300' : ''
+                      }`}
                   />
                 </div>
                 <div className="ml-3 text-sm">
@@ -529,7 +529,7 @@ const DocumentUpload = () => {
                 </div>
               </div>
             </div>
-            
+
             {/* Form Actions */}
             <div className="pt-5 border-t border-gray-200 flex justify-between">
               <Link
@@ -539,7 +539,7 @@ const DocumentUpload = () => {
                 <FaArrowLeft className="mr-2 -ml-1 h-4 w-4" />
                 Back
               </Link>
-              
+
               <div className="flex space-x-3">
                 <button
                   type="button"
@@ -562,7 +562,7 @@ const DocumentUpload = () => {
                     </>
                   )}
                 </button>
-                
+
                 <button
                   type="submit"
                   disabled={isSubmitting}
