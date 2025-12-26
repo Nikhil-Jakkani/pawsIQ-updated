@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  FaHome, 
-  FaPaw, 
-  FaCalendarAlt, 
-  FaShoppingCart, 
-  FaCreditCard, 
-  FaCommentAlt, 
-  FaBell, 
-  FaCog, 
+import {
+  FaHome,
+  FaPaw,
+  FaCalendarAlt,
+  FaShoppingCart,
+  FaCreditCard,
+  FaCommentAlt,
+  FaBell,
+  FaCog,
   FaQuestionCircle,
   FaBars,
   FaTimes,
@@ -36,7 +36,7 @@ const UserSidebar = ({ isOpen, toggleSidebar }) => {
   const { currentUser, logout } = useAuth();
   const [expandedCategory, setExpandedCategory] = useState(null);
   const [minimized, setMinimized] = useState(false);
-  
+
   // Load minimized state from localStorage on component mount
   useEffect(() => {
     const savedMinimizedState = localStorage.getItem('userSidebarMinimized');
@@ -44,17 +44,17 @@ const UserSidebar = ({ isOpen, toggleSidebar }) => {
       setMinimized(JSON.parse(savedMinimizedState));
     }
   }, []);
-  
+
   // Toggle minimized state and save to localStorage
   const toggleMinimized = () => {
     const newMinimizedState = !minimized;
     setMinimized(newMinimizedState);
     localStorage.setItem('userSidebarMinimized', JSON.stringify(newMinimizedState));
-    
+
     // Dispatch a custom event to notify other components about the change
     window.dispatchEvent(new CustomEvent('userSidebarMinimizedChange'));
   };
-  
+
   const menuCategories = [
     {
       id: 'dashboard',
@@ -111,7 +111,7 @@ const UserSidebar = ({ isOpen, toggleSidebar }) => {
       icon: <FaUser />,
       label: 'Profile',
       path: '/user/settings',
-      items: []        
+      items: []
     },
     {
       id: 'help',
@@ -141,24 +141,24 @@ const UserSidebar = ({ isOpen, toggleSidebar }) => {
     <>
       {/* Mobile sidebar toggle */}
       <div className="lg:hidden fixed top-4 left-4 z-30">
-        <button 
+        <button
           onClick={toggleSidebar}
           className="p-2 rounded-full bg-[#145ae6] text-white shadow-lg"
         >
           {isOpen ? <FaTimes /> : <FaBars />}
         </button>
       </div>
-      
+
       {/* Sidebar backdrop for mobile */}
       {isOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden"
           onClick={toggleSidebar}
         />
       )}
-      
+
       {/* Sidebar */}
-      <div 
+      <div
         className={`fixed top-0 left-0 h-full bg-gradient-to-b from-blue-600 to-[#145ae6] text-white z-20 transition-transform duration-300 ease-in-out shadow-xl
           ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
           ${minimized ? 'w-20 lg:w-20' : 'w-72'} max-w-full`}
@@ -175,15 +175,15 @@ const UserSidebar = ({ isOpen, toggleSidebar }) => {
               </div>
             )}
           </div>
-          
+
           {/* Minimize toggle button */}
-          <button 
+          <button
             onClick={toggleMinimized}
             className="absolute top-4 right-0 transform translate-x-1/2 bg-blue-500 text-white p-1 rounded-full shadow-lg hover:bg-blue-700 transition-colors"
           >
             {minimized ? <FaAngleRight size={16} /> : <FaAngleLeft size={16} />}
           </button>
-          
+
           {/* Navigation Links - with scrollbar */}
           <nav className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-blue-400 scrollbar-track-blue-700">
             <ul className="space-y-1 py-2">
@@ -244,7 +244,7 @@ const UserSidebar = ({ isOpen, toggleSidebar }) => {
                       )}
                     </Link>
                   )}
-                  
+
                   {/* Subcategory items - only show when not minimized */}
                   {!minimized && category.items.length > 0 && expandedCategory === category.id && (
                     <ul className="mt-1 ml-6 space-y-1 border-l border-blue-400 pl-2">
@@ -253,8 +253,8 @@ const UserSidebar = ({ isOpen, toggleSidebar }) => {
                           <Link
                             to={item.path}
                             className={`flex items-center gap-2 px-3 py-2 text-sm rounded-md
-                              ${location.pathname === item.path 
-                                ? 'bg-white bg-opacity-20 text-white' 
+                              ${location.pathname === item.path
+                                ? 'bg-white bg-opacity-20 text-white'
                                 : 'text-white hover:bg-white hover:bg-opacity-10'}`}
                           >
                             <span className="text-white">{item.icon}</span>
@@ -268,7 +268,7 @@ const UserSidebar = ({ isOpen, toggleSidebar }) => {
               ))}
             </ul>
           </nav>
-          
+
           {/* User Profile & Logout */}
           <div className="border-t border-blue-500 text-white">
             {minimized ? (
@@ -276,8 +276,8 @@ const UserSidebar = ({ isOpen, toggleSidebar }) => {
                 <div className="bg-white bg-opacity-20 p-2 rounded-full mb-2">
                   <FaUser className="text-white" />
                 </div>
-                <button 
-                  onClick={async () => { try { await logout(); } catch (_) {} }}
+                <button
+                  onClick={async () => { try { await logout(); } catch (_) { } }}
                   className="text-xs text-white hover:text-blue-200 transition-colors mt-2"
                   title="Logout"
                 >
@@ -297,8 +297,8 @@ const UserSidebar = ({ isOpen, toggleSidebar }) => {
                       || (currentUser?.email ? currentUser.email.split('@')[0] : '')
                       || 'User'}
                   </p>
-                  <button 
-                    onClick={async () => { try { await logout(); } catch (_) {} }}
+                  <button
+                    onClick={async () => { try { await logout(); } catch (_) { } }}
                     className="text-xs text-white hover:text-pink-200 transition-colors flex items-center gap-1 mt-1"
                   >
                     <FaSignOutAlt size={14} /> Logout

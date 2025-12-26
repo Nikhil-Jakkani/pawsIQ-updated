@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { 
-  FaDog, 
-  FaCat, 
-  FaHome, 
-  FaHotel, 
-  FaWalking, 
-  FaKey, 
-  FaFirstAid, 
+import {
+  FaDog,
+  FaCat,
+  FaHome,
+  FaHotel,
+  FaWalking,
+  FaKey,
+  FaFirstAid,
   FaCalendarAlt,
   FaClipboardCheck,
   FaShieldAlt,
@@ -20,9 +20,9 @@ import {
 // Cute pet-themed logo
 const logoImage = "/1.svg";
 
-const PetSitterDetails = () => {
+const PetSitterDetails = ({ embedded = false, onNext }) => {
   const navigate = useNavigate();
-  
+
   // Check if registration data exists
   useEffect(() => {
     const registrationData = localStorage.getItem('provider_registration');
@@ -31,21 +31,21 @@ const PetSitterDetails = () => {
       navigate('/provider/signup');
       return;
     }
-    
+
     const parsedData = JSON.parse(registrationData);
     if (parsedData.providerType !== 'Pet Sitter') {
       // Redirect to appropriate page if not a pet sitter
       navigate('/provider/onboarding/professional-info');
       return;
     }
-    
+
     // Load existing data if available
     const sitterData = localStorage.getItem('provider_petsitter_details');
     if (sitterData) {
       setFormData(JSON.parse(sitterData));
     }
   }, [navigate]);
-  
+
   // Form state
   const [formData, setFormData] = useState({
     // Pet Sitting Qualifications
@@ -57,7 +57,7 @@ const PetSitterDetails = () => {
     backgroundCheck: false,
     insurance: false,
     bonded: false,
-    
+
     // Services Offered
     servicesOffered: {
       inHomePetSitting: true,
@@ -71,7 +71,7 @@ const PetSitterDetails = () => {
       other: false
     },
     otherServices: '',
-    
+
     // Pets Serviced
     petsServiced: {
       dogs: true,
@@ -89,7 +89,7 @@ const PetSitterDetails = () => {
       large: true,
       giant: false
     },
-    
+
     // Availability & Scheduling
     availability: {
       monday: { available: true, startTime: '08:00', endTime: '20:00' },
@@ -104,22 +104,22 @@ const PetSitterDetails = () => {
     holidaysAvailable: false,
     maxPetsPerDay: '',
     maxPetsOvernight: '',
-    
+
     // Additional Information
     homeEnvironment: '',
     petSittingApproach: ''
   });
-  
+
   // Validation state
   const [errors, setErrors] = useState({});
-  
+
   // Loading state
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Handle input changes
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    
+
     if (type === 'checkbox') {
       // Handle nested checkboxes
       if (name.includes('.')) {
@@ -144,7 +144,7 @@ const PetSitterDetails = () => {
         [name]: type === 'number' ? (value === '' ? '' : Number(value)) : value
       }));
     }
-    
+
     // Clear error when field is edited
     if (errors[name]) {
       setErrors(prev => ({
@@ -153,12 +153,12 @@ const PetSitterDetails = () => {
       }));
     }
   };
-  
+
   // Handle multi-select changes
   const handleMultiSelectChange = (field, value) => {
     setFormData(prev => {
       const currentValues = [...prev[field]];
-      
+
       if (currentValues.includes(value)) {
         // Remove value if already selected
         return {
@@ -174,7 +174,7 @@ const PetSitterDetails = () => {
       }
     });
   };
-  
+
   // Handle availability changes
   const handleAvailabilityChange = (day, field, value) => {
     setFormData(prev => ({
@@ -188,60 +188,62 @@ const PetSitterDetails = () => {
       }
     }));
   };
-  
+
   // Validate form
   const validateForm = () => {
     const newErrors = {};
-    
+
     // Pet Sitting Qualifications validation - Made optional for Indian market
     if (formData.yearsPetSittingExperience && formData.yearsPetSittingExperience < 0) {
       newErrors.yearsPetSittingExperience = 'Years of experience cannot be negative';
     }
-    
+
     // Services are now optional - removed mandatory validation
-    
+
     // Check if "other" service is selected but no details provided
     if (formData.servicesOffered.other && !formData.otherServices) {
       newErrors.otherServices = 'Please specify other services';
     }
-    
+
     // Pet types are now optional - removed mandatory validation
-    
+
     // Check if "other" pet type is selected but no details provided
     if (formData.petsServiced.other && !formData.otherPets) {
       newErrors.otherPets = 'Please specify other pet types';
     }
-    
+
     // Availability is now optional - removed mandatory validation
-    
+
     // Max pets per day is now optional - removed mandatory validation
     if (formData.maxPetsPerDay && formData.maxPetsPerDay < 1) {
       newErrors.maxPetsPerDay = 'Maximum pets per day must be at least 1';
     }
-    
+
     // Validate max pets overnight (if overnight is available)
     if (formData.overnightAvailable && !formData.maxPetsOvernight) {
       newErrors.maxPetsOvernight = 'Maximum pets for overnight is required';
     } else if (formData.overnightAvailable && formData.maxPetsOvernight < 1) {
       newErrors.maxPetsOvernight = 'Maximum pets for overnight must be at least 1';
     }
-    
+
     // Additional Information validation
     if (!formData.petSittingApproach) {
       newErrors.petSittingApproach = 'Pet sitting approach is required';
     } else if (formData.petSittingApproach.length < 50) {
       newErrors.petSittingApproach = 'Pet sitting approach must be at least 50 characters';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  
+
   // Handle form submission
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    
+    if (e) {
+      e.preventDefault();
+    }
+
     if (!validateForm()) {
       // Scroll to the first error
       const firstError = document.querySelector('.text-red-600');
@@ -250,28 +252,32 @@ const PetSitterDetails = () => {
       }
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
       // In a real app, this would call an API to save the data
       console.log('Submitting pet sitter details:', formData);
-      
+
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1500));
-      
+
       // Store in localStorage
       localStorage.setItem('provider_petsitter_details', JSON.stringify(formData));
-      
+
       // Update registration step
       const registrationData = JSON.parse(localStorage.getItem('provider_registration'));
       localStorage.setItem('provider_registration', JSON.stringify({
         ...registrationData,
         registrationStep: 3
       }));
-      
-      // Navigate to the document upload page
-      navigate('/provider/onboarding/document-upload');
+
+      if (embedded && typeof onNext === 'function') {
+        onNext(formData);
+      } else {
+        // Navigate to the document upload page
+        navigate('/provider/onboarding/document-upload');
+      }
     } catch (error) {
       console.error('Submission error:', error);
       setErrors(prev => ({
@@ -282,7 +288,7 @@ const PetSitterDetails = () => {
       setIsSubmitting(false);
     }
   };
-  
+
   // Certification options - Updated for Indian market
   const certificationOptions = [
     'Pet Care and Handling Certification - India',
@@ -295,7 +301,7 @@ const PetSitterDetails = () => {
     'Animal Handling and Safety Course',
     'Pet Emergency Response Training'
   ];
-  
+
   // Days of the week for availability
   const daysOfWeek = [
     { id: 'monday', label: 'Monday' },
@@ -306,42 +312,47 @@ const PetSitterDetails = () => {
     { id: 'saturday', label: 'Saturday' },
     { id: 'sunday', label: 'Sunday' }
   ];
-  
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <div className="flex items-center">
-            <img src={logoImage} alt="PawsIQ Logo" className="h-8 w-8 mr-2" />
-            <h1 className="text-xl font-bold text-gray-900">PawsIQ Provider Onboarding</h1>
+    <div className={embedded ? '' : 'min-h-screen bg-gray-50'}>
+      {!embedded && (
+        <>
+          {/* Header */}
+          <header className="bg-white shadow-sm">
+            <div className="max-w-7xl px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+              <div className="flex items-center">
+                <img src={logoImage} alt="PawsIQ Logo" className="h-8 w-8 mr-2" />
+                <h1 className="text-xl font-bold text-gray-900">PawsIQ Provider Onboarding</h1>
+              </div>
+              <div className="text-sm text-gray-500">
+                Need help? <a href="#" className="text-indigo-600 hover:text-indigo-500">Contact Support</a>
+              </div>
+            </div>
+          </header>
+        </>
+      )}
+
+      <main className={embedded ? '' : 'max-w-3xl px-4 sm:px-6 lg:px-8 py-10'}>
+        {!embedded && (
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-sm text-indigo-600 font-medium">Step 3 of 8</div>
+              <div className="text-sm text-gray-500">Pet Sitting Details</div>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2.5">
+              <div className="bg-indigo-600 h-2.5 rounded-full" style={{ width: '37.5%' }}></div>
+            </div>
           </div>
-          <div className="text-sm text-gray-500">
-            Need help? <a href="#" className="text-indigo-600 hover:text-indigo-500">Contact Support</a>
-          </div>
-        </div>
-      </header>
-      
-      <main className="max-w-3xl px-4 sm:px-6 lg:px-8 py-10">
-        {/* Progress indicator */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
-            <div className="text-sm text-indigo-600 font-medium">Step 3 of 8</div>
-            <div className="text-sm text-gray-500">Pet Sitting Details</div>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2.5">
-            <div className="bg-indigo-600 h-2.5 rounded-full" style={{ width: '37.5%' }}></div>
-          </div>
-        </div>
-        
-        <div className="bg-white shadow-md rounded-lg overflow-hidden">
+        )}
+
+        <div className={embedded ? '' : 'bg-white shadow-md rounded-lg overflow-hidden'}>
           <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
             <h2 className="text-lg font-medium text-gray-900">Pet Sitting Details</h2>
             <p className="mt-1 text-sm text-gray-500">
               Tell us about your pet sitting qualifications, services, and availability
             </p>
           </div>
-          
+
           {/* Form error message */}
           {errors.form && (
             <div className="m-6 bg-red-50 border-l-4 border-red-500 p-4 rounded">
@@ -355,14 +366,14 @@ const PetSitterDetails = () => {
               </div>
             </div>
           )}
-          
+
           <form onSubmit={handleSubmit} className="p-6 space-y-8">
             {/* Pet Sitting Qualifications Section */}
             <section>
               <h3 className="text-md font-medium text-gray-900 mb-4 pb-2 border-b border-gray-200">
                 Pet Sitting Qualifications
               </h3>
-              
+
               <div className="mt-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Certifications & Credentials
@@ -383,7 +394,7 @@ const PetSitterDetails = () => {
                       </label>
                     </div>
                   ))}
-                  
+
                   <div className="sm:col-span-2 mt-2">
                     <label htmlFor="otherCertifications" className="block text-sm font-medium text-gray-700">
                       Other Certifications
@@ -402,7 +413,7 @@ const PetSitterDetails = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="mt-6">
                 <label htmlFor="yearsPetSittingExperience" className="block text-sm font-medium text-gray-700">
                   Years of Pet Sitting Experience <span className="text-red-500">*</span>
@@ -415,9 +426,8 @@ const PetSitterDetails = () => {
                     min="0"
                     value={formData.yearsPetSittingExperience}
                     onChange={handleChange}
-                    className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-                      errors.yearsPetSittingExperience ? 'border-red-300' : ''
-                    }`}
+                    className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${errors.yearsPetSittingExperience ? 'border-red-300' : ''
+                      }`}
                     placeholder="5"
                   />
                 </div>
@@ -425,7 +435,7 @@ const PetSitterDetails = () => {
                   <p className="mt-1 text-sm text-red-600">{errors.yearsPetSittingExperience}</p>
                 )}
               </div>
-              
+
               <div className="mt-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Safety & Trust Credentials
@@ -444,7 +454,7 @@ const PetSitterDetails = () => {
                       <FaFirstAid className="mr-1 text-gray-500" /> Pet First Aid Certified
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="petCPR"
@@ -458,7 +468,7 @@ const PetSitterDetails = () => {
                       Pet CPR Certified
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="backgroundCheck"
@@ -472,7 +482,7 @@ const PetSitterDetails = () => {
                       <FaShieldAlt className="mr-1 text-gray-500" /> Background Checked
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="insurance"
@@ -486,7 +496,7 @@ const PetSitterDetails = () => {
                       Insured
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="bonded"
@@ -503,22 +513,22 @@ const PetSitterDetails = () => {
                 </div>
               </div>
             </section>
-            
+
             {/* Services Offered Section */}
             <section>
               <h3 className="text-md font-medium text-gray-900 mb-4 pb-2 border-b border-gray-200">
                 Services Offered
               </h3>
-              
+
               <div className="mt-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Pet Sitting Services <span className="text-red-500">*</span>
                 </label>
-                
+
                 {errors.servicesOffered && (
                   <p className="mb-2 text-sm text-red-600">{errors.servicesOffered}</p>
                 )}
-                
+
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                   <div className="flex items-center">
                     <input
@@ -533,7 +543,7 @@ const PetSitterDetails = () => {
                       <FaHome className="mr-1 text-gray-500" /> In-Home Pet Sitting
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="service-boarding"
@@ -547,7 +557,7 @@ const PetSitterDetails = () => {
                       <FaHotel className="mr-1 text-gray-500" /> Pet Boarding
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="service-walking"
@@ -561,7 +571,7 @@ const PetSitterDetails = () => {
                       <FaWalking className="mr-1 text-gray-500" /> Dog Walking
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="service-dropin"
@@ -575,7 +585,7 @@ const PetSitterDetails = () => {
                       Drop-In Visits
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="service-daycare"
@@ -589,7 +599,7 @@ const PetSitterDetails = () => {
                       Day Care
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="service-housesitting"
@@ -603,7 +613,7 @@ const PetSitterDetails = () => {
                       <FaKey className="mr-1 text-gray-500" /> House Sitting
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="service-taxi"
@@ -617,7 +627,7 @@ const PetSitterDetails = () => {
                       Pet Taxi
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="service-medication"
@@ -631,7 +641,7 @@ const PetSitterDetails = () => {
                       Medication Administration
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="service-other"
@@ -646,7 +656,7 @@ const PetSitterDetails = () => {
                     </label>
                   </div>
                 </div>
-                
+
                 {formData.servicesOffered.other && (
                   <div className="mt-2">
                     <label htmlFor="otherServices" className="block text-sm font-medium text-gray-700">
@@ -658,9 +668,8 @@ const PetSitterDetails = () => {
                       name="otherServices"
                       value={formData.otherServices}
                       onChange={handleChange}
-                      className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-                        errors.otherServices ? 'border-red-300' : ''
-                      }`}
+                      className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${errors.otherServices ? 'border-red-300' : ''
+                        }`}
                       placeholder="Please specify other services"
                     />
                     {errors.otherServices && (
@@ -670,22 +679,22 @@ const PetSitterDetails = () => {
                 )}
               </div>
             </section>
-            
+
             {/* Pets Serviced Section */}
             <section>
               <h3 className="text-md font-medium text-gray-900 mb-4 pb-2 border-b border-gray-200">
                 Pets Serviced
               </h3>
-              
+
               <div className="mt-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Pet Types <span className="text-red-500">*</span>
                 </label>
-                
+
                 {errors.petsServiced && (
                   <p className="mb-2 text-sm text-red-600">{errors.petsServiced}</p>
                 )}
-                
+
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                   <div className="flex items-center">
                     <input
@@ -700,7 +709,7 @@ const PetSitterDetails = () => {
                       <FaDog className="mr-1 text-gray-500" /> Dogs
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="pet-cats"
@@ -714,7 +723,7 @@ const PetSitterDetails = () => {
                       <FaCat className="mr-1 text-gray-500" /> Cats
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="pet-birds"
@@ -728,7 +737,7 @@ const PetSitterDetails = () => {
                       Birds
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="pet-small"
@@ -742,7 +751,7 @@ const PetSitterDetails = () => {
                       Small Animals
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="pet-reptiles"
@@ -756,7 +765,7 @@ const PetSitterDetails = () => {
                       Reptiles
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="pet-farm"
@@ -770,7 +779,7 @@ const PetSitterDetails = () => {
                       Farm Animals
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="pet-other"
@@ -785,7 +794,7 @@ const PetSitterDetails = () => {
                     </label>
                   </div>
                 </div>
-                
+
                 {formData.petsServiced.other && (
                   <div className="mt-2">
                     <label htmlFor="otherPets" className="block text-sm font-medium text-gray-700">
@@ -797,9 +806,8 @@ const PetSitterDetails = () => {
                       name="otherPets"
                       value={formData.otherPets}
                       onChange={handleChange}
-                      className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-                        errors.otherPets ? 'border-red-300' : ''
-                      }`}
+                      className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${errors.otherPets ? 'border-red-300' : ''
+                        }`}
                       placeholder="Please specify other pet types"
                     />
                     {errors.otherPets && (
@@ -808,7 +816,7 @@ const PetSitterDetails = () => {
                   </div>
                 )}
               </div>
-              
+
               {formData.petsServiced.dogs && (
                 <div className="mt-6">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -828,7 +836,7 @@ const PetSitterDetails = () => {
                         Small (0-20 lbs)
                       </label>
                     </div>
-                    
+
                     <div className="flex items-center">
                       <input
                         id="size-medium"
@@ -842,7 +850,7 @@ const PetSitterDetails = () => {
                         Medium (21-50 lbs)
                       </label>
                     </div>
-                    
+
                     <div className="flex items-center">
                       <input
                         id="size-large"
@@ -856,7 +864,7 @@ const PetSitterDetails = () => {
                         Large (51-90 lbs)
                       </label>
                     </div>
-                    
+
                     <div className="flex items-center">
                       <input
                         id="size-giant"
@@ -874,22 +882,22 @@ const PetSitterDetails = () => {
                 </div>
               )}
             </section>
-            
+
             {/* Availability & Scheduling Section */}
             <section>
               <h3 className="text-md font-medium text-gray-900 mb-4 pb-2 border-b border-gray-200">
                 Availability & Scheduling
               </h3>
-              
+
               <div className="mt-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Weekly Availability <span className="text-red-500">*</span>
                 </label>
-                
+
                 {errors.availability && (
                   <p className="mb-2 text-sm text-red-600">{errors.availability}</p>
                 )}
-                
+
                 <div className="bg-white border border-gray-300 rounded-md overflow-hidden">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
@@ -944,7 +952,7 @@ const PetSitterDetails = () => {
                   </table>
                 </div>
               </div>
-              
+
               <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2">
                 <div>
                   <div className="flex items-center">
@@ -961,7 +969,7 @@ const PetSitterDetails = () => {
                     </label>
                   </div>
                 </div>
-                
+
                 <div>
                   <div className="flex items-center">
                     <input
@@ -977,7 +985,7 @@ const PetSitterDetails = () => {
                     </label>
                   </div>
                 </div>
-                
+
                 <div>
                   <label htmlFor="maxPetsPerDay" className="block text-sm font-medium text-gray-700">
                     Maximum Pets Per Day <span className="text-red-500">*</span>
@@ -990,9 +998,8 @@ const PetSitterDetails = () => {
                       min="1"
                       value={formData.maxPetsPerDay}
                       onChange={handleChange}
-                      className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-                        errors.maxPetsPerDay ? 'border-red-300' : ''
-                      }`}
+                      className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${errors.maxPetsPerDay ? 'border-red-300' : ''
+                        }`}
                       placeholder="5"
                     />
                   </div>
@@ -1000,7 +1007,7 @@ const PetSitterDetails = () => {
                     <p className="mt-1 text-sm text-red-600">{errors.maxPetsPerDay}</p>
                   )}
                 </div>
-                
+
                 {formData.overnightAvailable && (
                   <div>
                     <label htmlFor="maxPetsOvernight" className="block text-sm font-medium text-gray-700">
@@ -1014,9 +1021,8 @@ const PetSitterDetails = () => {
                         min="1"
                         value={formData.maxPetsOvernight}
                         onChange={handleChange}
-                        className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-                          errors.maxPetsOvernight ? 'border-red-300' : ''
-                        }`}
+                        className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${errors.maxPetsOvernight ? 'border-red-300' : ''
+                          }`}
                         placeholder="2"
                       />
                     </div>
@@ -1027,13 +1033,13 @@ const PetSitterDetails = () => {
                 )}
               </div>
             </section>
-            
+
             {/* Additional Information Section */}
             <section>
               <h3 className="text-md font-medium text-gray-900 mb-4 pb-2 border-b border-gray-200">
                 Additional Information
               </h3>
-              
+
               {formData.servicesOffered.petBoarding && (
                 <div className="mt-6">
                   <label htmlFor="homeEnvironment" className="block text-sm font-medium text-gray-700">
@@ -1052,7 +1058,7 @@ const PetSitterDetails = () => {
                   </div>
                 </div>
               )}
-              
+
               <div className="mt-6">
                 <label htmlFor="petSittingApproach" className="block text-sm font-medium text-gray-700">
                   Pet Sitting Approach & Philosophy <span className="text-red-500">*</span>
@@ -1064,9 +1070,8 @@ const PetSitterDetails = () => {
                     rows={4}
                     value={formData.petSittingApproach}
                     onChange={handleChange}
-                    className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-                      errors.petSittingApproach ? 'border-red-300' : ''
-                    }`}
+                    className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${errors.petSittingApproach ? 'border-red-300' : ''
+                      }`}
                     placeholder="Describe your approach to pet sitting, how you handle different situations, and what makes your service unique..."
                   />
                 </div>
@@ -1084,7 +1089,7 @@ const PetSitterDetails = () => {
                 </div>
               </div>
             </section>
-            
+
             {/* Form Actions */}
             <div className="pt-5 border-t border-gray-200 flex justify-between">
               <Link
@@ -1094,27 +1099,57 @@ const PetSitterDetails = () => {
                 <FaArrowLeft className="mr-2 -ml-1 h-4 w-4" />
                 Back
               </Link>
-              
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="inline-flex items-center px-8 py-2 border border-transparent shadow-md text-sm font-medium rounded-md text-white bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-all"
-              >
-                {isSubmitting ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    Continue
-                    <FaArrowRight className="ml-2 -mr-1 h-4 w-4" />
-                  </>
+              <div className="flex space-x-3">
+                {embedded && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      try {
+                        localStorage.setItem('provider_petsitter_details', JSON.stringify(formData));
+                        const registrationData = JSON.parse(localStorage.getItem('provider_registration') || '{}');
+                        localStorage.setItem('provider_registration', JSON.stringify({
+                          ...registrationData,
+                          registrationStep: 3
+                        }));
+                        if (embedded && typeof onNext === 'function') {
+                          onNext(formData);
+                        } else {
+                          navigate('/provider/onboarding/document-upload');
+                        }
+                      } catch (error) {
+                        console.error('Skip error:', error);
+                        setErrors(prev => ({
+                          ...prev,
+                          form: 'An error occurred while skipping. Please try again.'
+                        }));
+                      }
+                    }}
+                    className="inline-flex items-center px-6 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all"
+                  >
+                    Skip for now
+                  </button>
                 )}
-              </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="inline-flex items-center px-8 py-2 border border-transparent shadow-md text-sm font-medium rounded-md text-white bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-all"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      Continue
+                      <FaArrowRight className="ml-2 -mr-1 h-4 w-4" />
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </form>
         </div>
