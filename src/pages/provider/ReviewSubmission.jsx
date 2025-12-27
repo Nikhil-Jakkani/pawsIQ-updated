@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { 
-  FaUser, 
-  FaIdCard, 
-  FaFileAlt, 
-  FaMoneyBillWave, 
-  FaCheck, 
+import {
+  FaUser,
+  FaIdCard,
+  FaFileAlt,
+  FaMoneyBillWave,
+  FaCheck,
   FaEdit,
   FaExclamationTriangle,
   FaArrowLeft,
@@ -17,9 +17,9 @@ import {
 // Cute pet-themed logo
 const logoImage = "/1.svg";
 
-const ReviewSubmission = () => {
+const ReviewSubmission = ({ embedded = false }) => {
   const navigate = useNavigate();
-  
+
   // State for registration data
   const [registrationData, setRegistrationData] = useState(null);
   const [professionalInfo, setProfessionalInfo] = useState(null);
@@ -27,11 +27,11 @@ const ReviewSubmission = () => {
   const [documentUpload, setDocumentUpload] = useState(null);
   const [termsAgreement, setTermsAgreement] = useState(null);
   const [paymentInfo, setPaymentInfo] = useState(null);
-  
+
   // Loading state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionComplete, setSubmissionComplete] = useState(false);
-  
+
   // Check if all required data exists
   useEffect(() => {
     const registration = localStorage.getItem('provider_registration');
@@ -40,19 +40,19 @@ const ReviewSubmission = () => {
       navigate('/provider/signup');
       return;
     }
-    
+
     // Load all data from localStorage
     setRegistrationData(JSON.parse(registration));
-    
+
     const professional = localStorage.getItem('provider_professional_info');
     if (professional) {
       setProfessionalInfo(JSON.parse(professional));
     }
-    
+
     // Load service-specific details based on provider type
     const parsedData = JSON.parse(registration);
     const providerType = parsedData.providerType;
-    
+
     let serviceData = null;
     switch (providerType) {
       case 'Veterinarian':
@@ -70,27 +70,27 @@ const ReviewSubmission = () => {
       default:
         break;
     }
-    
+
     if (serviceData) {
       setServiceDetails(JSON.parse(serviceData));
     }
-    
+
     const documents = localStorage.getItem('provider_document_upload');
     if (documents) {
       setDocumentUpload(JSON.parse(documents));
     }
-    
+
     const terms = localStorage.getItem('provider_terms_agreement');
     if (terms) {
       setTermsAgreement(JSON.parse(terms));
     }
-    
+
     const payment = localStorage.getItem('provider_payment_info');
     if (payment) {
       setPaymentInfo(JSON.parse(payment));
     }
   }, [navigate]);
-  
+
   // Check if all required sections are complete
   const isSectionComplete = (section) => {
     switch (section) {
@@ -110,7 +110,7 @@ const ReviewSubmission = () => {
         return false;
     }
   };
-  
+
   // Check if all sections are complete
   const allSectionsComplete = () => {
     return (
@@ -122,16 +122,16 @@ const ReviewSubmission = () => {
       isSectionComplete('paymentInfo')
     );
   };
-  
+
   // Handle form submission
   const handleSubmit = async () => {
     if (!allSectionsComplete()) {
       alert('Please complete all sections before submitting your application.');
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
       // In a real app, this would call an API to submit the application
       console.log('Submitting provider application:', {
@@ -142,10 +142,10 @@ const ReviewSubmission = () => {
         termsAgreement,
         paymentInfo
       });
-      
+
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
+
       // Update registration step - automatically approve
       localStorage.setItem('provider_registration', JSON.stringify({
         ...registrationData,
@@ -153,13 +153,13 @@ const ReviewSubmission = () => {
         applicationStatus: 'approved',
         submissionDate: new Date().toISOString()
       }));
-      
+
       // Show success message
       setSubmissionComplete(true);
-      
+
       // Scroll to top
       window.scrollTo(0, 0);
-      
+
       // Redirect to provider dashboard after 2 seconds
       setTimeout(() => {
         navigate('/provider/dashboard');
@@ -171,7 +171,7 @@ const ReviewSubmission = () => {
       setIsSubmitting(false);
     }
   };
-  
+
   // Get section edit link
   const getSectionEditLink = (section) => {
     switch (section) {
@@ -200,38 +200,42 @@ const ReviewSubmission = () => {
         return '/provider/signup';
     }
   };
-  
-  
+
+
   // Mask sensitive information
   const maskSensitiveInfo = (text, showLast = 4) => {
     if (!text) return '';
-    
+
     const textStr = String(text);
     if (textStr.length <= showLast) {
       return '•'.repeat(textStr.length);
     }
-    
+
     return '•'.repeat(textStr.length - showLast) + textStr.slice(-showLast);
   };
-  
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <div className="flex items-center">
-            <img src={logoImage} alt="PawsIQ Logo" className="h-8 w-8 mr-2" />
-            <h1 className="text-xl font-bold text-gray-900">PawsIQ Provider Onboarding</h1>
-          </div>
-          <div className="text-sm text-gray-500">
-            Need help? <a href="#" className="text-indigo-600 hover:text-indigo-500">Contact Support</a>
-          </div>
-        </div>
-      </header>
-      
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div className={embedded ? '' : 'min-h-screen bg-gray-50'}>
+      {!embedded && (
+        <>
+          {/* Header */}
+          <header className="bg-white shadow-sm">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+              <div className="flex items-center">
+                <img src={logoImage} alt="PawsIQ Logo" className="h-8 w-8 mr-2" />
+                <h1 className="text-xl font-bold text-gray-900">PawsIQ Provider Onboarding</h1>
+              </div>
+              <div className="text-sm text-gray-500">
+                Need help? <a href="#" className="text-indigo-600 hover:text-indigo-500">Contact Support</a>
+              </div>
+            </div>
+          </header>
+        </>
+      )}
+
+      <main className={embedded ? '' : 'max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10'}>
         {submissionComplete ? (
-          <div className="bg-white shadow-md rounded-lg overflow-hidden">
+          <div className={embedded ? '' : 'bg-white shadow-md rounded-lg overflow-hidden'}>
             <div className="px-6 py-10 text-center">
               <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
                 <FaCheckCircle className="h-6 w-6 text-green-600" />
@@ -243,7 +247,7 @@ const ReviewSubmission = () => {
               <p className="mt-2 text-sm text-indigo-600 font-medium">
                 Redirecting you to your dashboard in a few seconds...
               </p>
-              
+
               <div className="mt-6 bg-green-50 border border-green-200 rounded-md p-4">
                 <div className="flex">
                   <div className="flex-shrink-0">
@@ -262,7 +266,7 @@ const ReviewSubmission = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="mt-6">
                 <Link
                   to="/provider/dashboard"
@@ -275,25 +279,26 @@ const ReviewSubmission = () => {
           </div>
         ) : (
           <>
-            {/* Progress indicator */}
-            <div className="mb-8">
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-sm text-indigo-600 font-medium">Step 7 of 8</div>
-                <div className="text-sm text-gray-500">Review & Submit</div>
+            {!embedded && (
+              <div className="mb-8">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-sm text-indigo-600 font-medium">Step 7 of 8</div>
+                  <div className="text-sm text-gray-500">Review & Submit</div>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2.5">
+                  <div className="bg-indigo-600 h-2.5 rounded-full" style={{ width: '87.5%' }}></div>
+                </div>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2.5">
-                <div className="bg-indigo-600 h-2.5 rounded-full" style={{ width: '87.5%' }}></div>
-              </div>
-            </div>
-            
-            <div className="bg-white shadow-md rounded-lg overflow-hidden">
+            )}
+
+            <div className={embedded ? '' : 'bg-white shadow-md rounded-lg overflow-hidden'}>
               <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
                 <h2 className="text-lg font-medium text-gray-900">Review Your Application</h2>
                 <p className="mt-1 text-sm text-gray-500">
                   Please review all information before submitting your application
                 </p>
               </div>
-              
+
               <div className="p-6 space-y-8">
                 {/* Registration Information */}
                 <div className="border border-gray-200 rounded-lg overflow-hidden">
@@ -335,7 +340,7 @@ const ReviewSubmission = () => {
                     )}
                   </div>
                 </div>
-                
+
                 {/* Professional Information */}
                 <div className="border border-gray-200 rounded-lg overflow-hidden">
                   <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
@@ -382,7 +387,7 @@ const ReviewSubmission = () => {
                     )}
                   </div>
                 </div>
-                
+
                 {/* Service-Specific Details */}
                 <div className="border border-gray-200 rounded-lg overflow-hidden">
                   <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
@@ -407,7 +412,7 @@ const ReviewSubmission = () => {
                     )}
                   </div>
                 </div>
-                
+
                 {/* Document Upload */}
                 <div className="border border-gray-200 rounded-lg overflow-hidden">
                   <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
@@ -438,7 +443,7 @@ const ReviewSubmission = () => {
                     )}
                   </div>
                 </div>
-                
+
                 {/* Terms & Agreements */}
                 <div className="border border-gray-200 rounded-lg overflow-hidden">
                   <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
@@ -461,7 +466,7 @@ const ReviewSubmission = () => {
                     )}
                   </div>
                 </div>
-                
+
                 {/* Payment Information */}
                 <div className="border border-gray-200 rounded-lg overflow-hidden">
                   <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
@@ -479,7 +484,7 @@ const ReviewSubmission = () => {
                             {paymentInfo.paymentMethod === 'bankAccount' ? 'Bank Account' : 'Credit Card'}
                           </dd>
                         </div>
-                        
+
                         {paymentInfo.paymentMethod === 'bankAccount' ? (
                           <>
                             <div className="sm:col-span-1">
@@ -523,7 +528,7 @@ const ReviewSubmission = () => {
                             </div>
                           </>
                         )}
-                        
+
                         <div className="sm:col-span-1">
                           <dt className="text-sm font-medium text-gray-500">Tax ID Type</dt>
                           <dd className="mt-1 text-sm text-gray-900">
@@ -551,7 +556,7 @@ const ReviewSubmission = () => {
                     )}
                   </div>
                 </div>
-                
+
                 {/* Submission Agreement */}
                 <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
                   <div className="flex">
@@ -572,7 +577,7 @@ const ReviewSubmission = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Form Actions */}
                 <div className="pt-5 border-t border-gray-200 flex justify-between">
                   <Link
@@ -582,7 +587,7 @@ const ReviewSubmission = () => {
                     <FaArrowLeft className="mr-2 -ml-1 h-4 w-4" />
                     Back
                   </Link>
-                  
+
                   <button
                     type="button"
                     onClick={handleSubmit}

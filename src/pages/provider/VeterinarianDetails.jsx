@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { 
-  FaStethoscope, 
-  FaGraduationCap, 
-  FaHospital, 
-  FaDog, 
-  FaCat, 
-  FaKiwiBird, 
-  FaDragon, 
+import {
+  FaStethoscope,
+  FaGraduationCap,
+  FaHospital,
+  FaDog,
+  FaCat,
+  FaKiwiBird,
+  FaDragon,
   FaHorse,
   FaSyringe,
   FaTooth,
@@ -25,9 +25,9 @@ import {
 // Cute pet-themed logo
 const logoImage = "/1.svg";
 
-const VeterinarianDetails = () => {
+const VeterinarianDetails = ({ embedded = false, onNext }) => {
   const navigate = useNavigate();
-  
+
   // Form state - MUST BE DECLARED FIRST
   const [formData, setFormData] = useState({
     // Veterinary Qualifications
@@ -40,7 +40,7 @@ const VeterinarianDetails = () => {
     additionalQualifications: [],
     professionalMemberships: [],
     otherMemberships: '',
-    
+
     // Practice Details
     practiceType: '',
     speciesTreated: {
@@ -70,7 +70,7 @@ const VeterinarianDetails = () => {
     },
     specializedTreatmentsDetails: '',
     otherServicesDetails: '',
-    
+
     // Facility Information
     facilityType: '',
     equipment: {
@@ -83,19 +83,19 @@ const VeterinarianDetails = () => {
       other: false
     },
     otherEquipment: '',
-    
+
     // Regulatory Compliance
     drugLicenseNumber: '',
     shopEstablishmentNumber: '',
     biomedicalWasteRegistration: false
   });
-  
+
   // Validation state
   const [errors, setErrors] = useState({});
-  
+
   // Loading state
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Check if registration data exists and load data
   useEffect(() => {
     const registrationData = localStorage.getItem('provider_registration');
@@ -104,7 +104,7 @@ const VeterinarianDetails = () => {
       navigate('/provider/signup');
       return;
     }
-    
+
     try {
       const parsedData = JSON.parse(registrationData);
       if (parsedData.providerType !== 'Veterinarian') {
@@ -112,7 +112,7 @@ const VeterinarianDetails = () => {
         navigate('/provider/onboarding/professional-info');
         return;
       }
-      
+
       // Load existing data if available
       const vetData = localStorage.getItem('provider_veterinarian_details');
       if (vetData) {
@@ -123,11 +123,11 @@ const VeterinarianDetails = () => {
       navigate('/provider/signup');
     }
   }, [navigate]);
-  
+
   // Handle input changes
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    
+
     if (type === 'checkbox') {
       // Handle nested checkboxes
       if (name.includes('.')) {
@@ -152,7 +152,7 @@ const VeterinarianDetails = () => {
         [name]: value
       }));
     }
-    
+
     // Clear error when field is edited
     if (errors[name]) {
       setErrors(prev => ({
@@ -161,12 +161,12 @@ const VeterinarianDetails = () => {
       }));
     }
   };
-  
+
   // Handle multi-select changes
   const handleMultiSelectChange = (field, value) => {
     setFormData(prev => {
       const currentValues = [...prev[field]];
-      
+
       if (currentValues.includes(value)) {
         // Remove value if already selected
         return {
@@ -182,96 +182,98 @@ const VeterinarianDetails = () => {
       }
     });
   };
-  
+
   // Validate form
   const validateForm = () => {
     const newErrors = {};
-    
+
     // Veterinary Qualifications validation
     if (!formData.vciRegistrationNumber) {
       newErrors.vciRegistrationNumber = 'VCI registration number is required';
     } else if (!/^\d{1,6}\/\d{2,4}$/.test(formData.vciRegistrationNumber)) {
       newErrors.vciRegistrationNumber = 'Please enter a valid VCI registration number (format: XXXXXX/YYYY)';
     }
-    
+
     if (!formData.stateVeterinaryCouncilNumber) {
       newErrors.stateVeterinaryCouncilNumber = 'State Veterinary Council registration number is required';
     }
-    
+
     if (!formData.stateCouncilName) {
       newErrors.stateCouncilName = 'State Veterinary Council name is required';
     }
-    
+
     if (!formData.veterinaryCollege) {
       newErrors.veterinaryCollege = 'Veterinary college name is required';
     }
-    
+
     if (!formData.universityName) {
       newErrors.universityName = 'University name is required';
     }
-    
+
     if (!formData.graduationYear) {
       newErrors.graduationYear = 'Graduation year is required';
     } else if (formData.graduationYear < 1950 || formData.graduationYear > new Date().getFullYear()) {
       newErrors.graduationYear = 'Please enter a valid graduation year';
     }
-    
+
     // Practice Details validation
     if (!formData.practiceType) {
       newErrors.practiceType = 'Practice type is required';
     }
-    
+
     // Check if at least one species is selected
     const hasSpecies = Object.values(formData.speciesTreated).some(value => value === true);
     if (!hasSpecies) {
       newErrors.speciesTreated = 'At least one species must be selected';
     }
-    
+
     // Check if "other" species is selected but no details provided
     if (formData.speciesTreated.other && !formData.otherSpecies) {
       newErrors.otherSpecies = 'Please specify other species';
     }
-    
+
     // Check if at least one service is selected
     const hasServices = Object.values(formData.servicesOffered).some(value => value === true);
     if (!hasServices) {
       newErrors.servicesOffered = 'At least one service must be selected';
     }
-    
+
     // Check if "ayurvedic treatments" is selected but no details provided
     if (formData.servicesOffered.ayurvedicTreatments && !formData.specializedTreatmentsDetails) {
       newErrors.specializedTreatmentsDetails = 'Please specify ayurvedic treatments offered';
     }
-    
+
     // Check if "other services" is selected but no details provided
     if (formData.servicesOffered.other && !formData.otherServicesDetails) {
       newErrors.otherServicesDetails = 'Please specify other services';
     }
-    
+
     // Facility Information validation
     if (!formData.facilityType) {
       newErrors.facilityType = 'Facility type is required';
     }
-    
+
     // Check if "other equipment" is selected but no details provided
     if (formData.equipment.other && !formData.otherEquipment) {
       newErrors.otherEquipment = 'Please specify other equipment';
     }
-    
+
     // Regulatory Compliance validation
     if (formData.facilityType !== 'Mobile' && formData.facilityType !== 'Home visits only' && !formData.shopEstablishmentNumber) {
       newErrors.shopEstablishmentNumber = 'Shop & Establishment registration number is required for clinic/hospital facilities';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-  
-  
+
+
   // Handle form submission
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    
+    if (e) {
+      e.preventDefault();
+    }
+
     if (!validateForm()) {
       // Scroll to the first error
       const firstError = document.querySelector('.text-red-600');
@@ -280,28 +282,32 @@ const VeterinarianDetails = () => {
       }
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
       // In a real app, this would call an API to save the data
       console.log('Submitting veterinarian details:', formData);
-      
+
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1500));
-      
+
       // Store in localStorage
       localStorage.setItem('provider_veterinarian_details', JSON.stringify(formData));
-      
+
       // Update registration step
-      const registrationData = JSON.parse(localStorage.getItem('provider_registration'));
+      const registrationData = JSON.parse(localStorage.getItem('provider_registration') || '{}');
       localStorage.setItem('provider_registration', JSON.stringify({
         ...registrationData,
         registrationStep: 3
       }));
-      
-      // Navigate to document upload page
-      navigate('/provider/onboarding/document-upload');
+
+      if (embedded && typeof onNext === 'function') {
+        onNext(formData);
+      } else {
+        // Navigate to document upload page
+        navigate('/provider/onboarding/document-upload');
+      }
     } catch (error) {
       console.error('Submission error:', error);
       setErrors(prev => ({
@@ -312,7 +318,32 @@ const VeterinarianDetails = () => {
       setIsSubmitting(false);
     }
   };
-  
+
+  const handleSkip = () => {
+    try {
+      // Save current data as draft
+      localStorage.setItem('provider_veterinarian_details', JSON.stringify(formData));
+
+      const registrationData = JSON.parse(localStorage.getItem('provider_registration') || '{}');
+      localStorage.setItem('provider_registration', JSON.stringify({
+        ...registrationData,
+        registrationStep: 3
+      }));
+
+      if (embedded && typeof onNext === 'function') {
+        onNext(formData);
+      } else {
+        navigate('/provider/onboarding/document-upload');
+      }
+    } catch (error) {
+      console.error('Skip error:', error);
+      setErrors(prev => ({
+        ...prev,
+        form: 'An error occurred while skipping. Please try again.'
+      }));
+    }
+  };
+
   // Additional qualifications options
   const boardCertificationOptions = [
     'MVSc (Master of Veterinary Science)',
@@ -327,7 +358,7 @@ const VeterinarianDetails = () => {
     'Specialization in Veterinary Pathology',
     'Specialization in Veterinary Public Health'
   ];
-  
+
   // Professional membership options
   const professionalMembershipOptions = [
     'Indian Veterinary Association (IVA)',
@@ -341,7 +372,7 @@ const VeterinarianDetails = () => {
     'Indian Society of Veterinary Pharmacology and Toxicology (ISVPT)',
     'Association of Indian Zoo and Wildlife Veterinarians (AIZWV)'
   ];
-  
+
   // Practice type options
   const practiceTypeOptions = [
     'Small Animal Practice',
@@ -356,7 +387,7 @@ const VeterinarianDetails = () => {
     'Ayurvedic Veterinary Practice',
     'Veterinary Polyclinic'
   ];
-  
+
   // Facility type options
   const facilityTypeOptions = [
     'Private Clinic',
@@ -369,7 +400,7 @@ const VeterinarianDetails = () => {
     'Animal Birth Control Center',
     'Gau Shala Veterinary Unit'
   ];
-  
+
   // State Veterinary Council options
   const stateCouncilOptions = [
     'Andhra Pradesh Veterinary Council',
@@ -403,42 +434,47 @@ const VeterinarianDetails = () => {
     'Uttarakhand Veterinary Council',
     'West Bengal Veterinary Council'
   ];
-  
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <div className="flex items-center">
-            <img src={logoImage} alt="PawsIQ Logo" className="h-8 w-8 mr-2" />
-            <h1 className="text-xl font-bold text-gray-900">PawsIQ Provider Onboarding</h1>
+    <div className={embedded ? '' : 'min-h-screen bg-gray-50'}>
+      {!embedded && (
+        <>
+          {/* Header */}
+          <header className="bg-white shadow-sm">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+              <div className="flex items-center">
+                <img src={logoImage} alt="PawsIQ Logo" className="h-8 w-8 mr-2" />
+                <h1 className="text-xl font-bold text-gray-900">PawsIQ Provider Onboarding</h1>
+              </div>
+              <div className="text-sm text-gray-500">
+                Need help? <a href="#" className="text-indigo-600 hover:text-indigo-500">Contact Support</a>
+              </div>
+            </div>
+          </header>
+        </>
+      )}
+
+      <main className={embedded ? '' : 'max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10'}>
+        {!embedded && (
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-sm text-indigo-600 font-medium">Step 3 of 8</div>
+              <div className="text-sm text-gray-500">Veterinary Practice Details</div>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2.5">
+              <div className="bg-indigo-600 h-2.5 rounded-full" style={{ width: '37.5%' }}></div>
+            </div>
           </div>
-          <div className="text-sm text-gray-500">
-            Need help? <a href="#" className="text-indigo-600 hover:text-indigo-500">Contact Support</a>
-          </div>
-        </div>
-      </header>
-      
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        {/* Progress indicator */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
-            <div className="text-sm text-indigo-600 font-medium">Step 3 of 8</div>
-            <div className="text-sm text-gray-500">Veterinary Practice Details</div>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2.5">
-            <div className="bg-indigo-600 h-2.5 rounded-full" style={{ width: '37.5%' }}></div>
-          </div>
-        </div>
-        
-        <div className="bg-white shadow-md rounded-lg overflow-hidden">
+        )}
+
+        <div className={embedded ? '' : 'bg-white shadow-md rounded-lg overflow-hidden'}>
           <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
             <h2 className="text-lg font-medium text-gray-900">Veterinary Practice Details</h2>
             <p className="mt-1 text-sm text-gray-500">
               Tell us about your veterinary qualifications, practice, and facilities
             </p>
           </div>
-          
+
           {/* Form error message */}
           {errors.form && (
             <div className="m-6 bg-red-50 border-l-4 border-red-500 p-4 rounded">
@@ -452,14 +488,14 @@ const VeterinarianDetails = () => {
               </div>
             </div>
           )}
-          
+
           <form onSubmit={handleSubmit} className="p-6 space-y-8">
             {/* Veterinary Qualifications Section */}
             <section>
               <h3 className="text-md font-medium text-gray-900 mb-4 pb-2 border-b border-gray-200">
                 Veterinary Qualifications
               </h3>
-              
+
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                 <div>
                   <label htmlFor="vciRegistrationNumber" className="block text-sm font-medium text-gray-700">
@@ -472,9 +508,8 @@ const VeterinarianDetails = () => {
                       name="vciRegistrationNumber"
                       value={formData.vciRegistrationNumber}
                       onChange={handleChange}
-                      className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-                        errors.vciRegistrationNumber ? 'border-red-300' : ''
-                      }`}
+                      className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${errors.vciRegistrationNumber ? 'border-red-300' : ''
+                        }`}
                       placeholder="e.g., 123456/2020"
                     />
                   </div>
@@ -483,7 +518,7 @@ const VeterinarianDetails = () => {
                   )}
                   <p className="mt-1 text-xs text-gray-500">Format: XXXXXX/YYYY</p>
                 </div>
-                
+
                 <div>
                   <label htmlFor="stateVeterinaryCouncilNumber" className="block text-sm font-medium text-gray-700">
                     State Veterinary Council Number <span className="text-red-500">*</span>
@@ -495,9 +530,8 @@ const VeterinarianDetails = () => {
                       name="stateVeterinaryCouncilNumber"
                       value={formData.stateVeterinaryCouncilNumber}
                       onChange={handleChange}
-                      className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-                        errors.stateVeterinaryCouncilNumber ? 'border-red-300' : ''
-                      }`}
+                      className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${errors.stateVeterinaryCouncilNumber ? 'border-red-300' : ''
+                        }`}
                       placeholder="e.g., SVC/KA/12345/2020"
                     />
                   </div>
@@ -505,7 +539,7 @@ const VeterinarianDetails = () => {
                     <p className="mt-1 text-sm text-red-600">{errors.stateVeterinaryCouncilNumber}</p>
                   )}
                 </div>
-                
+
                 <div>
                   <label htmlFor="stateCouncilName" className="block text-sm font-medium text-gray-700">
                     State Veterinary Council <span className="text-red-500">*</span>
@@ -516,9 +550,8 @@ const VeterinarianDetails = () => {
                       name="stateCouncilName"
                       value={formData.stateCouncilName}
                       onChange={handleChange}
-                      className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-                        errors.stateCouncilName ? 'border-red-300' : ''
-                      }`}
+                      className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${errors.stateCouncilName ? 'border-red-300' : ''
+                        }`}
                     >
                       <option value="">Select State Council</option>
                       {stateCouncilOptions.map(council => (
@@ -530,7 +563,7 @@ const VeterinarianDetails = () => {
                     <p className="mt-1 text-sm text-red-600">{errors.stateCouncilName}</p>
                   )}
                 </div>
-                
+
                 <div>
                   <label htmlFor="veterinaryCollege" className="block text-sm font-medium text-gray-700">
                     Veterinary College <span className="text-red-500">*</span>
@@ -542,9 +575,8 @@ const VeterinarianDetails = () => {
                       name="veterinaryCollege"
                       value={formData.veterinaryCollege}
                       onChange={handleChange}
-                      className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-                        errors.veterinaryCollege ? 'border-red-300' : ''
-                      }`}
+                      className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${errors.veterinaryCollege ? 'border-red-300' : ''
+                        }`}
                       placeholder="e.g., Bombay Veterinary College"
                     />
                   </div>
@@ -552,7 +584,7 @@ const VeterinarianDetails = () => {
                     <p className="mt-1 text-sm text-red-600">{errors.veterinaryCollege}</p>
                   )}
                 </div>
-                
+
                 <div>
                   <label htmlFor="universityName" className="block text-sm font-medium text-gray-700">
                     University Name <span className="text-red-500">*</span>
@@ -564,9 +596,8 @@ const VeterinarianDetails = () => {
                       name="universityName"
                       value={formData.universityName}
                       onChange={handleChange}
-                      className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-                        errors.universityName ? 'border-red-300' : ''
-                      }`}
+                      className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${errors.universityName ? 'border-red-300' : ''
+                        }`}
                       placeholder="e.g., Maharashtra Animal & Fishery Sciences University"
                     />
                   </div>
@@ -574,7 +605,7 @@ const VeterinarianDetails = () => {
                     <p className="mt-1 text-sm text-red-600">{errors.universityName}</p>
                   )}
                 </div>
-                
+
                 <div>
                   <label htmlFor="graduationYear" className="block text-sm font-medium text-gray-700">
                     Year of Graduation <span className="text-red-500">*</span>
@@ -588,9 +619,8 @@ const VeterinarianDetails = () => {
                       max={new Date().getFullYear()}
                       value={formData.graduationYear}
                       onChange={handleChange}
-                      className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-                        errors.graduationYear ? 'border-red-300' : ''
-                      }`}
+                      className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${errors.graduationYear ? 'border-red-300' : ''
+                        }`}
                       placeholder={new Date().getFullYear().toString()}
                     />
                   </div>
@@ -599,7 +629,7 @@ const VeterinarianDetails = () => {
                   )}
                 </div>
               </div>
-              
+
               <div className="mt-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Additional Qualifications (if applicable)
@@ -622,7 +652,7 @@ const VeterinarianDetails = () => {
                   ))}
                 </div>
               </div>
-              
+
               <div className="mt-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Professional Memberships
@@ -643,7 +673,7 @@ const VeterinarianDetails = () => {
                       </label>
                     </div>
                   ))}
-                  
+
                   <div className="sm:col-span-2 mt-2">
                     <label htmlFor="otherMemberships" className="block text-sm font-medium text-gray-700">
                       Other Memberships
@@ -663,13 +693,13 @@ const VeterinarianDetails = () => {
                 </div>
               </div>
             </section>
-            
+
             {/* Practice Details Section */}
             <section>
               <h3 className="text-md font-medium text-gray-900 mb-4 pb-2 border-b border-gray-200">
                 Practice Details
               </h3>
-              
+
               <div>
                 <label htmlFor="practiceType" className="block text-sm font-medium text-gray-700">
                   Practice Type <span className="text-red-500">*</span>
@@ -680,9 +710,8 @@ const VeterinarianDetails = () => {
                     name="practiceType"
                     value={formData.practiceType}
                     onChange={handleChange}
-                    className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-                      errors.practiceType ? 'border-red-300' : ''
-                    }`}
+                    className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${errors.practiceType ? 'border-red-300' : ''
+                      }`}
                   >
                     <option value="">Select practice type</option>
                     {practiceTypeOptions.map((type) => (
@@ -696,16 +725,16 @@ const VeterinarianDetails = () => {
                   <p className="mt-1 text-sm text-red-600">{errors.practiceType}</p>
                 )}
               </div>
-              
+
               <div className="mt-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Species Treated <span className="text-red-500">*</span>
                 </label>
-                
+
                 {errors.speciesTreated && (
                   <p className="mb-2 text-sm text-red-600">{errors.speciesTreated}</p>
                 )}
-                
+
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                   <div className="flex items-center">
                     <input
@@ -720,7 +749,7 @@ const VeterinarianDetails = () => {
                       <FaDog className="mr-1 text-gray-500" /> Dogs
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="species-cats"
@@ -734,7 +763,7 @@ const VeterinarianDetails = () => {
                       <FaCat className="mr-1 text-gray-500" /> Cats
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="species-birds"
@@ -748,7 +777,7 @@ const VeterinarianDetails = () => {
                       <FaKiwiBird className="mr-1 text-gray-500" /> Birds
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="species-cattle"
@@ -762,7 +791,7 @@ const VeterinarianDetails = () => {
                       <FaHorse className="mr-1 text-gray-500" /> Cattle
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="species-buffalo"
@@ -776,7 +805,7 @@ const VeterinarianDetails = () => {
                       Buffalo
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="species-sheep"
@@ -790,7 +819,7 @@ const VeterinarianDetails = () => {
                       Sheep
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="species-goats"
@@ -804,7 +833,7 @@ const VeterinarianDetails = () => {
                       Goats
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="species-poultry"
@@ -818,7 +847,7 @@ const VeterinarianDetails = () => {
                       Poultry
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="species-exotic-pets"
@@ -832,7 +861,7 @@ const VeterinarianDetails = () => {
                       Exotic Pets
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="species-other"
@@ -847,7 +876,7 @@ const VeterinarianDetails = () => {
                     </label>
                   </div>
                 </div>
-                
+
                 {formData.speciesTreated.other && (
                   <div className="mt-2">
                     <label htmlFor="otherSpecies" className="sr-only">
@@ -859,9 +888,8 @@ const VeterinarianDetails = () => {
                       name="otherSpecies"
                       value={formData.otherSpecies}
                       onChange={handleChange}
-                      className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-                        errors.otherSpecies ? 'border-red-300' : ''
-                      }`}
+                      className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${errors.otherSpecies ? 'border-red-300' : ''
+                        }`}
                       placeholder="Please specify other species"
                     />
                     {errors.otherSpecies && (
@@ -870,16 +898,16 @@ const VeterinarianDetails = () => {
                   </div>
                 )}
               </div>
-              
+
               <div className="mt-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Services Offered <span className="text-red-500">*</span>
                 </label>
-                
+
                 {errors.servicesOffered && (
                   <p className="mb-2 text-sm text-red-600">{errors.servicesOffered}</p>
                 )}
-                
+
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                   <div className="flex items-center">
                     <input
@@ -894,7 +922,7 @@ const VeterinarianDetails = () => {
                       Wellness Exams
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="service-vaccinations"
@@ -908,7 +936,7 @@ const VeterinarianDetails = () => {
                       <FaSyringe className="mr-1 text-gray-500" /> Vaccinations
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="service-surgery"
@@ -922,7 +950,7 @@ const VeterinarianDetails = () => {
                       Surgery
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="service-dental"
@@ -936,7 +964,7 @@ const VeterinarianDetails = () => {
                       <FaTooth className="mr-1 text-gray-500" /> Dental Care
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="service-emergency"
@@ -950,7 +978,7 @@ const VeterinarianDetails = () => {
                       <FaAmbulance className="mr-1 text-gray-500" /> Emergency Services
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="service-livestock"
@@ -964,7 +992,7 @@ const VeterinarianDetails = () => {
                       Livestock Treatment
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="service-ayurvedic"
@@ -978,7 +1006,7 @@ const VeterinarianDetails = () => {
                       Ayurvedic Treatments
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="service-telemedicine"
@@ -992,7 +1020,7 @@ const VeterinarianDetails = () => {
                       <FaVideo className="mr-1 text-gray-500" /> Telemedicine
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="service-housecalls"
@@ -1006,7 +1034,7 @@ const VeterinarianDetails = () => {
                       <FaHome className="mr-1 text-gray-500" /> House Calls
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="service-other"
@@ -1021,7 +1049,7 @@ const VeterinarianDetails = () => {
                     </label>
                   </div>
                 </div>
-                
+
                 {formData.servicesOffered.ayurvedicTreatments && (
                   <div className="mt-2">
                     <label htmlFor="specializedTreatmentsDetails" className="block text-sm font-medium text-gray-700">
@@ -1033,9 +1061,8 @@ const VeterinarianDetails = () => {
                       name="specializedTreatmentsDetails"
                       value={formData.specializedTreatmentsDetails}
                       onChange={handleChange}
-                      className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-                        errors.specializedTreatmentsDetails ? 'border-red-300' : ''
-                      }`}
+                      className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${errors.specializedTreatmentsDetails ? 'border-red-300' : ''
+                        }`}
                       placeholder="e.g., Panchagavya therapy, herbal treatments, etc."
                     />
                     {errors.specializedTreatmentsDetails && (
@@ -1043,7 +1070,7 @@ const VeterinarianDetails = () => {
                     )}
                   </div>
                 )}
-                
+
                 {formData.servicesOffered.other && (
                   <div className="mt-2">
                     <label htmlFor="otherServicesDetails" className="block text-sm font-medium text-gray-700">
@@ -1055,9 +1082,8 @@ const VeterinarianDetails = () => {
                       name="otherServicesDetails"
                       value={formData.otherServicesDetails}
                       onChange={handleChange}
-                      className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-                        errors.otherServicesDetails ? 'border-red-300' : ''
-                      }`}
+                      className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${errors.otherServicesDetails ? 'border-red-300' : ''
+                        }`}
                       placeholder="Please specify other services"
                     />
                     {errors.otherServicesDetails && (
@@ -1067,13 +1093,13 @@ const VeterinarianDetails = () => {
                 )}
               </div>
             </section>
-            
+
             {/* Facility Information Section */}
             <section>
               <h3 className="text-md font-medium text-gray-900 mb-4 pb-2 border-b border-gray-200">
                 Facility Information
               </h3>
-              
+
               <div>
                 <label htmlFor="facilityType" className="block text-sm font-medium text-gray-700">
                   Facility Type <span className="text-red-500">*</span>
@@ -1084,9 +1110,8 @@ const VeterinarianDetails = () => {
                     name="facilityType"
                     value={formData.facilityType}
                     onChange={handleChange}
-                    className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-                      errors.facilityType ? 'border-red-300' : ''
-                    }`}
+                    className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${errors.facilityType ? 'border-red-300' : ''
+                      }`}
                   >
                     <option value="">Select facility type</option>
                     {facilityTypeOptions.map((type) => (
@@ -1100,7 +1125,7 @@ const VeterinarianDetails = () => {
                   <p className="mt-1 text-sm text-red-600">{errors.facilityType}</p>
                 )}
               </div>
-              
+
               <div className="mt-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Equipment/Capabilities
@@ -1119,7 +1144,7 @@ const VeterinarianDetails = () => {
                       <FaXRay className="mr-1 text-gray-500" /> X-ray
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="equipment-ultrasound"
@@ -1133,7 +1158,7 @@ const VeterinarianDetails = () => {
                       Ultrasound
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="equipment-laboratory"
@@ -1147,7 +1172,7 @@ const VeterinarianDetails = () => {
                       <FaVial className="mr-1 text-gray-500" /> Laboratory
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="equipment-surgery-suite"
@@ -1161,7 +1186,7 @@ const VeterinarianDetails = () => {
                       Surgery Suite
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="equipment-inpatient"
@@ -1175,7 +1200,7 @@ const VeterinarianDetails = () => {
                       In-Patient Wards
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="equipment-livestock"
@@ -1189,7 +1214,7 @@ const VeterinarianDetails = () => {
                       Livestock Facilities
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="equipment-other"
@@ -1204,7 +1229,7 @@ const VeterinarianDetails = () => {
                     </label>
                   </div>
                 </div>
-                
+
                 {formData.equipment.other && (
                   <div className="mt-2">
                     <label htmlFor="otherEquipment" className="block text-sm font-medium text-gray-700">
@@ -1216,9 +1241,8 @@ const VeterinarianDetails = () => {
                       name="otherEquipment"
                       value={formData.otherEquipment}
                       onChange={handleChange}
-                      className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-                        errors.otherEquipment ? 'border-red-300' : ''
-                      }`}
+                      className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${errors.otherEquipment ? 'border-red-300' : ''
+                        }`}
                       placeholder="Please specify other equipment"
                     />
                     {errors.otherEquipment && (
@@ -1228,13 +1252,13 @@ const VeterinarianDetails = () => {
                 )}
               </div>
             </section>
-            
+
             {/* Regulatory Compliance Section */}
             <section>
               <h3 className="text-md font-medium text-gray-900 mb-4 pb-2 border-b border-gray-200">
                 Regulatory Compliance
               </h3>
-              
+
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                 <div>
                   <label htmlFor="drugLicenseNumber" className="block text-sm font-medium text-gray-700">
@@ -1253,7 +1277,7 @@ const VeterinarianDetails = () => {
                   </div>
                   <p className="mt-1 text-xs text-gray-500">Required if you dispense medications</p>
                 </div>
-                
+
                 <div>
                   <label htmlFor="shopEstablishmentNumber" className="block text-sm font-medium text-gray-700">
                     Shop & Establishment Registration Number {formData.facilityType !== 'Mobile' && formData.facilityType !== 'Home visits only' && <span className="text-red-500">*</span>}
@@ -1265,9 +1289,8 @@ const VeterinarianDetails = () => {
                       name="shopEstablishmentNumber"
                       value={formData.shopEstablishmentNumber}
                       onChange={handleChange}
-                      className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-                        errors.shopEstablishmentNumber ? 'border-red-300' : ''
-                      }`}
+                      className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${errors.shopEstablishmentNumber ? 'border-red-300' : ''
+                        }`}
                       placeholder="e.g., SE-XXXX-XX-XXXXX"
                     />
                   </div>
@@ -1275,7 +1298,7 @@ const VeterinarianDetails = () => {
                     <p className="mt-1 text-sm text-red-600">{errors.shopEstablishmentNumber}</p>
                   )}
                 </div>
-                
+
                 <div className="sm:col-span-2">
                   <div className="flex items-center">
                     <input
@@ -1293,9 +1316,9 @@ const VeterinarianDetails = () => {
                 </div>
               </div>
             </section>
-            
+
             {/* Form Actions */}
-            <div className="pt-5 border-t border-gray-200 flex justify-between">
+            <div className={`pt-5 border-t border-gray-200 flex justify-between`}>
               <Link
                 to="/provider/onboarding/professional-info"
                 className="inline-flex items-center px-6 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all"
@@ -1303,28 +1326,42 @@ const VeterinarianDetails = () => {
                 <FaArrowLeft className="mr-2 -ml-1 h-4 w-4" />
                 Back
               </Link>
-              
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="inline-flex items-center px-8 py-2 border border-transparent shadow-md text-sm font-medium rounded-md text-white bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-all"
-              >
-                {isSubmitting ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    Continue
-                    <FaArrowRight className="ml-2 -mr-1 h-4 w-4" />
-                  </>
+
+              <div className="flex space-x-3">
+
+                {embedded && (
+                  <button
+                    type="button"
+                    onClick={handleSkip}
+                    className="inline-flex items-center px-6 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all"
+                  >
+                    Skip for now
+                  </button>
                 )}
-              </button>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="inline-flex items-center px-8 py-2 border border-transparent shadow-md text-sm font-medium rounded-md text-white bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-all"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      Continue
+                      <FaArrowRight className="ml-2 -mr-1 h-4 w-4" />
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
+
           </form>
         </div>
       </main>

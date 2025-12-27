@@ -17,11 +17,12 @@ import {
   FaSave,
   FaInfoCircle
 } from 'react-icons/fa';
+import { getOnboardingPath } from '../../utils/providerOnboardingUtils';
 
 // Cute pet-themed logo
 const logoImage = "/1.svg";
 
-const ProfessionalInfo = () => {
+const ProfessionalInfo = ({ embedded = false, onNext }) => {
   const navigate = useNavigate();
 
   // Check if registration data exists
@@ -266,11 +267,11 @@ const ProfessionalInfo = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-
-
   // Handle form submission
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e) {
+      e.preventDefault();
+    }
 
     if (!validateForm()) {
       // Scroll to the first error
@@ -294,32 +295,22 @@ const ProfessionalInfo = () => {
       localStorage.setItem('provider_professional_info', JSON.stringify(formData));
 
       // Get registration data and provider type
-      const registrationData = JSON.parse(localStorage.getItem('provider_registration'));
+      const registrationData = JSON.parse(localStorage.getItem('provider_registration') || '{}');
       const providerType = registrationData.providerType;
 
       // Update registration step
       localStorage.setItem('provider_registration', JSON.stringify({
         ...registrationData,
-        registrationStep: 2
+        registrationStep: 2,
       }));
 
-      // Navigate to the appropriate service-specific page based on provider type
-      switch (providerType) {
-        case 'Veterinarian':
-          navigate('/provider/onboarding/veterinarian-details');
-          break;
-        case 'Trainer':
-          navigate('/provider/onboarding/trainer-details');
-          break;
-        case 'Groomer':
-          navigate('/provider/onboarding/groomer-details');
-          break;
-        case 'Pet Sitter':
-          navigate('/provider/onboarding/pet-sitter-details');
-          break;
-        default:
-          // Default to document upload if provider type is unknown
-          navigate('/provider/onboarding');
+      if (embedded && typeof onNext === 'function') {
+        // In embedded mode, let the parent onboarding flow handle navigation
+        onNext(formData);
+      } else {
+        // Fallback for standalone usage: navigate to provider-type-specific onboarding flow
+        const nextPath = getOnboardingPath(providerType) || '/provider/onboarding';
+        navigate(nextPath);
       }
     } catch (error) {
       console.error('Submission error:', error);
@@ -329,6 +320,36 @@ const ProfessionalInfo = () => {
       }));
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleSkip = () => {
+    try {
+      // Store whatever data is present so far
+      localStorage.setItem('provider_professional_info', JSON.stringify(formData));
+
+      const registrationData = JSON.parse(localStorage.getItem('provider_registration') || '{}');
+      const providerType = registrationData.providerType;
+
+      // Move registration to step 2 so users resume from the next page
+      localStorage.setItem('provider_registration', JSON.stringify({
+        ...registrationData,
+        registrationStep: 2,
+      }));
+
+      if (embedded && typeof onNext === 'function') {
+        // Skip validation and advance the embedded flow
+        onNext(formData);
+      } else {
+        const nextPath = getOnboardingPath(providerType) || '/provider/onboarding';
+        navigate(nextPath);
+      }
+    } catch (error) {
+      console.error('Skip error:', error);
+      setErrors(prev => ({
+        ...prev,
+        form: 'An error occurred while skipping. Please try again.'
+      }));
     }
   };
 
@@ -344,33 +365,38 @@ const ProfessionalInfo = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <div className="flex items-center">
-            <img src={logoImage} alt="PawsIQ Logo" className="h-8 w-8 mr-2" />
-            <h1 className="text-xl font-bold text-gray-900">PawsIQ Provider Onboarding</h1>
-          </div>
-          <div className="text-sm text-gray-500">
-            Need help? <a href="#" className="text-indigo-600 hover:text-indigo-500">Contact Support</a>
-          </div>
-        </div>
-      </header>
+    <div className={embedded ? '' : 'bg-gray-50'}>
+      {!embedded && (
+        <>
+          {/* Header */}
+          <header className="bg-white shadow-sm">
+            <div className="max-w-7xl px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+              <div className="flex items-center">
+                <img src={logoImage} alt="PawsIQ Logo" className="h-8 w-8 mr-2" />
+                <h1 className="text-xl font-bold text-gray-900">PawsIQ Provider Onboarding</h1>
+              </div>
+              <div className="text-sm text-gray-500">
+                Need help? <a href="#" className="text-indigo-600 hover:text-indigo-500">Contact Support</a>
+              </div>
+            </div>
+          </header>
+        </>
+      )}
 
-      <main className="max-w-3xl px-4 sm:px-6 lg:px-8 py-10">
-        {/* Progress indicator */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
-            <div className="text-sm text-indigo-600 font-medium">Step 2 of 8</div>
-            <div className="text-sm text-gray-500">Professional Information</div>
+      <main className={embedded ? '' : 'max-w-3xl px-4 sm:px-6 lg:px-8 py-10'}>
+        {!embedded && (
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-sm text-indigo-600 font-medium">Step 2 of 8</div>
+              <div className="text-sm text-gray-500">Professional Information</div>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2.5">
+              <div className="bg-indigo-600 h-2.5 rounded-full" style={{ width: '25%' }}></div>
+            </div>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2.5">
-            <div className="bg-indigo-600 h-2.5 rounded-full" style={{ width: '25%' }}></div>
-          </div>
-        </div>
+        )}
 
-        <div className="bg-white shadow-md rounded-lg overflow-hidden">
+        <div className={embedded ? '' : 'bg-white shadow-md rounded-lg overflow-hidden'}>
           <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
             <h2 className="text-lg font-medium text-gray-900">Professional Information</h2>
             <p className="mt-1 text-sm text-gray-500">
@@ -949,36 +975,51 @@ const ProfessionalInfo = () => {
             </section>
 
             {/* Form Actions */}
-            <div className="pt-5 border-t border-gray-200 flex justify-between">
-              <Link
-                to="/provider/signup"
-                className="inline-flex items-center px-6 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all"
-              >
-                <FaArrowLeft className="mr-2 -ml-1 h-4 w-4" />
-                Back
-              </Link>
+            <div className={`pt-5 border-t border-gray-200 flex ${embedded ? 'justify-end' : 'justify-between'}`}>
+              {!embedded && (
+                <Link
+                  to="/provider/signup"
+                  className="inline-flex items-center px-6 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all"
+                >
+                  <FaArrowLeft className="mr-2 -ml-1 h-4 w-4" />
+                  Back
+                </Link>
+              )}
 
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="inline-flex items-center px-8 py-2 border border-transparent shadow-md text-sm font-medium rounded-md text-white bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-all"
-              >
-                {isSubmitting ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    Continue
-                    <FaArrowRight className="ml-2 -mr-1 h-4 w-4" />
-                  </>
+              <div className="flex space-x-3">
+                {embedded && (
+                  <button
+                    type="button"
+                    onClick={handleSkip}
+                    className="inline-flex items-center px-6 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all"
+                  >
+                    Skip for now
+                  </button>
                 )}
-              </button>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="inline-flex items-center px-8 py-2 border border-transparent shadow-md text-sm font-medium rounded-md text-white bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-all"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      Continue
+                      <FaArrowRight className="ml-2 -mr-1 h-4 w-4" />
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
+
           </form>
         </div>
       </main>

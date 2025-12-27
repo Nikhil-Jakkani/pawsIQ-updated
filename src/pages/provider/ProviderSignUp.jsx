@@ -1,21 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { 
-  FaEnvelope, 
-  FaLock, 
-  FaUser, 
-  FaPhone, 
-  FaStethoscope, 
-  FaGraduationCap, 
-  FaCut, 
-  FaDog, 
-  FaInfoCircle, 
-  FaCheck, 
+import {
+  FaEnvelope,
+  FaLock,
+  FaUser,
+  FaPhone,
+  FaStethoscope,
+  FaGraduationCap,
+  FaCut,
+  FaDog,
+  FaInfoCircle,
+  FaCheck,
   FaTimes,
-  FaPaw
+  FaPaw,
+  FaHome,
+  FaWalking,
 } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
-import { getOnboardingPath } from '../../utils/providerOnboardingUtils';
+import { getOnboardingPath, mapServiceTypeToProviderType } from '../../utils/providerOnboardingUtils';
+
 import DocumentUpload from './DocumentUpload';
 import GroomerDetails from './GroomerDetails';
 import ReviewSubmission from './ReviewSubmission';
@@ -29,7 +32,7 @@ const logoImage = "/7.png";
 const ProviderSignUp = () => {
   const navigate = useNavigate();
   const { currentUser, providerRegister } = useAuth();
-  
+
   // Form state
   const [formData, setFormData] = useState({
     email: '',
@@ -43,17 +46,17 @@ const ProviderSignUp = () => {
     marketingOptIn: false,
     termsAccepted: false
   });
-  
+
   // Validation state
   const [errors, setErrors] = useState({});
   const [passwordStrength, setPasswordStrength] = useState({
     score: 0,
     message: 'Password strength'
   });
-  
+
   // Loading state
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Redirect if already logged in
   useEffect(() => {
     if (currentUser) {
@@ -61,7 +64,7 @@ const ProviderSignUp = () => {
       navigate('/provider/dashboard');
     }
   }, [currentUser, navigate]);
-  
+
   // Handle input changes
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -69,7 +72,7 @@ const ProviderSignUp = () => {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
-    
+
     // Clear error when field is edited
     if (errors[name]) {
       setErrors(prev => ({
@@ -77,18 +80,18 @@ const ProviderSignUp = () => {
         [name]: ''
       }));
     }
-    
+
     // Check password strength
     if (name === 'password') {
       checkPasswordStrength(value);
     }
   };
-  
+
   // Check password strength
   const checkPasswordStrength = (password) => {
     let score = 0;
     let message = '';
-    
+
     if (password.length === 0) {
       message = 'Password strength';
     } else if (password.length < 8) {
@@ -97,13 +100,13 @@ const ProviderSignUp = () => {
     } else {
       // Add score for length
       score += Math.min(2, Math.floor(password.length / 8));
-      
+
       // Add score for complexity
       if (/[A-Z]/.test(password)) score += 1;
       if (/[a-z]/.test(password)) score += 1;
       if (/[0-9]/.test(password)) score += 1;
       if (/[^A-Za-z0-9]/.test(password)) score += 1;
-      
+
       // Set message based on score
       if (score < 3) {
         message = 'Weak';
@@ -113,10 +116,10 @@ const ProviderSignUp = () => {
         message = 'Strong';
       }
     }
-    
+
     setPasswordStrength({ score, message });
   };
-  
+
   // Get color for password strength indicator
   const getPasswordStrengthColor = () => {
     const { score } = passwordStrength;
@@ -125,18 +128,18 @@ const ProviderSignUp = () => {
     if (score < 5) return 'bg-yellow-500';
     return 'bg-green-500';
   };
-  
+
   // Validate form
   const validateForm = () => {
     const newErrors = {};
-    
+
     // Email validation
     if (!formData.email) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Email is invalid';
     }
-    
+
     // Password validation
     if (!formData.password) {
       newErrors.password = 'Password is required';
@@ -145,62 +148,65 @@ const ProviderSignUp = () => {
     } else if (passwordStrength.score < 3) {
       newErrors.password = 'Password is too weak';
     }
-    
+
     // Confirm password validation
     if (!formData.confirmPassword) {
       newErrors.confirmPassword = 'Please confirm your password';
     } else if (formData.confirmPassword !== formData.password) {
       newErrors.confirmPassword = 'Passwords do not match';
     }
-    
+
     // Name validation
     if (!formData.firstName) {
       newErrors.firstName = 'First name is required';
     }
-    
+
     if (!formData.lastName) {
       newErrors.lastName = 'Last name is required';
     }
-    
+
     // Phone validation - Updated for Indian mobile numbers
     if (!formData.phoneNumber) {
       newErrors.phoneNumber = 'Phone number is required';
     } else if (!/^[6-9]\d{9}$/.test(formData.phoneNumber.replace(/\s+/g, ''))) {
       newErrors.phoneNumber = 'Please enter a valid 10-digit Indian mobile number';
     }
-    
+
     // Provider type validation
     if (!formData.providerType) {
-      newErrors.providerType = 'Please select a provider type';
+      newErrors.providerType = 'Please select a main service';
     }
-    
+
     // Terms validation
     if (!formData.termsAccepted) {
       newErrors.termsAccepted = 'You must accept the terms of service';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-  
+
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
+      const selectedServiceType = formData.providerType; // 6-category main service label
+      const mappedProviderType = mapServiceTypeToProviderType(selectedServiceType) || selectedServiceType;
+
       const registrationData = {
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email.toLowerCase().trim(),
         password: formData.password,
         phoneNumber: formData.phoneNumber.replace(/\s+/g, ''),
-        providerType: formData.providerType,
+        providerType: mappedProviderType,
         referralSource: formData.referralSource,
         marketingOptIn: formData.marketingOptIn,
         // API fields
@@ -208,8 +214,10 @@ const ProviderSignUp = () => {
         provider_email: formData.email.toLowerCase().trim(),
         provider_password: formData.password,
         provider_contact_number: formData.phoneNumber.replace(/\s+/g, ''),
-        services_offered: formData.providerType,
-        provider_type: formData.providerType,
+        // Keep services_offered as the more granular main service type (6 categories)
+        services_offered: selectedServiceType,
+        // provider_type is the canonical 4-type classification used for dashboards
+        provider_type: mappedProviderType,
         provider_src: 'email-password',
         how_hear_about_us: formData.referralSource,
         // Optional fields (left blank unless you add inputs later)
@@ -222,14 +230,14 @@ const ProviderSignUp = () => {
 
       // Store registration data in localStorage FIRST (before async operations)
       localStorage.setItem('provider_registration', JSON.stringify(registrationData));
-      localStorage.setItem('selectedService', formData.providerType);
-      
+      localStorage.setItem('selectedService', selectedServiceType);
+
       // Register provider with email and password
       const result = await providerRegister(registrationData);
-      
+
       if (result) {
         // Navigate to provider-type-specific onboarding flow
-        const onboardingPath = getOnboardingPath(formData.providerType);
+        const onboardingPath = getOnboardingPath(mappedProviderType);
         navigate(onboardingPath);
       } else {
         // Clear localStorage on registration failure
@@ -237,7 +245,7 @@ const ProviderSignUp = () => {
         localStorage.removeItem('selectedService');
         throw new Error(result?.message || 'Registration failed. Please try again.');
       }
-      
+
     } catch (error) {
       console.error('Registration error:', error);
       setErrors(prev => ({
@@ -248,7 +256,7 @@ const ProviderSignUp = () => {
       setIsSubmitting(false);
     }
   };
-  
+
   return (
     <div className="min-h-screen bg-white flex flex-col justify-start pt-8 pb-12 sm:px-6 lg:px-8">
 
@@ -268,7 +276,7 @@ const ProviderSignUp = () => {
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow-xl sm:rounded-lg sm:px-10">
-          
+
           {/* Form error message */}
           {errors.form && (
             <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded">
@@ -282,7 +290,7 @@ const ProviderSignUp = () => {
               </div>
             </div>
           )}
-          
+
           <form className="space-y-6" onSubmit={handleSubmit}>
             {/* Email */}
             <div>
@@ -300,9 +308,8 @@ const ProviderSignUp = () => {
                   autoComplete="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className={`pl-10 block w-full pr-3 py-2 border ${
-                    errors.email ? 'border-red-300' : 'border-gray-300'
-                  } rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
+                  className={`pl-10 block w-full pr-3 py-2 border ${errors.email ? 'border-red-300' : 'border-gray-300'
+                    } rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
                   placeholder="you@example.com"
                 />
               </div>
@@ -327,9 +334,8 @@ const ProviderSignUp = () => {
                   autoComplete="new-password"
                   value={formData.password}
                   onChange={handleChange}
-                  className={`pl-10 block w-full pr-3 py-2 border ${
-                    errors.password ? 'border-red-300' : 'border-gray-300'
-                  } rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
+                  className={`pl-10 block w-full pr-3 py-2 border ${errors.password ? 'border-red-300' : 'border-gray-300'
+                    } rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
                   placeholder="••••••••"
                 />
               </div>
@@ -337,8 +343,8 @@ const ProviderSignUp = () => {
               <div className="mt-1">
                 <div className="flex items-center justify-between">
                   <div className="w-full bg-gray-200 rounded-full h-2 mr-2">
-                    <div 
-                      className={`${getPasswordStrengthColor()} h-2 rounded-full transition-all duration-300`} 
+                    <div
+                      className={`${getPasswordStrengthColor()} h-2 rounded-full transition-all duration-300`}
                       style={{ width: `${(passwordStrength.score / 6) * 100}%` }}
                     ></div>
                   </div>
@@ -369,9 +375,8 @@ const ProviderSignUp = () => {
                   autoComplete="new-password"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className={`pl-10 block w-full pr-3 py-2 border ${
-                    errors.confirmPassword ? 'border-red-300' : 'border-gray-300'
-                  } rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
+                  className={`pl-10 block w-full pr-3 py-2 border ${errors.confirmPassword ? 'border-red-300' : 'border-gray-300'
+                    } rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
                   placeholder="••••••••"
                 />
               </div>
@@ -397,9 +402,8 @@ const ProviderSignUp = () => {
                     autoComplete="given-name"
                     value={formData.firstName}
                     onChange={handleChange}
-                    className={`pl-10 block w-full pr-3 py-2 border ${
-                      errors.firstName ? 'border-red-300' : 'border-gray-300'
-                    } rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
+                    className={`pl-10 block w-full pr-3 py-2 border ${errors.firstName ? 'border-red-300' : 'border-gray-300'
+                      } rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
                     placeholder="John"
                   />
                 </div>
@@ -422,9 +426,8 @@ const ProviderSignUp = () => {
                     autoComplete="family-name"
                     value={formData.lastName}
                     onChange={handleChange}
-                    className={`pl-10 block w-full pr-3 py-2 border ${
-                      errors.lastName ? 'border-red-300' : 'border-gray-300'
-                    } rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
+                    className={`pl-10 block w-full pr-3 py-2 border ${errors.lastName ? 'border-red-300' : 'border-gray-300'
+                      } rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
                     placeholder="Doe"
                   />
                 </div>
@@ -450,9 +453,8 @@ const ProviderSignUp = () => {
                   autoComplete="tel"
                   value={formData.phoneNumber}
                   onChange={handleChange}
-                  className={`pl-10 block w-full pr-3 py-2 border ${
-                    errors.phoneNumber ? 'border-red-300' : 'border-gray-300'
-                  } rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
+                  className={`pl-10 block w-full pr-3 py-2 border ${errors.phoneNumber ? 'border-red-300' : 'border-gray-300'
+                    } rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
                   placeholder="9876543210"
                 />
               </div>
@@ -464,62 +466,93 @@ const ProviderSignUp = () => {
               </p>
             </div>
 
-            {/* Provider Type */}
+            {/* Main Service / Provider Type */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Provider Type <span className="text-red-500">*</span>
+                Main Service <span className="text-red-500">*</span>
               </label>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <div 
-                  className={`flex flex-col items-center justify-center p-3 border rounded-lg cursor-pointer transition-all ${
-                    formData.providerType === 'Veterinarian' 
-                      ? 'border-indigo-500 bg-indigo-50 shadow-sm' 
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {/* Boarding → Pet Sitter dashboard */}
+                <div
+                  className={`flex flex-col items-center justify-center p-3 border rounded-lg cursor-pointer transition-all ${formData.providerType === 'Boarding'
+                      ? 'border-indigo-500 bg-indigo-50 shadow-sm'
                       : 'border-gray-300 hover:border-indigo-300 hover:bg-indigo-50'
-                  }`}
-                  onClick={() => handleChange({ target: { name: 'providerType', value: 'Veterinarian' } })}
+                    }`}
+                  onClick={() => handleChange({ target: { name: 'providerType', value: 'Boarding' } })}
                 >
-                  <FaStethoscope className={`text-2xl mb-2 ${formData.providerType === 'Veterinarian' ? 'text-indigo-600' : 'text-gray-500'}`} />
-                  <span className={`text-sm font-medium ${formData.providerType === 'Veterinarian' ? 'text-indigo-700' : 'text-gray-700'}`}>
-                    Veterinarian
+                  <FaHome className={`text-2xl mb-2 ${formData.providerType === 'Boarding' ? 'text-indigo-600' : 'text-gray-500'}`} />
+                  <span className={`text-sm font-medium ${formData.providerType === 'Boarding' ? 'text-indigo-700' : 'text-gray-700'}`}>
+                    Boarding
                   </span>
                 </div>
-                <div 
-                  className={`flex flex-col items-center justify-center p-3 border rounded-lg cursor-pointer transition-all ${
-                    formData.providerType === 'Trainer' 
-                      ? 'border-indigo-500 bg-indigo-50 shadow-sm' 
+
+                {/* Diagnostic Services → Veterinarian dashboard */}
+                <div
+                  className={`flex flex-col items-center justify-center p-3 border rounded-lg cursor-pointer transition-all ${formData.providerType === 'Diagnostic Services'
+                      ? 'border-indigo-500 bg-indigo-50 shadow-sm'
                       : 'border-gray-300 hover:border-indigo-300 hover:bg-indigo-50'
-                  }`}
-                  onClick={() => handleChange({ target: { name: 'providerType', value: 'Trainer' } })}
+                    }`}
+                  onClick={() => handleChange({ target: { name: 'providerType', value: 'Diagnostic Services' } })}
                 >
-                  <FaGraduationCap className={`text-2xl mb-2 ${formData.providerType === 'Trainer' ? 'text-indigo-600' : 'text-gray-500'}`} />
-                  <span className={`text-sm font-medium ${formData.providerType === 'Trainer' ? 'text-indigo-700' : 'text-gray-700'}`}>
-                    Trainer
+                  <FaStethoscope className={`text-2xl mb-2 ${formData.providerType === 'Diagnostic Services' ? 'text-indigo-600' : 'text-gray-500'}`} />
+                  <span className={`text-sm font-medium ${formData.providerType === 'Diagnostic Services' ? 'text-indigo-700' : 'text-gray-700'}`}>
+                    Diagnostic Services
                   </span>
                 </div>
-                <div 
-                  className={`flex flex-col items-center justify-center p-3 border rounded-lg cursor-pointer transition-all ${
-                    formData.providerType === 'Groomer' 
-                      ? 'border-indigo-500 bg-indigo-50 shadow-sm' 
+
+                {/* Grooming → Groomer dashboard */}
+                <div
+                  className={`flex flex-col items-center justify-center p-3 border rounded-lg cursor-pointer transition-all ${formData.providerType === 'Grooming'
+                      ? 'border-indigo-500 bg-indigo-50 shadow-sm'
                       : 'border-gray-300 hover:border-indigo-300 hover:bg-indigo-50'
-                  }`}
-                  onClick={() => handleChange({ target: { name: 'providerType', value: 'Groomer' } })}
+                    }`}
+                  onClick={() => handleChange({ target: { name: 'providerType', value: 'Grooming' } })}
                 >
-                  <FaCut className={`text-2xl mb-2 ${formData.providerType === 'Groomer' ? 'text-indigo-600' : 'text-gray-500'}`} />
-                  <span className={`text-sm font-medium ${formData.providerType === 'Groomer' ? 'text-indigo-700' : 'text-gray-700'}`}>
-                    Groomer
+                  <FaCut className={`text-2xl mb-2 ${formData.providerType === 'Grooming' ? 'text-indigo-600' : 'text-gray-500'}`} />
+                  <span className={`text-sm font-medium ${formData.providerType === 'Grooming' ? 'text-indigo-700' : 'text-gray-700'}`}>
+                    Grooming
                   </span>
                 </div>
-                <div 
-                  className={`flex flex-col items-center justify-center p-3 border rounded-lg cursor-pointer transition-all ${
-                    formData.providerType === 'Pet Sitter' 
-                      ? 'border-indigo-500 bg-indigo-50 shadow-sm' 
+
+                {/* Physical Activity → Trainer dashboard */}
+                <div
+                  className={`flex flex-col items-center justify-center p-3 border rounded-lg cursor-pointer transition-all ${formData.providerType === 'Physical Activity'
+                      ? 'border-indigo-500 bg-indigo-50 shadow-sm'
                       : 'border-gray-300 hover:border-indigo-300 hover:bg-indigo-50'
-                  }`}
-                  onClick={() => handleChange({ target: { name: 'providerType', value: 'Pet Sitter' } })}
+                    }`}
+                  onClick={() => handleChange({ target: { name: 'providerType', value: 'Physical Activity' } })}
                 >
-                  <FaDog className={`text-2xl mb-2 ${formData.providerType === 'Pet Sitter' ? 'text-indigo-600' : 'text-gray-500'}`} />
-                  <span className={`text-sm font-medium ${formData.providerType === 'Pet Sitter' ? 'text-indigo-700' : 'text-gray-700'}`}>
-                    Pet Sitter
+                  <FaWalking className={`text-2xl mb-2 ${formData.providerType === 'Physical Activity' ? 'text-indigo-600' : 'text-gray-500'}`} />
+                  <span className={`text-sm font-medium ${formData.providerType === 'Physical Activity' ? 'text-indigo-700' : 'text-gray-700'}`}>
+                    Physical Activity
+                  </span>
+                </div>
+
+                {/* Training → Trainer dashboard */}
+                <div
+                  className={`flex flex-col items-center justify-center p-3 border rounded-lg cursor-pointer transition-all ${formData.providerType === 'Training'
+                      ? 'border-indigo-500 bg-indigo-50 shadow-sm'
+                      : 'border-gray-300 hover:border-indigo-300 hover:bg-indigo-50'
+                    }`}
+                  onClick={() => handleChange({ target: { name: 'providerType', value: 'Training' } })}
+                >
+                  <FaDog className={`text-2xl mb-2 ${formData.providerType === 'Training' ? 'text-indigo-600' : 'text-gray-500'}`} />
+                  <span className={`text-sm font-medium ${formData.providerType === 'Training' ? 'text-indigo-700' : 'text-gray-700'}`}>
+                    Training
+                  </span>
+                </div>
+
+                {/* Veterinary → Veterinarian dashboard */}
+                <div
+                  className={`flex flex-col items-center justify-center p-3 border rounded-lg cursor-pointer transition-all ${formData.providerType === 'Veterinary'
+                      ? 'border-indigo-500 bg-indigo-50 shadow-sm'
+                      : 'border-gray-300 hover:border-indigo-300 hover:bg-indigo-50'
+                    }`}
+                  onClick={() => handleChange({ target: { name: 'providerType', value: 'Veterinary' } })}
+                >
+                  <FaStethoscope className={`text-2xl mb-2 ${formData.providerType === 'Veterinary' ? 'text-indigo-600' : 'text-gray-500'}`} />
+                  <span className={`text-sm font-medium ${formData.providerType === 'Veterinary' ? 'text-indigo-700' : 'text-gray-700'}`}>
+                    Vet
                   </span>
                 </div>
               </div>
@@ -581,9 +614,8 @@ const ProviderSignUp = () => {
                   type="checkbox"
                   checked={formData.termsAccepted}
                   onChange={handleChange}
-                  className={`focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded ${
-                    errors.termsAccepted ? 'border-red-300' : ''
-                  }`}
+                  className={`focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded ${errors.termsAccepted ? 'border-red-300' : ''
+                    }`}
                 />
               </div>
               <div className="ml-3 text-sm">
@@ -641,7 +673,7 @@ const ProviderSignUp = () => {
           </div>
         </div>
       </div>
-      
+
       {/* Decorative elements */}
       <div className="hidden lg:block absolute bottom-0 left-0 w-full overflow-hidden">
         <div className="text-white opacity-10 text-9xl">

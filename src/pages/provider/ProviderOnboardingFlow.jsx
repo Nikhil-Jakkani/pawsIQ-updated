@@ -259,13 +259,15 @@ const ProviderOnboardingFlow = () => {
 
       {/* Progress Header */}
       <div className="bg-white border-b border-gray-200 shadow-sm flex-shrink-0 z-40">
-        <div className="max-w-6xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+
           {/* Progress Bar */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-2">
+          <div className="mb-4">
+            <div className="flex flex-col items-center gap-1 sm:flex-row sm:justify-center sm:gap-3 mb-2">
               <p className="text-sm font-medium text-gray-600">Progress</p>
               <p className="text-sm font-medium text-blue-600">{currentStep} of {totalSteps}</p>
             </div>
+
             <div className="w-full bg-gray-200 rounded-full h-2">
               <motion.div
                 className="bg-gradient-to-r from-blue-500 to-indigo-600 h-2 rounded-full"
@@ -276,8 +278,9 @@ const ProviderOnboardingFlow = () => {
           </div>
 
           {/* Step Indicators */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-8 overflow-x-auto pb-2">
+          <div className="mb-4">
+            <div className="flex items-center justify-center mb-4 overflow-x-auto pb-2">
+
               {steps.map((step, index) => (
                 <motion.div
                   key={step.id}
@@ -289,10 +292,10 @@ const ProviderOnboardingFlow = () => {
                     onClick={() => handleStepClick(index + 1)}
                     disabled={index + 1 > currentStep && !completedSteps.includes(step.id)}
                     className={`flex items-center justify-center w-10 h-10 rounded-full font-semibold text-sm transition-all ${index + 1 === currentStep
-                        ? 'bg-blue-600 text-white ring-4 ring-blue-200 cursor-pointer'
-                        : index + 1 < currentStep || completedSteps.includes(step.id)
-                          ? 'bg-green-500 text-white cursor-pointer hover:bg-green-600'
-                          : 'bg-gray-300 text-gray-600 cursor-not-allowed'
+                      ? 'bg-blue-600 text-white ring-4 ring-blue-200 cursor-pointer'
+                      : index + 1 < currentStep || completedSteps.includes(step.id)
+                        ? 'bg-green-500 text-white cursor-pointer hover:bg-green-600'
+                        : 'bg-gray-300 text-gray-600 cursor-not-allowed'
                       }`}
                     title={step.label}
                   >
@@ -314,7 +317,8 @@ const ProviderOnboardingFlow = () => {
             </div>
 
             {/* Step Labels */}
-            <div className="grid gap-1">
+            <div className="grid gap-1 text-center">
+
               <p className="text-sm font-medium text-gray-700 truncate">
                 {currentStepData?.label}
               </p>
@@ -361,7 +365,8 @@ const ProviderOnboardingFlow = () => {
 
       {/* Step Content */}
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-6xl px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+
           <motion.div
             key={`step-${currentStep}`}
             initial={{ opacity: 0, y: 20 }}
@@ -395,72 +400,12 @@ const ProviderOnboardingFlow = () => {
                 onNext={handleStepSubmit}
                 onComplete={handleComplete}
                 formData={formData[steps[currentStep - 1]?.id] || {}}
+                embedded={true}
               />
             )}
           </motion.div>
         </div>
       </div>
-
-      {/* Navigation Buttons */}
-      {!isCompleted && (
-        <div className="bg-white border-t border-gray-200 shadow-lg flex-shrink-0 z-40">
-          <div className="max-w-6xl px-4 sm:px-6 lg:px-8 py-6">
-            <div className="flex items-center justify-between gap-4">
-              <button
-                onClick={handlePrevious}
-                disabled={currentStep === 1 || loading}
-                className={`flex items-center px-6 py-3 rounded-lg font-medium transition-all ${currentStep === 1 || loading
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:scale-95'
-                  }`}
-              >
-                <FaArrowLeft className="mr-2" />
-                Previous
-              </button>
-
-              <div className="flex gap-3">
-                {currentStep === totalSteps ? (
-                  <button
-                    onClick={handleComplete}
-                    disabled={loading}
-                    className="flex items-center px-8 py-3 rounded-lg font-medium bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700 transition-all active:scale-95 disabled:opacity-50 shadow-md hover:shadow-lg"
-                  >
-                    {loading ? (
-                      <>
-                        <FaSpinner className="mr-2 animate-spin" />
-                        Completing...
-                      </>
-                    ) : (
-                      <>
-                        <FaCheckCircle className="mr-2" />
-                        Complete Onboarding
-                      </>
-                    )}
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleNext}
-                    disabled={loading || Object.keys(validationErrors).length > 0}
-                    className="flex items-center px-8 py-3 rounded-lg font-medium bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 transition-all active:scale-95 disabled:opacity-50 shadow-md hover:shadow-lg"
-                  >
-                    {loading ? (
-                      <>
-                        <FaSpinner className="mr-2 animate-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        Next
-                        <FaArrowRight className="ml-2" />
-                      </>
-                    )}
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

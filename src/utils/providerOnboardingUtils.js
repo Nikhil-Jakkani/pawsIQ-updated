@@ -12,9 +12,9 @@ import { PROVIDER_TYPES } from '../store/slices/providerOnboardingSlice';
  */
 export const getOnboardingPath = (providerType) => {
   if (!providerType) return '/provider/onboarding';
-  
+
   // Normalize the provider type by checking against known types
-  const normalizedType = Object.values(PROVIDER_TYPES).find(type => 
+  const normalizedType = Object.values(PROVIDER_TYPES).find(type =>
     type.toLowerCase() === providerType.toLowerCase()
   );
 
@@ -27,6 +27,41 @@ export const getOnboardingPath = (providerType) => {
   };
 
   return pathMap[normalizedType] || '/provider/onboarding';
+};
+
+/**
+ * Map a user-facing main service type (Boarding, Diagnostic Services, etc.)
+ * to one of the 4 canonical provider types used for onboarding and dashboards.
+ * This lets us show 6 categories in the UI while keeping only 4 underlying flows.
+ */
+export const mapServiceTypeToProviderType = (serviceType) => {
+  const key = (serviceType || '').toString().toLowerCase().trim();
+
+  switch (key) {
+    case 'veterinary':
+    case 'veterinarian':
+    case 'vet':
+    case 'diagnostic services':
+    case 'diagnostics':
+      return PROVIDER_TYPES.VETERINARIAN;
+
+    case 'grooming':
+    case 'groomer':
+      return PROVIDER_TYPES.GROOMER;
+
+    case 'training':
+    case 'trainer':
+    case 'physical activity':
+      return PROVIDER_TYPES.TRAINER;
+
+    case 'boarding':
+    case 'pet sitter':
+    case 'pet sitting':
+      return PROVIDER_TYPES.PET_SITTER;
+
+    default:
+      return null;
+  }
 };
 
 /**
@@ -45,7 +80,7 @@ export const getProviderTypeFromPath = (path) => {
   // Extract the last segment of the path
   const segments = path.split('/').filter(Boolean);
   const typeSegment = segments[segments.length - 1];
-  
+
   return reverseMap[typeSegment] || null;
 };
 

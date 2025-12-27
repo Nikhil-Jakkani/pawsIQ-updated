@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+
 import {
   FaFileUpload,
   FaIdCard,
@@ -20,7 +21,7 @@ import {
 // Cute pet-themed logo
 const logoImage = "/1.svg";
 
-const DocumentUpload = () => {
+const DocumentUpload = ({ embedded = false, onNext }) => {
   const navigate = useNavigate();
 
   // Check if registration data exists
@@ -275,7 +276,9 @@ const DocumentUpload = () => {
 
   // Handle form submission
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e) {
+      e.preventDefault();
+    }
 
     if (!validateForm()) {
       // Scroll to the first error
@@ -314,14 +317,18 @@ const DocumentUpload = () => {
       }));
 
       // Update registration step
-      const registrationData = JSON.parse(localStorage.getItem('provider_registration'));
+      const registrationData = JSON.parse(localStorage.getItem('provider_registration') || '{}');
       localStorage.setItem('provider_registration', JSON.stringify({
         ...registrationData,
         registrationStep: 4
       }));
 
-      // Navigate to the terms and conditions page
-      navigate('/provider/onboarding/terms');
+      if (embedded && typeof onNext === 'function') {
+        onNext(formData);
+      } else {
+        // Navigate to the terms and conditions page
+        navigate('/provider/onboarding/terms');
+      }
     } catch (error) {
       console.error('Submission error:', error);
       setErrors(prev => ({
@@ -330,6 +337,45 @@ const DocumentUpload = () => {
       }));
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleSkip = () => {
+    try {
+      // Store current data as a draft (metadata only for files)
+      const documentsMetadata = {};
+      Object.keys(formData.documents).forEach(key => {
+        const doc = formData.documents[key];
+        documentsMetadata[key] = {
+          name: doc.name,
+          type: doc.type,
+          size: doc.size,
+          uploadDate: doc.uploadDate
+        };
+      });
+
+      localStorage.setItem('provider_document_upload', JSON.stringify({
+        documents: documentsMetadata,
+        acknowledgement: formData.acknowledgement
+      }));
+
+      const registrationData = JSON.parse(localStorage.getItem('provider_registration') || '{}');
+      localStorage.setItem('provider_registration', JSON.stringify({
+        ...registrationData,
+        registrationStep: 4
+      }));
+
+      if (embedded && typeof onNext === 'function') {
+        onNext(formData);
+      } else {
+        navigate('/provider/onboarding/terms');
+      }
+    } catch (error) {
+      console.error('Skip error:', error);
+      setErrors(prev => ({
+        ...prev,
+        form: 'An error occurred while skipping. Please try again.'
+      }));
     }
   };
 
@@ -370,33 +416,38 @@ const DocumentUpload = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <div className="flex items-center">
-            <img src={logoImage} alt="PawsIQ Logo" className="h-8 w-8 mr-2" />
-            <h1 className="text-xl font-bold text-gray-900">PawsIQ Provider Onboarding</h1>
-          </div>
-          <div className="text-sm text-gray-500">
-            Need help? <a href="#" className="text-indigo-600 hover:text-indigo-500">Contact Support</a>
-          </div>
-        </div>
-      </header>
+    <div className={embedded ? '' : 'min-h-screen bg-gray-50'}>
+      {!embedded && (
+        <>
+          {/* Header */}
+          <header className="bg-white shadow-sm">
+            <div className="max-w-7xl px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+              <div className="flex items-center">
+                <img src={logoImage} alt="PawsIQ Logo" className="h-8 w-8 mr-2" />
+                <h1 className="text-xl font-bold text-gray-900">PawsIQ Provider Onboarding</h1>
+              </div>
+              <div className="text-sm text-gray-500">
+                Need help? <a href="#" className="text-indigo-600 hover:text-indigo-500">Contact Support</a>
+              </div>
+            </div>
+          </header>
+        </>
+      )}
 
-      <main className="max-w-3xl px-4 sm:px-6 lg:px-8 py-10">
-        {/* Progress indicator */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
-            <div className="text-sm text-indigo-600 font-medium">Step 4 of 8</div>
-            <div className="text-sm text-gray-500">Document Upload</div>
+      <main className={embedded ? '' : 'max-w-3xl px-4 sm:px-6 lg:px-8 py-10'}>
+        {!embedded && (
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-sm text-indigo-600 font-medium">Step 4 of 8</div>
+              <div className="text-sm text-gray-500">Document Upload</div>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2.5">
+              <div className="bg-indigo-600 h-2.5 rounded-full" style={{ width: '50%' }}></div>
+            </div>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2.5">
-            <div className="bg-indigo-600 h-2.5 rounded-full" style={{ width: '50%' }}></div>
-          </div>
-        </div>
+        )}
 
-        <div className="bg-white shadow-md rounded-lg overflow-hidden">
+        <div className={embedded ? '' : 'bg-white shadow-md rounded-lg overflow-hidden'}>
           <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
             <h2 className="text-lg font-medium text-gray-900">Document Upload</h2>
             <p className="mt-1 text-sm text-gray-500">
@@ -541,6 +592,16 @@ const DocumentUpload = () => {
               </Link>
 
               <div className="flex space-x-3">
+                {embedded && (
+                  <button
+                    type="button"
+                    onClick={handleSkip}
+                    className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+                  >
+                    Skip for now
+                  </button>
+                )}
+
                 <button
                   type="button"
                   onClick={handleSaveAsDraft}

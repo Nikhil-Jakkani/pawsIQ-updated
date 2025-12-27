@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { 
-  FaGraduationCap, 
-  FaDog, 
-  FaCertificate, 
-  FaClipboardCheck, 
-  FaUsers, 
+import {
+  FaGraduationCap,
+  FaDog,
+  FaCertificate,
+  FaClipboardCheck,
+  FaUsers,
   FaHome,
   FaBuilding,
   FaMapMarkerAlt,
@@ -18,9 +18,9 @@ import {
 // Cute pet-themed logo
 const logoImage = "/1.svg";
 
-const TrainerDetails = () => {
+const TrainerDetails = ({ embedded = false, onNext }) => {
   const navigate = useNavigate();
-  
+
   // Check if registration data exists
   useEffect(() => {
     const registrationData = localStorage.getItem('provider_registration');
@@ -29,14 +29,14 @@ const TrainerDetails = () => {
       navigate('/provider/signup');
       return;
     }
-    
+
     const parsedData = JSON.parse(registrationData);
     if (parsedData.providerType !== 'Trainer') {
       // Redirect to appropriate page if not a trainer
       navigate('/provider/onboarding/professional-info');
       return;
     }
-    
+
     // Load existing data if available
     const trainerData = localStorage.getItem('provider_trainer_details');
     if (trainerData) {
@@ -127,7 +127,7 @@ const TrainerDetails = () => {
       other: false
     },
     otherSpecializations: '',
-    
+
     // Training Details
     trainingSettings: {
       inHome: false,
@@ -148,7 +148,7 @@ const TrainerDetails = () => {
       large: false,
       giant: false
     },
-    
+
     // Facility Information (if applicable)
     hasFacility: false,
     facilityDetails: {
@@ -158,21 +158,21 @@ const TrainerDetails = () => {
       outdoorTrainingArea: false,
       maxGroupSize: ''
     },
-    
+
     // Training Philosophy
     trainingPhilosophy: ''
   });
-  
+
   // Validation state
   const [errors, setErrors] = useState({});
-  
+
   // Loading state
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Handle input changes
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    
+
     if (type === 'checkbox') {
       // Handle nested checkboxes
       if (name.includes('.')) {
@@ -197,7 +197,7 @@ const TrainerDetails = () => {
         [name]: type === 'number' ? (value === '' ? '' : Number(value)) : value
       }));
     }
-    
+
     // Clear error when field is edited
     if (errors[name]) {
       setErrors(prev => ({
@@ -206,12 +206,12 @@ const TrainerDetails = () => {
       }));
     }
   };
-  
+
   // Handle multi-select changes
   const handleMultiSelectChange = (field, value) => {
     setFormData(prev => {
       const currentValues = [...prev[field]];
-      
+
       if (currentValues.includes(value)) {
         // Remove value if already selected
         return {
@@ -227,62 +227,64 @@ const TrainerDetails = () => {
       }
     });
   };
-  
+
   // Validate form
   const validateForm = () => {
     const newErrors = {};
-    
+
     // Training Qualifications validation - Made optional for Indian market
     if (formData.yearsTrainingExperience && formData.yearsTrainingExperience < 0) {
       newErrors.yearsTrainingExperience = 'Years of experience cannot be negative';
     }
-    
+
     // Specializations are now optional - removed mandatory validation
-    
+
     // Check if "other" specialization is selected but no details provided
     if (formData.specializations.other && !formData.otherSpecializations) {
       newErrors.otherSpecializations = 'Please specify other specializations';
     }
-    
+
     // Training settings are now optional - removed mandatory validation
-    
+
     // Age groups are now optional - removed mandatory validation
-    
+
     // Dog sizes are now optional - removed mandatory validation
-    
+
     // Facility validation (if applicable)
     if (formData.hasFacility) {
       if (!formData.facilityDetails.facilityType) {
         newErrors['facilityDetails.facilityType'] = 'Facility type is required';
       }
-      
+
       if (!formData.facilityDetails.facilitySize) {
         newErrors['facilityDetails.facilitySize'] = 'Facility size is required';
       }
-      
+
       if (formData.facilityDetails.maxGroupSize === '') {
         newErrors['facilityDetails.maxGroupSize'] = 'Maximum group size is required';
       } else if (formData.facilityDetails.maxGroupSize < 1) {
         newErrors['facilityDetails.maxGroupSize'] = 'Maximum group size must be at least 1';
       }
     }
-    
+
     // Training Philosophy validation
     if (!formData.trainingPhilosophy) {
       newErrors.trainingPhilosophy = 'Training philosophy is required';
     } else if (formData.trainingPhilosophy.length < 50) {
       newErrors.trainingPhilosophy = 'Training philosophy must be at least 50 characters';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  
+
   // Handle form submission
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    
+    if (e) {
+      e.preventDefault();
+    }
+
     if (!validateForm()) {
       // Scroll to the first error
       const firstError = document.querySelector('.text-red-600');
@@ -291,28 +293,32 @@ const TrainerDetails = () => {
       }
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
       // In a real app, this would call an API to save the data
       console.log('Submitting trainer details:', formData);
-      
+
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1500));
-      
+
       // Store in localStorage
       localStorage.setItem('provider_trainer_details', JSON.stringify(formData));
-      
+
       // Update registration step
-      const registrationData = JSON.parse(localStorage.getItem('provider_registration'));
+      const registrationData = JSON.parse(localStorage.getItem('provider_registration') || '{}');
       localStorage.setItem('provider_registration', JSON.stringify({
         ...registrationData,
         registrationStep: 3
       }));
-      
-      // Navigate to document upload page
-      navigate('/provider/onboarding/document-upload');
+
+      if (embedded && typeof onNext === 'function') {
+        onNext(formData);
+      } else {
+        // Navigate to document upload page
+        navigate('/provider/onboarding/document-upload');
+      }
     } catch (error) {
       console.error('Submission error:', error);
       setErrors(prev => ({
@@ -323,7 +329,32 @@ const TrainerDetails = () => {
       setIsSubmitting(false);
     }
   };
-  
+
+  const handleSkip = () => {
+    try {
+      // Save current data as draft
+      localStorage.setItem('provider_trainer_details', JSON.stringify(formData));
+
+      const registrationData = JSON.parse(localStorage.getItem('provider_registration') || '{}');
+      localStorage.setItem('provider_registration', JSON.stringify({
+        ...registrationData,
+        registrationStep: 3
+      }));
+
+      if (embedded && typeof onNext === 'function') {
+        onNext(formData);
+      } else {
+        navigate('/provider/onboarding/document-upload');
+      }
+    } catch (error) {
+      console.error('Skip error:', error);
+      setErrors(prev => ({
+        ...prev,
+        form: 'An error occurred while skipping. Please try again.'
+      }));
+    }
+  };
+
   // Certification options - Updated for Indian market
   const certificationOptions = [
     'Professional Dog Training Certification - India',
@@ -337,7 +368,7 @@ const TrainerDetails = () => {
     'Pet Psychology and Behavior Course',
     'Advanced Dog Training Specialist Certificate'
   ];
-  
+
   // Training methodology options
   const methodologyOptions = [
     'Positive Reinforcement',
@@ -348,7 +379,7 @@ const TrainerDetails = () => {
     'E-Collar Training',
     'Other'
   ];
-  
+
   // Facility type options
   const facilityTypeOptions = [
     'Training Center',
@@ -358,42 +389,47 @@ const TrainerDetails = () => {
     'Retail Store with Training Area',
     'Other'
   ];
-  
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <div className="flex items-center">
-            <img src={logoImage} alt="PawsIQ Logo" className="h-8 w-8 mr-2" />
-            <h1 className="text-xl font-bold text-gray-900">PawsIQ Provider Onboarding</h1>
+    <div className={embedded ? '' : 'min-h-screen bg-gray-50'}>
+      {!embedded && (
+        <>
+          {/* Header */}
+          <header className="bg-white shadow-sm">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+              <div className="flex items-center">
+                <img src={logoImage} alt="PawsIQ Logo" className="h-8 w-8 mr-2" />
+                <h1 className="text-xl font-bold text-gray-900">PawsIQ Provider Onboarding</h1>
+              </div>
+              <div className="text-sm text-gray-500">
+                Need help? <a href="#" className="text-indigo-600 hover:text-indigo-500">Contact Support</a>
+              </div>
+            </div>
+          </header>
+        </>
+      )}
+
+      <main className={embedded ? '' : 'max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10'}>
+        {!embedded && (
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-sm text-indigo-600 font-medium">Step 3 of 8</div>
+              <div className="text-sm text-gray-500">Training Practice Details</div>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2.5">
+              <div className="bg-indigo-600 h-2.5 rounded-full" style={{ width: '37.5%' }}></div>
+            </div>
           </div>
-          <div className="text-sm text-gray-500">
-            Need help? <a href="#" className="text-indigo-600 hover:text-indigo-500">Contact Support</a>
-          </div>
-        </div>
-      </header>
-      
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        {/* Progress indicator */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
-            <div className="text-sm text-indigo-600 font-medium">Step 3 of 8</div>
-            <div className="text-sm text-gray-500">Training Practice Details</div>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2.5">
-            <div className="bg-indigo-600 h-2.5 rounded-full" style={{ width: '37.5%' }}></div>
-          </div>
-        </div>
-        
-        <div className="bg-white shadow-md rounded-lg overflow-hidden">
+        )}
+
+        <div className={embedded ? '' : 'bg-white shadow-md rounded-lg overflow-hidden'}>
           <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
             <h2 className="text-lg font-medium text-gray-900">Training Practice Details</h2>
             <p className="mt-1 text-sm text-gray-500">
               Tell us about your training qualifications, methods, and specializations
             </p>
           </div>
-          
+
           {/* Form error message */}
           {errors.form && (
             <div className="m-6 bg-red-50 border-l-4 border-red-500 p-4 rounded">
@@ -407,14 +443,14 @@ const TrainerDetails = () => {
               </div>
             </div>
           )}
-          
+
           <form onSubmit={handleSubmit} className="p-6 space-y-8">
             {/* Training Qualifications Section */}
             <section>
               <h3 className="text-md font-medium text-gray-900 mb-4 pb-2 border-b border-gray-200">
                 Training Qualifications
               </h3>
-              
+
               <div className="mt-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Certifications & Credentials
@@ -435,7 +471,7 @@ const TrainerDetails = () => {
                       </label>
                     </div>
                   ))}
-                  
+
                   <div className="sm:col-span-2 mt-2">
                     <label htmlFor="otherCertifications" className="block text-sm font-medium text-gray-700">
                       Other Certifications
@@ -454,7 +490,7 @@ const TrainerDetails = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 mt-6">
                 <div>
                   <label htmlFor="trainingMethodology" className="block text-sm font-medium text-gray-700">
@@ -466,9 +502,8 @@ const TrainerDetails = () => {
                       name="trainingMethodology"
                       value={formData.trainingMethodology}
                       onChange={handleChange}
-                      className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-                        errors.trainingMethodology ? 'border-red-300' : ''
-                      }`}
+                      className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${errors.trainingMethodology ? 'border-red-300' : ''
+                        }`}
                     >
                       <option value="">Select primary methodology</option>
                       {methodologyOptions.map((method) => (
@@ -482,7 +517,7 @@ const TrainerDetails = () => {
                     <p className="mt-1 text-sm text-red-600">{errors.trainingMethodology}</p>
                   )}
                 </div>
-                
+
                 <div>
                   <label htmlFor="yearsTrainingExperience" className="block text-sm font-medium text-gray-700">
                     Years of Training Experience <span className="text-red-500">*</span>
@@ -495,9 +530,8 @@ const TrainerDetails = () => {
                       min="0"
                       value={formData.yearsTrainingExperience}
                       onChange={handleChange}
-                      className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-                        errors.yearsTrainingExperience ? 'border-red-300' : ''
-                      }`}
+                      className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${errors.yearsTrainingExperience ? 'border-red-300' : ''
+                        }`}
                       placeholder="5"
                     />
                   </div>
@@ -507,22 +541,22 @@ const TrainerDetails = () => {
                 </div>
               </div>
             </section>
-            
+
             {/* Training Specializations Section */}
             <section>
               <h3 className="text-md font-medium text-gray-900 mb-4 pb-2 border-b border-gray-200">
                 Training Specializations & Services
               </h3>
-              
+
               <div className="mt-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Specializations <span className="text-red-500">*</span>
                 </label>
-                
+
                 {errors.specializations && (
                   <p className="mb-2 text-sm text-red-600">{errors.specializations}</p>
                 )}
-                
+
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                   <div className="flex items-center">
                     <input
@@ -537,7 +571,7 @@ const TrainerDetails = () => {
                       Obedience Training
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="spec-behavior"
@@ -551,7 +585,7 @@ const TrainerDetails = () => {
                       Behavior Modification
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="spec-puppy"
@@ -565,7 +599,7 @@ const TrainerDetails = () => {
                       Puppy Training
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="spec-agility"
@@ -579,7 +613,7 @@ const TrainerDetails = () => {
                       Agility Training
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="spec-service"
@@ -593,7 +627,7 @@ const TrainerDetails = () => {
                       Service Animal Training
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="spec-therapy"
@@ -607,7 +641,7 @@ const TrainerDetails = () => {
                       Therapy Dog Training
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="spec-protection"
@@ -621,7 +655,7 @@ const TrainerDetails = () => {
                       Protection Training
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="spec-other"
@@ -636,7 +670,7 @@ const TrainerDetails = () => {
                     </label>
                   </div>
                 </div>
-                
+
                 {formData.specializations.other && (
                   <div className="mt-2">
                     <label htmlFor="otherSpecializations" className="block text-sm font-medium text-gray-700">
@@ -648,9 +682,8 @@ const TrainerDetails = () => {
                       name="otherSpecializations"
                       value={formData.otherSpecializations}
                       onChange={handleChange}
-                      className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-                        errors.otherSpecializations ? 'border-red-300' : ''
-                      }`}
+                      className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${errors.otherSpecializations ? 'border-red-300' : ''
+                        }`}
                       placeholder="Please specify other specializations"
                     />
                     {errors.otherSpecializations && (
@@ -659,16 +692,16 @@ const TrainerDetails = () => {
                   </div>
                 )}
               </div>
-              
+
               <div className="mt-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Training Settings <span className="text-red-500">*</span>
                 </label>
-                
+
                 {errors.trainingSettings && (
                   <p className="mb-2 text-sm text-red-600">{errors.trainingSettings}</p>
                 )}
-                
+
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                   <div className="flex items-center">
                     <input
@@ -683,7 +716,7 @@ const TrainerDetails = () => {
                       <FaHome className="mr-1 text-gray-500" /> In-Home Training
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="setting-group"
@@ -697,7 +730,7 @@ const TrainerDetails = () => {
                       <FaUsers className="mr-1 text-gray-500" /> Group Classes
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="setting-board"
@@ -711,7 +744,7 @@ const TrainerDetails = () => {
                       Board & Train
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="setting-day"
@@ -725,7 +758,7 @@ const TrainerDetails = () => {
                       Day Training
                     </label>
                   </div>
-                  
+
                   <div className="flex items-center">
                     <input
                       id="setting-virtual"
@@ -741,17 +774,17 @@ const TrainerDetails = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 mt-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Age Groups <span className="text-red-500">*</span>
                   </label>
-                  
+
                   {errors.ageGroups && (
                     <p className="mb-2 text-sm text-red-600">{errors.ageGroups}</p>
                   )}
-                  
+
                   <div className="space-y-2">
                     <div className="flex items-center">
                       <input
@@ -766,7 +799,7 @@ const TrainerDetails = () => {
                         Puppies (0-6 months)
                       </label>
                     </div>
-                    
+
                     <div className="flex items-center">
                       <input
                         id="age-adolescent"
@@ -780,7 +813,7 @@ const TrainerDetails = () => {
                         Adolescent (6-18 months)
                       </label>
                     </div>
-                    
+
                     <div className="flex items-center">
                       <input
                         id="age-adult"
@@ -794,7 +827,7 @@ const TrainerDetails = () => {
                         Adult (18 months-7 years)
                       </label>
                     </div>
-                    
+
                     <div className="flex items-center">
                       <input
                         id="age-senior"
@@ -810,16 +843,16 @@ const TrainerDetails = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Dog Sizes <span className="text-red-500">*</span>
                   </label>
-                  
+
                   {errors.dogSizes && (
                     <p className="mb-2 text-sm text-red-600">{errors.dogSizes}</p>
                   )}
-                  
+
                   <div className="space-y-2">
                     <div className="flex items-center">
                       <input
@@ -834,7 +867,7 @@ const TrainerDetails = () => {
                         Small (0-20 lbs)
                       </label>
                     </div>
-                    
+
                     <div className="flex items-center">
                       <input
                         id="size-medium"
@@ -848,7 +881,7 @@ const TrainerDetails = () => {
                         Medium (21-50 lbs)
                       </label>
                     </div>
-                    
+
                     <div className="flex items-center">
                       <input
                         id="size-large"
@@ -862,7 +895,7 @@ const TrainerDetails = () => {
                         Large (51-90 lbs)
                       </label>
                     </div>
-                    
+
                     <div className="flex items-center">
                       <input
                         id="size-giant"
@@ -880,13 +913,13 @@ const TrainerDetails = () => {
                 </div>
               </div>
             </section>
-            
+
             {/* Facility Information Section */}
             <section>
               <h3 className="text-md font-medium text-gray-900 mb-4 pb-2 border-b border-gray-200">
                 Facility Information (if applicable)
               </h3>
-              
+
               <div className="flex items-center mb-4">
                 <input
                   id="hasFacility"
@@ -900,7 +933,7 @@ const TrainerDetails = () => {
                   I have a dedicated training facility
                 </label>
               </div>
-              
+
               {formData.hasFacility && (
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                   <div>
@@ -913,9 +946,8 @@ const TrainerDetails = () => {
                         name="facilityDetails.facilityType"
                         value={formData.facilityDetails.facilityType}
                         onChange={handleChange}
-                        className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-                          errors['facilityDetails.facilityType'] ? 'border-red-300' : ''
-                        }`}
+                        className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${errors['facilityDetails.facilityType'] ? 'border-red-300' : ''
+                          }`}
                       >
                         <option value="">Select facility type</option>
                         {facilityTypeOptions.map((type) => (
@@ -929,7 +961,7 @@ const TrainerDetails = () => {
                       <p className="mt-1 text-sm text-red-600">{errors['facilityDetails.facilityType']}</p>
                     )}
                   </div>
-                  
+
                   <div>
                     <label htmlFor="facilitySize" className="block text-sm font-medium text-gray-700">
                       Facility Size <span className="text-red-500">*</span>
@@ -941,9 +973,8 @@ const TrainerDetails = () => {
                         name="facilityDetails.facilitySize"
                         value={formData.facilityDetails.facilitySize}
                         onChange={handleChange}
-                        className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-                          errors['facilityDetails.facilitySize'] ? 'border-red-300' : ''
-                        }`}
+                        className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${errors['facilityDetails.facilitySize'] ? 'border-red-300' : ''
+                          }`}
                         placeholder="e.g., 2,000 sq ft"
                       />
                     </div>
@@ -951,7 +982,7 @@ const TrainerDetails = () => {
                       <p className="mt-1 text-sm text-red-600">{errors['facilityDetails.facilitySize']}</p>
                     )}
                   </div>
-                  
+
                   <div className="sm:col-span-2">
                     <div className="flex flex-col sm:flex-row sm:space-x-4">
                       <div className="flex items-center mb-2 sm:mb-0">
@@ -967,7 +998,7 @@ const TrainerDetails = () => {
                           Indoor Training Area
                         </label>
                       </div>
-                      
+
                       <div className="flex items-center">
                         <input
                           id="outdoorTrainingArea"
@@ -983,7 +1014,7 @@ const TrainerDetails = () => {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div>
                     <label htmlFor="maxGroupSize" className="block text-sm font-medium text-gray-700">
                       Maximum Group Class Size <span className="text-red-500">*</span>
@@ -996,9 +1027,8 @@ const TrainerDetails = () => {
                         min="1"
                         value={formData.facilityDetails.maxGroupSize}
                         onChange={handleChange}
-                        className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-                          errors['facilityDetails.maxGroupSize'] ? 'border-red-300' : ''
-                        }`}
+                        className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${errors['facilityDetails.maxGroupSize'] ? 'border-red-300' : ''
+                          }`}
                         placeholder="8"
                       />
                     </div>
@@ -1009,13 +1039,13 @@ const TrainerDetails = () => {
                 </div>
               )}
             </section>
-            
+
             {/* Training Philosophy Section */}
             <section>
               <h3 className="text-md font-medium text-gray-900 mb-4 pb-2 border-b border-gray-200">
                 Training Philosophy
               </h3>
-              
+
               <div>
                 <label htmlFor="trainingPhilosophy" className="block text-sm font-medium text-gray-700">
                   Training Philosophy & Approach <span className="text-red-500">*</span>
@@ -1030,9 +1060,8 @@ const TrainerDetails = () => {
                     rows={4}
                     value={formData.trainingPhilosophy}
                     onChange={handleChange}
-                    className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${
-                      errors.trainingPhilosophy ? 'border-red-300' : ''
-                    }`}
+                    className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md ${errors.trainingPhilosophy ? 'border-red-300' : ''
+                      }`}
                     placeholder="Describe your training philosophy, methods, and what pet owners can expect..."
                   />
                 </div>
@@ -1050,7 +1079,7 @@ const TrainerDetails = () => {
                 </div>
               </div>
             </section>
-            
+
             {/* Form Actions */}
             <div className="pt-5 border-t border-gray-200 flex justify-between">
               <Link
@@ -1060,27 +1089,39 @@ const TrainerDetails = () => {
                 <FaArrowLeft className="mr-2 -ml-1 h-4 w-4" />
                 Back
               </Link>
-              
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="inline-flex items-center px-8 py-2 border border-transparent shadow-md text-sm font-medium rounded-md text-white bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-all"
-              >
-                {isSubmitting ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    Continue
-                    <FaArrowRight className="ml-2 -mr-1 h-4 w-4" />
-                  </>
+
+              <div className="flex space-x-3">
+                {embedded && (
+                  <button
+                    type="button"
+                    onClick={handleSkip}
+                    className="inline-flex items-center px-6 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all"
+                  >
+                    Skip for now
+                  </button>
                 )}
-              </button>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="inline-flex items-center px-8 py-2 border border-transparent shadow-md text-sm font-medium rounded-md text-white bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-all"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      Continue
+                      <FaArrowRight className="ml-2 -mr-1 h-4 w-4" />
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </form>
         </div>
